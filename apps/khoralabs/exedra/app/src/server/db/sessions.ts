@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
-
-import { EntityType, Relation } from "@khoralabs/exedra-authz";
+import { publishSessionBelongsToTeam, publishThreadBelongsToSession } from "../authz/facts";
 import {
   accountScope,
   Feature,
@@ -117,11 +116,7 @@ export function createSession(
   ).run(id, params.teamId, params.topic, params.deadlineMs ?? null, kind, now);
   const row = db.query<SessionRow, [string]>(`SELECT * FROM sessions WHERE id = ? LIMIT 1`).get(id);
   if (row === null) throw new Error("session insert failed");
-  void requireAuthzServiceClient().relate({
-    from: { type: EntityType.Session, id },
-    relation: Relation.BelongsTo,
-    to: { type: EntityType.Team, id: params.teamId },
-  });
+  void publishSessionBelongsToTeam(id, params.teamId);
   return mapSession(row);
 }
 
@@ -240,11 +235,7 @@ export async function getOrCreateInterviewThread(
     `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
      VALUES (?, 'interview', ?, ?, ?, NULL)`,
   ).run(id, params.sessionId, params.userId, Date.now());
-  await requireAuthzServiceClient().relate({
-    from: { type: EntityType.Thread, id },
-    relation: Relation.BelongsTo,
-    to: { type: EntityType.Session, id: params.sessionId },
-  });
+  await publishThreadBelongsToSession(id, params.sessionId);
   await grantThreadAccess(params.userId, id);
   return id;
 }
@@ -366,11 +357,7 @@ export async function getOrCreateFacilitationThread(
     `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
      VALUES (?, 'facilitation', ?, NULL, ?, NULL)`,
   ).run(id, sessionId, Date.now());
-  await requireAuthzServiceClient().relate({
-    from: { type: EntityType.Thread, id },
-    relation: Relation.BelongsTo,
-    to: { type: EntityType.Session, id: sessionId },
-  });
+  await publishThreadBelongsToSession(id, sessionId);
   await syncFacilitationThreadGrants(db, sessionId);
   return id;
 }

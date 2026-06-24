@@ -1,6 +1,6 @@
 import type { GenerateResponseWorkflowParams } from "@khoralabs/exedra-workflows-generate-response/generate-response-workflow";
 import { Render } from "@renderinc/sdk";
-
+import { EXEDRA_CONVERSATIONAL_AGENT_ID } from "../authz/facts";
 import { getDb } from "../db/index";
 import { getTeam } from "../db/membership";
 import { getSession, getThread } from "../db/sessions";
@@ -46,9 +46,9 @@ export async function dispatchGenerateResponseForChat(input: {
   const params: GenerateResponseWorkflowParams = {
     responseId,
     agent: {
-      id: "exedra-conversational-agent",
+      id: EXEDRA_CONVERSATIONAL_AGENT_ID,
       name: "Exedra Agent",
-      actingFor: { type: "agent", id: team.orgId },
+      actingFor: { type: "agent", id: EXEDRA_CONVERSATIONAL_AGENT_ID },
     },
     model: {
       id: process.env.GENERATE_RESPONSE_DEFAULT_MODEL?.trim() || "anthropic/claude-sonnet-4.6",

@@ -7,7 +7,6 @@ import {
   OrgPermission as OrgPermissionKey,
   TeamPermission as TeamPermissionKey,
 } from "../../shared/authz/permissions";
-import { getDb } from "../db/index";
 import { requireAuthzServiceClient } from "./service-client";
 
 export const ScopeType = {
@@ -59,7 +58,7 @@ export function teamScope(teamId: string): EntityRef {
   return { type: ScopeType.Team, id: teamId };
 }
 
-function sessionResource(sessionId: string): EntityRef {
+export function sessionResource(sessionId: string): EntityRef {
   return { type: ResourceType.Session, id: sessionId };
 }
 
@@ -269,17 +268,8 @@ export async function canWriteFacilitationThread(
   accountId: string,
   threadId: string,
 ): Promise<boolean> {
-  const row = getDb()
-    .query<{ session_id: string; kind: string }, [string]>(
-      `SELECT session_id, kind FROM threads WHERE id = ? LIMIT 1`,
-    )
-    .get(threadId);
-  if (row === null || row.kind !== "facilitation") return false;
-  if (!(await hasFacilitationAccess(accountId, row.session_id))) return false;
-  return (
-    (await hasGrant(accountScope(accountId), threadResource(threadId), Feature.Write)) ||
-    (await canManageSession(accountId, row.session_id))
-  );
+  const { decideChatThreadWrite } = await import("./facts.js");
+  return decideChatThreadWrite({ type: ScopeType.Account, id: accountId }, threadId);
 }
 
 export async function canReadThread(accountId: string, threadId: string): Promise<boolean> {

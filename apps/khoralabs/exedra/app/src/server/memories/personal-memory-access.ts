@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-
+import { publishAgentPersonalMemoryRead } from "../authz/facts";
 import {
   canReadPersonalKg,
   grantPersonalKgReader,
@@ -20,6 +20,7 @@ export async function grantPersonalMemoryAccessForSession(
   params: { orgId: string; sessionId: string; userId: string },
 ): Promise<void> {
   await grantPersonalKgReader(params.orgId, params.userId);
+  await publishAgentPersonalMemoryRead(params.userId);
   setPersonalMemoryConsent(db, params.sessionId, params.userId);
 }
 

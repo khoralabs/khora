@@ -1,6 +1,8 @@
 import { decide } from "./policy";
 import {
   getOrgIdForTeam,
+  getSessionIdForThread,
+  getTeamIdForSession,
   listAccountIdsForOrgAdmin,
   listAccountIdsForTeam,
   listTeamIdsForAccount,
@@ -313,6 +315,24 @@ export function createAuthzRoutes(db: SqlDatabase, token: string): Record<string
       const accountId = body === null ? null : stringField(body, "accountId");
       if (accountId === null) return json({ error: "accountId is required" }, { status: 400 });
       return json({ teamIds: await listTeamIdsForAccount(repo, accountId) });
+    },
+
+    "POST /query/team-for-session": async (req) => {
+      const error = await authorized(req);
+      if (error !== null) return error;
+      const body = await readJson<Record<string, unknown>>(req);
+      const sessionId = body === null ? null : stringField(body, "sessionId");
+      if (sessionId === null) return json({ error: "sessionId is required" }, { status: 400 });
+      return json({ teamId: await getTeamIdForSession(repo, sessionId) });
+    },
+
+    "POST /query/session-for-thread": async (req) => {
+      const error = await authorized(req);
+      if (error !== null) return error;
+      const body = await readJson<Record<string, unknown>>(req);
+      const threadId = body === null ? null : stringField(body, "threadId");
+      if (threadId === null) return json({ error: "threadId is required" }, { status: 400 });
+      return json({ sessionId: await getSessionIdForThread(repo, threadId) });
     },
   };
 }

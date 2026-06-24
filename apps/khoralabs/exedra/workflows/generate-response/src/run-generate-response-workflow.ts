@@ -125,7 +125,7 @@ export async function runGenerateResponseWorkflow(
     exedraClient ??= createExedraInternalClient();
     return exedraClient;
   };
-  const authzClient = deps.authzClient ?? createExedraAuthzClient(getExedraClient());
+  const authzClient = deps.authzClient ?? createExedraAuthzClient();
   const policyState = await evaluateGenerateResponsePolicies(params, authzClient);
   const allSkills = await discoverBundledSkills();
   const selectedSkills = selectSkillsByName(allSkills, policyState.skillNames);

@@ -1,6 +1,11 @@
 import type { Channel, Thread } from "@khoralabs/chat-core";
-
-import { getOrCreateFacilitationThread, getOrCreateInterviewThread } from "../db/sessions";
+import { publishChatThreadAuthzFacts } from "../authz/facts";
+import { getTeam } from "../db/membership";
+import {
+  getOrCreateFacilitationThread,
+  getOrCreateInterviewThread,
+  getSession,
+} from "../db/sessions";
 import { getChatService, isChatNotFound } from "./service";
 
 export type ExedraChatThreadKind = "interview" | "facilitation";
@@ -47,19 +52,31 @@ export async function ensureInterviewChatThread(params: {
     return { legacyThreadId, chatThread: await chat.getThread(threadId), created: false };
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
+    const chatThread = await chat.createThread({
+      id: threadId,
+      root: { type: "channel", channelId: sessionChannelId(params.sessionId) },
+      metadata: {
+        kind: "interview",
+        sessionId: params.sessionId,
+        userId: params.userId,
+        legacyThreadId,
+      },
+    });
+    const session = getSession(params.db, params.sessionId);
+    if (session !== null) {
+      const team = await getTeam(params.db, session.teamId);
+      if (team !== null) {
+        await publishChatThreadAuthzFacts({
+          chatThreadId: threadId,
+          sessionId: params.sessionId,
+          orgId: team.orgId,
+        });
+      }
+    }
     return {
       legacyThreadId,
       created: true,
-      chatThread: await chat.createThread({
-        id: threadId,
-        root: { type: "channel", channelId: sessionChannelId(params.sessionId) },
-        metadata: {
-          kind: "interview",
-          sessionId: params.sessionId,
-          userId: params.userId,
-          legacyThreadId,
-        },
-      }),
+      chatThread,
     };
   }
 }
@@ -76,18 +93,30 @@ export async function ensureFacilitationChatThread(params: {
     return { legacyThreadId, chatThread: await chat.getThread(threadId), created: false };
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
+    const chatThread = await chat.createThread({
+      id: threadId,
+      root: { type: "channel", channelId: sessionChannelId(params.sessionId) },
+      metadata: {
+        kind: "facilitation",
+        sessionId: params.sessionId,
+        legacyThreadId,
+      },
+    });
+    const session = getSession(params.db, params.sessionId);
+    if (session !== null) {
+      const team = await getTeam(params.db, session.teamId);
+      if (team !== null) {
+        await publishChatThreadAuthzFacts({
+          chatThreadId: threadId,
+          sessionId: params.sessionId,
+          orgId: team.orgId,
+        });
+      }
+    }
     return {
       legacyThreadId,
       created: true,
-      chatThread: await chat.createThread({
-        id: threadId,
-        root: { type: "channel", channelId: sessionChannelId(params.sessionId) },
-        metadata: {
-          kind: "facilitation",
-          sessionId: params.sessionId,
-          legacyThreadId,
-        },
-      }),
+      chatThread,
     };
   }
 }

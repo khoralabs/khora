@@ -1,4 +1,6 @@
+import { parseChatThreadId } from "./chat-thread";
 import type { AuthzRepository } from "./repository";
+import { effectiveGrantSubjects, orgIdsForAgent } from "./subject-expansion";
 import {
   AuthAction,
   EntityType,
@@ -9,7 +11,7 @@ import {
 } from "./taxonomy";
 import type { DecideRequest, DecideResponse, EntityRef } from "./types";
 
-function _account(id: string): EntityRef {
+function account(id: string): EntityRef {
   return { type: EntityType.Account, id };
 }
 
@@ -121,7 +123,7 @@ async function isAllowed(repo: AuthzRepository, request: DecideRequest): Promise
     case AuthAction.MemoryRead:
       return canReadProtectedResource(repo, subject, resource);
     case AuthAction.ChatThreadWrite:
-      return resource.type === EntityType.Thread && canWriteThread(repo, subject, resource.id);
+      return canWriteChatThread(repo, subject, resource);
     default:
       return false;
   }
@@ -255,14 +257,71 @@ async function canReadThread(repo: AuthzRepository, subject: EntityRef, threadId
 }
 
 async function canWriteThread(repo: AuthzRepository, subject: EntityRef, threadId: string) {
-  if (await repo.hasGrant(subject, thread(threadId), Feature.Write)) return true;
+  for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+    if (await repo.hasGrant(grantSubject, thread(threadId), Feature.Write)) return true;
+  }
   const sessions = await repo.getRelatedTo(
     thread(threadId),
     Relation.BelongsTo,
     EntityType.Session,
   );
   const parent = sessions[0];
-  return parent !== undefined && (await canManageSession(repo, subject, parent.id));
+  if (parent === undefined) return false;
+  for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+    if (await canManageSession(repo, grantSubject, parent.id)) return true;
+  }
+  return false;
+}
+
+async function canWriteChatThread(
+  repo: AuthzRepository,
+  subject: EntityRef,
+  resource: EntityRef,
+): Promise<boolean> {
+  const threadId = resource.id;
+  if (threadId.length === 0) return false;
+
+  if (
+    resource.type === EntityType.Thread ||
+    resource.type === "chat_thread" ||
+    resource.type === "thread"
+  ) {
+    if (await canWriteThread(repo, subject, threadId)) return true;
+
+    const parsed = parseChatThreadId(threadId);
+    if (parsed !== null) {
+      return canWriteParsedChatThread(repo, subject, parsed);
+    }
+  }
+
+  return false;
+}
+
+async function canWriteParsedChatThread(
+  repo: AuthzRepository,
+  subject: EntityRef,
+  parsed: NonNullable<ReturnType<typeof parseChatThreadId>>,
+): Promise<boolean> {
+  if (parsed.kind === "facilitation") {
+    for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+      if (await hasFacilitationAccess(repo, grantSubject, parsed.sessionId)) return true;
+    }
+    return false;
+  }
+
+  for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+    if (await hasSessionAccess(repo, grantSubject, parsed.sessionId)) return true;
+  }
+
+  if (subject.type === EntityType.Agent) {
+    const participant = account(parsed.userId);
+    if (await repo.hasGrant(participant, session(parsed.sessionId), Feature.Participant)) {
+      const orgIds = await orgIdsForAgent(repo, subject.id);
+      if (orgIds.length > 0) return true;
+    }
+  }
+
+  return false;
 }
 
 async function canReadProtectedResource(
@@ -271,18 +330,53 @@ async function canReadProtectedResource(
   resource: EntityRef,
 ) {
   if (resource.type === EntityType.Account && subject.id === resource.id) return true;
-  if (await repo.hasGrant(subject, resource, Feature.Read)) return true;
+
+  for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+    if (await repo.hasGrant(grantSubject, resource, Feature.Read)) return true;
+  }
+
   if (resource.type === EntityType.Session) {
-    return (
-      (await repo.hasGrant(subject, resource, Feature.Participant)) ||
-      (await repo.hasGrant(subject, resource, Feature.Admin))
-    );
+    for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+      if (await repo.hasGrant(grantSubject, resource, Feature.Participant)) return true;
+      if (await repo.hasGrant(grantSubject, resource, Feature.Admin)) return true;
+    }
+    if (subject.type === EntityType.Agent) {
+      const teamId = await sessionTeamId(repo, resource.id);
+      if (teamId !== null) {
+        const orgId = await orgForTeam(repo, teamId);
+        if (orgId !== null) {
+          const agentOrgs = await orgIdsForAgent(repo, subject.id);
+          if (agentOrgs.includes(orgId.id)) return true;
+        }
+      }
+    }
+    return false;
   }
+
   if (resource.type === EntityType.Team) {
-    return hasTeamPermission(repo, subject, resource.id, TeamPermission.Read);
+    for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+      if (await hasTeamPermission(repo, grantSubject, resource.id, TeamPermission.Read)) {
+        return true;
+      }
+    }
+    return false;
   }
+
   if (resource.type === EntityType.Organization) {
-    return hasOrgPermission(repo, subject, resource.id, OrgPermission.Read);
+    for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+      if (await hasOrgPermission(repo, grantSubject, resource.id, OrgPermission.Read)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  if (resource.type === EntityType.Account) {
+    for (const grantSubject of await effectiveGrantSubjects(repo, subject)) {
+      if (grantSubject.type === EntityType.Agent && grantSubject.id === subject.id) {
+        if (await repo.hasGrant(grantSubject, resource, Feature.Read)) return true;
+      }
+    }
   }
 
   const protectedBy = await repo.getRelatedTo(resource, Relation.ProtectedBy);
@@ -290,4 +384,9 @@ async function canReadProtectedResource(
     if (await canReadProtectedResource(repo, subject, protectedResource)) return true;
   }
   return false;
+}
+
+async function sessionTeamId(repo: AuthzRepository, sessionId: string): Promise<string | null> {
+  const teams = await repo.getRelatedTo(session(sessionId), Relation.BelongsTo, EntityType.Team);
+  return teams[0]?.id ?? null;
 }

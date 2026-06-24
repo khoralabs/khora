@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { resolveDocumentMemoryKey } from "@khoralabs/exedra-workflows-process-document/document-processing";
+import { publishDocumentProtectedBy } from "../authz/facts.js";
 import { ResourceType } from "../authz/policy.js";
 import { getTeam } from "../db/membership.js";
 import { userSessionScope } from "../memories/namespaces.js";
@@ -70,6 +71,8 @@ export async function acceptDocument(params: AcceptDocumentParams): Promise<{
         memoryKey,
         status: "accepted",
       });
+
+      await publishDocumentProtectedBy(documentId, params.grantResource);
 
       return { document: record, sourceRef: ref };
     },

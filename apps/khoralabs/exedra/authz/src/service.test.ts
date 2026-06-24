@@ -116,6 +116,56 @@ test("query endpoints return org and team membership", async () => {
   expect(teamsForOrg.teamIds).toContain("team-1");
 });
 
+test("agent can write interview chat thread when org represents and participant exists", async () => {
+  await repo.relate(
+    { type: EntityType.Agent, id: "exedra-conversational-agent" },
+    Relation.Represents,
+    { type: EntityType.Organization, id: "org-1" },
+  );
+  await repo.relate({ type: EntityType.Team, id: "team-1" }, Relation.MemberOf, {
+    type: EntityType.Organization,
+    id: "org-1",
+  });
+  await repo.relate({ type: EntityType.Session, id: "session-1" }, Relation.BelongsTo, {
+    type: EntityType.Team,
+    id: "team-1",
+  });
+  await repo.grant(
+    { type: EntityType.Account, id: "user-1" },
+    { type: EntityType.Session, id: "session-1" },
+    Feature.Participant,
+  );
+
+  const chatThreadId = "session:session-1:interview:user-1";
+  const result = await decide(repo, {
+    subject: { type: EntityType.Agent, id: "exedra-conversational-agent" },
+    action: AuthAction.ChatThreadWrite,
+    resource: { type: EntityType.Thread, id: chatThreadId },
+  });
+
+  expect(result.allowed).toBe(true);
+});
+
+test("document read follows protected_by relationship", async () => {
+  await repo.grant(
+    { type: EntityType.Account, id: "user-1" },
+    { type: EntityType.Session, id: "session-1" },
+    Feature.Participant,
+  );
+  await repo.relate({ type: EntityType.Document, id: "doc-1" }, Relation.ProtectedBy, {
+    type: EntityType.Session,
+    id: "session-1",
+  });
+
+  const result = await decide(repo, {
+    subject: { type: EntityType.Account, id: "user-1" },
+    action: AuthAction.DocumentRead,
+    resource: { type: EntityType.Document, id: "doc-1" },
+  });
+
+  expect(result.allowed).toBe(true);
+});
+
 test("batch decide returns per-request results", async () => {
   await repo.grant(
     { type: EntityType.Account, id: "user-2" },

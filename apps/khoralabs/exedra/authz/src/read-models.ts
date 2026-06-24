@@ -33,6 +33,26 @@ export async function getOrgIdForTeam(
   return null;
 }
 
+export async function getTeamIdForSession(
+  repo: AuthzRepository,
+  sessionId: string,
+): Promise<string | null> {
+  const teams = await repo.getRelatedTo(session(sessionId), Relation.BelongsTo, EntityType.Team);
+  return teams[0]?.id ?? null;
+}
+
+export async function getSessionIdForThread(
+  repo: AuthzRepository,
+  threadId: string,
+): Promise<string | null> {
+  const sessions = await repo.getRelatedTo(
+    { type: EntityType.Thread, id: threadId },
+    Relation.BelongsTo,
+    EntityType.Session,
+  );
+  return sessions[0]?.id ?? null;
+}
+
 export async function listTeamIdsForOrg(repo: AuthzRepository, orgId: string): Promise<string[]> {
   const related = await repo.listRelatedFrom(org(orgId), Relation.MemberOf, EntityType.Team);
   if (related.length > 0) return related.map((entity) => entity.id);

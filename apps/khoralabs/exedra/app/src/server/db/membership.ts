@@ -13,6 +13,7 @@ import {
   userBelongsToOrg,
   userHasAnyTeamMemberGrant,
 } from "../authz";
+import { ensureOrgAgentRepresents } from "../authz/facts";
 import {
   grantAllOrgPermissions,
   grantAllTeamPermissions,
@@ -334,6 +335,7 @@ export async function createOrgWithAdmin(
     `INSERT INTO orgs (id, name, identity_encrypted, created_at_ms) VALUES (?, ?, ?, ?)`,
   ).run(did, params.name, identityEncrypted, now);
   await grantAllOrgPermissions(params.creatorId, did);
+  await ensureOrgAgentRepresents(did);
   return did;
 }
 

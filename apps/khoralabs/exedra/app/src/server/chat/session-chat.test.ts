@@ -2,11 +2,10 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { grantSessionCreatorAccess } from "../authz";
+import { grantSessionCreatorAccess, grantSessionParticipant } from "../authz";
 import { closeDb, getDb, resolveExedraDbPath } from "../db/index";
 import { createOrg, createSession, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
-import { orgSessionScope } from "../memories/namespaces";
 import { handleAppendChatPost, handleListChatPosts } from "./routes";
 import { closeChatDb, resolveExedraChatDbPath } from "./service";
 import { ensureFacilitationChatThread, ensureInterviewChatThread } from "./session-chat";
@@ -196,33 +195,22 @@ test("internal chat streamed post route accepts encoded thread id path", async (
   expect(res?.status).toBe(200);
 });
 
-test("internal authz decide route authorizes app-supplied workflow resources", async () => {
+test("central authz allows org agent session memory read after onboarding facts", async () => {
   const db = getDb();
-  const user = await getOrCreateUser(db, "registry-authz-route-user");
+  const user = await getOrCreateUser(db, "central-authz-agent-user");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
-  const session = createSession(db, { teamId, topic: "Internal authz route" });
-  const { dispatchApiRoute } = await import("../dispatch-api");
+  const session = createSession(db, { teamId, topic: "Central authz agent" });
+  await grantSessionParticipant(user.id, session.id);
 
-  const res = await dispatchApiRoute(
-    new Request("http://localhost/internal/authz/decide", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer test-internal-token",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        subject: { type: "agent", id: orgId },
-        action: "memory.read",
-        resource: {
-          namespace: orgSessionScope(orgId, teamId, session.id),
-          resourceType: "session",
-          resourceId: session.id,
-        },
-      }),
-    }),
-  );
+  const { EXEDRA_CONVERSATIONAL_AGENT_ID } = await import("../authz/facts");
+  const { requireAuthzServiceClient } = await import("../authz/service-client");
+  const client = requireAuthzServiceClient();
+  const result = await client.decide({
+    subject: { type: "agent", id: EXEDRA_CONVERSATIONAL_AGENT_ID },
+    action: "memory.read",
+    resource: { type: "session", id: session.id },
+  });
 
-  expect(res?.status).toBe(200);
-  expect(await res?.json()).toEqual({ allowed: true });
+  expect(result.allowed).toBe(true);
 });

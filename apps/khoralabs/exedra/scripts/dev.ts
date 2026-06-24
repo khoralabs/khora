@@ -102,11 +102,43 @@ function spawnService(service: Service): Bun.Subprocess {
 
 mkdirSync(dataDir, { recursive: true });
 
+function pickEnv(...values: (string | undefined)[]): string | undefined {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed !== undefined && trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return undefined;
+}
+
+const appEnv = loadEnvFile(path.join(appRoot, ".env"));
+const authzEnv = loadEnvFile(path.join(authzRoot, ".env"));
+const workflowEnvFiles = [
+  path.join(workflowsRoot, "generate-response", ".env"),
+  path.join(workflowsRoot, "integrate-memory", ".env"),
+  path.join(workflowsRoot, "process-document", ".env"),
+];
+
+const resolvedInternalToken =
+  pickEnv(
+    process.env.EXEDRA_INTERNAL_TOKEN,
+    appEnv.EXEDRA_INTERNAL_TOKEN,
+    ...workflowEnvFiles.map((filePath) => loadEnvFile(filePath).EXEDRA_INTERNAL_TOKEN),
+  ) ?? DEV_INTERNAL_TOKEN;
+
+const resolvedAuthzToken =
+  pickEnv(
+    process.env.AUTHZ_INTERNAL_TOKEN,
+    appEnv.AUTHZ_INTERNAL_TOKEN,
+    authzEnv.AUTHZ_INTERNAL_TOKEN,
+  ) ?? DEV_AUTHZ_TOKEN;
+
 const sharedEnv = {
-  ...loadEnvFile(path.join(appRoot, ".env")),
-  ...loadEnvFile(path.join(authzRoot, ".env")),
-  EXEDRA_INTERNAL_TOKEN: process.env.EXEDRA_INTERNAL_TOKEN?.trim() || DEV_INTERNAL_TOKEN,
-  AUTHZ_INTERNAL_TOKEN: process.env.AUTHZ_INTERNAL_TOKEN?.trim() || DEV_AUTHZ_TOKEN,
+  ...appEnv,
+  ...authzEnv,
+  EXEDRA_INTERNAL_TOKEN: resolvedInternalToken,
+  AUTHZ_INTERNAL_TOKEN: resolvedAuthzToken,
   AUTHZ_SERVICE_URL: `http://localhost:${ports.authz}`,
   AUTHZ_SQLITE_PATH: path.join(dataDir, "authz.db"),
   PORT: String(ports.app),
@@ -123,8 +155,8 @@ const sharedEnv = {
 const workflowSharedEnv = {
   EXEDRA_INTERNAL_URL: `http://localhost:${ports.app}`,
   EXEDRA_INTERNAL_TOKEN: sharedEnv.EXEDRA_INTERNAL_TOKEN,
-  // Workflows ask Exedra's internal authz route for app-owned resources like chat threads.
-  AUTHZ_SERVICE_URL: "",
+  AUTHZ_SERVICE_URL: sharedEnv.AUTHZ_SERVICE_URL,
+  AUTHZ_INTERNAL_TOKEN: sharedEnv.AUTHZ_INTERNAL_TOKEN,
 };
 
 const services: Service[] = [
@@ -212,6 +244,10 @@ console.log(`  Authz:             http://localhost:${ports.authz}`);
 console.log(`  generate-response: http://localhost:${ports.generateResponse}`);
 console.log(`  integrate-memory:  http://localhost:${ports.integrateMemory}`);
 console.log(`  process-document:  http://localhost:${ports.processDocument}`);
+console.log("");
+console.log("  Internal tokens (app + workflows must match):");
+console.log(`    EXEDRA_INTERNAL_TOKEN: ${resolvedInternalToken}`);
+console.log(`    AUTHZ_INTERNAL_TOKEN:  ${resolvedAuthzToken}`);
 console.log("");
 
 const children = services.map(spawnService);

@@ -1,6 +1,5 @@
 import { handleGetSession } from "./auth/session";
 import { handleSignOut } from "./auth/sign-out";
-import { handleInternalAuthzDecide } from "./authz/internal-routes";
 import {
   handleGetOrgMemberPermissions,
   handleGetTeamPermissions,
@@ -417,10 +416,6 @@ export const apiRoutes = {
 } as const;
 
 export const internalRoutes = {
-  "/internal/authz/decide": {
-    POST: handleInternalAuthzDecide,
-  },
-
   "/internal/memories/search": {
     POST: handleInternalMemoriesSearch,
   },

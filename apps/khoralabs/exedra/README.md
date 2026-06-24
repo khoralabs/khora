@@ -22,8 +22,6 @@ The script loads `app/.env`, `authz/.env`, and per-workflow `.env` files when pr
 
 Authz uses a local SQLite file at `app/data/authz.db` (no Turso required for local dev). For production authz, omit `AUTHZ_SQLITE_PATH` and configure Turso — see `authz/.env.example`.
 
-Workflow processes call Exedra's internal authz endpoint for app-owned resources like chat threads and documents. The app itself still talks to the local authz service.
-
 Copy env templates before first run:
 
 ```sh
