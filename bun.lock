@@ -261,7 +261,7 @@
       "name": "@khoralabs/exedra-chat",
       "dependencies": {
         "@khoralabs/chat-core": "workspace:*",
-        "@khoralabs/chat-persistence-sqlite": "workspace:*",
+        "@khoralabs/chat-persistence-turso": "workspace:*",
         "ai": "^5.0.0",
       },
       "devDependencies": {
@@ -533,6 +533,7 @@
       "dependencies": {
         "@khoralabs/chat-core": "workspace:*",
         "@khoralabs/chat-persistence": "workspace:*",
+        "@tursodatabase/serverless": "latest",
         "ai": "^6.0.205",
       },
       "devDependencies": {

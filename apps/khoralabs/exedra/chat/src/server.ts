@@ -1,9 +1,10 @@
 import { type ServerWebSocket, serve } from "bun";
 import { chatInternalToken } from "./config";
 import { createChatRoutesWithParams, dispatchChatRoute, requireInternalToken } from "./routes";
-import { getChatService, subscribeToChatThread } from "./service";
+import { getChatService, initChatStorage, subscribeToChatThread } from "./service";
 
 const token = chatInternalToken();
+await initChatStorage();
 const routes = createChatRoutesWithParams(getChatService(), token);
 const port = Number(process.env.PORT?.trim() || "3002");
 

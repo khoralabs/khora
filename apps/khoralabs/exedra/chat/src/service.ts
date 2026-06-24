@@ -1,40 +1,87 @@
-import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
-import path from "node:path";
 import type { ChatEvent, ChatService } from "@khoralabs/chat-core";
 import { ChatNotFoundError, createChatService } from "@khoralabs/chat-core";
 import {
-  createSqliteChatPersistence,
-  ensureChatSqliteSchema,
-} from "@khoralabs/chat-persistence-sqlite";
+  closeLocalSqliteDatabase,
+  createLocalSqliteDatabase,
+  createTursoChatPersistence,
+  createTursoDatabase,
+  ensureChatSchema,
+  type SqlDatabase,
+} from "@khoralabs/chat-persistence-turso";
 
 import { resolveExedraChatDbPath } from "./config";
 
-let chatDbSingleton: Database | undefined;
+export { resolveExedraChatDbPath };
+
+let chatDbSingleton: SqlDatabase | undefined;
 let chatServiceSingleton: ChatService | undefined;
+let chatStorageReady: Promise<void> | undefined;
 
 const subscribers = new Map<string, Set<(event: ChatEvent) => void>>();
 
-export { resolveExedraChatDbPath };
+function requireEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (value === undefined || value.length === 0) {
+    throw new Error(`${name} environment variable not set`);
+  }
+  return value;
+}
 
-export function getChatDb(): Database {
-  if (chatDbSingleton !== undefined) return chatDbSingleton;
-  const dbPath = resolveExedraChatDbPath();
-  mkdirSync(path.dirname(dbPath), { recursive: true });
-  const db = new Database(dbPath, { create: true });
-  ensureChatSqliteSchema(db);
-  chatDbSingleton = db;
-  return db;
+function usesTursoBackend(): boolean {
+  const url = process.env.TURSO_DATABASE_URL?.trim();
+  return url !== undefined && url.length > 0;
+}
+
+function createChatDatabase(): SqlDatabase {
+  if (usesTursoBackend()) {
+    return createTursoDatabase({
+      url: requireEnv("TURSO_DATABASE_URL"),
+      authToken: requireEnv("TURSO_AUTH_TOKEN"),
+    });
+  }
+  return createLocalSqliteDatabase(resolveExedraChatDbPath());
+}
+
+export async function initChatStorage(): Promise<void> {
+  if (chatStorageReady !== undefined) {
+    await chatStorageReady;
+    return;
+  }
+  chatStorageReady = (async () => {
+    if (chatDbSingleton === undefined) {
+      chatDbSingleton = createChatDatabase();
+      if (usesTursoBackend()) {
+        await ensureChatSchema(chatDbSingleton);
+      }
+    }
+    if (chatServiceSingleton === undefined) {
+      chatServiceSingleton = createChatService(createTursoChatPersistence(chatDbSingleton), {
+        onEvent(event) {
+          if (!("threadId" in event)) return;
+          for (const send of subscribers.get(event.threadId) ?? []) send(event);
+        },
+      });
+    }
+  })();
+  await chatStorageReady;
+}
+
+export function getChatDb(): SqlDatabase {
+  if (chatDbSingleton === undefined) {
+    chatDbSingleton = createChatDatabase();
+  }
+  return chatDbSingleton;
 }
 
 export function getChatService(): ChatService {
-  if (chatServiceSingleton !== undefined) return chatServiceSingleton;
-  chatServiceSingleton = createChatService(createSqliteChatPersistence(getChatDb()), {
-    onEvent(event) {
-      if (!("threadId" in event)) return;
-      for (const send of subscribers.get(event.threadId) ?? []) send(event);
-    },
-  });
+  if (chatServiceSingleton === undefined) {
+    chatServiceSingleton = createChatService(createTursoChatPersistence(getChatDb()), {
+      onEvent(event) {
+        if (!("threadId" in event)) return;
+        for (const send of subscribers.get(event.threadId) ?? []) send(event);
+      },
+    });
+  }
   return chatServiceSingleton;
 }
 
@@ -52,9 +99,12 @@ export function subscribeToChatThread(
 }
 
 export function closeChatDb(): void {
-  chatDbSingleton?.close();
+  if (chatDbSingleton !== undefined) {
+    closeLocalSqliteDatabase(chatDbSingleton);
+  }
   chatDbSingleton = undefined;
   chatServiceSingleton = undefined;
+  chatStorageReady = undefined;
   subscribers.clear();
 }
 
