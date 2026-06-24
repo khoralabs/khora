@@ -43,14 +43,6 @@ import {
 } from "./http/internal-memories";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
 import {
-  handleDeleteJob,
-  handleGetJob,
-  handleGetJobStream,
-  handleInternalAppendJobEvents,
-  handleInternalCompleteJob,
-  handleInternalFailJob,
-} from "./jobs/routes";
-import {
   handleMeMemoriesEdgePreview,
   handleMeMemoriesGraph,
   handleMeMemoriesNamespaces,
@@ -402,17 +394,6 @@ export const apiRoutes = {
     GET: (req: Request & { params: { kind: string; id: string } }) =>
       handleServeAvatar(req, req.params.kind, req.params.id),
   },
-
-  "/api/jobs/:jobId/stream": {
-    GET: (req: Request & { params: { jobId: string } }) =>
-      handleGetJobStream(req, req.params.jobId),
-  },
-
-  "/api/jobs/:jobId": {
-    GET: (req: Request & { params: { jobId: string } }) => handleGetJob(req, req.params.jobId),
-    DELETE: (req: Request & { params: { jobId: string } }) =>
-      handleDeleteJob(req, req.params.jobId),
-  },
 } as const;
 
 export const internalRoutes = {
@@ -456,21 +437,6 @@ export const internalRoutes = {
   "/internal/documents/:documentId/memories": {
     DELETE: (req: Request & { params: { documentId: string } }) =>
       handleInternalDeleteDocumentMemories(req, req.params.documentId),
-  },
-
-  "/internal/jobs/:jobId/events": {
-    POST: (req: Request & { params: { jobId: string } }) =>
-      handleInternalAppendJobEvents(req, req.params.jobId),
-  },
-
-  "/internal/jobs/:jobId/complete": {
-    POST: (req: Request & { params: { jobId: string } }) =>
-      handleInternalCompleteJob(req, req.params.jobId),
-  },
-
-  "/internal/jobs/:jobId/fail": {
-    POST: (req: Request & { params: { jobId: string } }) =>
-      handleInternalFailJob(req, req.params.jobId),
   },
 
   "/internal/chat/threads/:threadId/streamed-posts": {

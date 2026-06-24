@@ -96,16 +96,6 @@ export function ensureExedraSchema(db: Database): void {
     CREATE INDEX IF NOT EXISTS idx_messages_thread
       ON messages(thread_id, message_index);
 
-    CREATE TABLE IF NOT EXISTS jobs (
-      id TEXT PRIMARY KEY NOT NULL,
-      kind TEXT NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('pending', 'running', 'done', 'failed')),
-      payload BLOB,
-      created_at_ms INTEGER NOT NULL,
-      updated_at_ms INTEGER NOT NULL,
-      error TEXT
-    );
-
     CREATE TABLE IF NOT EXISTS documents (
       id TEXT PRIMARY KEY NOT NULL,
       batch_id TEXT NOT NULL,
@@ -170,64 +160,8 @@ export function ensureExedraSchema(db: Database): void {
   migrateDocumentsDropSessionIdColumn(db);
   void migrateDefaultSessionCreatePermissions(db);
   migrateSessionParticipantsPersonalMemoryConsent(db);
-  migrateJobsExtend(db);
   migrateThreadsAddFacilitationKind(db);
   migrateThreadsAddInterviewCompletion(db);
-}
-
-function migrateJobsExtend(db: Database): void {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS job_events (
-      job_id TEXT NOT NULL REFERENCES jobs(id),
-      seq INTEGER NOT NULL,
-      event BLOB NOT NULL,
-      created_at_ms INTEGER NOT NULL,
-      PRIMARY KEY (job_id, seq)
-    )
-  `);
-
-  const jobsSql = db
-    .query<{ sql: string | null }, []>(
-      `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'jobs' LIMIT 1`,
-    )
-    .get()?.sql;
-  const needsRebuild =
-    jobsSql !== null && jobsSql !== undefined && !jobsSql.includes("'cancelled'");
-
-  if (needsRebuild) {
-    db.run(`
-      CREATE TABLE IF NOT EXISTS jobs_new (
-        id TEXT PRIMARY KEY NOT NULL,
-        kind TEXT NOT NULL,
-        status TEXT NOT NULL CHECK(status IN ('pending', 'running', 'done', 'failed', 'cancelled')),
-        payload BLOB,
-        owner_user_id TEXT,
-        task_run_id TEXT,
-        result BLOB,
-        created_at_ms INTEGER NOT NULL,
-        updated_at_ms INTEGER NOT NULL,
-        error TEXT
-      )
-    `);
-    db.run(`
-      INSERT INTO jobs_new (id, kind, status, payload, owner_user_id, task_run_id, result, created_at_ms, updated_at_ms, error)
-      SELECT id, kind, status, payload, NULL, NULL, NULL, created_at_ms, updated_at_ms, error FROM jobs
-    `);
-    db.run(`DROP TABLE jobs`);
-    db.run(`ALTER TABLE jobs_new RENAME TO jobs`);
-    return;
-  }
-
-  const columns = db.query<{ name: string }, []>("PRAGMA table_info(jobs)").all();
-  if (!columns.some((column) => column.name === "owner_user_id")) {
-    db.run(`ALTER TABLE jobs ADD COLUMN owner_user_id TEXT`);
-  }
-  if (!columns.some((column) => column.name === "task_run_id")) {
-    db.run(`ALTER TABLE jobs ADD COLUMN task_run_id TEXT`);
-  }
-  if (!columns.some((column) => column.name === "result")) {
-    db.run(`ALTER TABLE jobs ADD COLUMN result BLOB`);
-  }
 }
 
 function migrateUnifiedDocumentsTable(db: Database): void {
