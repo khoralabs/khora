@@ -3,7 +3,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
+import { closeChatDb, getChatService } from "../chat/service";
+import { interviewChatThreadId } from "../chat/session-chat";
 import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
@@ -20,10 +21,12 @@ beforeEach(() => {
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   closeDb();
+  closeChatDb();
   resetMemoriesStoreForTests();
 });
 
 afterEach(() => {
+  closeChatDb();
   closeDb();
   resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
@@ -31,6 +34,50 @@ afterEach(() => {
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
   delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+});
+
+test("manage scopes creates an interview chat thread for newly granted participants", async () => {
+  const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
+  ensureExedraSchema(db);
+  const manager = await getOrCreateUser(db, "registry-session-scope-manager");
+  const participant = await getOrCreateUser(db, "registry-session-scope-participant");
+  const orgId = await createOrg(db, { name: "Org", ownerId: manager.id });
+  const teamId = createTeam(db, { orgId, name: "Team", ownerId: manager.id });
+  const { addTeamMember } = await import("../db/membership");
+  const { createSession } = await import("../db/sessions");
+  const { grantSessionCreatorAccess } = await import("../authz/policy");
+  addTeamMember(db, teamId, participant.id);
+  const session = createSession(db, { teamId, topic: "Grant interview" });
+  grantSessionCreatorAccess(db, manager.id, session.id);
+  db.close();
+
+  const { mock } = await import("bun:test");
+  mock.module("../auth/require-session", () => ({
+    requireRegistrySessionResponse: async () => ({
+      session: { user: { id: "registry-session-scope-manager" } },
+      response: null,
+    }),
+  }));
+
+  const { handleManageSessionScopes } = await import("./routes");
+  const res = await handleManageSessionScopes(
+    new Request("http://localhost/api/sessions/scopes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ add: { accountIds: [participant.id] } }),
+    }),
+    session.id,
+  );
+
+  expect(res.status).toBe(200);
+  const thread = await getChatService().getThread(
+    interviewChatThreadId(session.id, participant.id),
+  );
+  expect(thread.metadata).toMatchObject({
+    kind: "interview",
+    sessionId: session.id,
+    userId: participant.id,
+  });
 });
 
 test("POST /api/sessions requires teamId", async () => {

@@ -1,5 +1,6 @@
 import { handleGetSession } from "./auth/session";
 import { handleSignOut } from "./auth/sign-out";
+import { handleInternalAuthzDecide } from "./authz/internal-routes";
 import {
   handleGetOrgMemberPermissions,
   handleGetTeamPermissions,
@@ -7,6 +8,12 @@ import {
   handlePatchTeamPermissions,
 } from "./authz/routes";
 import { handleServeAvatar } from "./avatars/routes";
+import {
+  handleInternalAbortChatPostStream,
+  handleInternalApplyChatPostDelta,
+  handleInternalCompleteChatPostStream,
+  handleInternalStartStreamedChatPost,
+} from "./chat/internal-routes";
 import {
   handleAppendChatPost,
   handleChatBootstrap,
@@ -410,6 +417,10 @@ export const apiRoutes = {
 } as const;
 
 export const internalRoutes = {
+  "/internal/authz/decide": {
+    POST: handleInternalAuthzDecide,
+  },
+
   "/internal/memories/search": {
     POST: handleInternalMemoriesSearch,
   },
@@ -465,5 +476,29 @@ export const internalRoutes = {
   "/internal/jobs/:jobId/fail": {
     POST: (req: Request & { params: { jobId: string } }) =>
       handleInternalFailJob(req, req.params.jobId),
+  },
+
+  "/internal/chat/threads/:threadId/streamed-posts": {
+    POST: (req: Request & { params: { threadId: string } }) =>
+      handleInternalStartStreamedChatPost(req, req.params.threadId),
+  },
+
+  "/internal/chat/streamed-posts": {
+    POST: (req: Request) => handleInternalStartStreamedChatPost(req),
+  },
+
+  "/internal/chat/posts/:postId/deltas": {
+    POST: (req: Request & { params: { postId: string } }) =>
+      handleInternalApplyChatPostDelta(req, req.params.postId),
+  },
+
+  "/internal/chat/posts/:postId/complete": {
+    POST: (req: Request & { params: { postId: string } }) =>
+      handleInternalCompleteChatPostStream(req, req.params.postId),
+  },
+
+  "/internal/chat/posts/:postId/abort": {
+    POST: (req: Request & { params: { postId: string } }) =>
+      handleInternalAbortChatPostStream(req, req.params.postId),
   },
 } as const;

@@ -7,13 +7,23 @@ import { getSession, getThread } from "../db/sessions";
 import { orgSessionScope, userSessionScope } from "../memories/namespaces";
 import { getChatService } from "./service";
 
-function requireWorkflowConfig(): { token: string; slug: string } {
+function requireWorkflowConfig(): {
+  localDevUrl?: string;
+  slug: string;
+  token: string;
+  useLocalDev: boolean;
+} {
+  const useLocalDev = process.env.RENDER_USE_LOCAL_DEV?.trim() === "true";
   const token = process.env.RENDER_API_KEY?.trim();
+  const localDevUrl = process.env.RENDER_LOCAL_DEV_URL?.trim() || undefined;
   const slug = process.env.RENDER_GENERATE_RESPONSE_WORKFLOW_SLUG?.trim() ?? "generate-response";
-  if (token === undefined || token.length === 0) {
+  if (!useLocalDev && (token === undefined || token.length === 0)) {
     throw new Error("RENDER_API_KEY is required to dispatch generate-response");
   }
-  return { token, slug };
+  if (useLocalDev && localDevUrl === undefined) {
+    throw new Error("RENDER_LOCAL_DEV_URL is required when RENDER_USE_LOCAL_DEV=true");
+  }
+  return { localDevUrl, slug, token: token || "local-dev", useLocalDev };
 }
 
 export async function dispatchGenerateResponseForChat(input: {
@@ -92,7 +102,7 @@ export async function dispatchGenerateResponseForChat(input: {
     },
   };
 
-  const { token, slug } = requireWorkflowConfig();
-  const render = new Render({ token });
+  const { localDevUrl, slug, token, useLocalDev } = requireWorkflowConfig();
+  const render = new Render({ localDevUrl, token, useLocalDev });
   await render.workflows.startTask(`${slug}/generateAgentResponse`, [params]);
 }

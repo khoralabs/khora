@@ -41,10 +41,11 @@ function canReadChatThread(
   const parts = chatThreadId.split(":");
   const sessionId = parts[1];
   const kind = parts[2];
-  const ownerUserId = parts[3];
   if (!sessionId || !kind) return false;
   if (kind === "interview") {
-    return ownerUserId === userId && userHasSessionAccess(db, sessionId, userId);
+    const ownerUserId = parts.slice(3).join(":");
+    if (ownerUserId !== userId) return false;
+    return canReadThread(db, userId, getOrCreateInterviewThread(db, { sessionId, userId }));
   }
   if (kind === "facilitation") {
     return canReadThread(db, userId, getOrCreateFacilitationThread(db, sessionId));
@@ -126,20 +127,17 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
   const result = await getChatService().appendPost(input);
 
   if (sessionId && kind === "interview") {
-    await dispatchGenerateResponseForChat({
-      legacyThreadId: getOrCreateInterviewThread(db, { sessionId, userId: auth.userId }),
-      chatThreadId: threadId,
-      userId: auth.userId,
-      userTimeZone: body.userTimeZone,
-    });
-  } else if (sessionId && kind === "facilitation") {
-    const facilitation = await ensureFacilitationChatThread({ db, sessionId });
-    await dispatchGenerateResponseForChat({
-      legacyThreadId: facilitation.legacyThreadId,
-      chatThreadId: threadId,
-      userId: auth.userId,
-      userTimeZone: body.userTimeZone,
-    });
+    try {
+      await dispatchGenerateResponseForChat({
+        legacyThreadId: getOrCreateInterviewThread(db, { sessionId, userId: auth.userId }),
+        chatThreadId: threadId,
+        userId: auth.userId,
+        userTimeZone: body.userTimeZone,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return json({ error: message, post: result.post }, { status: 502 });
+    }
   }
 
   return json(result.post);

@@ -60,7 +60,10 @@ export function ChatThreadView({
 
   return (
     <div
-      className={cn("relative flex min-w-0 flex-1 flex-col", isDragActive && "select-none")}
+      className={cn(
+        "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+        isDragActive && "select-none",
+      )}
       ref={chatRootRef}
     >
       <ChatThreadDropOverlay active={isDragActive} />

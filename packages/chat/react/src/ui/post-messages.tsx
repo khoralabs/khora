@@ -124,7 +124,13 @@ export function PostMessage({
 export function PostMessageHeader({ children }: { children?: ReactNode }) {
   const { message } = usePostMessageContext();
   if (children !== undefined) return <>{children}</>;
-  return <MessageHeader author={message.author} from={message.role} />;
+  return (
+    <MessageHeader
+      author={message.author}
+      from={message.role}
+      shimmer={message.role === "assistant" && message.status === "streaming"}
+    />
+  );
 }
 
 export function PostMessageAttachments({ children }: { children?: ReactNode }) {

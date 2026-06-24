@@ -27,7 +27,6 @@ export async function normalizeGenerateResponseContext(
   }
 
   const messages = params.context.messages as UIMessage[];
-  if (messages.length === 0) throw new Error("context.messages must not be empty");
 
   const memoryInstruction =
     policies.memoryNamespaces.length > 0

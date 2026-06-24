@@ -17,6 +17,15 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const text = await response.text();
+    try {
+      const body = JSON.parse(text) as { error?: unknown };
+      if (typeof body.error === "string" && body.error.length > 0) throw new Error(body.error);
+    } catch (error) {
+      if (error instanceof Error && error.name === "Error") throw error;
+    }
+    if (text.trimStart().startsWith("<!doctype html>")) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
     throw new Error(text || `Request failed: ${response.status}`);
   }
   return (await response.json()) as T;

@@ -21,11 +21,13 @@ export function scrollAnchorPostId(
 }
 
 function measureScrollPadHeight(
-  scrollEl: HTMLElement,
-  contentEl: HTMLElement,
+  scrollEl: HTMLElement | null | undefined,
+  contentEl: HTMLElement | null | undefined,
   anchorPostId: string,
   showAgentLoading: boolean,
 ): number {
+  if (scrollEl == null || contentEl == null) return 0;
+
   const messageContent = contentEl.querySelector(
     `[data-post-id="${CSS.escape(anchorPostId)}"], [data-message-id="${CSS.escape(anchorPostId)}"]`,
   );
@@ -66,7 +68,7 @@ export function useThreadScrollPad(
       }
     };
 
-    if (anchorPostId === null || scrollEl === null || contentEl === null) {
+    if (anchorPostId === null || scrollEl == null || contentEl == null) {
       applyPad(0);
       return;
     }

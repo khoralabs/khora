@@ -1,7 +1,7 @@
 import { recordTurnAttribution } from "@khoralabs/agent-capabilities";
 import type { ChatService, PostModelMetadata, PostUsage } from "@khoralabs/chat-core";
 import type { UIMessage } from "ai";
-import { streamText } from "ai";
+import { stepCountIs, streamText } from "ai";
 
 import {
   captureGenerateResponseCapabilities,
@@ -10,7 +10,10 @@ import {
   resolveGatewayModel,
 } from "./agent-runtime.ts";
 import { type AuthzClient, createExedraAuthzClient } from "./authz-client.ts";
-import { createDefaultChatService, createGenerateResponseChatWriter } from "./chat-writer.ts";
+import {
+  createGenerateResponseChatWriter,
+  createGenerateResponseHttpChatWriter,
+} from "./chat-writer.ts";
 import { normalizeGenerateResponseContext } from "./context.ts";
 import { createExedraInternalClient, type ExedraInternalClient } from "./exedra-internal-client.ts";
 import { evaluateGenerateResponsePolicies } from "./policies/index.ts";
@@ -38,6 +41,33 @@ function assistantMessage(id: string, text: string): UIMessage {
     role: "assistant",
     parts: text.length > 0 ? [{ type: "text", text }] : [],
   };
+}
+
+function errorMessage(error: unknown): string {
+  if (!error || typeof error !== "object") return String(error);
+  const record = error as Record<string, unknown>;
+  const direct = typeof record.message === "string" ? record.message : undefined;
+  if (direct !== undefined && direct !== "[object Object]") return direct;
+
+  const data = record.data;
+  if (data && typeof data === "object") {
+    const nested = (data as { error?: { message?: unknown } }).error?.message;
+    if (typeof nested === "string") return nested;
+  }
+
+  const cause = record.cause;
+  if (cause !== undefined && cause !== error) return errorMessage(cause);
+
+  const errors = record.errors;
+  if (Array.isArray(errors) && errors.length > 0) {
+    return errorMessage(errors[errors.length - 1]);
+  }
+
+  return direct ?? String(error);
+}
+
+function userFacingGenerationError(): string {
+  return "I couldn't generate a response. Please try again.";
 }
 
 function usageFromAiSdk(usage: unknown): PostUsage | undefined {
@@ -104,17 +134,21 @@ export async function runGenerateResponseWorkflow(
     params,
   });
 
-  const chatService = deps.chatService ?? createDefaultChatService();
-  const writer = createGenerateResponseChatWriter(chatService, params, policyState);
+  const writer =
+    deps.chatService !== undefined
+      ? createGenerateResponseChatWriter(deps.chatService, params, policyState)
+      : createGenerateResponseHttpChatWriter(getExedraClient(), params, policyState);
   let text = "";
   let streamStarted = false;
   const modelId = resolveGatewayModel(params.model.id);
   const runStreamText = deps.streamTextFn ?? streamText;
+  let generationError: unknown;
 
   try {
     await writer.start(assistantMessage(writer.postId, ""));
     streamStarted = true;
 
+    const maxSteps = params.model.maxSteps ?? 8;
     const result = runStreamText({
       model: modelId,
       system: [
@@ -127,21 +161,38 @@ export async function runGenerateResponseWorkflow(
         .join("\n\n"),
       messages: context.modelMessages,
       tools: aiTools,
-      maxSteps: params.model.maxSteps,
+      stopWhen: stepCountIs(maxSteps),
+      onError: ({ error }) => {
+        generationError = error;
+      },
     } as Parameters<typeof streamText>[0]);
+    const finishReasonPromise = Promise.resolve(result.finishReason).catch(() => undefined);
+    const usagePromise = Promise.resolve(result.usage).catch(() => undefined);
+    const responsePromise = Promise.resolve(result.response).catch(() => undefined);
+    const textPromise = Promise.resolve(result.text).catch(() => "");
 
-    for await (const delta of result.textStream) {
-      text += delta;
-      if (params.output.chat.streamDeltas) {
-        await writer.apply(assistantMessage(writer.postId, text));
+    try {
+      for await (const delta of result.textStream) {
+        text += delta;
+        if (params.output.chat.streamDeltas) {
+          await writer.apply(assistantMessage(writer.postId, text));
+        }
       }
+    } catch (error) {
+      generationError = error;
+      // Fall back to result.text when the stream fails after partial output.
     }
 
-    const resultRecord = result as unknown as Record<string, unknown>;
+    text = text.length > 0 ? text : await textPromise;
+    if (text.length === 0) {
+      const detail = generationError === undefined ? "" : `: ${errorMessage(generationError)}`;
+      throw new Error(`generate response produced no text output${detail}`);
+    }
+
     const [finishReason, usage, response] = await Promise.all([
-      Promise.resolve(resultRecord.finishReason).catch(() => undefined),
-      Promise.resolve(resultRecord.usage).catch(() => undefined),
-      Promise.resolve(resultRecord.response).catch(() => undefined),
+      finishReasonPromise,
+      usagePromise,
+      responsePromise,
     ]);
     const metadata = {
       model: modelMetadata({ requestedModel: modelId, finishReason, response }),
@@ -181,7 +232,14 @@ export async function runGenerateResponseWorkflow(
       capabilities,
     };
   } catch (error) {
-    if (streamStarted) await writer.abort().catch(() => undefined);
+    if (streamStarted && text.length === 0) {
+      await writer
+        .apply(assistantMessage(writer.postId, userFacingGenerationError()))
+        .then(() => writer.complete())
+        .catch(() => undefined);
+    } else if (streamStarted) {
+      await writer.abort().catch(() => undefined);
+    }
     throw error;
   }
 }

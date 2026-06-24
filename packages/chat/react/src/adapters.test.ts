@@ -67,6 +67,21 @@ describe("adapters", () => {
     expect(message?.author?.name).toBe("Zach");
   });
 
+  test("postToDisplayMessage keeps empty streaming assistant posts", () => {
+    const message = postToDisplayMessage(
+      basePost({
+        role: "assistant",
+        parts: [],
+        author: { type: "agent", id: "agent-1" },
+        status: "streaming",
+        streamRevision: 1,
+      }),
+    );
+
+    expect(message?.content).toBe("");
+    expect(message?.status).toBe("streaming");
+  });
+
   test("postsToDisplayMessages filters null entries", () => {
     const messages = postsToDisplayMessages([
       basePost(),

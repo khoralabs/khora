@@ -4,6 +4,7 @@ import { inviteKind, sessionIdFromEffects, teamIdFromEffects } from "@shared/inv
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { canManageSession } from "../authz";
 import { grantSessionFacilitation, hasFacilitationAccess } from "../authz/policy";
+import { dispatchInitialInterviewResponseForParticipant } from "../chat/initial-interview-response";
 import { getDb } from "../db/index";
 import {
   consumeInvite,
@@ -265,6 +266,8 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
           sessionId: sessionRecord.id,
         });
       }
+
+      await dispatchInitialInterviewResponseForParticipant(db, sessionRecord.id, user.id);
     }
 
     return Response.json({

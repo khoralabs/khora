@@ -39,7 +39,7 @@ function FrameworkThread({
 
   if (loading && posts.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <Spinner className="size-6" />
       </div>
     );
@@ -116,7 +116,7 @@ export function ChatFrameworkThreadPanel({
 
   if (threadId === null) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <Spinner className="size-6" />
       </div>
     );

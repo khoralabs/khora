@@ -89,16 +89,17 @@ function params(input: {
 
 function streamTextMock(
   text: string,
-  seen: Array<{ system?: string }> = [],
+  seen: Array<{ system?: string; stopWhen?: unknown }> = [],
 ): RunGenerateResponseDependencies["streamTextFn"] {
-  return ((input: { system?: string }) => {
-    seen.push({ system: input.system });
+  return ((input: { system?: string; stopWhen?: unknown }) => {
+    seen.push({ system: input.system, stopWhen: input.stopWhen });
     return {
       textStream: (async function* () {
         for (const chunk of text.split(" ")) {
           yield `${chunk} `;
         }
       })(),
+      text: Promise.resolve(`${text} `),
       finishReason: Promise.resolve("stop"),
       usage: Promise.resolve({
         inputTokens: 10,
@@ -158,6 +159,140 @@ test("streams an interview response into chat and returns capability hashes", as
   expect(post.usage?.totalTokens).toBe(15);
   expect(seen[0].system).toContain('<skill_content name="conduct-interview">');
   expect(seen[0].system).toContain("The stakeholder's current local date and time");
+});
+
+test("uses stopWhen stepCountIs for multi-step tool loops", async () => {
+  const { service } = await createThread();
+  const seen: Array<{ system?: string; stopWhen?: unknown }> = [];
+  await runGenerateResponseWorkflow(
+    params({
+      responseId: "response-stop-when",
+      skillNames: ["conduct-interview"],
+    }),
+    {
+      authzClient: authz(),
+      chatService: service,
+      memoryClient: {
+        searchMemories: async () => [],
+        getMemoryProvenance: async () => null,
+      },
+      streamTextFn: streamTextMock("Interview response", seen),
+    },
+  );
+
+  expect(seen[0]?.stopWhen).toBeDefined();
+});
+
+test("can generate the opening response for an empty thread", async () => {
+  const { service } = await createThread();
+  const input = params({
+    responseId: "response-empty-thread",
+    skillNames: ["conduct-interview"],
+  });
+  input.context.messages = [];
+
+  const result = await runGenerateResponseWorkflow(input, {
+    authzClient: authz(),
+    chatService: service,
+    memoryClient: {
+      searchMemories: async () => [],
+      getMemoryProvenance: async () => null,
+    },
+    streamTextFn: streamTextMock("Opening question"),
+  });
+
+  expect(result.message?.parts).toContainEqual({ type: "text", text: "Opening question " });
+});
+
+test("fails when the model produces no text output", async () => {
+  const { service } = await createThread();
+  await expect(
+    runGenerateResponseWorkflow(
+      params({
+        responseId: "response-empty",
+        skillNames: ["conduct-interview"],
+      }),
+      {
+        authzClient: authz(),
+        chatService: service,
+        memoryClient: {
+          searchMemories: async () => [],
+          getMemoryProvenance: async () => null,
+        },
+        streamTextFn: (() =>
+          ({
+            textStream: (async function* () {})(),
+            text: Promise.resolve(""),
+            finishReason: Promise.reject(new Error("No output generated")),
+            usage: Promise.resolve(undefined),
+            response: Promise.resolve(undefined),
+          }) as unknown as Awaited<
+            ReturnType<NonNullable<RunGenerateResponseDependencies["streamTextFn"]>>
+          >) as RunGenerateResponseDependencies["streamTextFn"],
+      },
+    ),
+  ).rejects.toThrow("generate response produced no text output");
+
+  const post = await service.getPost("response-empty");
+  expect(post.parts).toEqual([
+    { type: "text", text: "I couldn't generate a response. Please try again." },
+  ]);
+});
+
+test("default writer sends streamed post operations through Exedra internal chat API", async () => {
+  const calls: Array<{ path: string; body: unknown }> = [];
+  let revision = 0;
+  let latestMessage: UIMessage = { id: "response-http", role: "assistant", parts: [] };
+  const exedraClient = {
+    get: async () => {
+      throw new Error("unexpected GET");
+    },
+    post: async <T>(path: string, body: unknown): Promise<T> => {
+      calls.push({ path, body });
+      if (path.endsWith("/streamed-posts")) {
+        revision = 1;
+        latestMessage = (body as { message: UIMessage }).message;
+        return { post: latestMessage, revision } as T;
+      }
+      if (path.endsWith("/deltas")) {
+        revision += 1;
+        latestMessage = (body as { message: UIMessage }).message;
+        return { post: latestMessage, revision } as T;
+      }
+      if (path.endsWith("/complete")) {
+        return { post: latestMessage } as T;
+      }
+      if (path.endsWith("/abort")) {
+        return { post: latestMessage } as T;
+      }
+      throw new Error(`unexpected POST ${path}`);
+    },
+  };
+
+  const result = await runGenerateResponseWorkflow(
+    params({
+      responseId: "response-http",
+      skillNames: ["conduct-interview"],
+    }),
+    {
+      authzClient: authz(),
+      exedraClient,
+      memoryClient: {
+        searchMemories: async () => [],
+        getMemoryProvenance: async () => null,
+      },
+      streamTextFn: streamTextMock("HTTP response"),
+    },
+  );
+
+  expect(result.chat.postId).toBe("response-http");
+  expect(result.message?.parts).toContainEqual({ type: "text", text: "HTTP response " });
+  expect(calls.map((call) => call.path)).toContain("/internal/chat/streamed-posts");
+  expect(calls[0]?.body).toMatchObject({ threadId: "thread-1" });
+  expect(calls.some((call) => call.path === "/internal/chat/posts/response-http/deltas")).toBe(
+    true,
+  );
+  expect(calls.map((call) => call.path)).toContain("/internal/chat/posts/response-http/complete");
 });
 
 test("discloses only selected skill catalog and not unselected skill bodies", async () => {

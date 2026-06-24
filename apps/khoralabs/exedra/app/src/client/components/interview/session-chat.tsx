@@ -60,7 +60,7 @@ export function SessionChat({
     activeThread === "interview" && canFacilitate && !canParticipate && onOptIn !== undefined;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <InterviewChatHeader
         activeThread={activeThread}
         canManage={canManage}
@@ -76,7 +76,7 @@ export function SessionChat({
       />
 
       {showInterviewOptIn ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
           <div className="space-y-2">
             <h2 className="text-base font-medium">Start your interview</h2>
             <p className="max-w-sm text-sm text-muted-foreground">

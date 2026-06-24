@@ -24,6 +24,8 @@ if (isExedraStubRegistryEnabled()) {
 }
 
 const server = serve({
+  idleTimeout: 255,
+
   routes: {
     ...apiRoutes,
     ...internalRoutes,

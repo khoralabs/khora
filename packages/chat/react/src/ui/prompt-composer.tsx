@@ -51,7 +51,7 @@ export function PromptComposer({
   children?: ReactNode;
 }) {
   return (
-    <div className={cn("border-t p-4", className)}>
+    <div className={cn("shrink-0 border-t p-4", className)}>
       <PromptComposerError error={chatError} />
       <PromptInput
         className={cn("relative", chatColumnClassName)}

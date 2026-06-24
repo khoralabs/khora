@@ -35,7 +35,7 @@ export async function ensureInterviewChatThread(params: {
   db: import("bun:sqlite").Database;
   sessionId: string;
   userId: string;
-}): Promise<{ legacyThreadId: string; chatThread: Thread }> {
+}): Promise<{ legacyThreadId: string; chatThread: Thread; created: boolean }> {
   const legacyThreadId = getOrCreateInterviewThread(params.db, {
     sessionId: params.sessionId,
     userId: params.userId,
@@ -44,11 +44,12 @@ export async function ensureInterviewChatThread(params: {
   const chat = getChatService();
   const threadId = interviewChatThreadId(params.sessionId, params.userId);
   try {
-    return { legacyThreadId, chatThread: await chat.getThread(threadId) };
+    return { legacyThreadId, chatThread: await chat.getThread(threadId), created: false };
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
     return {
       legacyThreadId,
+      created: true,
       chatThread: await chat.createThread({
         id: threadId,
         root: { type: "channel", channelId: sessionChannelId(params.sessionId) },
@@ -66,17 +67,18 @@ export async function ensureInterviewChatThread(params: {
 export async function ensureFacilitationChatThread(params: {
   db: import("bun:sqlite").Database;
   sessionId: string;
-}): Promise<{ legacyThreadId: string; chatThread: Thread }> {
+}): Promise<{ legacyThreadId: string; chatThread: Thread; created: boolean }> {
   const legacyThreadId = getOrCreateFacilitationThread(params.db, params.sessionId);
   await ensureSessionChatChannel(params.sessionId);
   const chat = getChatService();
   const threadId = facilitationChatThreadId(params.sessionId);
   try {
-    return { legacyThreadId, chatThread: await chat.getThread(threadId) };
+    return { legacyThreadId, chatThread: await chat.getThread(threadId), created: false };
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
     return {
       legacyThreadId,
+      created: true,
       chatThread: await chat.createThread({
         id: threadId,
         root: { type: "channel", channelId: sessionChannelId(params.sessionId) },

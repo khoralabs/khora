@@ -19,18 +19,21 @@ export function createExedraInternalClient(): ExedraInternalClient {
     "Content-Type": "application/json",
   };
 
-  async function parse<T>(res: Response): Promise<T> {
+  async function parse<T>(method: string, path: string, res: Response): Promise<T> {
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      throw new Error(`Exedra internal request failed ${res.status}: ${body}`);
+      throw new Error(`Exedra internal ${method} ${path} failed ${res.status}: ${body}`);
     }
     return (await res.json()) as T;
   }
 
   return {
-    get: async <T>(path: string) => parse<T>(await fetch(`${baseUrl}${path}`, { headers })),
+    get: async <T>(path: string) =>
+      parse<T>("GET", path, await fetch(`${baseUrl}${path}`, { headers })),
     post: async <T>(path: string, body: unknown) =>
       parse<T>(
+        "POST",
+        path,
         await fetch(`${baseUrl}${path}`, {
           method: "POST",
           headers,

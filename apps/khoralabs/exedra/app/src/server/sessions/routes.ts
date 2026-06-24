@@ -29,6 +29,10 @@ import {
   enforce,
   ResourceType,
 } from "../authz/policy";
+import {
+  dispatchInitialInterviewResponseForParticipant,
+  dispatchInitialInterviewResponsesForTeam,
+} from "../chat/initial-interview-response";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import {
@@ -223,6 +227,13 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     inviteUrl = `/invite/${token}`;
   }
 
+  for (const memberId of memberUserIds) {
+    await dispatchInitialInterviewResponseForParticipant(db, session.id, memberId);
+  }
+  for (const sharedTeamId of teamIds) {
+    await dispatchInitialInterviewResponsesForTeam(db, session.id, sharedTeamId);
+  }
+
   return Response.json(
     {
       session: {
@@ -364,6 +375,7 @@ export async function handleManageSessionScopes(
       return Response.json({ error: "Account must belong to the session team" }, { status: 400 });
     }
     grantSessionParticipant(db, accountId, sessionId);
+    await dispatchInitialInterviewResponseForParticipant(db, sessionId, accountId);
   }
 
   for (const sharedTeamId of addTeamIds) {
@@ -371,6 +383,7 @@ export async function handleManageSessionScopes(
       return Response.json({ error: "You must belong to every shared team" }, { status: 403 });
     }
     grantTeamSessionParticipant(db, sharedTeamId, sessionId);
+    await dispatchInitialInterviewResponsesForTeam(db, sessionId, sharedTeamId);
   }
 
   for (const sharedTeamId of addFacilitationTeamIds) {
@@ -819,9 +832,9 @@ export async function handleInterviewOptIn(req: Request, sessionId: string): Pro
   }
 
   grantSessionParticipant(db, user.id, sessionId);
-  const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
+  const interview = await dispatchInitialInterviewResponseForParticipant(db, sessionId, user.id);
 
-  return Response.json({ ok: true, threadId });
+  return Response.json({ ok: true, threadId: interview.legacyThreadId });
 }
 
 export async function handleGetFacilitation(req: Request, sessionId: string): Promise<Response> {

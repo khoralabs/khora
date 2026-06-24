@@ -25,6 +25,7 @@ export type DisplayMessage = {
   content: string;
   createdAtMs: number;
   author: ChatAuthor | null;
+  status?: Post["status"];
   attachments?: DisplayAttachment[];
   toolCalls?: DisplayToolCall[];
 };
@@ -155,7 +156,12 @@ export function postToDisplayMessage(
   });
   const toolCalls = extractToolCallsFromParts(post.parts);
 
-  if (content.length === 0 && (attachments?.length ?? 0) === 0 && toolCalls.length === 0) {
+  if (
+    post.status !== "streaming" &&
+    content.length === 0 &&
+    (attachments?.length ?? 0) === 0 &&
+    toolCalls.length === 0
+  ) {
     return null;
   }
 
@@ -165,6 +171,7 @@ export function postToDisplayMessage(
     content,
     createdAtMs: post.createdAtMs,
     author: options.resolveAuthor?.(post.author) ?? defaultAuthor(post.author),
+    status: post.status,
     attachments,
     toolCalls,
   };

@@ -1,11 +1,11 @@
 # Generate Response Workflow
 
-Generic Render workflow for generating an agent response for interview, facilitation, and thread summary modes. Existing Exedra workflow callers are not wired to this package yet.
+Generic Render workflow for generating Exedra interview, facilitation, and thread summary agent responses.
 
 ## Task
 
 - `generateAgentResponse`: accepts `GenerateResponseWorkflowParams` and returns `GenerateResponseResult`.
-- The workflow builds an agent-capabilities identity, evaluates authz-backed policies, captures the enabled tools, streams through the AI SDK, and writes deltas to `@khoralabs/chat-core`.
+- The workflow builds an agent-capabilities identity, evaluates authz-backed policies, captures the enabled tools, streams through the AI SDK, and writes chat deltas through Exedra's authenticated internal chat API.
 
 Callers should import the request/result contract from this package:
 
@@ -23,7 +23,6 @@ import type {
 - `EXEDRA_INTERNAL_TOKEN=`
 - `AI_GATEWAY_API_KEY=`
 - `GENERATE_RESPONSE_DEFAULT_MODEL=` optional fallback when callers omit a model id
-- `GENERATE_RESPONSE_CHAT_SQLITE_PATH=` optional local SQLite path for chat persistence
 
 Gateway model ids are passed through from `params.model.id`, for example `anthropic/claude-sonnet-4.6`, `google/gemini-2.5-flash`, or `openai/gpt-4.1`.
 
@@ -52,8 +51,6 @@ EXEDRA_INTERNAL_TOKEN=dev-internal-token
 RENDER_API_KEY=local-dev-token
 RENDER_USE_LOCAL_DEV=true
 RENDER_LOCAL_DEV_URL=http://localhost:8120
-
-# Not wired to the app yet, but use this slug when adding the dispatcher.
 RENDER_GENERATE_RESPONSE_WORKFLOW_SLUG=generate-response
 ```
 
@@ -63,7 +60,6 @@ In `apps/khoralabs/exedra/workflows/generate-response/.env`, set:
 EXEDRA_INTERNAL_URL=http://localhost:3000
 EXEDRA_INTERNAL_TOKEN=dev-internal-token
 AI_GATEWAY_API_KEY=...
-GENERATE_RESPONSE_CHAT_SQLITE_PATH=./data/generate-response-chat.db
 ```
 
 Then run both processes:
@@ -78,15 +74,12 @@ cd apps/khoralabs/exedra/workflows/generate-response
 bun run dev
 ```
 
-The current Exedra app does not dispatch this workflow yet. Until the dispatcher is added, trigger it manually against the local task server:
-
-The manual trigger requires the target chat thread to exist in the configured chat persistence and the Exedra app to expose the internal authz/memory endpoints used by this workflow. For isolated development before that app wiring exists, use `bun test`.
+The Exedra app dispatches this workflow for interview and facilitator chat. Manual triggers require the target chat thread to exist in the Exedra app chat service and the app to expose the internal authz, memory, and chat endpoints used by this workflow.
 
 ```sh
 render workflows tasks start generateAgentResponse --local --input='[
   {
     "responseId": "local-response-1",
-    "kind": "thread_summary",
     "agent": {
       "id": "local-generate-response-agent",
       "name": "Generate Response Agent",
@@ -106,7 +99,10 @@ render workflows tasks start generateAgentResponse --local --input='[
           "parts": [{ "type": "text", "text": "Summarize this thread." }]
         }
       ],
-      "instructions": ["Keep the summary concise."]
+      "directives": {
+        "skillNames": ["summarize-thread"],
+        "instructions": ["Keep the summary concise."]
+      }
     },
     "access": {
       "memoryNamespaces": [],
@@ -123,7 +119,6 @@ render workflows tasks start generateAgentResponse --local --input='[
   }
 ]'
 ```
-
 For non-default local task server ports, start with `render workflows dev --port 8121 -- bun src/main.ts` and set `RENDER_LOCAL_DEV_URL=http://localhost:8121` in the app.
 
 ## Non-Goals
