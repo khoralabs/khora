@@ -33,11 +33,11 @@ async function requireUser(req: Request) {
   return { response: null, userId: user.id };
 }
 
-function canReadChatThread(
+async function canReadChatThread(
   db: import("bun:sqlite").Database,
   userId: string,
   chatThreadId: string,
-): boolean {
+): Promise<boolean> {
   const parts = chatThreadId.split(":");
   const sessionId = parts[1];
   const kind = parts[2];
@@ -45,10 +45,10 @@ function canReadChatThread(
   if (kind === "interview") {
     const ownerUserId = parts.slice(3).join(":");
     if (ownerUserId !== userId) return false;
-    return canReadThread(db, userId, getOrCreateInterviewThread(db, { sessionId, userId }));
+    return await canReadThread(userId, await getOrCreateInterviewThread(db, { sessionId, userId }));
   }
   if (kind === "facilitation") {
-    return canReadThread(db, userId, getOrCreateFacilitationThread(db, sessionId));
+    return await canReadThread(userId, await getOrCreateFacilitationThread(db, sessionId));
   }
   return false;
 }
@@ -68,7 +68,7 @@ export async function handleChatBootstrap(req: Request, sessionId: string): Prom
 export async function handleListChatPosts(req: Request, threadId: string): Promise<Response> {
   const auth = await requireUser(req);
   if (auth.response !== null || auth.userId === null) return auth.response;
-  if (!canReadChatThread(getDb(), auth.userId, threadId)) {
+  if (!(await canReadChatThread(getDb(), auth.userId, threadId))) {
     return json({ error: "Forbidden" }, { status: 403 });
   }
   return json(await getChatService().listPosts({ threadId }));
@@ -77,8 +77,9 @@ export async function handleListChatPosts(req: Request, threadId: string): Promi
 export async function handleGetChatChannel(req: Request, channelId: string): Promise<Response> {
   const auth = await requireUser(req);
   if (auth.response !== null || auth.userId === null) return auth.response;
+  const db = getDb();
   const sessionId = channelId.startsWith("session:") ? channelId.slice("session:".length) : "";
-  if (sessionId.length === 0 || !userHasSessionAccess(getDb(), sessionId, auth.userId)) {
+  if (sessionId.length === 0 || !(await userHasSessionAccess(db, sessionId, auth.userId))) {
     return json({ error: "Forbidden" }, { status: 403 });
   }
   return json(await getChatService().getChannel(channelId));
@@ -87,8 +88,9 @@ export async function handleGetChatChannel(req: Request, channelId: string): Pro
 export async function handleListChatThreads(req: Request, channelId: string): Promise<Response> {
   const auth = await requireUser(req);
   if (auth.response !== null || auth.userId === null) return auth.response;
+  const db = getDb();
   const sessionId = channelId.startsWith("session:") ? channelId.slice("session:".length) : "";
-  if (sessionId.length === 0 || !userHasSessionAccess(getDb(), sessionId, auth.userId)) {
+  if (sessionId.length === 0 || !(await userHasSessionAccess(db, sessionId, auth.userId))) {
     return json({ error: "Forbidden" }, { status: 403 });
   }
   return json(await getChatService().listThreads({ channelId: sessionChannelId(sessionId) }));
@@ -98,15 +100,15 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
   const auth = await requireUser(req);
   if (auth.response !== null || auth.userId === null) return auth.response;
   const db = getDb();
-  if (!canReadChatThread(db, auth.userId, threadId))
+  if (!(await canReadChatThread(db, auth.userId, threadId)))
     return json({ error: "Forbidden" }, { status: 403 });
 
   const parts = threadId.split(":");
   const sessionId = parts[1];
   const kind = parts[2];
   if (sessionId && kind === "facilitation") {
-    const legacyThreadId = getOrCreateFacilitationThread(db, sessionId);
-    if (!canWriteFacilitationThread(db, auth.userId, legacyThreadId)) {
+    const legacyThreadId = await getOrCreateFacilitationThread(db, sessionId);
+    if (!(await canWriteFacilitationThread(auth.userId, legacyThreadId))) {
       return json({ error: "Forbidden" }, { status: 403 });
     }
   }
@@ -129,7 +131,7 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
   if (sessionId && kind === "interview") {
     try {
       await dispatchGenerateResponseForChat({
-        legacyThreadId: getOrCreateInterviewThread(db, { sessionId, userId: auth.userId }),
+        legacyThreadId: await getOrCreateInterviewThread(db, { sessionId, userId: auth.userId }),
         chatThreadId: threadId,
         userId: auth.userId,
         userTimeZone: body.userTimeZone,
@@ -146,7 +148,7 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
 export async function handleChatThreadEvents(req: Request, threadId: string): Promise<Response> {
   const auth = await requireUser(req);
   if (auth.response !== null || auth.userId === null) return auth.response;
-  if (!canReadChatThread(getDb(), auth.userId, threadId))
+  if (!(await canReadChatThread(getDb(), auth.userId, threadId)))
     return json({ error: "Forbidden" }, { status: 403 });
 
   const stream = new ReadableStream({

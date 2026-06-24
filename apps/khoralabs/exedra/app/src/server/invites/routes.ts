@@ -80,7 +80,7 @@ export async function handleGetInvite(req: Request, token: string): Promise<Resp
   }
 
   const db = getDb();
-  const invite = getInvitePublicInfo(db, token);
+  const invite = await getInvitePublicInfo(db, token);
   if (invite === null) {
     return Response.json({ error: "Invite not found" }, { status: 404 });
   }
@@ -91,16 +91,16 @@ export async function handleGetInvite(req: Request, token: string): Promise<Resp
   if (authSession !== null) {
     const user = await getOrCreateUser(db, authSession.user.id);
     if (invite.kind === "session" && invite.sessionId !== undefined) {
-      if (userHasSessionAccess(db, invite.sessionId, user.id)) {
+      if (await userHasSessionAccess(db, invite.sessionId, user.id)) {
         payload.alreadyJoined = true;
         payload.redirectTo = sessionInviteRedirect(invite.sessionId);
-      } else if (hasFacilitationAccess(db, user.id, invite.sessionId)) {
+      } else if (await hasFacilitationAccess(user.id, invite.sessionId)) {
         payload.alreadyJoined = true;
         payload.redirectTo = sessionInviteRedirect(invite.sessionId);
       }
     } else if (invite.kind === "team") {
       const teamId = getInviteTeamId(db, token);
-      if (teamId !== null && isTeamMember(db, teamId, user.id)) {
+      if (teamId !== null && (await isTeamMember(db, teamId, user.id))) {
         payload.alreadyJoined = true;
         payload.redirectTo = "/";
       }
@@ -122,7 +122,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   }
 
   const db = getDb();
-  const invite = getInvitePublicInfo(db, token);
+  const invite = await getInvitePublicInfo(db, token);
   if (invite === null) {
     return Response.json({ error: "Invite not found" }, { status: 404 });
   }
@@ -130,7 +130,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   const user = await getOrCreateUser(db, authSession.user.id);
 
   if (invite.kind === "session" && invite.sessionId !== undefined) {
-    if (userHasSessionAccess(db, invite.sessionId, user.id)) {
+    if (await userHasSessionAccess(db, invite.sessionId, user.id)) {
       return Response.json({
         invite,
         userId: user.id,
@@ -138,7 +138,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
         redirectTo: sessionInviteRedirect(invite.sessionId),
       });
     }
-    if (hasFacilitationAccess(db, user.id, invite.sessionId)) {
+    if (await hasFacilitationAccess(user.id, invite.sessionId)) {
       return Response.json({
         invite,
         userId: user.id,
@@ -148,7 +148,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     }
   } else if (invite.kind === "team") {
     const teamId = getInviteTeamId(db, token);
-    if (teamId !== null && isTeamMember(db, teamId, user.id)) {
+    if (teamId !== null && (await isTeamMember(db, teamId, user.id))) {
       return Response.json({
         invite,
         userId: user.id,
@@ -203,9 +203,9 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     invite.sessionId !== undefined &&
     getSessionLinkGrantRole(db, invite.sessionId) === "facilitation"
   ) {
-    grantSessionFacilitation(db, user.id, invite.sessionId);
-    getOrCreateFacilitationThread(db, invite.sessionId);
-    syncFacilitationThreadGrants(db, invite.sessionId);
+    await grantSessionFacilitation(user.id, invite.sessionId);
+    await getOrCreateFacilitationThread(db, invite.sessionId);
+    await syncFacilitationThreadGrants(db, invite.sessionId);
     return Response.json({
       invite,
       userId: user.id,
@@ -213,7 +213,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     });
   }
 
-  applyInviteEffects(db, user.id, effects);
+  await applyInviteEffects(db, user.id, effects);
 
   if (kind === "session") {
     setUserSessionConsentAccepted(db, user.id);
@@ -224,9 +224,9 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
 
     const sessionRecord = getSession(db, sessionId);
     if (sessionRecord !== null) {
-      const team = getTeam(db, sessionRecord.teamId);
+      const team = await getTeam(db, sessionRecord.teamId);
       if (team !== null) {
-        grantPersonalMemoryAccessForSession(db, {
+        await grantPersonalMemoryAccessForSession(db, {
           orgId: team.orgId,
           sessionId: sessionRecord.id,
           userId: user.id,
@@ -245,7 +245,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
       }
 
       try {
-        bootstrapSessionMemoriesForTeamSession(db, {
+        await bootstrapSessionMemoriesForTeamSession(db, {
           teamId: sessionRecord.teamId,
           sessionId: sessionRecord.id,
           userIds: [user.id],
@@ -284,7 +284,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     }
 
     let onboardingSessionId: string | null = null;
-    const team = getTeam(db, teamId);
+    const team = await getTeam(db, teamId);
     if (team !== null) {
       try {
         bootstrapOrgTeamMemories({ orgId: team.orgId, teamId, userId: user.id });
@@ -300,7 +300,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
       const existingOnboardingSessionId = getActiveOnboardingSessionForTeam(db, teamId);
       if (org !== null && existingOnboardingSessionId === null) {
         try {
-          const onboarding = createOnboardingInterviewForMember(db, {
+          const onboarding = await createOnboardingInterviewForMember(db, {
             teamId,
             userId: user.id,
             orgName: org.name,
@@ -342,7 +342,7 @@ export async function handleMintInvite(req: Request, sessionId: string): Promise
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!canManageSession(db, user.id, sessionId)) {
+  if (!(await canManageSession(user.id, sessionId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

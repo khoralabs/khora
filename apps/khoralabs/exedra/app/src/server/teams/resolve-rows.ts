@@ -16,11 +16,14 @@ export function resolveTeamProfile(record: UserTeamRecord): TeamProfile {
   };
 }
 
-export function listTeamRowsForOrg(db: Database, orgId: string): TeamRow<OrgTeamContext>[] {
+export async function listTeamRowsForOrg(
+  db: Database,
+  orgId: string,
+): Promise<TeamRow<OrgTeamContext>[]> {
   const org = getOrg(db, orgId);
   if (org === null) return [];
 
-  const teams = listTeamsForOrg(db, orgId);
+  const teams = await listTeamsForOrg(db, orgId);
   const orgAvatarUrl = avatarUrlFromS3Key("org", orgId, org.avatarS3Key);
 
   return teams.map((team) => ({

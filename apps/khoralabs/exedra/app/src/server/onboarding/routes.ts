@@ -48,17 +48,22 @@ export async function handleGetMe(req: Request): Promise<Response> {
 
   const db = getDb();
   const user = await getOrCreateUserForAuth(db, req, auth.session);
-  const teams = listTeamsForUser(db, user.id);
+  const teams = await listTeamsForUser(db, user.id);
   const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
-  const hasTeam = userHasAnyTeam(db, user.id);
-  const hasSessionAccessOnly = !hasTeam && userHasAnyAccessibleSession(db, user.id);
+  const hasTeam = await userHasAnyTeam(db, user.id);
+  const hasSessionAccessOnly = !hasTeam && (await userHasAnyAccessibleSession(db, user.id));
+
+  const teamRows = [];
+  for (const record of teams) {
+    teamRows.push({
+      ...resolveTeamProfile(record),
+      canCreateSession: await canCreateSession(user.id, record.id),
+    });
+  }
 
   return Response.json({
     user: serializeMeUser(db, user),
-    teams: teams.map((record) => ({
-      ...resolveTeamProfile(record),
-      canCreateSession: canCreateSession(db, user.id, record.id),
-    })),
+    teams: teamRows,
     onboardingRequired: !hasTeam && !hasSessionAccessOnly,
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
     onboardingSessionId: pendingOnboarding?.sessionId ?? null,
@@ -116,7 +121,9 @@ export async function handleUploadMeAvatar(req: Request): Promise<Response> {
 
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "org:member", { type: ResourceType.Organization, id: parsed.orgId })) {
+  if (
+    !(await enforce(user.id, "org:member", { type: ResourceType.Organization, id: parsed.orgId }))
+  ) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -188,32 +195,32 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
   const db = getDb();
   const user = await getOrCreateUserForAuth(db, req, auth.session);
 
-  if (userHasAnyTeam(db, user.id)) {
+  if (await userHasAnyTeam(db, user.id)) {
     return Response.json({ error: "User already belongs to a team" }, { status: 409 });
   }
 
   const orgId = await createOrg(db, { name: orgName, ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: teamName, ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: teamName, ownerId: user.id });
 
   let _memories: { orgDbPath: string; userDbPath: string };
   try {
     _memories = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
   } catch (err) {
-    rollbackOnboarding(db, { orgId, teamId });
+    await rollbackOnboarding(db, { orgId, teamId });
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
     logger.error({ err: message }, "onboarding memories bootstrap failed");
     return Response.json({ error: "Could not set up team memories. Try again." }, { status: 500 });
   }
 
   const org = getOrg(db, orgId);
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (org === null || team === null) {
     return Response.json({ error: "Failed to create org or team" }, { status: 500 });
   }
 
   let onboardingSessionId: string;
   try {
-    const onboarding = createOnboardingInterviewForMember(db, {
+    const onboarding = await createOnboardingInterviewForMember(db, {
       teamId,
       userId: user.id,
       orgName: org.name,
@@ -221,7 +228,7 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
     });
     onboardingSessionId = onboarding.sessionId;
   } catch (err) {
-    rollbackOnboarding(db, { orgId, teamId });
+    await rollbackOnboarding(db, { orgId, teamId });
     const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
     logger.error({ err: message }, "onboarding interview setup failed");
     return Response.json(

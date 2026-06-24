@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-import { getOrgIdForTeam } from "../authz/grants";
+import { getOrgIdForTeam } from "../authz/policy";
 
 export function ensureSessionParticipant(
   db: Database,
@@ -76,33 +76,33 @@ export function hasPersonalMemoryConsent(db: Database, sessionId: string, userId
   return row?.personal_memory_consent_at_ms != null;
 }
 
-export function countActivePersonalMemoryConsents(
+export async function countActivePersonalMemoryConsents(
   db: Database,
   orgId: string,
   userId: string,
-): number {
-  const row = db
-    .query<{ c: number }, [string, string]>(
-      `SELECT COUNT(1) AS c
-       FROM session_participants sp
-       JOIN sessions s ON s.id = sp.session_id
-       JOIN authz_grants og ON og.scope_type = 'team'
-         AND og.scope_id = s.team_id
-         AND og.resource_type = 'org'
-         AND og.resource_id = ?
-         AND og.feature = 'member'
-         AND og.revoked_at_ms IS NULL
-       WHERE sp.user_id = ?
-         AND sp.personal_memory_consent_at_ms IS NOT NULL`,
+): Promise<number> {
+  const rows = db
+    .query<{ session_id: string }, [string]>(
+      `SELECT session_id FROM session_participants
+       WHERE user_id = ? AND personal_memory_consent_at_ms IS NOT NULL`,
     )
-    .get(orgId, userId);
-  return row?.c ?? 0;
+    .all(userId);
+
+  let count = 0;
+  for (const row of rows) {
+    const resolvedOrgId = await resolveOrgIdForSession(db, row.session_id);
+    if (resolvedOrgId === orgId) count += 1;
+  }
+  return count;
 }
 
-export function resolveOrgIdForSession(db: Database, sessionId: string): string | null {
+export async function resolveOrgIdForSession(
+  db: Database,
+  sessionId: string,
+): Promise<string | null> {
   const row = db
     .query<{ team_id: string }, [string]>(`SELECT team_id FROM sessions WHERE id = ? LIMIT 1`)
     .get(sessionId);
   if (row === null) return null;
-  return getOrgIdForTeam(db, row.team_id);
+  return getOrgIdForTeam(row.team_id);
 }

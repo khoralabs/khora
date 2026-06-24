@@ -35,16 +35,16 @@ async function resolveMeMemoriesSession(req: Request): Promise<
   }
 }
 
-function requireAuthorizedPersonalNamespace(
+async function requireAuthorizedPersonalNamespace(
   db: ReturnType<typeof getDb>,
   userId: string,
   ownerId: string,
   namespace: string | undefined,
-): Response | null {
+): Promise<Response | null> {
   if (namespace === undefined || namespace.length === 0) {
     return Response.json({ error: "missing required query namespace" }, { status: 400 });
   }
-  if (!authorizePersonalNamespaceRead(db, userId, namespace, ownerId)) {
+  if (!(await authorizePersonalNamespaceRead(db, userId, namespace, ownerId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
@@ -54,7 +54,7 @@ export async function handleMeMemoriesNamespaces(req: Request): Promise<Response
   const resolved = await resolveMeMemoriesSession(req);
   if ("response" in resolved) return resolved.response;
 
-  const namespaces = listReadablePersonalNamespaces(resolved.db, resolved.userId);
+  const namespaces = await listReadablePersonalNamespaces(resolved.db, resolved.userId);
   return handleMemoriesNamespaces(resolved.access, namespaces);
 }
 
@@ -63,7 +63,7 @@ export async function handleMeMemoriesGraph(req: Request): Promise<Response> {
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = await requireAuthorizedPersonalNamespace(
     resolved.db,
     resolved.userId,
     resolved.userId,
@@ -79,7 +79,7 @@ export async function handleMeMemoriesEdgePreview(req: Request): Promise<Respons
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = await requireAuthorizedPersonalNamespace(
     resolved.db,
     resolved.userId,
     resolved.userId,
@@ -96,7 +96,7 @@ export async function handleMeMemoriesSearch(req: Request): Promise<Response> {
 
   const body = (await req.clone().json()) as { namespace?: string };
   const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = await requireAuthorizedPersonalNamespace(
     resolved.db,
     resolved.userId,
     resolved.userId,

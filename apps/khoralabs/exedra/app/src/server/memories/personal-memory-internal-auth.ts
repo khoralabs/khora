@@ -3,10 +3,10 @@ import type { Database } from "bun:sqlite";
 import { canReadPersonalKg } from "../authz/policy.js";
 import { encodePrincipalIdForMemories } from "./encode-principal-id.js";
 
-export function assertInternalPersonalMemorySearchAllowed(
-  db: Database,
+export async function assertInternalPersonalMemorySearchAllowed(
+  _db: Database,
   params: { userId: string; namespace: string; orgId?: string },
-): Response | null {
+): Promise<Response | null> {
   const namespace = params.namespace.trim();
   if (namespace.length === 0 || namespace.startsWith("org/")) {
     return null;
@@ -32,12 +32,11 @@ export function assertInternalPersonalMemorySearchAllowed(
     );
   }
 
-  // Namespace owner (always params.userId here) may search without org reader grant.
-  if (canReadPersonalKg(db, params.userId, params.userId)) {
+  if (await canReadPersonalKg(params.userId, params.userId)) {
     return null;
   }
 
-  if (!canReadPersonalKg(db, orgId, params.userId)) {
+  if (!(await canReadPersonalKg(orgId, params.userId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

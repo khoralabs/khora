@@ -31,7 +31,7 @@ async function resolveUserMemoriesSession(
   const db = getDb();
   const viewer = await getOrCreateUser(db, auth.session.user.id);
 
-  if (!canReadPersonalKg(db, viewer.id, ownerId)) {
+  if (!(await canReadPersonalKg(viewer.id, ownerId))) {
     return { response: Response.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
@@ -44,16 +44,16 @@ async function resolveUserMemoriesSession(
   }
 }
 
-function requireAuthorizedSharedPersonalNamespace(
+async function requireAuthorizedSharedPersonalNamespace(
   db: ReturnType<typeof getDb>,
   viewerId: string,
   ownerId: string,
   namespace: string | undefined,
-): Response | null {
+): Promise<Response | null> {
   if (namespace === undefined || namespace.length === 0) {
     return Response.json({ error: "missing required query namespace" }, { status: 400 });
   }
-  if (!authorizePersonalNamespaceRead(db, viewerId, namespace, ownerId)) {
+  if (!(await authorizePersonalNamespaceRead(db, viewerId, namespace, ownerId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
@@ -74,7 +74,7 @@ export async function handleUserMemoriesGraph(req: Request, ownerId: string): Pr
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedSharedPersonalNamespace(
+  const authError = await requireAuthorizedSharedPersonalNamespace(
     resolved.db,
     resolved.viewerId,
     ownerId,
@@ -93,7 +93,7 @@ export async function handleUserMemoriesEdgePreview(
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedSharedPersonalNamespace(
+  const authError = await requireAuthorizedSharedPersonalNamespace(
     resolved.db,
     resolved.viewerId,
     ownerId,
@@ -110,7 +110,7 @@ export async function handleUserMemoriesSearch(req: Request, ownerId: string): P
 
   const body = (await req.clone().json()) as { namespace?: string };
   const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedSharedPersonalNamespace(
+  const authError = await requireAuthorizedSharedPersonalNamespace(
     resolved.db,
     resolved.viewerId,
     ownerId,

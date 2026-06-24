@@ -42,16 +42,16 @@ function namespaceForbiddenResponse(): Response {
   return Response.json({ error: "Forbidden" }, { status: 403 });
 }
 
-function requireAuthorizedOrgNamespace(
+async function requireAuthorizedOrgNamespace(
   db: ReturnType<typeof getDb>,
   userId: string,
   orgId: string,
   namespace: string | undefined,
-): Response | null {
+): Promise<Response | null> {
   if (namespace === undefined || namespace.length === 0) {
     return Response.json({ error: "missing required query namespace" }, { status: 400 });
   }
-  if (!authorizeOrgNamespaceRead(db, userId, orgId, namespace)) {
+  if (!(await authorizeOrgNamespaceRead(db, userId, orgId, namespace))) {
     return namespaceForbiddenResponse();
   }
   return null;
@@ -61,7 +61,7 @@ export async function handleOrgMemoriesNamespaces(req: Request, orgId: string): 
   const resolved = await resolveOrgMemoriesSession(req, orgId);
   if ("response" in resolved) return resolved.response;
 
-  const namespaces = listReadableOrgNamespaces(resolved.db, resolved.userId, orgId);
+  const namespaces = await listReadableOrgNamespaces(resolved.db, resolved.userId, orgId);
   return handleMemoriesNamespaces(resolved.access, namespaces);
 }
 
@@ -70,7 +70,12 @@ export async function handleOrgMemoriesGraph(req: Request, orgId: string): Promi
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedOrgNamespace(resolved.db, resolved.userId, orgId, namespace);
+  const authError = await requireAuthorizedOrgNamespace(
+    resolved.db,
+    resolved.userId,
+    orgId,
+    namespace,
+  );
   if (authError !== null) return authError;
 
   return handleMemoriesGraph(req, resolved.access);
@@ -81,7 +86,12 @@ export async function handleOrgMemoriesEdgePreview(req: Request, orgId: string):
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedOrgNamespace(resolved.db, resolved.userId, orgId, namespace);
+  const authError = await requireAuthorizedOrgNamespace(
+    resolved.db,
+    resolved.userId,
+    orgId,
+    namespace,
+  );
   if (authError !== null) return authError;
 
   return handleMemoriesEdgePreview(req, resolved.access);
@@ -93,7 +103,12 @@ export async function handleOrgMemoriesSearch(req: Request, orgId: string): Prom
 
   const body = (await req.clone().json()) as { namespace?: string };
   const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedOrgNamespace(resolved.db, resolved.userId, orgId, namespace);
+  const authError = await requireAuthorizedOrgNamespace(
+    resolved.db,
+    resolved.userId,
+    orgId,
+    namespace,
+  );
   if (authError !== null) return authError;
 
   return handleMemoriesSearch(req, resolved.access);

@@ -15,46 +15,53 @@ import {
   setPersonalMemoryConsent,
 } from "../db/session-participants";
 
-export function grantPersonalMemoryAccessForSession(
+export async function grantPersonalMemoryAccessForSession(
   db: Database,
   params: { orgId: string; sessionId: string; userId: string },
-): void {
-  grantPersonalKgReader(db, params.orgId, params.userId);
+): Promise<void> {
+  await grantPersonalKgReader(params.orgId, params.userId);
   setPersonalMemoryConsent(db, params.sessionId, params.userId);
 }
 
-export function canOrgAgentAccessParticipantPersonalMemories(
+export async function canOrgAgentAccessParticipantPersonalMemories(
   db: Database,
   params: { orgId: string; sessionId: string; participantUserId: string },
-): boolean {
-  if (!hasSessionAccess(db, params.participantUserId, params.sessionId)) return false;
-  if (!canReadPersonalKg(db, params.orgId, params.participantUserId)) return false;
+): Promise<boolean> {
+  if (!(await hasSessionAccess(params.participantUserId, params.sessionId))) return false;
+  if (!(await canReadPersonalKg(params.orgId, params.participantUserId))) return false;
   return hasPersonalMemoryConsent(db, params.sessionId, params.participantUserId);
 }
 
-function revokeOrgPersonalKgReaderIfUnused(db: Database, orgId: string, userId: string): void {
-  if (countActivePersonalMemoryConsents(db, orgId, userId) === 0) {
-    revokePersonalKgReader(db, orgId, userId);
+async function revokeOrgPersonalKgReaderIfUnused(
+  db: Database,
+  orgId: string,
+  userId: string,
+): Promise<void> {
+  if ((await countActivePersonalMemoryConsents(db, orgId, userId)) === 0) {
+    await revokePersonalKgReader(orgId, userId);
   }
 }
 
-export function releasePersonalMemoryAccessForSession(db: Database, sessionId: string): void {
-  const orgId = resolveOrgIdForSession(db, sessionId);
+export async function releasePersonalMemoryAccessForSession(
+  db: Database,
+  sessionId: string,
+): Promise<void> {
+  const orgId = await resolveOrgIdForSession(db, sessionId);
   if (orgId === null) return;
 
   const userIds = clearPersonalMemoryConsentForSession(db, sessionId);
   for (const userId of userIds) {
-    revokeOrgPersonalKgReaderIfUnused(db, orgId, userId);
+    await revokeOrgPersonalKgReaderIfUnused(db, orgId, userId);
   }
 }
 
-export function releasePersonalMemoryAccessForParticipant(
+export async function releasePersonalMemoryAccessForParticipant(
   db: Database,
   sessionId: string,
   userId: string,
-): void {
-  const orgId = resolveOrgIdForSession(db, sessionId);
+): Promise<void> {
+  const orgId = await resolveOrgIdForSession(db, sessionId);
   if (orgId === null) return;
   if (!clearPersonalMemoryConsentForParticipant(db, sessionId, userId)) return;
-  revokeOrgPersonalKgReaderIfUnused(db, orgId, userId);
+  await revokeOrgPersonalKgReaderIfUnused(db, orgId, userId);
 }

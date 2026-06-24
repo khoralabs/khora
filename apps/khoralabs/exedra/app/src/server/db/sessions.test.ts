@@ -9,6 +9,7 @@ import {
   grantSessionParticipant,
   grantTeamSessionParticipant,
 } from "../authz";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 import { closeDb } from "../db/index";
 import { getOrCreateUser } from "../identity/users";
 import { addTeamMember } from "./membership";
@@ -35,23 +36,25 @@ afterEach(() => {
 });
 
 test("listSessionsForUser returns facilitator and participant sessions", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const db = new Database(":memory:");
   ensureExedraSchema(db);
 
   const facilitator = await getOrCreateUser(db, "registry-facilitator");
   const participant = await getOrCreateUser(db, "registry-participant");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
-  addTeamMember(db, teamId, participant.id);
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
+  await addTeamMember(db, teamId, participant.id);
 
   const facilitated = createSession(db, { teamId, topic: "Facilitated" });
-  grantSessionCreatorAccess(db, facilitator.id, facilitated.id);
+  await grantSessionCreatorAccess(facilitator.id, facilitated.id);
 
   const participating = createSession(db, { teamId, topic: "Participating" });
-  grantSessionCreatorAccess(db, participant.id, participating.id);
-  grantSessionParticipant(db, facilitator.id, participating.id);
+  await grantSessionCreatorAccess(participant.id, participating.id);
+  await grantSessionParticipant(facilitator.id, participating.id);
 
-  const facilitatorSessions = listSessionsForUser(db, facilitator.id);
+  const facilitatorSessions = await listSessionsForUser(db, facilitator.id);
   expect(facilitatorSessions).toHaveLength(2);
   expect(facilitatorSessions.some((s) => s.id === facilitated.id && s.role === "facilitator")).toBe(
     true,
@@ -64,20 +67,22 @@ test("listSessionsForUser returns facilitator and participant sessions", async (
 });
 
 test("team-scoped grant lists all team members as participants", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const db = new Database(":memory:");
   ensureExedraSchema(db);
 
   const facilitator = await getOrCreateUser(db, "registry-fac-team");
   const member = await getOrCreateUser(db, "registry-member-team");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
-  addTeamMember(db, teamId, member.id);
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
+  await addTeamMember(db, teamId, member.id);
 
   const session = createSession(db, { teamId, topic: "Shared" });
-  grantSessionCreatorAccess(db, facilitator.id, session.id);
-  grantTeamSessionParticipant(db, teamId, session.id);
+  await grantSessionCreatorAccess(facilitator.id, session.id);
+  await grantTeamSessionParticipant(teamId, session.id);
 
-  const participants = listAccountRowsForSession(db, session.id, facilitator.id);
+  const participants = await listAccountRowsForSession(db, session.id, facilitator.id);
   expect(
     participants.some(
       (p) => p.account.userId === facilitator.id && p.context.role === "facilitator",

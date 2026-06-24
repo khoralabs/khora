@@ -109,7 +109,7 @@ export async function handleInternalGetDocumentBytes(
     return Response.json({ error: "Document not found" }, { status: 404 });
   }
 
-  const orgId = resolveDocumentOrgId(db, record);
+  const orgId = await resolveDocumentOrgId(db, record);
   if (orgId === null) {
     return Response.json({ error: "Org not found" }, { status: 404 });
   }
@@ -187,7 +187,8 @@ export async function handleInternalDeleteDocumentMemories(
   const db = getDb();
   const document = getDocumentById(db, documentId);
   const orgId =
-    body.orgId?.trim() || (document !== null ? resolveDocumentOrgId(getDb(), document) : null);
+    body.orgId?.trim() ||
+    (document !== null ? await resolveDocumentOrgId(getDb(), document) : null);
 
   try {
     await withSpan(

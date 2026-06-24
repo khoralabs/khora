@@ -36,7 +36,7 @@ export async function ensureInterviewChatThread(params: {
   sessionId: string;
   userId: string;
 }): Promise<{ legacyThreadId: string; chatThread: Thread; created: boolean }> {
-  const legacyThreadId = getOrCreateInterviewThread(params.db, {
+  const legacyThreadId = await getOrCreateInterviewThread(params.db, {
     sessionId: params.sessionId,
     userId: params.userId,
   });
@@ -68,7 +68,7 @@ export async function ensureFacilitationChatThread(params: {
   db: import("bun:sqlite").Database;
   sessionId: string;
 }): Promise<{ legacyThreadId: string; chatThread: Thread; created: boolean }> {
-  const legacyThreadId = getOrCreateFacilitationThread(params.db, params.sessionId);
+  const legacyThreadId = await getOrCreateFacilitationThread(params.db, params.sessionId);
   await ensureSessionChatChannel(params.sessionId);
   const chat = getChatService();
   const threadId = facilitationChatThreadId(params.sessionId);

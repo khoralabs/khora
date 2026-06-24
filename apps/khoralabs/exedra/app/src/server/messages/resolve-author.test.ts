@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 import { getOrg } from "../db/membership";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg } from "../db/sessions";
@@ -7,6 +8,7 @@ import { getOrCreateUser } from "../identity/users";
 import { resolveMessageAuthor } from "./resolve-author";
 
 let db: Database;
+let authzDb: Database;
 let orgId: string;
 let userDid: string;
 let org: NonNullable<ReturnType<typeof getOrg>>;
@@ -14,6 +16,10 @@ let org: NonNullable<ReturnType<typeof getOrg>>;
 beforeAll(async () => {
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  authzDb = createIsolatedAuthzDatabase();
+
+  installTestAuthzService(authzDb);
+
   db = new Database(":memory:");
   ensureExedraSchema(db);
 

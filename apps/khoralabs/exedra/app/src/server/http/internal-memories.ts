@@ -371,7 +371,7 @@ export async function handleInternalMemoriesAgentSearch(req: Request): Promise<R
   }
   const orgId = body.orgId?.trim();
   const namespace = body.params.namespace?.trim() ?? userScope(userId);
-  const personalAuthError = assertInternalPersonalMemorySearchAllowed(getDb(), {
+  const personalAuthError = await assertInternalPersonalMemorySearchAllowed(getDb(), {
     userId,
     namespace,
     orgId,
@@ -439,7 +439,7 @@ export async function handleInternalMemoriesSearch(req: Request): Promise<Respon
   const topK = Math.min(50, Math.max(1, Number(body.topK) || 10));
   const namespace = body.namespace?.trim() ?? userScope(userId);
   const orgId = body.orgId?.trim();
-  const personalAuthError = assertInternalPersonalMemorySearchAllowed(getDb(), {
+  const personalAuthError = await assertInternalPersonalMemorySearchAllowed(getDb(), {
     userId,
     namespace,
     orgId,

@@ -1,17 +1,20 @@
 import type { Database } from "bun:sqlite";
 
-import { ACTIVE_GRANT_SQL } from "../authz/active";
-import { listGrantScopeIdsForResource, revokeGrant } from "../authz/grants";
+import { EntityType, Relation } from "@khoralabs/exedra-authz";
 import {
   accountScope,
   Feature,
   grantThreadAccess,
   hasSessionAccess,
   isSessionFacilitator,
+  listAccountIdsForTeam,
+  listGrantScopeIdsForResource,
   ResourceType,
   ScopeType,
   threadResource,
+  userHasAnySessionParticipantGrant,
 } from "../authz/policy";
+import { requireAuthzServiceClient } from "../authz/service-client";
 import { createOrgWithAdmin, createTeamWithGrants } from "./membership";
 
 export { isTeamMember } from "./membership";
@@ -84,10 +87,10 @@ export async function createOrg(
   return createOrgWithAdmin(db, { name: params.name, creatorId: params.ownerId });
 }
 
-export function createTeam(
+export async function createTeam(
   db: Database,
   params: { orgId: string; name: string; ownerId: string },
-): string {
+): Promise<string> {
   return createTeamWithGrants(db, {
     orgId: params.orgId,
     name: params.name,
@@ -114,6 +117,11 @@ export function createSession(
   ).run(id, params.teamId, params.topic, params.deadlineMs ?? null, kind, now);
   const row = db.query<SessionRow, [string]>(`SELECT * FROM sessions WHERE id = ? LIMIT 1`).get(id);
   if (row === null) throw new Error("session insert failed");
+  void requireAuthzServiceClient().relate({
+    from: { type: EntityType.Session, id },
+    relation: Relation.BelongsTo,
+    to: { type: EntityType.Team, id: params.teamId },
+  });
   return mapSession(row);
 }
 
@@ -213,10 +221,10 @@ export function getInterviewThreadId(
   return row?.id ?? null;
 }
 
-export function getOrCreateInterviewThread(
+export async function getOrCreateInterviewThread(
   db: Database,
   params: { sessionId: string; userId: string },
-): string {
+): Promise<string> {
   const existing = db
     .query<{ id: string }, [string, string]>(
       `SELECT id FROM threads
@@ -232,7 +240,12 @@ export function getOrCreateInterviewThread(
     `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
      VALUES (?, 'interview', ?, ?, ?, NULL)`,
   ).run(id, params.sessionId, params.userId, Date.now());
-  grantThreadAccess(db, params.userId, id);
+  await requireAuthzServiceClient().relate({
+    from: { type: EntityType.Thread, id },
+    relation: Relation.BelongsTo,
+    to: { type: EntityType.Session, id: params.sessionId },
+  });
+  await grantThreadAccess(params.userId, id);
   return id;
 }
 
@@ -275,40 +288,20 @@ function sessionResource(sessionId: string) {
   return { type: ResourceType.Session, id: sessionId };
 }
 
-function listFacilitationAccountIds(db: Database, sessionId: string): string[] {
-  const nowMs = Date.now();
+async function listFacilitationAccountIds(sessionId: string): Promise<string[]> {
   const resource = sessionResource(sessionId);
   const accountIds = new Set<string>();
 
   for (const feature of [Feature.Admin, Feature.Facilitation] as const) {
-    for (const accountId of listGrantScopeIdsForResource(
-      db,
+    for (const accountId of await listGrantScopeIdsForResource(
       resource,
       feature,
       ScopeType.Account,
-      nowMs,
     )) {
       accountIds.add(accountId);
     }
-    for (const teamId of listGrantScopeIdsForResource(
-      db,
-      resource,
-      feature,
-      ScopeType.Team,
-      nowMs,
-    )) {
-      for (const accountId of db
-        .query<{ scope_id: string }, [string, number]>(
-          `SELECT scope_id FROM authz_grants
-           WHERE scope_type = 'account'
-             AND resource_type = 'team'
-             AND resource_id = ?
-             AND feature = 'member'
-             AND revoked_at_ms IS NULL
-             AND (expired_at_ms IS NULL OR expired_at_ms > ?)`,
-        )
-        .all(teamId, nowMs)
-        .map((row) => row.scope_id)) {
+    for (const teamId of await listGrantScopeIdsForResource(resource, feature, ScopeType.Team)) {
+      for (const accountId of await listAccountIdsForTeam(teamId, Feature.Member)) {
         accountIds.add(accountId);
       }
     }
@@ -317,34 +310,36 @@ function listFacilitationAccountIds(db: Database, sessionId: string): string[] {
   return [...accountIds];
 }
 
-export function syncFacilitationThreadGrants(db: Database, sessionId: string): void {
+export async function syncFacilitationThreadGrants(db: Database, sessionId: string): Promise<void> {
   const threadId = getFacilitationThreadId(db, sessionId);
   if (threadId === null) return;
 
-  const holders = new Set(listFacilitationAccountIds(db, sessionId));
-  const nowMs = Date.now();
-  const currentGrantees = db
-    .query<{ scope_id: string }, [string, number]>(
-      `SELECT scope_id FROM authz_grants
-       WHERE resource_type = 'thread'
-         AND resource_id = ?
-         AND scope_type = 'account'
-         AND feature IN ('read', 'write')
-         AND revoked_at_ms IS NULL
-         AND (expired_at_ms IS NULL OR expired_at_ms > ?)`,
-    )
-    .all(threadId, nowMs)
-    .map((row) => row.scope_id);
+  const holders = new Set(await listFacilitationAccountIds(sessionId));
+  const thread = threadResource(threadId);
+  const currentGrantees = await listGrantScopeIdsForResource(
+    thread,
+    Feature.Read,
+    ScopeType.Account,
+  );
 
+  const client = requireAuthzServiceClient();
   for (const accountId of currentGrantees) {
     if (!holders.has(accountId)) {
-      revokeGrant(db, accountScope(accountId), threadResource(threadId), Feature.Read);
-      revokeGrant(db, accountScope(accountId), threadResource(threadId), Feature.Write);
+      await client.revokeGrant({
+        scope: accountScope(accountId),
+        resource: thread,
+        feature: Feature.Read,
+      });
+      await client.revokeGrant({
+        scope: accountScope(accountId),
+        resource: thread,
+        feature: Feature.Write,
+      });
     }
   }
 
   for (const accountId of holders) {
-    grantThreadAccess(db, accountId, threadId);
+    await grantThreadAccess(accountId, threadId);
   }
 }
 
@@ -359,7 +354,10 @@ export function getFacilitationThreadId(db: Database, sessionId: string): string
   return row?.id ?? null;
 }
 
-export function getOrCreateFacilitationThread(db: Database, sessionId: string): string {
+export async function getOrCreateFacilitationThread(
+  db: Database,
+  sessionId: string,
+): Promise<string> {
   const existing = getFacilitationThreadId(db, sessionId);
   if (existing !== null) return existing;
 
@@ -368,7 +366,12 @@ export function getOrCreateFacilitationThread(db: Database, sessionId: string): 
     `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
      VALUES (?, 'facilitation', ?, NULL, ?, NULL)`,
   ).run(id, sessionId, Date.now());
-  syncFacilitationThreadGrants(db, sessionId);
+  await requireAuthzServiceClient().relate({
+    from: { type: EntityType.Thread, id },
+    relation: Relation.BelongsTo,
+    to: { type: EntityType.Session, id: sessionId },
+  });
+  await syncFacilitationThreadGrants(db, sessionId);
   return id;
 }
 
@@ -385,86 +388,44 @@ export type SessionListItem = SessionRecord & {
 
 type SessionListRow = SessionRow;
 
-export function userHasSessionAccess(db: Database, sessionId: string, userId: string): boolean {
-  return hasSessionAccess(db, userId, sessionId);
+export async function userHasSessionAccess(
+  _db: Database,
+  sessionId: string,
+  userId: string,
+): Promise<boolean> {
+  return hasSessionAccess(userId, sessionId);
 }
 
-export function userHasAnyAccessibleSession(db: Database, userId: string): boolean {
-  const nowMs = Date.now();
-  const row = db
-    .query<{ c: number }, [string, number]>(
-      `SELECT COUNT(1) AS c FROM authz_grants ag
-       WHERE ag.resource_type = 'session'
-         AND ag.feature IN ('admin', 'participant')
-         AND ag.revoked_at_ms IS NULL
-         AND (ag.expired_at_ms IS NULL OR ag.expired_at_ms > ?2)
-         AND (
-           (ag.scope_type = 'account' AND ag.scope_id = ?1)
-           OR (
-             ag.scope_type = 'team'
-             AND EXISTS (
-               SELECT 1 FROM authz_grants tm
-               WHERE tm.scope_type = 'account' AND tm.scope_id = ?1
-                 AND tm.resource_type = 'team' AND tm.resource_id = ag.scope_id
-                 AND tm.feature = 'member'
-                 AND tm.revoked_at_ms IS NULL
-                 AND (tm.expired_at_ms IS NULL OR tm.expired_at_ms > ?2)
-             )
-           )
-         )`,
-    )
-    .get(userId, nowMs);
-  return row !== null && row.c > 0;
+export async function userHasAnyAccessibleSession(_db: Database, userId: string): Promise<boolean> {
+  return userHasAnySessionParticipantGrant(userId);
 }
 
-export function listSessionsForUser(
+export async function listSessionsForUser(
   db: Database,
   userId: string,
   teamId?: string,
-): SessionListItem[] {
-  const nowMs = Date.now();
+): Promise<SessionListItem[]> {
   const rows = db
-    .query<SessionListRow, [string, string | null, number]>(
-      `SELECT DISTINCT s.id, s.team_id, s.topic, s.deadline_ms,
-              s.status, s.kind, s.created_at_ms
-       FROM sessions s
-       WHERE (?2 IS NULL OR s.team_id = ?2)
-         AND (
-           EXISTS (
-             SELECT 1 FROM authz_grants ag
-             WHERE ag.resource_type = 'session' AND ag.resource_id = s.id
-               AND ag.feature IN ('admin', 'participant', 'facilitation')
-               AND ${ACTIVE_GRANT_SQL}
-               AND (
-                 (ag.scope_type = 'account' AND ag.scope_id = ?1)
-                 OR (
-                   ag.scope_type = 'team'
-                   AND EXISTS (
-                     SELECT 1 FROM authz_grants tm
-                     WHERE tm.scope_type = 'account' AND tm.scope_id = ?1
-                       AND tm.resource_type = 'team' AND tm.resource_id = ag.scope_id
-                       AND tm.feature = 'member'
-                       AND tm.revoked_at_ms IS NULL
-                       AND (tm.expired_at_ms IS NULL OR tm.expired_at_ms > ?3)
-                   )
-                 )
-               )
-           )
-         )
-       ORDER BY s.created_at_ms DESC`,
+    .query<SessionListRow, [string | null]>(
+      `SELECT id, team_id, topic, deadline_ms, status, kind, created_at_ms,
+              interview_summary, next_session_options, interview_completed_at_ms
+       FROM sessions
+       WHERE (?1 IS NULL OR team_id = ?1)
+       ORDER BY created_at_ms DESC`,
     )
-    .all(userId, teamId ?? null, nowMs);
+    .all(teamId ?? null);
 
-  return rows.map((row) => ({
-    ...mapSession(row),
-    role: sessionRoleForUser(db, row.id, userId),
-  }));
+  const items: SessionListItem[] = [];
+  for (const row of rows) {
+    if (!(await hasSessionAccess(userId, row.id))) continue;
+    items.push({
+      ...mapSession(row),
+      role: await sessionRoleForUser(db, row.id, userId),
+    });
+  }
+  return items;
 }
 
-/**
- * Returns the session ID of the active (non-closed) onboarding session for a team, or null if none.
- * Used to avoid auto-creating a second onboarding session when new members join mid-onboarding.
- */
 export function getActiveOnboardingSessionForTeam(db: Database, teamId: string): string | null {
   const row = db
     .query<{ id: string }, [string]>(
@@ -510,10 +471,10 @@ export function setSessionLinkGrantRole(
   db.prepare(`UPDATE sessions SET link_grant_role = ? WHERE id = ?`).run(role, sessionId);
 }
 
-export function sessionRoleForUser(
-  db: Database,
+export async function sessionRoleForUser(
+  _db: Database,
   sessionId: string,
   userId: string,
-): "facilitator" | "participant" {
-  return isSessionFacilitator(db, userId, sessionId) ? "facilitator" : "participant";
+): Promise<"facilitator" | "participant"> {
+  return (await isSessionFacilitator(userId, sessionId)) ? "facilitator" : "participant";
 }

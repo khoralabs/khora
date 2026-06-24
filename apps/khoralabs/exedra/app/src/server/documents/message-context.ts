@@ -36,7 +36,7 @@ export function toClientMessageDocuments(
   }));
 }
 
-export function resolveUserMessageDocuments(
+export async function resolveUserMessageDocuments(
   db: Database,
   params: {
     sessionId: string;
@@ -44,7 +44,7 @@ export function resolveUserMessageDocuments(
     userId: string;
     documentIds: readonly string[];
   },
-): UserMessageDocumentMetadata[] | { error: string } {
+): Promise<UserMessageDocumentMetadata[] | { error: string }> {
   const uniqueIds = [...new Set(params.documentIds.filter((id) => id.trim().length > 0))];
   if (uniqueIds.length === 0) return [];
 
@@ -59,7 +59,7 @@ export function resolveUserMessageDocuments(
     }
   }
 
-  const team = getTeam(db, params.teamId);
+  const team = await getTeam(db, params.teamId);
   if (team === null) {
     return { error: "Team not found" };
   }
@@ -105,6 +105,7 @@ export function toWireDocumentRefs(
     id: document.id,
     fileName: document.fileName,
     memoryKey: document.memoryKey,
+    status: document.status,
     sourceRef: document.sourceRef,
   }));
 }

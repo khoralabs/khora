@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { beforeAll, expect, test } from "bun:test";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 import { getOrCreateUser } from "../identity/users";
 import { insertMessage } from "./messages";
 import { ensureExedraSchema } from "./schema";
@@ -25,11 +26,13 @@ test("sessionPhaseFromStatus maps alignment and individual phases", () => {
 });
 
 test("getInterviewStatus tracks thread and messages", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const db = new Database(":memory:");
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-interview-status");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Review",

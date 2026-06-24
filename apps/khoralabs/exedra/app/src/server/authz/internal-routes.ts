@@ -4,6 +4,7 @@ import { getSession } from "../db/sessions";
 import { getDocumentById } from "../documents/db";
 import { requireInternalToken } from "../http/require-internal-token";
 import { namespaceMatchesGrantResource } from "../memories/access";
+import { requireAuthzServiceClient } from "./service-client";
 
 type DecideBody = {
   subject?: { type?: string; id?: string };
@@ -26,6 +27,34 @@ async function readBody(req: Request): Promise<DecideBody | null> {
 function stringField(record: Record<string, unknown>, key: string): string | null {
   const value = record[key];
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+const APP_HANDLED_ACTIONS = new Set(["memory.read", "document.read", "chat.thread.write"]);
+
+async function decideWithCentralService(body: DecideBody): Promise<boolean | null> {
+  if (body.action !== undefined && APP_HANDLED_ACTIONS.has(body.action)) return null;
+  if (body.action === undefined || body.resource === undefined) return null;
+
+  const resourceType =
+    stringField(body.resource, "type") ?? stringField(body.resource, "resourceType");
+  const resourceId = stringField(body.resource, "id") ?? stringField(body.resource, "resourceId");
+  const subjectType = body.subject?.type;
+  const subjectId = body.subject?.id;
+  if (
+    resourceType === null ||
+    resourceId === null ||
+    typeof subjectType !== "string" ||
+    typeof subjectId !== "string"
+  ) {
+    return null;
+  }
+
+  const result = await requireAuthzServiceClient().decide({
+    subject: { type: subjectType, id: subjectId },
+    action: body.action,
+    resource: { type: resourceType, id: resourceId, ...body.resource },
+  });
+  return result.allowed;
 }
 
 function canReadMemoryNamespace(subject: DecideBody["subject"], resource: Record<string, unknown>) {
@@ -70,7 +99,10 @@ export async function handleInternalAuthzDecide(req: Request): Promise<Response>
     return json({ error: "action and resource are required" }, { status: 400 });
   }
 
-  let allowed = false;
+  let allowed = await decideWithCentralService(body);
+  if (allowed !== null) return json({ allowed });
+
+  allowed = false;
   if (body.action === "memory.read") {
     allowed = canReadMemoryNamespace(body.subject, body.resource);
   } else if (body.action === "document.read") {

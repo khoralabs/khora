@@ -39,7 +39,7 @@ async function requireSessionDocumentReadAccess(
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!canReadSessionKg(db, user.id, sessionId)) {
+  if (!(await canReadSessionKg(user.id, sessionId))) {
     return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
   }
 
@@ -63,7 +63,7 @@ async function requireSessionDocumentContributeAccess(
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!canContributeToSessionKg(db, user.id, sessionId)) {
+  if (!(await canContributeToSessionKg(user.id, sessionId))) {
     return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
   }
 
@@ -108,7 +108,7 @@ export async function handleUploadSessionDocument(
   const fileName = sanitizeDocumentFileName(file.name || "upload");
   const bytes = new Uint8Array(await file.arrayBuffer());
   const db = getDb();
-  const orgId = resolveSessionOrgId(db, access.session.teamId);
+  const orgId = await resolveSessionOrgId(db, access.session.teamId);
   const batchId = crypto.randomUUID();
   const targetNamespace = resolveSessionTargetNamespace(
     access.userId,

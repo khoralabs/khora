@@ -2,7 +2,6 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
 import { grantSessionCreatorAccess } from "../authz";
 import { closeDb, getDb, resolveExedraDbPath } from "../db/index";
 import { createOrg, createSession, createTeam } from "../db/sessions";
@@ -14,7 +13,9 @@ import { ensureFacilitationChatThread, ensureInterviewChatThread } from "./sessi
 
 let dataDir: string;
 
-beforeEach(() => {
+beforeEach(async () => {
+  const { mock } = await import("bun:test");
+  mock.restore();
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-chat-test-"));
   process.env.EXEDRA_DATA_DIR = dataDir;
   process.env.EXEDRA_INTERNAL_TOKEN = "test-internal-token";
@@ -24,7 +25,9 @@ beforeEach(() => {
   closeChatDb();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  const { mock } = await import("bun:test");
+  mock.restore();
   closeChatDb();
   closeDb();
   rmSync(dataDir, { recursive: true, force: true });
@@ -38,7 +41,7 @@ test("bootstraps interview and facilitation chat threads in a separate sqlite da
   const db = getDb();
   const user = await getOrCreateUser(db, "registry-chat-user");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Chat integration" });
 
   const interview = await ensureInterviewChatThread({ db, sessionId: session.id, userId: user.id });
@@ -59,6 +62,7 @@ test("bootstraps interview and facilitation chat threads in a separate sqlite da
 test("authorizes interview chat thread ids for DID users containing colons", async () => {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({
+    requireRegistrySession: async () => ({ user: { id: "registry-did-user" } }),
     requireRegistrySessionResponse: async () => ({
       session: { user: { id: "registry-did-user" } },
       response: null,
@@ -69,7 +73,7 @@ test("authorizes interview chat thread ids for DID users containing colons", asy
   const user = await getOrCreateUser(db, "registry-did-user");
   expect(user.id).toContain(":");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "DID chat auth" });
   const interview = await ensureInterviewChatThread({ db, sessionId: session.id, userId: user.id });
 
@@ -84,6 +88,7 @@ test("authorizes interview chat thread ids for DID users containing colons", asy
 test("facilitation chat append does not auto-dispatch an agent response", async () => {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({
+    requireRegistrySession: async () => ({ user: { id: "registry-facilitation-user" } }),
     requireRegistrySessionResponse: async () => ({
       session: { user: { id: "registry-facilitation-user" } },
       response: null,
@@ -93,9 +98,9 @@ test("facilitation chat append does not auto-dispatch an agent response", async 
   const db = getDb();
   const user = await getOrCreateUser(db, "registry-facilitation-user");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Facilitation chat" });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
   const facilitation = await ensureFacilitationChatThread({ db, sessionId: session.id });
 
   delete process.env.RENDER_API_KEY;
@@ -118,10 +123,19 @@ test("facilitation chat append does not auto-dispatch an agent response", async 
 });
 
 test("internal chat streamed post route starts a stream via dispatcher", async () => {
+  const { mock } = await import("bun:test");
+  mock.module("../auth/require-session", () => ({
+    requireRegistrySession: async () => ({ user: { id: "registry-internal-chat-user" } }),
+    requireRegistrySessionResponse: async () => ({
+      session: { user: { id: "registry-internal-chat-user" } },
+      response: null,
+    }),
+  }));
+
   const db = getDb();
   const user = await getOrCreateUser(db, "registry-internal-chat-user");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Internal chat route" });
   const interview = await ensureInterviewChatThread({ db, sessionId: session.id, userId: user.id });
   const { dispatchApiRoute } = await import("../dispatch-api");
@@ -145,10 +159,19 @@ test("internal chat streamed post route starts a stream via dispatcher", async (
 });
 
 test("internal chat streamed post route accepts encoded thread id path", async () => {
+  const { mock } = await import("bun:test");
+  mock.module("../auth/require-session", () => ({
+    requireRegistrySession: async () => ({ user: { id: "registry-internal-chat-path-user" } }),
+    requireRegistrySessionResponse: async () => ({
+      session: { user: { id: "registry-internal-chat-path-user" } },
+      response: null,
+    }),
+  }));
+
   const db = getDb();
   const user = await getOrCreateUser(db, "registry-internal-chat-path-user");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Internal chat path route" });
   const interview = await ensureInterviewChatThread({ db, sessionId: session.id, userId: user.id });
   const { dispatchApiRoute } = await import("../dispatch-api");
@@ -177,7 +200,7 @@ test("internal authz decide route authorizes app-supplied workflow resources", a
   const db = getDb();
   const user = await getOrCreateUser(db, "registry-authz-route-user");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Internal authz route" });
   const { dispatchApiRoute } = await import("../dispatch-api");
 

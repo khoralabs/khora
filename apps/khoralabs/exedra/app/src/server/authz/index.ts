@@ -1,5 +1,3 @@
-export { ACTIVE_ENTITLEMENT_SQL, ACTIVE_GRANT_SQL, isActive } from "./active";
-export { entitle, hasEntitlement, listEntitlements, revokeEntitlement } from "./entitlements";
 export {
   grantAllOrgPermissions,
   grantAllTeamPermissions,
@@ -22,23 +20,6 @@ export {
   setTeamScopeOrgPermissions,
   setTeamScopePermissions,
 } from "./grant-templates";
-export {
-  getOrgIdForTeam,
-  grant,
-  hasGrant,
-  listAccountIdsForOrgAdmin,
-  listAccountIdsForTeam,
-  listGrantScopeIdsForResource,
-  listGrantsForScope,
-  listTeamIdsForOrg,
-  revokeActiveGrantsForScopeFeature,
-  revokeAllGrantsForTeamScope,
-  revokeAllGrantsReferencingOrg,
-  revokeAllGrantsReferencingTeam,
-  revokeGrant,
-  userHasAnySessionParticipantGrant,
-  userHasAnyTeamMemberGrant,
-} from "./grants";
 export type { AuthAction, AuthResource } from "./policy";
 export {
   accountScope,
@@ -57,6 +38,7 @@ export {
   canWriteFacilitationThread,
   enforce,
   Feature,
+  getOrgIdForTeam,
   grantOrgAdmin,
   grantPersonalKgReader,
   grantSessionAdmin,
@@ -74,6 +56,7 @@ export {
   grantThreadAccess,
   hasDirectSessionGrant,
   hasFacilitationAccess,
+  hasGrant,
   hasOrgAdminGrant,
   hasOrgPermission,
   hasSessionAccess,
@@ -81,7 +64,14 @@ export {
   hasTeamContributorGrant,
   hasTeamPermission,
   isSessionFacilitator,
+  listAccountIdsForOrgAdmin,
+  listAccountIdsForTeam,
+  listGrantScopeIdsForResource,
+  listTeamIdsForOrg,
   ResourceType,
+  revokeAllGrantsForTeamScope,
+  revokeAllGrantsReferencingOrg,
+  revokeAllGrantsReferencingTeam,
   revokeOrgAdmin,
   revokePersonalKgReader,
   revokeSessionFacilitation,
@@ -95,6 +85,17 @@ export {
   ScopeType,
   teamScope,
   userBelongsToOrg,
+  userHasAnySessionParticipantGrant,
+  userHasAnyTeamMemberGrant,
 } from "./policy";
-export { ensureAuthzSchema } from "./schema";
-export type { EntitlementRecord, GrantRecord, ResourceRef, ScopeRef } from "./types";
+export {
+  getAuthzServiceClient,
+  requireAuthzServiceClient,
+  resetAuthzServiceClient,
+} from "./service-client";
+export {
+  createIsolatedAuthzDatabase,
+  createTestAuthzClient,
+  installTestAuthzService,
+  uninstallTestAuthzService,
+} from "./test-service";

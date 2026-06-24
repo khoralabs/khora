@@ -3,11 +3,11 @@ import type { Database } from "bun:sqlite";
 import { getTeam } from "../db/membership";
 import { bootstrapSessionMemories } from "../memories/bootstrap";
 
-export function bootstrapSessionMemoriesForTeamSession(
+export async function bootstrapSessionMemoriesForTeamSession(
   db: Database,
   params: { teamId: string; sessionId: string; userIds: readonly string[] },
-): void {
-  const team = getTeam(db, params.teamId);
+): Promise<void> {
+  const team = await getTeam(db, params.teamId);
   if (team === null) {
     throw new Error("Team not found");
   }

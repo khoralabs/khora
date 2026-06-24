@@ -3,7 +3,6 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
 import { grantSessionCreatorAccess } from "../authz/index.js";
 import { closeDb } from "../db/index.js";
 import { ensureExedraSchema } from "../db/schema.js";
@@ -11,12 +10,13 @@ import { createOrg, createSession, createTeam } from "../db/sessions.js";
 import { getOrCreateUser } from "../identity/users.js";
 import { getDocumentById } from "./db.js";
 import { sha256Hex } from "./hash.js";
+import type { ExedraDocumentStore } from "./s3-store.js";
 import { buildDocumentS3Key } from "./s3-store.js";
 import type { ExedraDocumentRef } from "./types.js";
 
 let dataDir: string;
 
-class MemoryDocumentStore {
+class MemoryDocumentStore implements ExedraDocumentStore {
   private readonly objects = new Map<string, Uint8Array>();
 
   async put(params: {
@@ -39,6 +39,46 @@ class MemoryDocumentStore {
       content_hash: contentHash,
     };
     return { ref, s3Key };
+  }
+
+  async resolve(ref: ExedraDocumentRef) {
+    return this.getByS3Key({
+      s3Key: buildDocumentS3Key({
+        orgId: ref.org_id,
+        batchId: ref.batch_id,
+        documentId: ref.document_id,
+        fileName: ref.file_name,
+      }),
+      contentHash: ref.content_hash,
+    });
+  }
+
+  async getByS3Key(params: { s3Key: string; contentHash: string; mimeType?: string }) {
+    const bytes = this.objects.get(params.s3Key);
+    if (bytes === undefined) throw new Error("Document object not found");
+    const contentHash = await sha256Hex(bytes);
+    if (contentHash !== params.contentHash) throw new Error("Document content hash mismatch");
+    return {
+      kind: "blob" as const,
+      blob: new Blob([Buffer.from(bytes)], {
+        type: params.mimeType ?? "application/octet-stream",
+      }),
+    };
+  }
+
+  async deleteByS3Key(s3Key: string) {
+    this.objects.delete(s3Key);
+  }
+
+  async deleteByRef(ref: ExedraDocumentRef) {
+    await this.deleteByS3Key(
+      buildDocumentS3Key({
+        orgId: ref.org_id,
+        batchId: ref.batch_id,
+        documentId: ref.document_id,
+        fileName: ref.file_name,
+      }),
+    );
   }
 }
 
@@ -64,12 +104,12 @@ test("acceptDocument stores S3 object and accepted row without summary", async (
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-accept");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Docs",
   });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
 
   const { acceptDocument, resolveSessionTargetNamespace } = await import("./accept.js");
   const batchId = crypto.randomUUID();

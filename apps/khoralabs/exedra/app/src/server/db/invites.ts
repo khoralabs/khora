@@ -11,6 +11,7 @@ import {
   teamIdFromEffects,
   teamMemberInviteEffects,
 } from "@shared/invites/effects";
+import { getOrgIdForTeam } from "../authz/policy";
 import { avatarUrlFromS3Key } from "../avatars/urls";
 import { getInvitePepper } from "../env";
 
@@ -109,36 +110,35 @@ export function mintSessionParticipantInvite(
   });
 }
 
-function loadTeamOrgPublicDetails(
+async function loadTeamOrgPublicDetails(
   db: Database,
   teamId: string,
-): { teamName: string; orgName: string; orgAvatarUrl: string | null } | null {
-  const nowMs = Date.now();
+): Promise<{ teamName: string; orgName: string; orgAvatarUrl: string | null } | null> {
   const teamRow = db
-    .query<
-      { team_name: string; org_name: string; org_id: string; avatar_s3_key: string | null },
-      [number, string]
-    >(
-      `SELECT t.name AS team_name, o.name AS org_name, o.id AS org_id, o.avatar_s3_key
-       FROM teams t
-       JOIN authz_grants g ON g.scope_type = 'team' AND g.scope_id = t.id
-         AND g.resource_type = 'org' AND g.feature = 'member'
-         AND g.revoked_at_ms IS NULL
-         AND (g.expired_at_ms IS NULL OR g.expired_at_ms > ?)
-       JOIN orgs o ON o.id = g.resource_id
-       WHERE t.id = ?
-       LIMIT 1`,
+    .query<{ team_name: string }, [string]>(
+      `SELECT name AS team_name FROM teams WHERE id = ? LIMIT 1`,
     )
-    .get(nowMs, teamId);
+    .get(teamId);
   if (teamRow === null) return null;
+  const orgId = await getOrgIdForTeam(teamId);
+  if (orgId === null) return null;
+  const orgRow = db
+    .query<{ org_name: string; avatar_s3_key: string | null }, [string]>(
+      `SELECT name AS org_name, avatar_s3_key FROM orgs WHERE id = ? LIMIT 1`,
+    )
+    .get(orgId);
+  if (orgRow === null) return null;
   return {
     teamName: teamRow.team_name,
-    orgName: teamRow.org_name,
-    orgAvatarUrl: avatarUrlFromS3Key("org", teamRow.org_id, teamRow.avatar_s3_key),
+    orgName: orgRow.org_name,
+    orgAvatarUrl: avatarUrlFromS3Key("org", orgId, orgRow.avatar_s3_key),
   };
 }
 
-export function getInvitePublicInfo(db: Database, plaintext: string): InvitePublic | null {
+export async function getInvitePublicInfo(
+  db: Database,
+  plaintext: string,
+): Promise<InvitePublic | null> {
   const row = loadInviteRow(db, plaintext);
   if (row === null) return null;
 
@@ -157,7 +157,7 @@ export function getInvitePublicInfo(db: Database, plaintext: string): InvitePubl
   if (kind === "team") {
     const teamId = teamIdFromEffects(effects);
     if (teamId === null) return null;
-    const orgDetails = loadTeamOrgPublicDetails(db, teamId);
+    const orgDetails = await loadTeamOrgPublicDetails(db, teamId);
     if (orgDetails === null) return null;
     return { ...base, ...orgDetails };
   }
@@ -174,7 +174,7 @@ export function getInvitePublicInfo(db: Database, plaintext: string): InvitePubl
   // For session invites, prefer teamId from effects; fall back to session's team_id.
   // Session-only effects (reusable share link) have no team grant, so we use the session's team.
   const teamId = teamIdFromEffects(effects) ?? sessionRow.team_id;
-  const orgDetails = loadTeamOrgPublicDetails(db, teamId);
+  const orgDetails = await loadTeamOrgPublicDetails(db, teamId);
 
   return {
     ...base,

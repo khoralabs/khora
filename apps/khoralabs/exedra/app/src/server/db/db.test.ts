@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { grantSessionCreatorAccess } from "../authz";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 import { getOrCreateUser } from "../identity/users";
 import { consumeInvite, getInvitePublicInfo, mintSessionParticipantInvite } from "./invites";
 import { insertMessage, loadThreadMessages } from "./messages";
@@ -14,8 +15,13 @@ beforeAll(() => {
 });
 
 let db: Database;
+let authzDb: Database;
 
 beforeAll(async () => {
+  authzDb = createIsolatedAuthzDatabase();
+
+  installTestAuthzService(authzDb);
+
   db = new Database(":memory:");
   ensureExedraSchema(db);
 });
@@ -27,25 +33,25 @@ afterAll(() => {
 test("session invite is single-use", async () => {
   const user = await getOrCreateUser(db, "registry-user-1");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Review",
   });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
 
   const token = mintSessionParticipantInvite(db, {
     sessionId: session.id,
     teamId,
     createdByUserId: user.id,
   });
-  const info = getInvitePublicInfo(db, token);
+  const info = await getInvitePublicInfo(db, token);
   expect(info?.status).toBe("pending");
 
   const effects = consumeInvite(db, token, user.id);
   expect(effects).not.toBeNull();
 
-  const infoAfter = getInvitePublicInfo(db, token);
+  const infoAfter = await getInvitePublicInfo(db, token);
   expect(infoAfter?.status).toBe("accepted");
 
   const second = consumeInvite(db, token, user.id);
@@ -55,12 +61,12 @@ test("session invite is single-use", async () => {
 test("messages round-trip as UIMessage JSONB", async () => {
   const user = await getOrCreateUser(db, "registry-user-2");
   const orgId = await createOrg(db, { name: "Org2", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team2", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team2", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Review",
   });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
 
   const threadId = crypto.randomUUID();
   db.run(

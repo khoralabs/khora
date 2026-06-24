@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 
 import { closeDb } from "../db/index";
 import { getInviteTeamId, mintTeamMemberInvite } from "../db/invites";
@@ -138,23 +139,26 @@ test("POST /api/onboarding rejects duplicate team membership", async () => {
 });
 
 test("team invite mint and accept add membership", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const db = new Database(":memory:");
   ensureExedraSchema(db);
 
   const owner = await getOrCreateUser(db, "registry-owner");
   const joiner = await getOrCreateUser(db, "registry-joiner");
   const orgId = await createOrg(db, { name: "Org", ownerId: owner.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: owner.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: owner.id });
 
   const token = mintTeamMemberInvite(db, { teamId, createdByUserId: owner.id });
   expect(getInviteTeamId(db, token)).toBe(teamId);
 
-  addTeamMember(db, teamId, joiner.id);
-  expect(userHasAnyTeam(db, joiner.id)).toBe(true);
-  expect(listTeamsForUser(db, joiner.id)[0]?.name).toBe("Team");
+  await addTeamMember(db, teamId, joiner.id);
+  expect(await userHasAnyTeam(db, joiner.id)).toBe(true);
+  const joinerTeams = await listTeamsForUser(db, joiner.id);
+  expect(joinerTeams[0]?.name).toBe("Team");
 
-  addTeamMember(db, teamId, joiner.id);
-  expect(listTeamsForUser(db, joiner.id)).toHaveLength(1);
+  await addTeamMember(db, teamId, joiner.id);
+  expect(await listTeamsForUser(db, joiner.id)).toHaveLength(1);
 
   db.close();
 });

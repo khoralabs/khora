@@ -10,6 +10,7 @@ import {
   getOrg,
   getTeam,
   rollbackTeamCreation,
+  type TeamRecord,
   updateTeamAvatarS3Key,
   updateTeamName,
 } from "../db/membership";
@@ -46,35 +47,37 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "org:team_manage", { type: ResourceType.Organization, id: orgId })) {
+  if (
+    !(await enforce(user.id, "org:team_manage", { type: ResourceType.Organization, id: orgId }))
+  ) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const teamId = createTeam(db, { orgId, name, ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name, ownerId: user.id });
 
   try {
     bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
   } catch (err) {
-    rollbackTeamCreation(db, teamId);
+    await rollbackTeamCreation(db, teamId);
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
     logger.error({ err: message }, "create team memories bootstrap failed");
     return Response.json({ error: "Could not set up team memories. Try again." }, { status: 500 });
   }
 
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) {
     return Response.json({ error: "Failed to create team" }, { status: 500 });
   }
 
   try {
-    createOnboardingInterviewForMember(db, {
+    await createOnboardingInterviewForMember(db, {
       teamId,
       userId: user.id,
       orgName: org.name,
       teamName: team.name,
     });
   } catch (err) {
-    rollbackTeamCreation(db, teamId);
+    await rollbackTeamCreation(db, teamId);
     const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
     logger.error({ err: message }, "create team onboarding interview failed");
     return Response.json(
@@ -103,18 +106,18 @@ export async function handleMintTeamInvite(req: Request, teamId: string): Promis
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) {
     return Response.json({ error: "Team not found" }, { status: 404 });
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
   const canMint =
-    enforce(db, user.id, "team:member_manage", { type: ResourceType.Team, id: teamId }) ||
-    enforce(db, user.id, "org:member_manage", {
+    (await enforce(user.id, "team:member_manage", { type: ResourceType.Team, id: teamId })) ||
+    (await enforce(user.id, "org:member_manage", {
       type: ResourceType.Organization,
       id: team.orgId,
-    });
+    }));
   if (!canMint) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -130,18 +133,14 @@ function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
 
-function serializeTeamSettings(
-  team: NonNullable<ReturnType<typeof getTeam>>,
-  userId: string,
-  db: ReturnType<typeof getDb>,
-) {
+async function serializeTeamSettings(team: TeamRecord, userId: string) {
   return {
     id: team.id,
     name: team.name,
     orgId: team.orgId,
     avatarUrl: avatarUrlFromS3Key("team", team.id, team.avatarS3Key),
-    canEdit: canEditTeam(db, userId, team.id),
-    permissions: serializeTeamPermissionsForAccount(db, userId, team.id).permissions,
+    canEdit: await canEditTeam(userId, team.id),
+    permissions: (await serializeTeamPermissionsForAccount(userId, team.id)).permissions,
   };
 }
 
@@ -150,17 +149,17 @@ export async function handleGetTeamSettings(req: Request, teamId: string): Promi
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "team:read", { type: ResourceType.Team, id: teamId })) {
+  if (!(await enforce(user.id, "team:read", { type: ResourceType.Team, id: teamId }))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  return jsonResponse(serializeTeamSettings(team, user.id, db));
+  return jsonResponse(await serializeTeamSettings(team, user.id));
 }
 
 type PatchTeamBody = {
@@ -184,22 +183,22 @@ export async function handlePatchTeam(req: Request, teamId: string): Promise<Res
   }
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "team:write", { type: ResourceType.Team, id: teamId })) {
+  if (!(await enforce(user.id, "team:write", { type: ResourceType.Team, id: teamId }))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  const updated = updateTeamName(db, teamId, name);
+  const updated = await updateTeamName(db, teamId, name);
   if (updated === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
-  return jsonResponse(serializeTeamSettings(updated, user.id, db));
+  return jsonResponse(await serializeTeamSettings(updated, user.id));
 }
 
 export async function handleUploadTeamAvatar(req: Request, teamId: string): Promise<Response> {
@@ -207,13 +206,13 @@ export async function handleUploadTeamAvatar(req: Request, teamId: string): Prom
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "team:write", { type: ResourceType.Team, id: teamId })) {
+  if (!(await enforce(user.id, "team:write", { type: ResourceType.Team, id: teamId }))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -233,12 +232,12 @@ export async function handleUploadTeamAvatar(req: Request, teamId: string): Prom
     return jsonResponse({ error: message }, 500);
   }
 
-  const updated = updateTeamAvatarS3Key(db, teamId, s3Key);
+  const updated = await updateTeamAvatarS3Key(db, teamId, s3Key);
   if (updated === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
-  return jsonResponse(serializeTeamSettings(updated, user.id, db));
+  return jsonResponse(await serializeTeamSettings(updated, user.id));
 }
 
 export async function handleDeleteTeamAvatar(req: Request, teamId: string): Promise<Response> {
@@ -246,13 +245,13 @@ export async function handleDeleteTeamAvatar(req: Request, teamId: string): Prom
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "team:write", { type: ResourceType.Team, id: teamId })) {
+  if (!(await enforce(user.id, "team:write", { type: ResourceType.Team, id: teamId }))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -263,10 +262,10 @@ export async function handleDeleteTeamAvatar(req: Request, teamId: string): Prom
     return jsonResponse({ error: message }, 500);
   }
 
-  const updated = updateTeamAvatarS3Key(db, teamId, null);
+  const updated = await updateTeamAvatarS3Key(db, teamId, null);
   if (updated === null) {
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
-  return jsonResponse(serializeTeamSettings(updated, user.id, db));
+  return jsonResponse(await serializeTeamSettings(updated, user.id));
 }

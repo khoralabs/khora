@@ -2,9 +2,7 @@ import type { Database } from "bun:sqlite";
 
 import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
 import { grantTeamScopeOrgPermission, grantTeamScopePermission } from "../authz/grant-templates";
-import { getOrgIdForTeam, hasGrant } from "../authz/grants";
-import { ResourceType, teamScope } from "../authz/policy";
-import { ensureAuthzSchema } from "../authz/schema";
+import { getOrgIdForTeam, hasGrant, ResourceType, teamScope } from "../authz/policy";
 
 export function ensureExedraSchema(db: Database): void {
   db.run("PRAGMA foreign_keys = ON");
@@ -170,8 +168,7 @@ export function ensureExedraSchema(db: Database): void {
   migrateUnifiedDocumentsTable(db);
   migrateDocumentsAddGrantResourceColumns(db);
   migrateDocumentsDropSessionIdColumn(db);
-  ensureAuthzSchema(db);
-  migrateDefaultSessionCreatePermissions(db);
+  void migrateDefaultSessionCreatePermissions(db);
   migrateSessionParticipantsPersonalMemoryConsent(db);
   migrateJobsExtend(db);
   migrateThreadsAddFacilitationKind(db);
@@ -599,7 +596,7 @@ function migrateSessionParticipantsPersonalMemoryConsent(db: Database): void {
   }
 }
 
-function migrateDefaultSessionCreatePermissions(db: Database): void {
+async function migrateDefaultSessionCreatePermissions(db: Database): Promise<void> {
   db.run(`
     CREATE TABLE IF NOT EXISTS exedra_schema_patches (
       patch_id TEXT PRIMARY KEY NOT NULL,
@@ -615,27 +612,25 @@ function migrateDefaultSessionCreatePermissions(db: Database): void {
 
   const teams = db.query<{ id: string }, []>(`SELECT id FROM teams`).all();
   for (const { id: teamId } of teams) {
-    const orgId = getOrgIdForTeam(db, teamId);
+    const orgId = await getOrgIdForTeam(teamId);
     if (orgId === null) continue;
     if (
-      !hasGrant(
-        db,
+      !(await hasGrant(
         teamScope(teamId),
         { type: ResourceType.Team, id: teamId },
         TeamPermission.SessionCreate,
-      )
+      ))
     ) {
-      grantTeamScopePermission(db, teamId, TeamPermission.SessionCreate);
+      await grantTeamScopePermission(teamId, TeamPermission.SessionCreate);
     }
     if (
-      !hasGrant(
-        db,
+      !(await hasGrant(
         teamScope(teamId),
         { type: ResourceType.Organization, id: orgId },
         OrgPermission.SessionCreate,
-      )
+      ))
     ) {
-      grantTeamScopeOrgPermission(db, teamId, orgId, OrgPermission.SessionCreate);
+      await grantTeamScopeOrgPermission(teamId, orgId, OrgPermission.SessionCreate);
     }
   }
 

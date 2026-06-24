@@ -1,21 +1,21 @@
 import type { Database } from "bun:sqlite";
 
 import type { InviteEffects } from "@shared/invites/effects";
-import { entitle } from "../authz/entitlements";
-import { grant } from "../authz/grants";
 import { accountScope } from "../authz/policy";
+import { requireAuthzServiceClient } from "../authz/service-client";
 
-export function applyInviteEffects(db: Database, userId: string, effects: InviteEffects): void {
+export async function applyInviteEffects(
+  _db: Database,
+  userId: string,
+  effects: InviteEffects,
+): Promise<void> {
+  const client = requireAuthzServiceClient();
   const scope = accountScope(userId);
   for (const grantEffect of effects.grants) {
-    grant(
-      db,
+    await client.grant({
       scope,
-      { type: grantEffect.resourceType, id: grantEffect.resourceId },
-      grantEffect.feature,
-    );
-  }
-  for (const entitlement of effects.entitlements) {
-    entitle(db, scope, entitlement.feature);
+      resource: { type: grantEffect.resourceType, id: grantEffect.resourceId },
+      feature: grantEffect.feature,
+    });
   }
 }

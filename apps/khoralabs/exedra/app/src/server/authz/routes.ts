@@ -23,7 +23,6 @@ import {
   canManageOrgPermissions,
   canManageTeamPermissions,
   enforce,
-  getOrgIdForTeam,
   hasOrgAdminGrant,
   hasTeamAdminGrant,
   ResourceType,
@@ -33,14 +32,10 @@ function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
 
-export function serializeOrgPermissionsForAccount(
-  db: ReturnType<typeof getDb>,
-  accountId: string,
-  orgId: string,
-) {
-  const granted = listEffectiveOrgPermissionsForAccount(db, accountId, orgId);
+export async function serializeOrgPermissionsForAccount(accountId: string, orgId: string) {
+  const granted = await listEffectiveOrgPermissionsForAccount(accountId, orgId);
   const permissions = orgPermissionsSnapshot(granted);
-  if (hasOrgAdminGrant(db, accountId, orgId)) {
+  if (await hasOrgAdminGrant(accountId, orgId)) {
     for (const permission of ORG_PERMISSIONS) {
       permissions[permission] = true;
     }
@@ -48,23 +43,15 @@ export function serializeOrgPermissionsForAccount(
   return { granted, permissions };
 }
 
-export function serializeTeamScopeOrgPermissions(
-  db: ReturnType<typeof getDb>,
-  teamId: string,
-  orgId: string,
-) {
-  const granted = listTeamScopeOrgPermissions(db, teamId, orgId);
+export async function serializeTeamScopeOrgPermissions(teamId: string, orgId: string) {
+  const granted = await listTeamScopeOrgPermissions(teamId, orgId);
   return { granted, permissions: orgPermissionsSnapshot(granted) };
 }
 
-export function serializeTeamPermissionsForAccount(
-  db: ReturnType<typeof getDb>,
-  accountId: string,
-  teamId: string,
-) {
-  const granted = listEffectiveTeamPermissionsForAccount(db, accountId, teamId);
+export async function serializeTeamPermissionsForAccount(accountId: string, teamId: string) {
+  const granted = await listEffectiveTeamPermissionsForAccount(accountId, teamId);
   const permissions = teamPermissionsSnapshot(granted);
-  if (hasTeamAdminGrant(db, accountId, teamId)) {
+  if (await hasTeamAdminGrant(accountId, teamId)) {
     for (const permission of TEAM_PERMISSIONS) {
       permissions[permission] = true;
     }
@@ -72,8 +59,8 @@ export function serializeTeamPermissionsForAccount(
   return { granted, permissions };
 }
 
-export function serializeTeamScopePermissions(db: ReturnType<typeof getDb>, teamId: string) {
-  const granted = listTeamScopePermissions(db, teamId);
+export async function serializeTeamScopePermissions(teamId: string) {
+  const granted = await listTeamScopePermissions(teamId);
   return { granted, permissions: teamPermissionsSnapshot(granted) };
 }
 
@@ -90,17 +77,18 @@ export async function handleGetOrgMemberPermissions(
   if (org === null) return jsonResponse({ error: "Organization not found" }, 404);
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "org:read", { type: ResourceType.Organization, id: orgId })) {
+  if (!(await enforce(user.id, "org:read", { type: ResourceType.Organization, id: orgId }))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  const member = listOrgMembers(db, orgId).find((row) => row.userId === memberUserId);
+  const members = await listOrgMembers(db, orgId);
+  const member = members.find((row) => row.userId === memberUserId);
   if (member === undefined) return jsonResponse({ error: "Member not found" }, 404);
 
   return jsonResponse({
     accountId: memberUserId,
-    canEdit: canManageOrgPermissions(db, user.id, orgId),
-    ...serializeOrgPermissionsForAccount(db, memberUserId, orgId),
+    canEdit: await canManageOrgPermissions(user.id, orgId),
+    ...(await serializeOrgPermissionsForAccount(memberUserId, orgId)),
   });
 }
 
@@ -140,19 +128,20 @@ export async function handlePatchOrgMemberPermissions(
   if (org === null) return jsonResponse({ error: "Organization not found" }, 404);
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!canManageOrgPermissions(db, user.id, orgId)) {
+  if (!(await canManageOrgPermissions(user.id, orgId))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  const member = listOrgMembers(db, orgId).find((row) => row.userId === memberUserId);
+  const members = await listOrgMembers(db, orgId);
+  const member = members.find((row) => row.userId === memberUserId);
   if (member === undefined) return jsonResponse({ error: "Member not found" }, 404);
 
-  setOrgPermissionsForAccount(db, memberUserId, orgId, permissions as OrgPermission[]);
+  await setOrgPermissionsForAccount(memberUserId, orgId, permissions as OrgPermission[]);
 
   return jsonResponse({
     accountId: memberUserId,
     canEdit: true,
-    ...serializeOrgPermissionsForAccount(db, memberUserId, orgId),
+    ...(await serializeOrgPermissionsForAccount(memberUserId, orgId)),
   });
 }
 
@@ -161,20 +150,20 @@ export async function handleGetTeamPermissions(req: Request, teamId: string): Pr
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) return jsonResponse({ error: "Team not found" }, 404);
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!enforce(db, user.id, "team:read", { type: ResourceType.Team, id: teamId })) {
+  if (!(await enforce(user.id, "team:read", { type: ResourceType.Team, id: teamId }))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
   return jsonResponse({
     teamId,
     orgId: team.orgId,
-    canEdit: canManageTeamPermissions(db, user.id, teamId, team.orgId),
-    org: serializeTeamScopeOrgPermissions(db, teamId, team.orgId),
-    team: serializeTeamScopePermissions(db, teamId),
+    canEdit: await canManageTeamPermissions(user.id, teamId, team.orgId),
+    org: await serializeTeamScopeOrgPermissions(teamId, team.orgId),
+    team: await serializeTeamScopePermissions(teamId),
   });
 }
 
@@ -212,27 +201,27 @@ export async function handlePatchTeamPermissions(req: Request, teamId: string): 
   }
 
   const db = getDb();
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   if (team === null) return jsonResponse({ error: "Team not found" }, 404);
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!canManageTeamPermissions(db, user.id, teamId, team.orgId)) {
+  if (!(await canManageTeamPermissions(user.id, teamId, team.orgId))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
   if (grantScope === "org") {
-    setTeamScopeOrgPermissions(db, teamId, team.orgId, permissions as OrgPermission[]);
+    await setTeamScopeOrgPermissions(teamId, team.orgId, permissions as OrgPermission[]);
   } else {
-    setTeamScopePermissions(db, teamId, permissions as TeamPermission[]);
+    await setTeamScopePermissions(teamId, permissions as TeamPermission[]);
   }
 
   return jsonResponse({
     teamId,
     orgId: team.orgId,
     canEdit: true,
-    org: serializeTeamScopeOrgPermissions(db, teamId, team.orgId),
-    team: serializeTeamScopePermissions(db, teamId),
+    org: await serializeTeamScopeOrgPermissions(teamId, team.orgId),
+    team: await serializeTeamScopePermissions(teamId),
   });
 }
 
-export { getOrgIdForTeam };
+export { getOrgIdForTeam } from "./policy";

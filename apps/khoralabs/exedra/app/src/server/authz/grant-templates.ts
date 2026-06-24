@@ -1,5 +1,3 @@
-import type { Database } from "bun:sqlite";
-
 import {
   ORG_PERMISSIONS,
   type OrgPermission,
@@ -8,278 +6,280 @@ import {
   type TeamPermission,
   teamPermissionGrantTemplates,
 } from "../../shared/authz/permissions";
-import { grant, hasGrant, listTeamIdsForOrg, revokeGrant } from "./grants";
-import { accountScope, Feature, ResourceType, teamScope } from "./policy";
+import {
+  accountScope,
+  Feature,
+  grantOrgAdmin,
+  hasGrant,
+  listTeamIdsForOrg,
+  ResourceType,
+  teamScope,
+} from "./policy";
+import { requireAuthzServiceClient } from "./service-client";
 
-export function grantOrgPermission(
-  db: Database,
+async function grant(
+  scope: { type: string; id: string },
+  resource: { type: string; id: string },
+  feature: string,
+): Promise<string> {
+  const client = requireAuthzServiceClient();
+  const { id } = await client.grant({ scope, resource, feature });
+  return id;
+}
+
+async function revokeGrant(
+  scope: { type: string; id: string },
+  resource: { type: string; id: string },
+  feature: string,
+): Promise<void> {
+  const client = requireAuthzServiceClient();
+  await client.revokeGrant({ scope, resource, feature });
+}
+
+export async function grantOrgPermission(
   accountId: string,
   orgId: string,
   permission: OrgPermission,
-): string {
-  return grant(
-    db,
+): Promise<string> {
+  return grant(accountScope(accountId), { type: ResourceType.Organization, id: orgId }, permission);
+}
+
+export async function revokeOrgPermission(
+  accountId: string,
+  orgId: string,
+  permission: OrgPermission,
+): Promise<void> {
+  await revokeGrant(
     accountScope(accountId),
     { type: ResourceType.Organization, id: orgId },
     permission,
   );
 }
 
-export function revokeOrgPermission(
-  db: Database,
-  accountId: string,
-  orgId: string,
-  permission: OrgPermission,
-): void {
-  revokeGrant(
-    db,
-    accountScope(accountId),
-    { type: ResourceType.Organization, id: orgId },
-    permission,
-  );
-}
-
-export function grantTeamPermission(
-  db: Database,
+export async function grantTeamPermission(
   accountId: string,
   teamId: string,
   permission: TeamPermission,
-): string {
-  return grant(db, accountScope(accountId), { type: ResourceType.Team, id: teamId }, permission);
+): Promise<string> {
+  return grant(accountScope(accountId), { type: ResourceType.Team, id: teamId }, permission);
 }
 
-export function revokeTeamPermission(
-  db: Database,
+export async function revokeTeamPermission(
   accountId: string,
   teamId: string,
   permission: TeamPermission,
-): void {
-  revokeGrant(db, accountScope(accountId), { type: ResourceType.Team, id: teamId }, permission);
+): Promise<void> {
+  await revokeGrant(accountScope(accountId), { type: ResourceType.Team, id: teamId }, permission);
 }
 
-export function grantTeamScopePermission(
-  db: Database,
+export async function grantTeamScopePermission(
   teamId: string,
   permission: TeamPermission,
-): string {
-  return grant(db, teamScope(teamId), { type: ResourceType.Team, id: teamId }, permission);
+): Promise<string> {
+  return grant(teamScope(teamId), { type: ResourceType.Team, id: teamId }, permission);
 }
 
-export function revokeTeamScopePermission(
-  db: Database,
+export async function revokeTeamScopePermission(
   teamId: string,
   permission: TeamPermission,
-): void {
-  revokeGrant(db, teamScope(teamId), { type: ResourceType.Team, id: teamId }, permission);
+): Promise<void> {
+  await revokeGrant(teamScope(teamId), { type: ResourceType.Team, id: teamId }, permission);
 }
 
-export function grantTeamScopeOrgPermission(
-  db: Database,
+export async function grantTeamScopeOrgPermission(
   teamId: string,
   orgId: string,
   permission: OrgPermission,
-): string {
-  return grant(db, teamScope(teamId), { type: ResourceType.Organization, id: orgId }, permission);
+): Promise<string> {
+  return grant(teamScope(teamId), { type: ResourceType.Organization, id: orgId }, permission);
 }
 
-export function revokeTeamScopeOrgPermission(
-  db: Database,
+export async function revokeTeamScopeOrgPermission(
   teamId: string,
   orgId: string,
   permission: OrgPermission,
-): void {
-  revokeGrant(db, teamScope(teamId), { type: ResourceType.Organization, id: orgId }, permission);
+): Promise<void> {
+  await revokeGrant(teamScope(teamId), { type: ResourceType.Organization, id: orgId }, permission);
 }
 
-export function grantAllOrgPermissions(db: Database, accountId: string, orgId: string): void {
+export async function grantAllOrgPermissions(accountId: string, orgId: string): Promise<void> {
   for (const template of orgPermissionGrantTemplates(orgId)) {
-    grantOrgPermission(db, accountId, orgId, template.feature);
+    await grantOrgPermission(accountId, orgId, template.feature);
   }
-  grant(db, accountScope(accountId), { type: ResourceType.Organization, id: orgId }, Feature.Admin);
+  await grantOrgAdmin(accountId, orgId);
 }
 
-export function grantAllTeamPermissions(db: Database, accountId: string, teamId: string): void {
+export async function grantAllTeamPermissions(accountId: string, teamId: string): Promise<void> {
   for (const template of teamPermissionGrantTemplates(teamId)) {
-    grantTeamPermission(db, accountId, teamId, template.feature);
+    await grantTeamPermission(accountId, teamId, template.feature);
   }
-  grant(db, accountScope(accountId), { type: ResourceType.Team, id: teamId }, Feature.Member);
-  grant(db, accountScope(accountId), { type: ResourceType.Team, id: teamId }, Feature.Admin);
+  await grant(accountScope(accountId), { type: ResourceType.Team, id: teamId }, Feature.Member);
+  await grant(accountScope(accountId), { type: ResourceType.Team, id: teamId }, Feature.Admin);
 }
 
-export function listOrgPermissionsForAccount(
-  db: Database,
+export async function listOrgPermissionsForAccount(
   accountId: string,
   orgId: string,
-  nowMs = Date.now(),
-): OrgPermission[] {
-  return ORG_PERMISSIONS.filter((permission) =>
-    hasGrant(
-      db,
-      accountScope(accountId),
-      { type: ResourceType.Organization, id: orgId },
-      permission,
-      nowMs,
+): Promise<OrgPermission[]> {
+  const results = await Promise.all(
+    ORG_PERMISSIONS.map(async (permission) =>
+      (await hasGrant(
+        accountScope(accountId),
+        { type: ResourceType.Organization, id: orgId },
+        permission,
+      ))
+        ? permission
+        : null,
     ),
   );
+  return results.filter((permission): permission is OrgPermission => permission !== null);
 }
 
-export function listTeamScopeOrgPermissions(
-  db: Database,
+export async function listTeamScopeOrgPermissions(
   teamId: string,
   orgId: string,
-  nowMs = Date.now(),
-): OrgPermission[] {
-  return ORG_PERMISSIONS.filter((permission) =>
-    hasGrant(
-      db,
-      teamScope(teamId),
-      { type: ResourceType.Organization, id: orgId },
-      permission,
-      nowMs,
+): Promise<OrgPermission[]> {
+  const results = await Promise.all(
+    ORG_PERMISSIONS.map(async (permission) =>
+      (await hasGrant(
+        teamScope(teamId),
+        { type: ResourceType.Organization, id: orgId },
+        permission,
+      ))
+        ? permission
+        : null,
     ),
   );
+  return results.filter((permission): permission is OrgPermission => permission !== null);
 }
 
-function listTeamIdsForAccountInOrg(
-  db: Database,
-  orgId: string,
-  accountId: string,
-  nowMs = Date.now(),
-): string[] {
-  return listTeamIdsForOrg(db, orgId, nowMs).filter((teamId) =>
-    hasGrant(
-      db,
-      accountScope(accountId),
-      { type: ResourceType.Team, id: teamId },
-      Feature.Member,
-      nowMs,
+async function listTeamIdsForAccountInOrg(orgId: string, accountId: string): Promise<string[]> {
+  const teamIds = await listTeamIdsForOrg(orgId);
+  const memberships = await Promise.all(
+    teamIds.map(async (teamId) =>
+      (await hasGrant(
+        accountScope(accountId),
+        { type: ResourceType.Team, id: teamId },
+        Feature.Member,
+      ))
+        ? teamId
+        : null,
     ),
   );
+  return memberships.filter((teamId): teamId is string => teamId !== null);
 }
 
-export function listEffectiveOrgPermissionsForAccount(
-  db: Database,
+export async function listEffectiveOrgPermissionsForAccount(
   accountId: string,
   orgId: string,
-  nowMs = Date.now(),
-): OrgPermission[] {
-  const granted = new Set(listOrgPermissionsForAccount(db, accountId, orgId, nowMs));
-  for (const teamId of listTeamIdsForAccountInOrg(db, orgId, accountId, nowMs)) {
-    for (const permission of listTeamScopeOrgPermissions(db, teamId, orgId, nowMs)) {
+): Promise<OrgPermission[]> {
+  const granted = new Set(await listOrgPermissionsForAccount(accountId, orgId));
+  for (const teamId of await listTeamIdsForAccountInOrg(orgId, accountId)) {
+    for (const permission of await listTeamScopeOrgPermissions(teamId, orgId)) {
       granted.add(permission);
     }
   }
   return ORG_PERMISSIONS.filter((permission) => granted.has(permission));
 }
 
-export function listTeamPermissionsForAccount(
-  db: Database,
+export async function listTeamPermissionsForAccount(
   accountId: string,
   teamId: string,
-  nowMs = Date.now(),
-): TeamPermission[] {
-  return TEAM_PERMISSIONS.filter((permission) =>
-    hasGrant(
-      db,
-      accountScope(accountId),
-      { type: ResourceType.Team, id: teamId },
-      permission,
-      nowMs,
+): Promise<TeamPermission[]> {
+  const results = await Promise.all(
+    TEAM_PERMISSIONS.map(async (permission) =>
+      (await hasGrant(accountScope(accountId), { type: ResourceType.Team, id: teamId }, permission))
+        ? permission
+        : null,
     ),
   );
+  return results.filter((permission): permission is TeamPermission => permission !== null);
 }
 
-export function listTeamScopePermissions(
-  db: Database,
-  teamId: string,
-  nowMs = Date.now(),
-): TeamPermission[] {
-  return TEAM_PERMISSIONS.filter((permission) =>
-    hasGrant(db, teamScope(teamId), { type: ResourceType.Team, id: teamId }, permission, nowMs),
+export async function listTeamScopePermissions(teamId: string): Promise<TeamPermission[]> {
+  const results = await Promise.all(
+    TEAM_PERMISSIONS.map(async (permission) =>
+      (await hasGrant(teamScope(teamId), { type: ResourceType.Team, id: teamId }, permission))
+        ? permission
+        : null,
+    ),
   );
+  return results.filter((permission): permission is TeamPermission => permission !== null);
 }
 
-export function listEffectiveTeamPermissionsForAccount(
-  db: Database,
+export async function listEffectiveTeamPermissionsForAccount(
   accountId: string,
   teamId: string,
-  nowMs = Date.now(),
-): TeamPermission[] {
-  const granted = new Set(listTeamPermissionsForAccount(db, accountId, teamId, nowMs));
-  const isMember = hasGrant(
-    db,
+): Promise<TeamPermission[]> {
+  const granted = new Set(await listTeamPermissionsForAccount(accountId, teamId));
+  const isMember = await hasGrant(
     accountScope(accountId),
     { type: ResourceType.Team, id: teamId },
     Feature.Member,
-    nowMs,
   );
   if (isMember) {
-    for (const permission of listTeamScopePermissions(db, teamId, nowMs)) {
+    for (const permission of await listTeamScopePermissions(teamId)) {
       granted.add(permission);
     }
   }
   return TEAM_PERMISSIONS.filter((permission) => granted.has(permission));
 }
 
-export function setOrgPermissionsForAccount(
-  db: Database,
+export async function setOrgPermissionsForAccount(
   accountId: string,
   orgId: string,
   permissions: readonly OrgPermission[],
-): void {
+): Promise<void> {
   const desired = new Set(permissions);
   for (const permission of ORG_PERMISSIONS) {
     if (desired.has(permission)) {
-      grantOrgPermission(db, accountId, orgId, permission);
+      await grantOrgPermission(accountId, orgId, permission);
     } else {
-      revokeOrgPermission(db, accountId, orgId, permission);
+      await revokeOrgPermission(accountId, orgId, permission);
     }
   }
 }
 
-export function setTeamPermissionsForAccount(
-  db: Database,
+export async function setTeamPermissionsForAccount(
   accountId: string,
   teamId: string,
   permissions: readonly TeamPermission[],
-): void {
+): Promise<void> {
   const desired = new Set(permissions);
   for (const permission of TEAM_PERMISSIONS) {
     if (desired.has(permission)) {
-      grantTeamPermission(db, accountId, teamId, permission);
+      await grantTeamPermission(accountId, teamId, permission);
     } else {
-      revokeTeamPermission(db, accountId, teamId, permission);
+      await revokeTeamPermission(accountId, teamId, permission);
     }
   }
 }
 
-export function setTeamScopePermissions(
-  db: Database,
+export async function setTeamScopePermissions(
   teamId: string,
   permissions: readonly TeamPermission[],
-): void {
+): Promise<void> {
   const desired = new Set(permissions);
   for (const permission of TEAM_PERMISSIONS) {
     if (desired.has(permission)) {
-      grantTeamScopePermission(db, teamId, permission);
+      await grantTeamScopePermission(teamId, permission);
     } else {
-      revokeTeamScopePermission(db, teamId, permission);
+      await revokeTeamScopePermission(teamId, permission);
     }
   }
 }
 
-export function setTeamScopeOrgPermissions(
-  db: Database,
+export async function setTeamScopeOrgPermissions(
   teamId: string,
   orgId: string,
   permissions: readonly OrgPermission[],
-): void {
+): Promise<void> {
   const desired = new Set(permissions);
   for (const permission of ORG_PERMISSIONS) {
     if (desired.has(permission)) {
-      grantTeamScopeOrgPermission(db, teamId, orgId, permission);
+      await grantTeamScopeOrgPermission(teamId, orgId, permission);
     } else {
-      revokeTeamScopeOrgPermission(db, teamId, orgId, permission);
+      await revokeTeamScopeOrgPermission(teamId, orgId, permission);
     }
   }
 }

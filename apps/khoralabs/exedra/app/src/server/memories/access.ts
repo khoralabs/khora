@@ -1,15 +1,17 @@
 import type { Database } from "bun:sqlite";
 import type { NamespacePath } from "@khoralabs/memories-core";
 
-import { listTeamIdsForOrg } from "../authz/grants.js";
 import {
+  accountScope,
   canContributeToSessionKg,
   canContributeToTeamKg,
   canReadPersonalKg,
   canReadSessionKg,
   enforce,
+  listTeamIdsForOrg,
   ResourceType,
 } from "../authz/policy.js";
+import { requireAuthzServiceClient } from "../authz/service-client.js";
 import { encodePrincipalIdForMemories } from "./encode-principal-id.js";
 import { orgSessionScope, orgTeamScope, userScope } from "./namespaces.js";
 
@@ -115,29 +117,33 @@ export function namespaceMatchesGrantResource(
   }
 }
 
-export function canReadNamespace(db: Database, userId: string, scope: NamespaceScope): boolean {
+export async function canReadNamespace(
+  _db: Database,
+  userId: string,
+  scope: NamespaceScope,
+): Promise<boolean> {
   switch (scope.kind) {
     case "personal":
-      return canReadPersonalKg(db, userId, scope.ownerId);
+      return await canReadPersonalKg(userId, scope.ownerId);
     case "team":
-      return enforce(db, userId, "team:read", { type: ResourceType.Team, id: scope.teamId });
+      return await enforce(userId, "team:read", { type: ResourceType.Team, id: scope.teamId });
     case "session":
-      return canReadSessionKg(db, userId, scope.sessionId);
+      return await canReadSessionKg(userId, scope.sessionId);
   }
 }
 
-export function canContributeToNamespace(
-  db: Database,
+export async function canContributeToNamespace(
+  _db: Database,
   userId: string,
   scope: NamespaceScope,
-): boolean {
+): Promise<boolean> {
   switch (scope.kind) {
     case "personal":
       return scope.ownerId === userId;
     case "team":
-      return canContributeToTeamKg(db, userId, scope.teamId);
+      return await canContributeToTeamKg(userId, scope.teamId);
     case "session":
-      return canContributeToSessionKg(db, userId, scope.sessionId);
+      return await canContributeToSessionKg(userId, scope.sessionId);
   }
 }
 
@@ -152,10 +158,14 @@ export function namespaceForScope(scope: NamespaceScope): NamespacePath {
   }
 }
 
-export function listReadableOrgNamespaces(db: Database, userId: string, orgId: string): string[] {
+export async function listReadableOrgNamespaces(
+  db: Database,
+  userId: string,
+  orgId: string,
+): Promise<string[]> {
   const namespaces = new Set<string>();
-  for (const teamId of listTeamIdsForOrg(db, orgId)) {
-    if (enforce(db, userId, "team:read", { type: ResourceType.Team, id: teamId })) {
+  for (const teamId of await listTeamIdsForOrg(orgId)) {
+    if (await enforce(userId, "team:read", { type: ResourceType.Team, id: teamId })) {
       namespaces.add(orgTeamScope(orgId, teamId));
     }
 
@@ -163,67 +173,61 @@ export function listReadableOrgNamespaces(db: Database, userId: string, orgId: s
       .query<{ id: string }, [string]>(`SELECT id FROM sessions WHERE team_id = ?`)
       .all(teamId);
     for (const session of sessions) {
-      if (canReadSessionKg(db, userId, session.id)) {
+      if (await canReadSessionKg(userId, session.id)) {
         namespaces.add(orgSessionScope(orgId, teamId, session.id));
       }
     }
   }
 
-  const directSessions = db
-    .query<{ session_id: string; team_id: string }, [string, string]>(
-      `SELECT g.resource_id AS session_id, s.team_id
-       FROM authz_grants g
-       INNER JOIN sessions s ON s.id = g.resource_id
-       WHERE g.scope_type = 'account'
-         AND g.scope_id = ?
-         AND g.resource_type = 'session'
-         AND g.feature IN ('read', 'participant', 'admin')
-         AND g.revoked_at_ms IS NULL
-         AND s.team_id IN (
-           SELECT scope_id FROM authz_grants
-           WHERE resource_type = 'org' AND resource_id = ?
-             AND feature = 'member' AND scope_type = 'team'
-             AND revoked_at_ms IS NULL
-         )`,
-    )
-    .all(userId, orgId);
-  for (const row of directSessions) {
-    if (canReadSessionKg(db, userId, row.session_id)) {
-      namespaces.add(orgSessionScope(orgId, row.team_id, row.session_id));
+  const client = requireAuthzServiceClient();
+  const { grants } = await client.listGrantsForScope({ scope: accountScope(userId) });
+  const orgTeamIds = new Set(await listTeamIdsForOrg(orgId));
+  for (const grant of grants) {
+    if (grant.resourceType !== ResourceType.Session) continue;
+    if (!["read", "participant", "admin"].includes(grant.feature)) continue;
+    const sessionRow = db
+      .query<{ team_id: string }, [string]>(`SELECT team_id FROM sessions WHERE id = ? LIMIT 1`)
+      .get(grant.resourceId);
+    if (sessionRow === null || !orgTeamIds.has(sessionRow.team_id)) continue;
+    if (await canReadSessionKg(userId, grant.resourceId)) {
+      namespaces.add(orgSessionScope(orgId, sessionRow.team_id, grant.resourceId));
     }
   }
 
   return [...namespaces];
 }
 
-export function listReadablePersonalNamespaces(db: Database, userId: string): string[] {
+export async function listReadablePersonalNamespaces(
+  _db: Database,
+  userId: string,
+): Promise<string[]> {
   const namespaces: string[] = [];
-  if (canReadPersonalKg(db, userId, userId)) {
+  if (await canReadPersonalKg(userId, userId)) {
     namespaces.push(userScope(userId));
   }
   return namespaces;
 }
 
-export function authorizeOrgNamespaceRead(
+export async function authorizeOrgNamespaceRead(
   db: Database,
   userId: string,
   orgId: string,
   namespace: string,
-): boolean {
+): Promise<boolean> {
   if (!assertNamespaceMatchesOrg(namespace, orgId)) return false;
   const scope = parseNamespaceScope(namespace, { orgId });
   if (scope === null) return false;
-  return canReadNamespace(db, userId, scope);
+  return await canReadNamespace(db, userId, scope);
 }
 
-export function authorizePersonalNamespaceRead(
-  db: Database,
+export async function authorizePersonalNamespaceRead(
+  _db: Database,
   userId: string,
   namespace: string,
   ownerId: string,
-): boolean {
+): Promise<boolean> {
   const encodedOwner = encodePrincipalIdForMemories(ownerId);
   const segments = namespace.split("/").filter((segment) => segment.length > 0);
   if (segments[0] !== encodedOwner) return false;
-  return canReadPersonalKg(db, userId, ownerId);
+  return await canReadPersonalKg(userId, ownerId);
 }

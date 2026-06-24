@@ -1,14 +1,16 @@
 import type { Database } from "bun:sqlite";
 import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
 import {
-  ACTIVE_GRANT_SQL,
   getOrgIdForTeam,
+  grantTeamMember,
+  grantTeamOrgMembership,
   hasGrant,
   listAccountIdsForTeam,
   listTeamIdsForOrg,
   revokeAllGrantsForTeamScope,
   revokeAllGrantsReferencingOrg,
   revokeAllGrantsReferencingTeam,
+  userBelongsToOrg,
   userHasAnyTeamMemberGrant,
 } from "../authz";
 import {
@@ -17,13 +19,8 @@ import {
   grantTeamScopeOrgPermission,
   grantTeamScopePermission,
 } from "../authz/grant-templates";
-import {
-  accountScope,
-  Feature,
-  grantTeamMember,
-  grantTeamOrgMembership,
-  ResourceType,
-} from "../authz/policy";
+import { accountScope, Feature, ResourceType } from "../authz/policy";
+import { requireAuthzServiceClient } from "../authz/service-client";
 import { provisionOrgIdentity } from "../identity/orgs";
 
 export type OrgRecord = {
@@ -66,15 +63,6 @@ type TeamRow = {
   created_at_ms: number;
 };
 
-type UserTeamRow = {
-  id: string;
-  name: string;
-  org_id: string;
-  org_name: string;
-  team_avatar_s3_key: string | null;
-  org_avatar_s3_key: string | null;
-};
-
 function mapOrg(row: OrgRow): OrgRecord {
   return {
     id: row.id,
@@ -95,7 +83,7 @@ export function getOrg(db: Database, orgId: string): OrgRecord | null {
   return mapOrg(row);
 }
 
-export function getTeam(db: Database, teamId: string): TeamRecord | null {
+export async function getTeam(db: Database, teamId: string): Promise<TeamRecord | null> {
   const row = db
     .query<TeamRow, [string]>(
       `SELECT id, name, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`,
@@ -103,7 +91,7 @@ export function getTeam(db: Database, teamId: string): TeamRecord | null {
     .get(teamId);
   if (row === null) return null;
 
-  const orgId = getOrgIdForTeam(db, teamId);
+  const orgId = await getOrgIdForTeam(teamId);
   if (orgId === null) return null;
 
   return {
@@ -120,9 +108,13 @@ export function updateOrgName(db: Database, orgId: string, name: string): OrgRec
   return getOrg(db, orgId);
 }
 
-export function updateTeamName(db: Database, teamId: string, name: string): TeamRecord | null {
+export async function updateTeamName(
+  db: Database,
+  teamId: string,
+  name: string,
+): Promise<TeamRecord | null> {
   db.prepare(`UPDATE teams SET name = ? WHERE id = ?`).run(name, teamId);
-  return getTeam(db, teamId);
+  return await getTeam(db, teamId);
 }
 
 export function updateOrgAvatarS3Key(
@@ -134,43 +126,55 @@ export function updateOrgAvatarS3Key(
   return getOrg(db, orgId);
 }
 
-export function updateTeamAvatarS3Key(
+export async function updateTeamAvatarS3Key(
   db: Database,
   teamId: string,
   avatarS3Key: string | null,
-): TeamRecord | null {
+): Promise<TeamRecord | null> {
   db.prepare(`UPDATE teams SET avatar_s3_key = ? WHERE id = ?`).run(avatarS3Key, teamId);
-  return getTeam(db, teamId);
+  return await getTeam(db, teamId);
 }
 
-export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[] {
-  const nowMs = Date.now();
-  const rows = db
-    .query<UserTeamRow, [string, number]>(
-      `SELECT t.id, t.name, g_org.resource_id AS org_id, o.name AS org_name,
-              t.avatar_s3_key AS team_avatar_s3_key, o.avatar_s3_key AS org_avatar_s3_key
-       FROM authz_grants g_team
-       JOIN teams t ON t.id = g_team.resource_id
-       JOIN authz_grants g_org ON g_org.scope_type = 'team' AND g_org.scope_id = t.id
-         AND g_org.resource_type = 'org' AND g_org.feature = 'member'
-         AND g_org.revoked_at_ms IS NULL
-         AND (g_org.expired_at_ms IS NULL OR g_org.expired_at_ms > ?2)
-       JOIN orgs o ON o.id = g_org.resource_id
-       WHERE g_team.scope_type = 'account' AND g_team.scope_id = ?1
-         AND g_team.resource_type = 'team' AND g_team.feature = 'member'
-         AND g_team.revoked_at_ms IS NULL
-         AND (g_team.expired_at_ms IS NULL OR g_team.expired_at_ms > ?2)
-       ORDER BY t.created_at_ms ASC`,
-    )
-    .all(userId, nowMs);
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    orgId: row.org_id,
-    orgName: row.org_name,
-    teamAvatarS3Key: row.team_avatar_s3_key,
-    orgAvatarS3Key: row.org_avatar_s3_key,
-  }));
+export async function listTeamsForUser(db: Database, userId: string): Promise<UserTeamRecord[]> {
+  const { teamIds } = await requireAuthzServiceClient().listTeamIdsForAccount({
+    accountId: userId,
+  });
+  const rows: UserTeamRecord[] = [];
+  for (const teamId of teamIds) {
+    const teamRow = db
+      .query<TeamRow & { created_at_ms: number }, [string]>(
+        `SELECT id, name, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`,
+      )
+      .get(teamId);
+    if (teamRow === null) continue;
+    const orgId = await getOrgIdForTeam(teamId);
+    if (orgId === null) continue;
+    const orgRow = db
+      .query<{ name: string; avatar_s3_key: string | null }, [string]>(
+        `SELECT name, avatar_s3_key FROM orgs WHERE id = ?`,
+      )
+      .get(orgId);
+    if (orgRow === null) continue;
+    rows.push({
+      id: teamRow.id,
+      name: teamRow.name,
+      orgId,
+      orgName: orgRow.name,
+      teamAvatarS3Key: teamRow.avatar_s3_key,
+      orgAvatarS3Key: orgRow.avatar_s3_key,
+    });
+  }
+  return rows.sort((a, b) => {
+    const aCreated =
+      db
+        .query<{ created_at_ms: number }, [string]>(`SELECT created_at_ms FROM teams WHERE id = ?`)
+        .get(a.id)?.created_at_ms ?? 0;
+    const bCreated =
+      db
+        .query<{ created_at_ms: number }, [string]>(`SELECT created_at_ms FROM teams WHERE id = ?`)
+        .get(b.id)?.created_at_ms ?? 0;
+    return aCreated - bCreated;
+  });
 }
 
 export type TeamMemberRecord = {
@@ -198,15 +202,8 @@ type TeamMemberRow = {
   full_name: string | null;
 };
 
-type OrgMemberRow = {
-  user_id: string;
-  full_name: string | null;
-  team_ids: string;
-  team_names: string;
-};
-
-export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[] {
-  const accountIds = listAccountIdsForTeam(db, teamId);
+export async function listTeamMembers(db: Database, teamId: string): Promise<TeamMemberRecord[]> {
+  const accountIds = await listAccountIdsForTeam(teamId);
   if (accountIds.length === 0) return [];
 
   const placeholders = accountIds.map(() => "?").join(", ");
@@ -224,97 +221,107 @@ export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[
   }));
 }
 
-export function listOrgMembers(db: Database, orgId: string): OrgMemberRecord[] {
-  const teamIds = listTeamIdsForOrg(db, orgId);
+export async function listOrgMembers(db: Database, orgId: string): Promise<OrgMemberRecord[]> {
+  const teamIds = await listTeamIdsForOrg(orgId);
   if (teamIds.length === 0) return [];
 
-  const nowMs = Date.now();
-  const teamPlaceholders = teamIds.map(() => "?").join(", ");
+  const memberMap = new Map<string, { teamIds: string[]; teamNames: string[] }>();
+  for (const teamId of teamIds) {
+    const teamRow = db
+      .query<{ name: string }, [string]>(`SELECT name FROM teams WHERE id = ?`)
+      .get(teamId);
+    if (teamRow === null) continue;
+    for (const accountId of await listAccountIdsForTeam(teamId)) {
+      const existing = memberMap.get(accountId) ?? { teamIds: [], teamNames: [] };
+      existing.teamIds.push(teamId);
+      existing.teamNames.push(teamRow.name);
+      memberMap.set(accountId, existing);
+    }
+  }
+
+  if (memberMap.size === 0) return [];
+  const accountIds = [...memberMap.keys()];
+  const placeholders = accountIds.map(() => "?").join(", ");
   const rows = db
-    .query<OrgMemberRow, [...string[], number]>(
-      `SELECT u.id AS user_id, u.full_name,
-              GROUP_CONCAT(t.id) AS team_ids,
-              GROUP_CONCAT(t.name) AS team_names
-       FROM authz_grants g
-       JOIN teams t ON t.id = g.resource_id
-       JOIN users u ON u.id = g.scope_id
-       WHERE g.scope_type = 'account'
-         AND g.resource_type = 'team'
-         AND g.feature = 'member'
-         AND g.resource_id IN (${teamPlaceholders})
-         AND ${ACTIVE_GRANT_SQL}
-       GROUP BY u.id
-       ORDER BY MIN(g.created_at_ms) ASC`,
+    .query<TeamMemberRow, string[]>(
+      `SELECT u.id AS user_id, u.full_name
+       FROM users u
+       WHERE u.id IN (${placeholders})
+       ORDER BY u.created_at_ms ASC`,
     )
-    .all(...teamIds, nowMs);
+    .all(...accountIds);
 
-  return rows.map((row) => ({
-    userId: row.user_id,
-    fullName: row.full_name,
-    teamIds: row.team_ids.length > 0 ? row.team_ids.split(",") : [],
-    teamNames: row.team_names.length > 0 ? row.team_names.split(",") : [],
-  }));
+  return rows.flatMap((row) => {
+    const membership = memberMap.get(row.user_id);
+    if (membership === undefined) return [];
+    return [
+      {
+        userId: row.user_id,
+        fullName: row.full_name,
+        teamIds: membership.teamIds,
+        teamNames: membership.teamNames,
+      },
+    ];
+  });
 }
 
-export function listTeamsForOrg(db: Database, orgId: string): OrgTeamRecord[] {
-  const teamIds = listTeamIdsForOrg(db, orgId);
+export async function listTeamsForOrg(db: Database, orgId: string): Promise<OrgTeamRecord[]> {
+  const teamIds = await listTeamIdsForOrg(orgId);
   if (teamIds.length === 0) return [];
 
-  const nowMs = Date.now();
-  return teamIds
-    .map((teamId) => {
-      const row = db
-        .query<
-          { id: string; name: string; avatar_s3_key: string | null; created_at_ms: number },
-          [string]
-        >(`SELECT id, name, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`)
-        .get(teamId);
-      if (row === null) return null;
-      const memberCount = listAccountIdsForTeam(db, teamId, "member", nowMs).length;
-      return {
-        id: row.id,
-        name: row.name,
-        avatarS3Key: row.avatar_s3_key,
-        memberCount,
-        createdAtMs: row.created_at_ms,
-      };
-    })
-    .filter((row): row is OrgTeamRecord => row !== null)
-    .sort((a, b) => a.createdAtMs - b.createdAtMs);
+  const teams: OrgTeamRecord[] = [];
+  for (const teamId of teamIds) {
+    const row = db
+      .query<
+        { id: string; name: string; avatar_s3_key: string | null; created_at_ms: number },
+        [string]
+      >(`SELECT id, name, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`)
+      .get(teamId);
+    if (row === null) continue;
+    const memberCount = (await listAccountIdsForTeam(teamId, Feature.Member)).length;
+    teams.push({
+      id: row.id,
+      name: row.name,
+      avatarS3Key: row.avatar_s3_key,
+      memberCount,
+      createdAtMs: row.created_at_ms,
+    });
+  }
+  return teams.sort((a, b) => a.createdAtMs - b.createdAtMs);
 }
 
-export function userHasAnyTeam(db: Database, userId: string): boolean {
-  return userHasAnyTeamMemberGrant(db, userId);
+export async function userHasAnyTeam(_db: Database, userId: string): Promise<boolean> {
+  return userHasAnyTeamMemberGrant(userId);
 }
 
-export { userBelongsToOrg } from "../authz/policy";
+export { userBelongsToOrg };
 
-export function isTeamMember(db: Database, teamId: string, userId: string): boolean {
-  return hasGrant(
-    db,
-    accountScope(userId),
-    { type: ResourceType.Team, id: teamId },
-    Feature.Member,
-  );
+export async function isTeamMember(
+  _db: Database,
+  teamId: string,
+  userId: string,
+): Promise<boolean> {
+  return hasGrant(accountScope(userId), { type: ResourceType.Team, id: teamId }, Feature.Member);
 }
 
-/** Undo a failed team creation (grants + team + onboarding). */
-export function rollbackTeamCreation(db: Database, teamId: string): void {
-  revokeAllGrantsForTeamScope(db, teamId);
-  revokeAllGrantsReferencingTeam(db, teamId);
+export async function rollbackTeamCreation(db: Database, teamId: string): Promise<void> {
+  await revokeAllGrantsForTeamScope(teamId);
+  await revokeAllGrantsReferencingTeam(teamId);
   db.prepare(`DELETE FROM team_account_onboarding WHERE team_id = ?`).run(teamId);
   db.prepare(`DELETE FROM teams WHERE id = ?`).run(teamId);
 }
 
-/** Undo a failed onboarding attempt (org + team + grants). */
-export function rollbackOnboarding(db: Database, params: { orgId: string; teamId: string }): void {
-  rollbackTeamCreation(db, params.teamId);
-  revokeAllGrantsReferencingOrg(db, params.orgId);
+export async function rollbackOnboarding(
+  db: Database,
+  params: { orgId: string; teamId: string },
+): Promise<void> {
+  await rollbackTeamCreation(db, params.teamId);
+  await revokeAllGrantsReferencingOrg(params.orgId);
   db.prepare(`DELETE FROM orgs WHERE id = ?`).run(params.orgId);
 }
 
-export function addTeamMember(db: Database, teamId: string, userId: string): void {
-  grantTeamMember(db, userId, teamId);
+export async function addTeamMember(_db: Database, teamId: string, userId: string): Promise<void> {
+  await grantTeamMember(userId, teamId);
 }
 
 export async function createOrgWithAdmin(
@@ -326,14 +333,14 @@ export async function createOrgWithAdmin(
   db.prepare(
     `INSERT INTO orgs (id, name, identity_encrypted, created_at_ms) VALUES (?, ?, ?, ?)`,
   ).run(did, params.name, identityEncrypted, now);
-  grantAllOrgPermissions(db, params.creatorId, did);
+  await grantAllOrgPermissions(params.creatorId, did);
   return did;
 }
 
-export function createTeamWithGrants(
+export async function createTeamWithGrants(
   db: Database,
   params: { orgId: string; name: string; creatorId: string },
-): string {
+): Promise<string> {
   const id = crypto.randomUUID();
   const now = Date.now();
   db.prepare(`INSERT INTO teams (id, name, created_at_ms) VALUES (?, ?, ?)`).run(
@@ -341,10 +348,10 @@ export function createTeamWithGrants(
     params.name,
     now,
   );
-  grantTeamOrgMembership(db, id, params.orgId);
-  grantTeamScopePermission(db, id, TeamPermission.SessionCreate);
-  grantTeamScopeOrgPermission(db, id, params.orgId, OrgPermission.SessionCreate);
-  grantAllTeamPermissions(db, params.creatorId, id);
+  await grantTeamOrgMembership(id, params.orgId);
+  await grantTeamScopePermission(id, TeamPermission.SessionCreate);
+  await grantTeamScopeOrgPermission(id, params.orgId, OrgPermission.SessionCreate);
+  await grantAllTeamPermissions(params.creatorId, id);
   return id;
 }
 

@@ -1,17 +1,39 @@
 # Exedra authorization reference
 
-Canonical reference for grants, permissions, entitlements, and knowledge-graph access in Exedra.
+Canonical reference for grants, permissions, relationships, and knowledge-graph access in Exedra.
 
-Implementation lives in [`app/src/server/authz/`](../app/src/server/authz/). When adding grant features or checks, update this document in the same PR.
+The central service package lives in [`authz/`](./). Exedra still owns product domain rows and DIDs in [`app/`](../app/), while authz owns the authorization vocabulary, grant graph, relationship graph, and decision semantics. During migration, [`app/src/server/authz/`](../app/src/server/authz/) keeps local SQLite behavior and publishes facts to the central service when `AUTHZ_SERVICE_URL` is configured.
 
-## Two storage mechanisms
+## Central service model
+
+The authz package provides:
+
+- A Bun HTTP service backed by Turso Serverless (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`).
+- A typed HTTP client exported by `@khoralabs/exedra-authz`.
+- Service-owned scope types, grant types, relation types, and policy actions.
+- Grant and relationship persistence tables in Turso.
+
+App and workflow callers use `AUTHZ_SERVICE_URL` plus `AUTHZ_INTERNAL_TOKEN` or `EXEDRA_INTERNAL_TOKEN`. They should not receive Turso credentials directly.
+
+Exedra publishes domain-derived facts to authz:
+
+- `account -> member_of -> team`
+- `team -> member_of -> org`
+- `session -> belongs_to -> team`
+- `thread -> belongs_to -> session`
+- document protection facts as documents are migrated
+
+Authz stores Exedra IDs and DIDs as opaque identifiers. Exedra remains the source of truth for whether those IDs exist and for identity material.
+
+## Storage mechanisms
 
 | Mechanism | Table | Shape | Purpose |
 |-----------|-------|-------|---------|
 | **Grants** | `authz_grants` | `(scope_type, scope_id) → (resource_type, resource_id, feature)` | Membership, roles, and permission edges |
-| **Entitlements** | `authz_entitlements` | `(scope_type, scope_id, feature)` | Feature flags scoped to org/account (no resource target) |
+| **Relationships** | `authz_relationships` | `(from_type, from_id) → relation → (to_type, to_id)` | Hierarchy and graph facts projected from Exedra |
+| **Taxonomy** | `authz_scope_types`, `authz_grant_types`, `authz_relation_types` | Authorization vocabulary | Service-owned scope, grant, and relation definitions |
 
-**Naming note:** The React [`EntitlementGate`](../app/src/client/components/authz/entitlement-gate.tsx) component checks **permission grants** (`OrgPermission` / `TeamPermission`), not rows in `authz_entitlements`.
+**Naming note:** The React [`EntitlementGate`](../app/src/client/components/authz/entitlement-gate.tsx) component checks **permission grants** (`OrgPermission` / `TeamPermission`). Local `authz_entitlements` storage has been removed.
 
 ## Concepts
 
@@ -134,14 +156,9 @@ Resolved by [`enforce()`](../app/src/server/authz/policy.ts):
 | `session:view` | `hasSessionAccess` (broad, includes inheritance) |
 | `thread:read` | `canReadThread` |
 
-## Entitlements (`authz_entitlements`)
+## Removed entitlements
 
-| Feature | Status |
-|---------|--------|
-| `create_session` | **Superseded** by `OrgPermission.SessionCreate` / `TeamPermission.SessionCreate` |
-| `knowledge_graph` | **Deferred** — not enforced |
-
-Applied via invite effects ([`invites/apply-effects.ts`](../app/src/server/invites/apply-effects.ts)).
+The old local `authz_entitlements` table and helpers were removed. `create_session` is represented by org/team `session_create` permission grants, and `knowledge_graph` remains unenforced. Invite effects still carry an `entitlements` array for wire compatibility, but Exedra no longer persists or evaluates entitlement rows.
 
 ## Invite effect templates
 

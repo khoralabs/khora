@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
+import { resetAuthzServiceClient } from "../authz/service-client";
 import { ensureExedraSchema } from "./schema";
 
 let dbSingleton: Database | undefined;
@@ -30,4 +31,5 @@ export function getDb(): Database {
 export function closeDb(): void {
   dbSingleton?.close();
   dbSingleton = undefined;
+  resetAuthzServiceClient();
 }

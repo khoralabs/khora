@@ -76,8 +76,8 @@ export async function acceptDocument(params: AcceptDocumentParams): Promise<{
   );
 }
 
-export function resolveSessionOrgId(db: Database, teamId: string): string {
-  const team = getTeam(db, teamId);
+export async function resolveSessionOrgId(db: Database, teamId: string): Promise<string> {
+  const team = await getTeam(db, teamId);
   if (team === null) throw new Error("Team not found");
   return team.orgId;
 }

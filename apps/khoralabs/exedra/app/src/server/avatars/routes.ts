@@ -25,8 +25,11 @@ export async function requireAvatarAccess(
     if (user.id === id) {
       return { ok: true, userId: user.id };
     }
-    const viewerOrgIds = [...new Set(listTeamsForUser(db, user.id).map((team) => team.orgId))];
-    const canView = viewerOrgIds.some((orgId) => userBelongsToOrg(db, orgId, id));
+    const viewerTeams = await listTeamsForUser(db, user.id);
+    const viewerOrgIds = [...new Set(viewerTeams.map((team) => team.orgId))];
+    const canView = (
+      await Promise.all(viewerOrgIds.map((orgId) => userBelongsToOrg(orgId, id)))
+    ).some(Boolean);
     if (!canView) {
       return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
     }
@@ -38,7 +41,7 @@ export async function requireAvatarAccess(
   }
 
   if (kind === "team") {
-    if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id })) {
+    if (!(await enforce(user.id, "team:member", { type: ResourceType.Team, id }))) {
       return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
     }
     return { ok: true, userId: user.id };
@@ -47,7 +50,7 @@ export async function requireAvatarAccess(
   return { ok: false, response: jsonResponse({ error: "Invalid avatar kind" }, 400) };
 }
 
-export function resolveAvatarS3Key(kind: AvatarKind, id: string): string | null {
+export async function resolveAvatarS3Key(kind: AvatarKind, id: string): Promise<string | null> {
   const db = getDb();
   if (kind === "user") {
     return findUserById(db, id)?.avatarS3Key ?? null;
@@ -56,7 +59,7 @@ export function resolveAvatarS3Key(kind: AvatarKind, id: string): string | null 
     return getOrg(db, id)?.avatarS3Key ?? null;
   }
   if (kind === "team") {
-    return getTeam(db, id)?.avatarS3Key ?? null;
+    return (await getTeam(db, id))?.avatarS3Key ?? null;
   }
   return null;
 }
@@ -69,7 +72,7 @@ export async function handleServeAvatar(req: Request, kind: string, id: string):
   const access = await requireAvatarAccess(req, kind, id);
   if (!access.ok) return access.response;
 
-  const s3Key = resolveAvatarS3Key(kind, id);
+  const s3Key = await resolveAvatarS3Key(kind, id);
   if (s3Key === null || s3Key.length === 0) {
     return jsonResponse({ error: "Avatar not found" }, 404);
   }

@@ -55,7 +55,7 @@ export async function handleJoinOrgNetwork(req: Request, orgId: string): Promise
   if (org === null) {
     return Response.json({ error: "Organization not found" }, { status: 404 });
   }
-  if (!hasOrgAdminGrant(db, user.id, orgId)) {
+  if (!(await hasOrgAdminGrant(user.id, orgId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
   if (org.networkOptedInAtMs !== null) {

@@ -61,7 +61,7 @@ test("POST /api/orgs/:orgId/teams creates a second team in an existing org", asy
   expect(body.team.orgName).toBe("Acme");
 
   const appDb = getDb();
-  const teams = listTeamsForUser(appDb, user.id);
+  const teams = await listTeamsForUser(appDb, user.id);
   expect(teams).toHaveLength(2);
   expect(teams.map((team) => team.name).sort()).toEqual(["Leadership", "Product"]);
 });

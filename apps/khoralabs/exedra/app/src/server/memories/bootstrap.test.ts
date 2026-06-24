@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 
 import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
@@ -42,11 +43,13 @@ afterEach(() => {
 });
 
 test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const appDb = new Database(":memory:");
   ensureExedraSchema(appDb);
   const user = await getOrCreateUser(appDb, "registry-bootstrap");
   const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
 
   const first = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
   const second = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
@@ -82,11 +85,13 @@ test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
 });
 
 test("bootstrapSessionMemories creates org and user session scope chains under team", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const appDb = new Database(":memory:");
   ensureExedraSchema(appDb);
   const user = await getOrCreateUser(appDb, "registry-session-bootstrap");
   const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
   const sessionId = crypto.randomUUID();
 
   bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });

@@ -28,12 +28,14 @@ beforeEach(async () => {
   ownerId = owner.id;
   memberId = member.id;
   orgId = await createOrg(db, { name: "Acme", ownerId });
-  teamId = createTeam(db, { orgId, name: "Product", ownerId });
+  teamId = await createTeam(db, { orgId, name: "Product", ownerId });
   const { addTeamMember } = await import("../db/membership");
-  addTeamMember(db, teamId, memberId);
+  await addTeamMember(db, teamId, memberId);
 });
 
-afterEach(() => {
+afterEach(async () => {
+  const { mock } = await import("bun:test");
+  mock.restore();
   closeDb();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
@@ -44,6 +46,7 @@ afterEach(() => {
 async function mockSession(registryUserId: string) {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({
+    requireRegistrySession: async () => ({ user: { id: registryUserId, email: registryUserId } }),
     requireRegistrySessionResponse: async () => ({
       session: { user: { id: registryUserId, email: registryUserId } },
       response: null,
@@ -189,14 +192,14 @@ test("PATCH /api/teams/:teamId updates name for owner", async () => {
   expect(res.status).toBe(200);
   const body = (await res.json()) as { name: string };
   expect(body.name).toBe("Product Team");
-  expect(getTeam(getDb(), teamId)?.name).toBe("Product Team");
+  expect((await getTeam(getDb(), teamId))?.name).toBe("Product Team");
 });
 
 test("POST /api/teams/:teamId/invites allows org member managers", async () => {
-  const db = getDb();
+  const _db = getDb();
   const { grantOrgPermission } = await import("../authz/grant-templates");
   const { OrgPermission } = await import("../../shared/authz/permissions");
-  grantOrgPermission(db, memberId, orgId, OrgPermission.MemberManage);
+  await grantOrgPermission(memberId, orgId, OrgPermission.MemberManage);
 
   await mockSession("member@example.com");
   const { handleMintTeamInvite } = await import("../teams/routes");

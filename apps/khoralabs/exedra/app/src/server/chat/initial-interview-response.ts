@@ -34,7 +34,7 @@ export async function dispatchInitialInterviewResponsesForTeam(
   sessionId: string,
   teamId: string,
 ): Promise<void> {
-  for (const member of listTeamMembers(db, teamId)) {
+  for (const member of await listTeamMembers(db, teamId)) {
     await dispatchInitialInterviewResponseForParticipant(db, sessionId, member.userId);
   }
 }

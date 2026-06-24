@@ -1,11 +1,11 @@
 import { Database } from "bun:sqlite";
 import { afterAll, beforeAll, expect, test } from "bun:test";
-
 import {
   grantSessionCreatorAccess,
   grantSessionParticipant,
   grantTeamSessionParticipant,
 } from "../authz";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createSession, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
@@ -17,10 +17,15 @@ import {
 } from "./resolve-rows";
 
 let db: Database;
+let authzDb: Database;
 
 beforeAll(() => {
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  authzDb = createIsolatedAuthzDatabase();
+
+  installTestAuthzService(authzDb);
+
   db = new Database(":memory:");
   ensureExedraSchema(db);
 });
@@ -44,13 +49,13 @@ test("listAccountRowsForSession resolves participant context from grants", async
   const facilitator = await getOrCreateUser(db, "fac-id", "fac@example.com");
   const participant = await getOrCreateUser(db, "part@example.com");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   const session = createSession(db, { teamId, topic: "Review" });
 
-  grantSessionCreatorAccess(db, facilitator.id, session.id);
-  grantSessionParticipant(db, participant.id, session.id);
+  await grantSessionCreatorAccess(facilitator.id, session.id);
+  await grantSessionParticipant(participant.id, session.id);
 
-  const rows = listAccountRowsForSession(db, session.id, facilitator.id);
+  const rows = await listAccountRowsForSession(db, session.id, facilitator.id);
   expect(rows).toHaveLength(2);
 
   const facilitatorRow = rows.find((row) => row.account.userId === facilitator.id);
@@ -69,15 +74,15 @@ test("listAccountRowsForSession expands team-scoped participant grants", async (
   const facilitator = await getOrCreateUser(db, "fac-team@example.com");
   const participant = await getOrCreateUser(db, "part-team@example.com");
   const orgId = await createOrg(db, { name: "Org2", ownerId: facilitator.id });
-  const teamId = createTeam(db, { orgId, name: "Team2", ownerId: facilitator.id });
+  const teamId = await createTeam(db, { orgId, name: "Team2", ownerId: facilitator.id });
   const session = createSession(db, { teamId, topic: "Sync" });
 
-  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  await grantSessionCreatorAccess(facilitator.id, session.id);
   const { addTeamMember } = await import("../db/membership");
-  addTeamMember(db, teamId, participant.id);
-  grantTeamSessionParticipant(db, teamId, session.id);
+  await addTeamMember(db, teamId, participant.id);
+  await grantTeamSessionParticipant(teamId, session.id);
 
-  const rows = listAccountRowsForSession(db, session.id, facilitator.id);
+  const rows = await listAccountRowsForSession(db, session.id, facilitator.id);
   expect(rows.some((row) => row.account.userId === participant.id)).toBe(true);
 });
 
@@ -85,11 +90,11 @@ test("listAccountRowsForTeam includes admin context", async () => {
   const owner = await getOrCreateUser(db, "owner@example.com");
   const member = await getOrCreateUser(db, "member@example.com");
   const orgId = await createOrg(db, { name: "Org3", ownerId: owner.id });
-  const teamId = createTeam(db, { orgId, name: "Team3", ownerId: owner.id });
+  const teamId = await createTeam(db, { orgId, name: "Team3", ownerId: owner.id });
   const { addTeamMember } = await import("../db/membership");
-  addTeamMember(db, teamId, member.id);
+  await addTeamMember(db, teamId, member.id);
 
-  const rows = listAccountRowsForTeam(db, teamId, member.id);
+  const rows = await listAccountRowsForTeam(db, teamId, member.id);
   expect(rows).toHaveLength(2);
 
   const ownerRow = rows.find((row) => row.account.userId === owner.id);
@@ -105,11 +110,11 @@ test("listAccountRowsForOrg aggregates team membership", async () => {
   const owner = await getOrCreateUser(db, "org-owner@example.com");
   const member = await getOrCreateUser(db, "org-member@example.com");
   const orgId = await createOrg(db, { name: "Org4", ownerId: owner.id });
-  const teamId = createTeam(db, { orgId, name: "Team4", ownerId: owner.id });
+  const teamId = await createTeam(db, { orgId, name: "Team4", ownerId: owner.id });
   const { addTeamMember } = await import("../db/membership");
-  addTeamMember(db, teamId, member.id);
+  await addTeamMember(db, teamId, member.id);
 
-  const rows = listAccountRowsForOrg(db, orgId, owner.id);
+  const rows = await listAccountRowsForOrg(db, orgId, owner.id);
   expect(rows).toHaveLength(2);
 
   const memberRow = rows.find((row) => row.account.userId === member.id);

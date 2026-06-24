@@ -12,7 +12,7 @@ import { createOnboardingSession, getOrCreateInterviewThread } from "../db/sessi
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { seedOnboardingMemories } from "../memories/seed-onboarding";
 
-export function createOnboardingInterviewForMember(
+export async function createOnboardingInterviewForMember(
   db: Database,
   params: {
     teamId: string;
@@ -20,17 +20,17 @@ export function createOnboardingInterviewForMember(
     orgName: string;
     teamName: string;
   },
-): { sessionId: string; threadId: string } {
+): Promise<{ sessionId: string; threadId: string }> {
   const session = createOnboardingSession(db, {
     teamId: params.teamId,
     orgName: params.orgName,
     teamName: params.teamName,
   });
 
-  grantSessionCreatorAccess(db, params.userId, session.id);
-  grantSessionParticipant(db, params.userId, session.id);
+  await grantSessionCreatorAccess(params.userId, session.id);
+  await grantSessionParticipant(params.userId, session.id);
 
-  bootstrapSessionMemoriesForTeamSession(db, {
+  await bootstrapSessionMemoriesForTeamSession(db, {
     teamId: params.teamId,
     sessionId: session.id,
     userIds: [params.userId],
@@ -42,7 +42,7 @@ export function createOnboardingInterviewForMember(
     sessionId: session.id,
   });
 
-  const threadId = getOrCreateInterviewThread(db, {
+  const threadId = await getOrCreateInterviewThread(db, {
     sessionId: session.id,
     userId: params.userId,
   });
@@ -64,15 +64,15 @@ function collectBeliefsFromThread(messages: UIMessage[]): string[] {
   return beliefs;
 }
 
-export function applyOnboardingCompletionSideEffects(args: {
+export async function applyOnboardingCompletionSideEffects(args: {
   db: Database;
   threadId: string;
   teamId: string;
   userId: string;
   summary: string;
-}): void {
+}): Promise<void> {
   const { db, threadId, teamId, userId, summary } = args;
-  const team = getTeam(db, teamId);
+  const team = await getTeam(db, teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   if (team === null || org === null) {
     throw new Error("Team or organization not found");

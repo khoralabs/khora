@@ -1,11 +1,11 @@
 import type { Database } from "bun:sqlite";
-import { getOrgIdForTeam } from "../authz/grants.js";
 import {
   canContributeToSessionKg,
   canContributeToTeamKg,
   canReadPersonalKg,
   canReadSessionKg,
   enforce,
+  getOrgIdForTeam,
   ResourceType,
   ScopeType,
 } from "../authz/policy.js";
@@ -40,45 +40,45 @@ export function resolveContributionGrantResource(args: {
   throw new Error("Could not resolve grant resource for contribution");
 }
 
-export function userCanContributeViaGrant(
-  db: Database,
+export async function userCanContributeViaGrant(
+  _db: Database,
   userId: string,
   resource: DocumentGrantResource,
-): boolean {
+): Promise<boolean> {
   switch (resource.type) {
     case ScopeType.Account:
       return resource.id === userId;
     case ResourceType.Organization:
-      return enforce(db, userId, "org:member", {
+      return await enforce(userId, "org:member", {
         type: ResourceType.Organization,
         id: resource.id,
       });
     case ResourceType.Team:
-      return canContributeToTeamKg(db, userId, resource.id);
+      return await canContributeToTeamKg(userId, resource.id);
     case ResourceType.Session:
-      return canContributeToSessionKg(db, userId, resource.id);
+      return await canContributeToSessionKg(userId, resource.id);
     default:
       return false;
   }
 }
 
-export function userCanViewDocumentsForGrant(
-  db: Database,
+export async function userCanViewDocumentsForGrant(
+  _db: Database,
   userId: string,
   resource: DocumentGrantResource,
-): boolean {
+): Promise<boolean> {
   switch (resource.type) {
     case ScopeType.Account:
-      return canReadPersonalKg(db, userId, resource.id);
+      return await canReadPersonalKg(userId, resource.id);
     case ResourceType.Organization:
-      return enforce(db, userId, "org:read", {
+      return await enforce(userId, "org:read", {
         type: ResourceType.Organization,
         id: resource.id,
       });
     case ResourceType.Team:
-      return enforce(db, userId, "team:read", { type: ResourceType.Team, id: resource.id });
+      return await enforce(userId, "team:read", { type: ResourceType.Team, id: resource.id });
     case ResourceType.Session:
-      return canReadSessionKg(db, userId, resource.id);
+      return await canReadSessionKg(userId, resource.id);
     default:
       return false;
   }
@@ -91,23 +91,23 @@ export function documentMatchesGrantResource(
   return document.grantResourceType === resource.type && document.grantResourceId === resource.id;
 }
 
-export function resolveDocumentOrgId(
+export async function resolveDocumentOrgId(
   db: Database,
   document: Pick<DocumentRecord, "grantResourceType" | "grantResourceId" | "orgId">,
-): string | null {
+): Promise<string | null> {
   if (document.orgId !== null) return document.orgId;
   if (document.grantResourceType === ResourceType.Organization) {
     return document.grantResourceId;
   }
   if (document.grantResourceType === ResourceType.Team) {
-    return getOrgIdForTeam(db, document.grantResourceId);
+    return getOrgIdForTeam(document.grantResourceId);
   }
   if (document.grantResourceType === ResourceType.Session) {
     const sessionRow = db
       .query<{ team_id: string }, [string]>(`SELECT team_id FROM sessions WHERE id = ? LIMIT 1`)
       .get(document.grantResourceId);
     if (sessionRow === null) return null;
-    return getOrgIdForTeam(db, sessionRow.team_id);
+    return getOrgIdForTeam(sessionRow.team_id);
   }
   return null;
 }

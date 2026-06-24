@@ -37,7 +37,7 @@ export async function dispatchGenerateResponseForChat(input: {
   if (thread === null) throw new Error(`thread not found: ${input.legacyThreadId}`);
   const session = getSession(db, thread.sessionId);
   if (session === null) throw new Error(`session not found: ${thread.sessionId}`);
-  const team = getTeam(db, session.teamId);
+  const team = await getTeam(db, session.teamId);
   if (team === null) throw new Error(`team not found: ${session.teamId}`);
 
   const posts = await getChatService().listPosts({ threadId: input.chatThreadId, limit: 100 });

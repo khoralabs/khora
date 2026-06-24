@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 
 import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
@@ -33,11 +34,13 @@ afterEach(() => {
 });
 
 test("seedOnboardingMemories writes summary and beliefs for did:key principals", async () => {
+  const authzDb = createIsolatedAuthzDatabase();
+  installTestAuthzService(authzDb);
   const appDb = new Database(":memory:");
   ensureExedraSchema(appDb);
   const user = await getOrCreateUser(appDb, "registry-seed-onboarding");
   const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
 
   expect(() =>
     seedOnboardingMemories({

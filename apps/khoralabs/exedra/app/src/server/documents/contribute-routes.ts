@@ -74,7 +74,7 @@ export async function handleContributeDocuments(req: Request): Promise<Response>
     return jsonResponse({ error: "Could not resolve knowledge scope" }, 400);
   }
 
-  if (!userCanContributeViaGrant(db, user.id, grantResource)) {
+  if (!(await userCanContributeViaGrant(db, user.id, grantResource))) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -127,10 +127,10 @@ export async function handleGetDocumentBatch(req: Request, batchId: string): Pro
   const ownsBatch = documents.some((document) => document.uploadedByUserId === user.id);
   if (
     !ownsBatch &&
-    !userCanViewDocumentsForGrant(db, user.id, {
+    !(await userCanViewDocumentsForGrant(db, user.id, {
       type: batch.grantResource.type,
       id: batch.grantResource.id,
-    })
+    }))
   ) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }

@@ -25,7 +25,9 @@ beforeEach(() => {
   resetMemoriesStoreForTests();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  const { mock } = await import("bun:test");
+  mock.restore();
   closeChatDb();
   closeDb();
   resetMemoriesStoreForTests();
@@ -42,13 +44,13 @@ test("manage scopes creates an interview chat thread for newly granted participa
   const manager = await getOrCreateUser(db, "registry-session-scope-manager");
   const participant = await getOrCreateUser(db, "registry-session-scope-participant");
   const orgId = await createOrg(db, { name: "Org", ownerId: manager.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: manager.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: manager.id });
   const { addTeamMember } = await import("../db/membership");
   const { createSession } = await import("../db/sessions");
   const { grantSessionCreatorAccess } = await import("../authz/policy");
-  addTeamMember(db, teamId, participant.id);
+  await addTeamMember(db, teamId, participant.id);
   const session = createSession(db, { teamId, topic: "Grant interview" });
-  grantSessionCreatorAccess(db, manager.id, session.id);
+  await grantSessionCreatorAccess(manager.id, session.id);
   db.close();
 
   const { mock } = await import("bun:test");
@@ -110,7 +112,7 @@ test("POST /api/sessions creates session when teamId is provided", async () => {
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-session-2");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   db.close();
 
   const { mock } = await import("bun:test");
@@ -182,12 +184,12 @@ test("POST /api/sessions returns 403 when session_create permission is revoked",
   const admin = await getOrCreateUser(db, "registry-session-4-admin");
   const member = await getOrCreateUser(db, "registry-session-4-member");
   const orgId = await createOrg(db, { name: "Org", ownerId: admin.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: admin.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: admin.id });
   const { addTeamMember } = await import("../db/membership");
-  addTeamMember(db, teamId, member.id);
+  await addTeamMember(db, teamId, member.id);
   const { setTeamScopePermissions } = await import("../authz/grant-templates");
   const { TeamPermission } = await import("../../shared/authz/permissions");
-  setTeamScopePermissions(db, teamId, [
+  await setTeamScopePermissions(teamId, [
     TeamPermission.Read,
     TeamPermission.Write,
     TeamPermission.MemberManage,
@@ -223,13 +225,13 @@ test("GET participant interview allows facilitator and denies participant", asyn
   const facilitator = await getOrCreateUser(db, "registry-fac-participant-chat");
   const participant = await getOrCreateUser(db, "registry-participant-chat");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   const { createSession, getOrCreateInterviewThread } = await import("../db/sessions");
   const { grantSessionCreatorAccess, grantSessionParticipant } = await import("../authz/policy");
   const session = createSession(db, { teamId, topic: "Participant chat read" });
-  grantSessionCreatorAccess(db, facilitator.id, session.id);
-  grantSessionParticipant(db, participant.id, session.id);
-  getOrCreateInterviewThread(db, { sessionId: session.id, userId: participant.id });
+  await grantSessionCreatorAccess(facilitator.id, session.id);
+  await grantSessionParticipant(participant.id, session.id);
+  await getOrCreateInterviewThread(db, { sessionId: session.id, userId: participant.id });
   db.close();
 
   const { mock } = await import("bun:test");
@@ -277,13 +279,13 @@ test("GET participant interview allows facilitator and denies participant", asyn
   const participant = await getOrCreateUser(db, "registry-participant-chat");
   const _outsider = await getOrCreateUser(db, "registry-outsider-chat");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   const { createSession, getOrCreateInterviewThread } = await import("../db/sessions");
   const { grantSessionCreatorAccess, grantSessionParticipant } = await import("../authz/policy");
   const session = createSession(db, { teamId, topic: "Participant chat read" });
-  grantSessionCreatorAccess(db, facilitator.id, session.id);
-  grantSessionParticipant(db, participant.id, session.id);
-  getOrCreateInterviewThread(db, { sessionId: session.id, userId: participant.id });
+  await grantSessionCreatorAccess(facilitator.id, session.id);
+  await grantSessionParticipant(participant.id, session.id);
+  await getOrCreateInterviewThread(db, { sessionId: session.id, userId: participant.id });
   db.close();
 
   const { mock } = await import("bun:test");

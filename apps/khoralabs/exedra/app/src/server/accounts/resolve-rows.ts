@@ -8,9 +8,15 @@ import type {
   TeamMemberContext,
 } from "@shared/accounts/row";
 
-import { ACTIVE_GRANT_SQL } from "../authz/active";
-import { listAccountIdsForTeam } from "../authz/grants";
-import { Feature, hasOrgAdminGrant, hasTeamAdminGrant, ResourceType } from "../authz/policy";
+import {
+  Feature,
+  hasOrgAdminGrant,
+  hasTeamAdminGrant,
+  listAccountIdsForTeam,
+  listGrantScopeIdsForResource,
+  ResourceType,
+  ScopeType,
+} from "../authz/policy";
 import { avatarUrlFromS3Key } from "../avatars/urls";
 import { listOrgMembers, listTeamMembers } from "../db/membership";
 import { getInterviewStatus } from "../db/session-detail";
@@ -67,58 +73,25 @@ export function resolveAccountProfiles(
   return profiles;
 }
 
-function listSessionParticipantRoles(
-  db: Database,
+async function listSessionParticipantRoles(
   sessionId: string,
-): Map<string, "facilitator" | "facilitation" | "participant"> {
-  const nowMs = Date.now();
+): Promise<Map<string, "facilitator" | "facilitation" | "participant">> {
   const roles = new Map<string, "facilitator" | "facilitation" | "participant">();
+  const sessionResource = { type: ResourceType.Session, id: sessionId };
 
-  const accountRows = db
-    .query<{ scope_id: string; feature: string }, [string, string, number]>(
-      `SELECT scope_id, feature FROM authz_grants
-       WHERE resource_type = ? AND resource_id = ?
-         AND scope_type = 'account'
-         AND feature IN ('admin', 'participant', 'facilitation')
-         AND ${ACTIVE_GRANT_SQL}`,
-    )
-    .all(ResourceType.Session, sessionId, nowMs);
-
-  for (const row of accountRows) {
+  for (const feature of [Feature.Admin, Feature.Facilitation, Feature.Participant] as const) {
     const role =
-      row.feature === Feature.Admin
+      feature === Feature.Admin
         ? "facilitator"
-        : row.feature === Feature.Facilitation
+        : feature === Feature.Facilitation
           ? "facilitation"
           : "participant";
-    const existing = roles.get(row.scope_id);
-    if (existing === "facilitator") continue;
-    if (existing === "facilitation" && role === "participant") continue;
-    if (existing === "participant" && role === "facilitation") {
-      roles.set(row.scope_id, "facilitation");
-      continue;
-    }
-    roles.set(row.scope_id, role);
-  }
 
-  const teamRows = db
-    .query<{ scope_id: string; feature: string }, [string, string, number]>(
-      `SELECT scope_id, feature FROM authz_grants
-       WHERE resource_type = ? AND resource_id = ?
-         AND scope_type = 'team'
-         AND feature IN ('admin', 'participant', 'facilitation')
-         AND ${ACTIVE_GRANT_SQL}`,
-    )
-    .all(ResourceType.Session, sessionId, nowMs);
-
-  for (const teamRow of teamRows) {
-    const role =
-      teamRow.feature === Feature.Admin
-        ? "facilitator"
-        : teamRow.feature === Feature.Facilitation
-          ? "facilitation"
-          : "participant";
-    for (const accountId of listAccountIdsForTeam(db, teamRow.scope_id, Feature.Member, nowMs)) {
+    for (const accountId of await listGrantScopeIdsForResource(
+      sessionResource,
+      feature,
+      ScopeType.Account,
+    )) {
       const existing = roles.get(accountId);
       if (existing === "facilitator") continue;
       if (existing === "facilitation" && role === "participant") continue;
@@ -126,8 +99,25 @@ function listSessionParticipantRoles(
         roles.set(accountId, "facilitation");
         continue;
       }
-      if (existing === undefined || role === "facilitator") {
-        roles.set(accountId, role);
+      roles.set(accountId, role);
+    }
+
+    for (const teamId of await listGrantScopeIdsForResource(
+      sessionResource,
+      feature,
+      ScopeType.Team,
+    )) {
+      for (const accountId of await listAccountIdsForTeam(teamId, Feature.Member)) {
+        const existing = roles.get(accountId);
+        if (existing === "facilitator") continue;
+        if (existing === "facilitation" && role === "participant") continue;
+        if (existing === "participant" && role === "facilitation") {
+          roles.set(accountId, "facilitation");
+          continue;
+        }
+        if (existing === undefined || role === "facilitator") {
+          roles.set(accountId, role);
+        }
       }
     }
   }
@@ -135,12 +125,12 @@ function listSessionParticipantRoles(
   return roles;
 }
 
-export function listAccountRowsForSession(
+export async function listAccountRowsForSession(
   db: Database,
   sessionId: string,
   viewerId: string,
-): AccountRow<SessionParticipantContext>[] {
-  const participantRoles = listSessionParticipantRoles(db, sessionId);
+): Promise<AccountRow<SessionParticipantContext>[]> {
+  const participantRoles = await listSessionParticipantRoles(sessionId);
   if (participantRoles.size === 0) return [];
 
   const profiles = resolveAccountProfiles(db, [...participantRoles.keys()]);
@@ -172,12 +162,12 @@ export function listAccountRowsForSession(
   return rows;
 }
 
-export function listAccountRowsForTeam(
+export async function listAccountRowsForTeam(
   db: Database,
   teamId: string,
   viewerId: string,
-): AccountRow<TeamMemberContext>[] {
-  const members = listTeamMembers(db, teamId);
+): Promise<AccountRow<TeamMemberContext>[]> {
+  const members = await listTeamMembers(db, teamId);
   if (members.length === 0) return [];
 
   const profiles = resolveAccountProfiles(
@@ -185,29 +175,29 @@ export function listAccountRowsForTeam(
     members.map((member) => member.userId),
   );
 
-  return members.flatMap((member) => {
+  const rows: AccountRow<TeamMemberContext>[] = [];
+  for (const member of members) {
     const account = profiles.get(member.userId);
-    if (account === undefined) return [];
-    return [
-      {
-        account,
-        isCurrentUser: member.userId === viewerId,
-        context: {
-          kind: "team_member" as const,
-          teamId,
-          isAdmin: hasTeamAdminGrant(db, member.userId, teamId),
-        },
+    if (account === undefined) continue;
+    rows.push({
+      account,
+      isCurrentUser: member.userId === viewerId,
+      context: {
+        kind: "team_member",
+        teamId,
+        isAdmin: await hasTeamAdminGrant(member.userId, teamId),
       },
-    ];
-  });
+    });
+  }
+  return rows;
 }
 
-export function listAccountRowsForOrg(
+export async function listAccountRowsForOrg(
   db: Database,
   orgId: string,
   viewerId: string,
-): AccountRow<OrgMemberContext>[] {
-  const members = listOrgMembers(db, orgId);
+): Promise<AccountRow<OrgMemberContext>[]> {
+  const members = await listOrgMembers(db, orgId);
   if (members.length === 0) return [];
 
   const profiles = resolveAccountProfiles(
@@ -215,21 +205,21 @@ export function listAccountRowsForOrg(
     members.map((member) => member.userId),
   );
 
-  return members.flatMap((member) => {
+  const rows: AccountRow<OrgMemberContext>[] = [];
+  for (const member of members) {
     const account = profiles.get(member.userId);
-    if (account === undefined) return [];
-    return [
-      {
-        account,
-        isCurrentUser: member.userId === viewerId,
-        context: {
-          kind: "org_member" as const,
-          orgId,
-          isAdmin: hasOrgAdminGrant(db, member.userId, orgId),
-          teamIds: member.teamIds,
-          teamNames: member.teamNames,
-        },
+    if (account === undefined) continue;
+    rows.push({
+      account,
+      isCurrentUser: member.userId === viewerId,
+      context: {
+        kind: "org_member",
+        orgId,
+        isAdmin: await hasOrgAdminGrant(member.userId, orgId),
+        teamIds: member.teamIds,
+        teamNames: member.teamNames,
       },
-    ];
-  });
+    });
+  }
+  return rows;
 }

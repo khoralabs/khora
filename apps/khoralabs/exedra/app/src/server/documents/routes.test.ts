@@ -3,7 +3,6 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
 import { grantSessionCreatorAccess } from "../authz/index.js";
 import { ResourceType } from "../authz/policy.js";
 import { closeDb } from "../db/index.js";
@@ -61,12 +60,12 @@ test("POST /api/sessions/:sessionId/documents rejects users without session acce
   const owner = await getOrCreateUser(db, "registry-doc-owner");
   const _outsider = await getOrCreateUser(db, "registry-doc-outsider");
   const orgId = await createOrg(db, { name: "Org", ownerId: owner.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: owner.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: owner.id });
   const session = createSession(db, {
     teamId,
     topic: "Private",
   });
-  grantSessionCreatorAccess(db, owner.id, session.id);
+  await grantSessionCreatorAccess(owner.id, session.id);
   db.close();
 
   process.env.EXEDRA_DOCUMENTS_S3_BUCKET = "test-bucket";
@@ -98,12 +97,12 @@ test("POST /api/sessions/:sessionId/documents returns 503 when S3 is not configu
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-no-s3");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Docs",
   });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
   db.close();
 
   const { mock: bunMock } = await import("bun:test");
@@ -134,12 +133,12 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-upload");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Docs",
   });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
   db.close();
 
   process.env.EXEDRA_DOCUMENTS_S3_BUCKET = "test-bucket";
@@ -216,12 +215,12 @@ test("GET /api/sessions/:sessionId/documents/:documentId uses stored s3Key after
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-download");
   const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
-  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const teamId = await createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
     topic: "Docs",
   });
-  grantSessionCreatorAccess(db, user.id, session.id);
+  await grantSessionCreatorAccess(user.id, session.id);
 
   const uploadBatchId = crypto.randomUUID();
   const turnId = crypto.randomUUID();
