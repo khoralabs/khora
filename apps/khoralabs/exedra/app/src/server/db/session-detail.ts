@@ -22,6 +22,15 @@ export function formatDaysToDeadline(deadlineMs: number | null, nowMs = Date.now
   return `${Math.ceil(days)} days`;
 }
 
+function hasCompletionMetadata(metadata: unknown): boolean {
+  return (
+    metadata !== null &&
+    typeof metadata === "object" &&
+    "completion" in metadata &&
+    metadata.completion !== undefined
+  );
+}
+
 export async function getInterviewStatus(
   _db: Database,
   sessionId: string,
@@ -37,7 +46,7 @@ export async function getInterviewStatus(
   }
 
   const { items } = await chat.listPosts({ threadId, limit: 100 });
-  if (items.some((post) => post.role === "assistant" && post.metadata?.completion !== undefined)) {
+  if (items.some((post) => post.role === "assistant" && hasCompletionMetadata(post.metadata))) {
     return "complete";
   }
   return items.some((post) => post.role === "user") ? "started" : "not_started";
