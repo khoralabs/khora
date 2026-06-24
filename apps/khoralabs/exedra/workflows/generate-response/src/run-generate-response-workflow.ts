@@ -35,12 +35,27 @@ export type RunGenerateResponseDependencies = {
   streamTextFn?: typeof streamText;
 };
 
-function assistantMessage(id: string, text: string): UIMessage {
+function assistantMessage(
+  id: string,
+  text: string,
+  metadata?: { beliefFlags?: Array<{ belief: string; messageId: string }> },
+): UIMessage {
   return {
     id,
     role: "assistant",
     parts: text.length > 0 ? [{ type: "text", text }] : [],
+    ...(metadata !== undefined ? { metadata } : {}),
   };
+}
+
+function latestUserMessageId(messages: UIMessage[]): string | undefined {
+  return [...messages].reverse().find((message) => message.role === "user")?.id;
+}
+
+function beliefMetadata(
+  beliefFlags: Array<{ belief: string; messageId: string }>,
+): { beliefFlags?: Array<{ belief: string; messageId: string }> } | undefined {
+  return beliefFlags.length > 0 ? { beliefFlags } : undefined;
 }
 
 function errorMessage(error: unknown): string {
@@ -124,6 +139,8 @@ export async function runGenerateResponseWorkflow(
     memoryClient,
     skills: selectedSkills,
     activatedSkillNames: new Set<string>(),
+    sourceUserMessageId: latestUserMessageId(context.messages),
+    beliefFlags: [],
   };
   const explicitSkillContents = policyState.skillNames
     .map((name) => activateSkillByName(env, name).content)
@@ -198,7 +215,10 @@ export async function runGenerateResponseWorkflow(
       model: modelMetadata({ requestedModel: modelId, finishReason, response }),
       usage: usageFromAiSdk(usage),
     };
-    await writer.apply(assistantMessage(writer.postId, text), metadata);
+    await writer.apply(
+      assistantMessage(writer.postId, text, beliefMetadata(env.beliefFlags)),
+      metadata,
+    );
     const message = await writer.complete();
 
     if (deps.attributionPersistence !== undefined) {

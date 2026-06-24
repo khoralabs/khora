@@ -1,4 +1,10 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import type {
+  ExpandedMemoryDraftWire,
+  InternalMemoriesMergeRequest,
+  InternalMemoriesSearchRequest,
+  SearchHitSummary,
+} from "@khoralabs/exedra-workflows-integrate-memory/belief-integration";
 import {
   computeLexicalLinkMergeSlice,
   type LexicalLinkMergePatch,
@@ -21,12 +27,6 @@ import type { IntegratorPlanWire } from "@khoralabs/memories-integrator";
 import { integratorWireToMergeSlice } from "@khoralabs/memories-integrator";
 import { loadSourceMapTextPreview } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
-import type {
-  ExpandedMemoryDraftWire,
-  InternalMemoriesMergeRequest,
-  InternalMemoriesSearchRequest,
-  SearchHitSummary,
-} from "../../../../shared/belief-integration.js";
 import type { InternalMemoriesMergeDocumentChunkRequest } from "../../../../shared/document-processing.js";
 import type {
   InternalMemoriesAgentSearchRequest,

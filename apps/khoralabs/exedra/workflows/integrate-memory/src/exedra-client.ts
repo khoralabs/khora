@@ -4,7 +4,7 @@ import type {
   InternalMemoriesMergeResponse,
   InternalMemoriesSearchRequest,
   InternalMemoriesSearchResponse,
-} from "../../../shared/belief-integration.ts";
+} from "./belief-integration.ts";
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();

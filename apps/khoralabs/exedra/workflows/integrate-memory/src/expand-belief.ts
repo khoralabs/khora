@@ -1,6 +1,4 @@
 import { MemoryAdapterClient } from "@khoralabs/memories-adapter";
-import { exedraBeliefAdapterInstructions } from "../../../shared/belief-agent-instructions.ts";
-import type { ExpandedMemoryDraftWire } from "../../../shared/belief-integration.ts";
 import {
   createRemoteMemoriesClient,
   getAgentRegistry,
@@ -9,6 +7,8 @@ import {
   resolveEmbeddingModel,
 } from "./agent-runtime.ts";
 import { createWorkflowMemoriesAgentTelemetry } from "./agent-telemetry.ts";
+import { exedraBeliefAdapterInstructions } from "./belief-instructions.ts";
+import type { ExpandedMemoryDraftWire } from "./belief-integration.ts";
 
 export async function expandBelief(args: {
   beliefText: string;

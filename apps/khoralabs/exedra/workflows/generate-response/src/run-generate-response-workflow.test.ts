@@ -183,6 +183,68 @@ test("uses stopWhen stepCountIs for multi-step tool loops", async () => {
   expect(seen[0]?.stopWhen).toBeDefined();
 });
 
+test("flagBelief stores belief flags on the final assistant message", async () => {
+  const { service } = await createThread();
+  let toolResult: unknown;
+  const input = params({
+    responseId: "response-belief-flags",
+    skillNames: ["conduct-interview"],
+  });
+  input.access.memoryNamespaces = [
+    {
+      namespace: "org/org-1/team/team-1/session/session-1",
+      scope: "session",
+      resourceType: "session",
+      resourceId: "session-1",
+    },
+    {
+      namespace: "user-1/org/org-1/team/team-1/session-1",
+      scope: "personal",
+      resourceType: "account",
+      resourceId: "user-1",
+    },
+  ];
+  const result = await runGenerateResponseWorkflow(input, {
+    authzClient: authz(),
+    chatService: service,
+    memoryClient: {
+      searchMemories: async () => [],
+      getMemoryProvenance: async () => null,
+    },
+    streamTextFn: ((input: {
+      tools?: Record<string, { execute?: (input: unknown, opts: unknown) => Promise<unknown> }>;
+    }) => ({
+      textStream: (async function* () {
+        toolResult = await input.tools?.flagBelief?.execute?.(
+          { beliefs: ["The team prefers async interviews", "The team prefers async interviews"] },
+          { toolCallId: "flag-belief-test", messages: [] },
+        );
+        yield "Thanks for sharing.";
+      })(),
+      text: Promise.resolve("Thanks for sharing."),
+      finishReason: Promise.resolve("stop"),
+      usage: Promise.resolve(undefined),
+      response: Promise.resolve(undefined),
+    })) as unknown as RunGenerateResponseDependencies["streamTextFn"],
+  });
+
+  expect(result.message?.metadata).toEqual({
+    beliefFlags: [
+      {
+        belief: "The team prefers async interviews",
+        messageId: "user-message-1",
+      },
+    ],
+  });
+  expect(toolResult).toMatchObject({
+    addedToBeliefsPanel: true,
+    integrationNamespaces: [
+      "org/org-1/team/team-1/session/session-1",
+      "user-1/org/org-1/team/team-1/session-1",
+    ],
+  });
+});
+
 test("can generate the opening response for an empty thread", async () => {
   const { service } = await createThread();
   const input = params({
@@ -336,6 +398,8 @@ test("activateSkill returns structured content and dedupes repeated activation",
     },
     skills: skills.filter((skill) => skill.name === "summarize-thread"),
     activatedSkillNames: new Set<string>(),
+    sourceUserMessageId: "user-message-1",
+    beliefFlags: [],
   };
 
   const first = activateSkillByName(env, "summarize-thread");
@@ -430,5 +494,8 @@ test("denied memory namespaces are pruned before capability capture", async () =
     },
   );
 
-  expect(result.capabilities.toolRefs.map((toolRef) => toolRef.toolKey)).toEqual(["activateSkill"]);
+  expect(result.capabilities.toolRefs.map((toolRef) => toolRef.toolKey)).toEqual([
+    "activateSkill",
+    "flagBelief",
+  ]);
 });

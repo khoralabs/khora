@@ -1,6 +1,4 @@
 import { MemoryIntegratorClient } from "@khoralabs/memories-integrator";
-import { exedraBeliefIntegratorInstructions } from "../../../shared/belief-agent-instructions.ts";
-import type { IntegratorPlanWireJson } from "../../../shared/belief-integration.ts";
 import {
   createRemoteMemoriesClient,
   getAgentRegistry,
@@ -9,6 +7,8 @@ import {
   resolveIntegratorMaxSteps,
 } from "./agent-runtime.ts";
 import { createWorkflowMemoriesAgentTelemetry } from "./agent-telemetry.ts";
+import { exedraBeliefIntegratorInstructions } from "./belief-instructions.ts";
+import type { IntegratorPlanWireJson } from "./belief-integration.ts";
 
 export type PlanIntegrationResult = {
   plan: IntegratorPlanWireJson;

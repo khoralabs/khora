@@ -1,5 +1,5 @@
+import type { BeliefIntegrationParams } from "@khoralabs/exedra-workflows-integrate-memory/belief-integration";
 import { Render } from "@renderinc/sdk";
-import type { BeliefIntegrationParams } from "../../../../shared/belief-integration.js";
 import { logger } from "../logger.js";
 
 export type { BeliefIntegrationParams };

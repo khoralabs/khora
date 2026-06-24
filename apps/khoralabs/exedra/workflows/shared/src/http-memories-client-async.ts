@@ -46,7 +46,6 @@ async function readJson<T>(res: Response): Promise<T> {
 
 function createStubPersistence(config: ExedraHttpMemoriesClientConfig): MemoriesPersistenceAsync {
   const base = config.baseUrl.replace(/\/$/, "");
-  const headers = authHeaders(config.token);
 
   return {
     withTransaction: async <T>(fn: () => Promise<T>) => fn(),
@@ -57,7 +56,7 @@ function createStubPersistence(config: ExedraHttpMemoriesClientConfig): Memories
       if (config.orgId !== undefined && config.orgId.length > 0) {
         url.searchParams.set("orgId", config.orgId);
       }
-      const res = await fetch(url, { headers: { Authorization: headers.Authorization } });
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${config.token}` } });
       const data = await readJson<InternalMemoriesProvenanceHeadResponse>(res);
       return data.rootHex.length > 0 ? data.rootHex : undefined;
     },

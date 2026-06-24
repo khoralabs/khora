@@ -4,6 +4,13 @@
   "description": "Integrate Memory - Render Workflows (TypeScript)",
   "type": "module",
   "private": true,
+  "exports": {
+    "./belief-integration": {
+      "types": "./src/belief-integration.ts",
+      "import": "./src/belief-integration.ts",
+      "default": "./src/belief-integration.ts"
+    }
+  },
   "scripts": {
     "start": "bun src/main.ts"
   },

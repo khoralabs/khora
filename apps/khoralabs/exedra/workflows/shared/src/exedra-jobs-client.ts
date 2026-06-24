@@ -1,3 +1,4 @@
+import type { HeadersInit } from "bun";
 import type {
   AppendJobEventsRequest,
   CompleteJobRequest,

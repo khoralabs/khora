@@ -1,5 +1,4 @@
 import { MemoryAdapterClient } from "@khoralabs/memories-adapter";
-import type { ExpandedMemoryDraftWire } from "../../../shared/belief-integration.ts";
 import { exedraDocumentAdapterInstructions } from "../../../shared/document-agent-instructions.ts";
 import type { DocumentIntegrationParams } from "../../../shared/document-processing.ts";
 import {
@@ -10,6 +9,7 @@ import {
   resolveEmbeddingModel,
 } from "./agent-runtime.ts";
 import { createWorkflowMemoriesAgentTelemetry } from "./agent-telemetry.ts";
+import type { ExpandedMemoryDraftWire } from "./belief-integration.ts";
 
 export async function expandDocument(
   args: DocumentIntegrationParams & { namespace: string },

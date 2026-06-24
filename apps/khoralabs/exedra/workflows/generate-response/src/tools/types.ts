@@ -19,4 +19,6 @@ export type GenerateResponseToolkitEnv = {
   memoryClient: MemoryClient;
   skills: SkillRecord[];
   activatedSkillNames: Set<string>;
+  sourceUserMessageId?: string;
+  beliefFlags: Array<{ belief: string; messageId: string }>;
 };

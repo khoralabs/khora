@@ -77,4 +77,4 @@ export type {
   SearchContentWire,
   SearchHitWire,
   SearchParamsWire,
-} from "./search-hit-wire.ts";
+} from "../../../shared/search-hit-wire.ts";

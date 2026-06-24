@@ -167,6 +167,7 @@
         "@khoralabs/chat-persistence-sqlite": "workspace:*",
         "@khoralabs/chat-react": "workspace:*",
         "@khoralabs/exedra-workflows-generate-response": "workspace:*",
+        "@khoralabs/exedra-workflows-integrate-memory": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
