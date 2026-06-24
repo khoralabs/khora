@@ -3,14 +3,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { patchSession } from "@/lib/sessions-api";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
 import { useMobileChromeLayoutOptional } from "@/shell/mobile-chrome-layout";
 import { SidebarCollapseTrigger } from "@/shell/sidebar-collapse-trigger";
 import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
-
-import type { ThreadKind } from "./thread-chat-types";
 
 type InterviewChatHeaderProps = {
   sessionId: string;
@@ -20,10 +17,6 @@ type InterviewChatHeaderProps = {
   onNavigate: (path: string) => void;
   onShare?: () => void;
   onTopicChange?: (topic: string) => void;
-  activeThread?: ThreadKind;
-  onActiveThreadChange?: (thread: ThreadKind) => void;
-  showFacilitationTab?: boolean;
-  showInterviewTab?: boolean;
 };
 
 function SessionTitleEditor({
@@ -118,20 +111,11 @@ export function InterviewChatHeader({
   onNavigate,
   onShare,
   onTopicChange,
-  activeThread,
-  onActiveThreadChange,
-  showFacilitationTab = false,
-  showInterviewTab = false,
 }: InterviewChatHeaderProps) {
   const mobileLayout = useMobileChromeLayoutOptional();
-  const showThreadTabs =
-    showFacilitationTab &&
-    showInterviewTab &&
-    activeThread !== undefined &&
-    onActiveThreadChange !== undefined;
 
   return (
-    <div className="border-b">
+    <div>
       <div className={appSectionHeaderClassName("gap-2 px-3 lg:gap-3 lg:px-4")}>
         <SidebarSheetTrigger />
         <SidebarCollapseTrigger />
@@ -173,20 +157,6 @@ export function InterviewChatHeader({
           <SessionViewToggle activeView="chat" onNavigate={onNavigate} sessionId={sessionId} />
         </div>
       </div>
-
-      {showThreadTabs ? (
-        <div className="px-3 pb-2 lg:px-4">
-          <Tabs
-            value={activeThread}
-            onValueChange={(value) => onActiveThreadChange(value as ThreadKind)}
-          >
-            <TabsList variant="line">
-              <TabsTrigger value="facilitation">Facilitation</TabsTrigger>
-              <TabsTrigger value="interview">My interview</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      ) : null}
     </div>
   );
 }

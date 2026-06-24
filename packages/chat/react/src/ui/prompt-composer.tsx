@@ -23,6 +23,7 @@ export function PromptComposer({
   status,
   input,
   chatError,
+  header,
   onAttachmentControlsReady,
   onSubmit,
   onStop,
@@ -37,6 +38,7 @@ export function PromptComposer({
   status: ChatStatus;
   input: string;
   chatError: string | null;
+  header?: ReactNode;
   onAttachmentControlsReady: (controls: {
     add: (files: File[] | FileList) => void;
     clear: () => void;
@@ -53,6 +55,7 @@ export function PromptComposer({
   return (
     <div className={cn("shrink-0 border-t p-4", className)}>
       <PromptComposerError error={chatError} />
+      {header != null ? <div className={cn("mb-2 flex", chatColumnClassName)}>{header}</div> : null}
       <PromptInput
         className={cn("relative", chatColumnClassName)}
         maxFileSize={maxFileSize}

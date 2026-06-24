@@ -29,6 +29,7 @@ export function ChatThreadView({
   onStop,
   onTextChange,
   onError,
+  composerHeader,
   messagesChildren,
   composerChildren,
 }: {
@@ -53,6 +54,7 @@ export function ChatThreadView({
   onStop: () => void;
   onTextChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onError: (error: string) => void;
+  composerHeader?: ReactNode;
   messagesChildren?: ReactNode;
   composerChildren?: ReactNode;
 }) {
@@ -88,6 +90,7 @@ export function ChatThreadView({
           onTextChange={onTextChange}
           placeholder={placeholder}
           status={status}
+          header={composerHeader}
         >
           {composerChildren}
         </ChatThreadComposer>
@@ -135,6 +138,7 @@ export function ChatThreadComposer({
   status,
   input,
   chatError,
+  header,
   placeholder,
   onAttachmentControlsReady,
   onSubmit,
@@ -147,6 +151,7 @@ export function ChatThreadComposer({
   status: ChatStatus;
   input: string;
   chatError: string | null;
+  header?: ReactNode;
   placeholder: string;
   onAttachmentControlsReady: (controls: {
     add: (files: File[] | FileList) => void;
@@ -162,6 +167,7 @@ export function ChatThreadComposer({
     <PromptComposer
       chatError={chatError}
       connected={connected}
+      header={header}
       input={input}
       onAttachmentControlsReady={onAttachmentControlsReady}
       onError={onError}

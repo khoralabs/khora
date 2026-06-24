@@ -6,6 +6,7 @@ import {
 } from "@khoralabs/chat-react";
 import { ChatThreadView } from "@khoralabs/chat-react/ui";
 import type { ChatStatus } from "ai";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { exedraChatClient, loadExedraChatBootstrap } from "@/lib/exedra-chat-client";
@@ -14,11 +15,13 @@ import type { ThreadKind } from "./thread-chat-types";
 
 function FrameworkThread({
   canWrite,
+  composerHeader,
   placeholder,
   readOnlyMessage,
   threadId,
 }: {
   canWrite: boolean;
+  composerHeader?: ReactNode;
   placeholder: string;
   readOnlyMessage: string;
   threadId: string;
@@ -50,6 +53,7 @@ function FrameworkThread({
       agentAuthor={{ name: "Exedra" }}
       canWrite={canWrite}
       chatError={error?.message ?? composer.error?.message ?? null}
+      composerHeader={composerHeader}
       connected
       input={input}
       onAttachmentControlsReady={() => {}}
@@ -79,12 +83,14 @@ function FrameworkThread({
 
 export function ChatFrameworkThreadPanel({
   canWrite,
+  composerHeader,
   kind,
   onConnectedChange,
   onError,
   sessionId,
 }: {
   canWrite: boolean;
+  composerHeader?: ReactNode;
   kind: ThreadKind;
   onConnectedChange?: (connected: boolean) => void;
   onError: (error: string | null) => void;
@@ -126,6 +132,7 @@ export function ChatFrameworkThreadPanel({
     <ChatProvider client={exedraChatClient}>
       <FrameworkThread
         canWrite={canWrite}
+        composerHeader={composerHeader}
         placeholder={
           kind === "facilitation" ? "Discuss with facilitators…" : "Share your thoughts…"
         }
