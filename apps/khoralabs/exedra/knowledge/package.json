@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@khoralabs/memories-service": "workspace:*",
     "@khoralabs/memories-service-auth": "workspace:*",
     "@khoralabs/memories-service-http": "workspace:*",
     "@khoralabs/memories-service-storage-sqlite": "workspace:*"

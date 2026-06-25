@@ -1,6 +1,5 @@
 import "./server/otel.js";
 
-import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-sqlite";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { serve } from "bun";
 import graphPage from "./client/routes/graph/index.html";
@@ -16,8 +15,6 @@ import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/regist
 import { apiRoutes, internalRoutes } from "./server/routes";
 import { serveAssets } from "./server/serve-assets";
 
-// Must run before any bun:sqlite Database (including exedra.db) so sqlite-vec can load.
-ensureCustomSqliteForExtensions();
 getDb();
 
 if (isExedraStubRegistryEnabled()) {

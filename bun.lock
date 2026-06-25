@@ -179,19 +179,12 @@
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/memories-adapter": "workspace:*",
         "@khoralabs/memories-autolink": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-integrator": "workspace:*",
-        "@khoralabs/memories-ontologies": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
         "@khoralabs/memories-service": "workspace:*",
-        "@khoralabs/memories-service-auth": "workspace:*",
         "@khoralabs/memories-service-client": "workspace:*",
-        "@khoralabs/memories-service-http": "workspace:*",
-        "@khoralabs/memories-service-storage-sqlite": "workspace:*",
-        "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/memories-tools": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts-react": "workspace:*",
         "@khoralabs/registry-auth": "workspace:*",
@@ -280,6 +273,7 @@
     "apps/khoralabs/exedra/knowledge": {
       "name": "@khoralabs/exedra-knowledge",
       "dependencies": {
+        "@khoralabs/memories-service": "workspace:*",
         "@khoralabs/memories-service-auth": "workspace:*",
         "@khoralabs/memories-service-http": "workspace:*",
         "@khoralabs/memories-service-storage-sqlite": "workspace:*",
@@ -1121,7 +1115,10 @@
       "devDependencies": {
         "@biomejs/biome": "^2.4.16",
         "@types/bun": "latest",
+        "@types/parse-gitignore": "^1.0.2",
         "husky": "^9.1.7",
+        "minimatch": "^10.2.5",
+        "parse-gitignore": "^2.0.0",
         "typescript": "^5",
       },
       "peerDependencies": {

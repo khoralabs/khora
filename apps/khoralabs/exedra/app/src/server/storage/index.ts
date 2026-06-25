@@ -16,8 +16,6 @@ export {
   databaseObjectKey,
   type FileCategory,
   fileObjectKey,
-  localDatabaseDir,
-  localDatabasePath,
   type PrincipalKind,
   type PrincipalResource,
   principalResourcePrefix,

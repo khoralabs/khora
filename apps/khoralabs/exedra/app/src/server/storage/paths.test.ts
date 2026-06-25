@@ -5,7 +5,6 @@ import { buildDocumentFileObjectKey, resolveDocumentStorageOwner } from "./owner
 import {
   databaseObjectKey,
   fileObjectKey,
-  localDatabasePath,
   principalResourcePrefix,
   principalStoragePrefix,
   validatePrincipalDid,
@@ -56,16 +55,6 @@ test("fileObjectKey builds category paths under files", () => {
       parts: ["batches", "batch-1", "doc-1", "notes.txt"],
     }),
   ).toBe(`exedra/organizations/${ORG_DID}/files/documents/batches/batch-1/doc-1/notes.txt`);
-});
-
-test("localDatabasePath mirrors principal folder layout", () => {
-  expect(
-    localDatabasePath({
-      kind: "account",
-      did: ACCOUNT_DID,
-      memoriesDir: "/data/memories",
-    }),
-  ).toBe(`/data/memories/accounts/${ACCOUNT_DID}/${ACCOUNT_DID}.db`);
 });
 
 test("resolveDocumentStorageOwner maps grant resources to principal ownership", () => {

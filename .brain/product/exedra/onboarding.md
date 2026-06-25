@@ -57,12 +57,12 @@ Both reuse `hashInviteToken` / `generateInvitePlaintext` from `server/db/invites
 
 On successful `POST /api/onboarding`, `bootstrapOrgTeamMemories({ orgId, teamId, userId })` runs idempotently:
 
-- Opens `memories/{orgId}.db` and `memories/{encodedUserId}.db` under `{EXEDRA_DATA_DIR}/memories/`
+- Opens org and account databases on the knowledge service via `openOrgMemoriesService` / `openUserMemoriesService` (`service-client.ts`)
 - Ensures scope chains per [namespaces.md](./namespaces.md)
 
-User IDs (`did:key:…`) are encoded for filenames/paths only via `encodePrincipalIdForMemories` in `server/memories/encode-principal-id.ts`.
+User IDs (`did:key:…`) are encoded for **namespace segments inside a database** via `encodePrincipalIdForMemories` in `server/memories/encode-principal-id.ts` — not for on-disk database paths (those use the knowledge service's `v1/{encoded}/database.db` layout).
 
-Requires `EXEDRA_MEMORIES_SQLCIPHER_KEY`.
+Requires a running knowledge service (`EXEDRA_KNOWLEDGE_SERVICE_URL`; SQLCipher key on the knowledge service host via `EXEDRA_KNOWLEDGE_SQLCIPHER_KEY`).
 
 ## Client
 

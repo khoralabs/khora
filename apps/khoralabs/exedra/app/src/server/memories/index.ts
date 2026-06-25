@@ -5,13 +5,11 @@ export {
   bootstrapSessionMemories,
 } from "./bootstrap.js";
 export { bootstrapSessionMemoriesForTeamSession } from "./bootstrap-session.js";
-export { getMemoriesSqlCipherKey, resolveMemoriesDir } from "./config.js";
 export { encodePrincipalIdForMemories } from "./encode-principal-id.js";
 export {
-  ensureOrgSessionScopes,
-  ensureOrgTeamScopes,
-  ensureUserSessionScopes,
-  ensureUserTeamScopes,
+  ensureNamespaceScopeChainPaths,
+  ensureScopeChainPaths,
+  namespaceScopeChainPaths,
   orgScope,
   orgSessionScope,
   orgTeamScope,
@@ -19,7 +17,6 @@ export {
   userSessionScope,
   userTeamScope,
 } from "./namespaces.js";
-export { resolveOrgMemoriesDbPath, resolveUserMemoriesDbPath } from "./paths.js";
 export {
   type ExedraMemoriesServiceAccess,
   openOrgMemoriesService,

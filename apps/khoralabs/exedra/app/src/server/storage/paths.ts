@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import { getStorageRootPrefix } from "./config.js";
 
 export type PrincipalKind = "organization" | "account";
@@ -68,24 +66,4 @@ export function fileObjectKey(params: {
   });
   const safeParts = params.parts.map(sanitizePathPart);
   return [base, params.category, ...safeParts].join("/");
-}
-
-export function localDatabasePath(params: {
-  kind: PrincipalKind;
-  did: string;
-  memoriesDir: string;
-  suffix?: DatabaseSidecarSuffix;
-}): string {
-  const did = validatePrincipalDid(params.did);
-  const suffix = params.suffix ?? "";
-  return path.join(params.memoriesDir, PRINCIPAL_FOLDER[params.kind], did, `${did}.db${suffix}`);
-}
-
-export function localDatabaseDir(params: {
-  kind: PrincipalKind;
-  did: string;
-  memoriesDir: string;
-}): string {
-  const did = validatePrincipalDid(params.did);
-  return path.join(params.memoriesDir, PRINCIPAL_FOLDER[params.kind], did);
 }

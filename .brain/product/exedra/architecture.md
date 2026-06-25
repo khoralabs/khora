@@ -2,13 +2,20 @@
 
 ## Storage Layer
 
-Three distinct SQLite databases, strictly separated:
+App state and memories persistence are strictly separated:
 
-| Database | Contents | Owner |
+| Store | Contents | Owner |
 |---|---|---|
-| `exedra.db` | App state: orgs, teams, sessions, invites, auth tokens, group chat messages | Exedra server |
-| `memories/organizations/{orgDid}/{orgDid}.db` | Org/team shared namespace — promoted facts, contention reports | The organization |
-| `memories/accounts/{accountDid}/{accountDid}.db` | Personal memory namespace — user's beliefs, observations across all sessions | The individual user |
+| `exedra.db` (app data dir) | App state: orgs, teams, sessions, invites, auth tokens, group chat messages | Exedra app |
+| Knowledge service SQLite (`{EXEDRA_KNOWLEDGE_DATA_DIR}/v1/…`) | Org and account memory graphs — beliefs, observations, promoted facts | Knowledge service (`@khoralabs/exedra-knowledge`) |
+
+Memory databases are keyed logically as `{ kind: "organization" \| "account", ownerKey: did }`. On disk each database is a single file:
+
+```
+{EXEDRA_KNOWLEDGE_DATA_DIR}/v1/{base64url(JSON.stringify([kind, ownerKey]))}/database.db
+```
+
+Org databases hold shared team namespaces; account databases hold personal namespaces across all sessions.
 
 ### Why Separate
 
@@ -44,27 +51,23 @@ On step 2 submit, `POST /api/onboarding` creates relational org/team records and
 
 ## Memories module (`server/memories/`)
 
-Separate SQLite files under `{EXEDRA_DATA_DIR}/memories/`:
+The app does **not** open memory SQLite files locally. It calls the knowledge service over HTTP via `@khoralabs/memories-service-client` (`service-client.ts`), using `EXEDRA_KNOWLEDGE_SERVICE_URL` and optional `EXEDRA_KNOWLEDGE_SERVICE_TOKEN`.
 
-| File | Purpose |
+| Database id | Purpose |
 |---|---|
-| `organizations/{orgDid}/{orgDid}.db` | Shared org/team namespaces |
-| `accounts/{accountDid}/{accountDid}.db` | Account personal namespace |
+| `{ kind: "organization", ownerKey: orgDid }` | Shared org/team namespaces |
+| `{ kind: "account", ownerKey: accountDid }` | Account personal namespace |
 
-User IDs stay as DIDs in app tables. For memories **namespace path segments** only, Exedra encodes principals with `encodePrincipalIdForMemories` (22-char SHA256 base64url).
+User IDs stay as DIDs in app tables. For memories **namespace path segments** inside a database only, Exedra encodes principals with `encodePrincipalIdForMemories` (22-char SHA256 base64url) — this is unrelated to on-disk database path encoding.
 
-S3 object layout mirrors the same principal folders under `exedra/`:
+S3 object layout for uploads uses principal folders under `exedra/` (via `server/storage/`):
 
 | Prefix | Purpose |
 |---|---|
-| `organizations/{orgDid}/{orgDid}.db*` | Litestream memory DB replicas |
-| `organizations/{orgDid}/files/...` | Org-owned uploads (avatars, documents, knowledge) |
-| `accounts/{accountDid}/{accountDid}.db*` | Litestream memory DB replicas |
-| `accounts/{accountDid}/files/...` | Account-owned uploads (avatars, knowledge) |
+| `organizations/{orgDid}/files/...` | Org-owned uploads (avatars, documents) |
+| `accounts/{accountDid}/files/...` | Account-owned uploads (avatars, documents) |
 
-Path builders live in `server/storage/`; documents and avatars delegate to that module.
-
-Opened via lazy `Map` cache in `store.ts`; requires `EXEDRA_MEMORIES_SQLCIPHER_KEY`. Optional `SQLITE_CUSTOM_LIB` for sqlite-vec (Homebrew sqlite).
+The knowledge service hosts SQLite under `{EXEDRA_KNOWLEDGE_DATA_DIR}` with `EXEDRA_KNOWLEDGE_SQLCIPHER_KEY`. Optional `SQLITE_CUSTOM_LIB` on the knowledge service for sqlite-vec (Homebrew sqlite).
 
 Scope chains created at onboarding:
 
@@ -114,7 +117,7 @@ Bun.serve({
 | Chat UI | Vercel AI SDK `useChat` hook | Client-side message state + streaming; interview and group chat interfaces |
 | Bot delivery | Vercel Chat SDK (`chat` package) | Optional: Slack/Teams/Discord adapter for alignment group chat |
 | App state | `bun:sqlite` | Sessions, teams, orgs, invites, interview transcripts, group chat messages |
-| Agent memory | `@khoralabs/memories-sqlite` | Per-user and per-org SQLite files, separate from app state |
+| Agent memory | `@khoralabs/memories-service` (HTTP) | Knowledge service hosts per-org/per-account SQLite; app/workflows are clients |
 
 Rationale: keeps everything self-hostable in a single container. Vercel Chat SDK also opens a future path for `@mention` integration with other apps.
 
@@ -126,39 +129,26 @@ Rationale: keeps everything self-hostable in a single container. Vercel Chat SDK
 - **Alignment group chat:** multi-party — messages broadcast to all participants in the chat room
 - Single unified transport for both use cases
 
-## Per-User/Per-Org File Access Pattern
+## Per-User/Per-Org Memory Access Pattern
 
-Mirrors Colonnade's `per_principal` mode (`@khoralabs/colonnade-persistence`):
+The app caches remote clients, not local SQLite handles:
 
-- A `Map<userId, MemoriesPersistence>` holds open database handles for the process lifetime
-- On first access for a user, open `memories/{userId}.db` (create if missing), run schema migrations, cache the handle
-- Same pattern for `memories/{orgId}.db`
-- `close()` on SIGTERM/SIGINT closes all open handles
+- `service-client.ts` keeps a `Map` of in-flight `openOrgMemoriesService` / `openUserMemoriesService` promises keyed by `{ kind, ownerKey }`
+- Each open links the Exedra ontology and returns HTTP-backed `RemoteMemoriesClientAsync` handles
+- The knowledge service opens and caches SQLite files under `{EXEDRA_KNOWLEDGE_DATA_DIR}/v1/…`
 
-```typescript
-// Pseudocode — mirrors cluster.resolveCell()
-function resolveUserMemories(userId: string): MemoriesPersistence {
-  if (!cache.has(userId)) {
-    const db = openDatabase(`memories/${userId}.db`, { create: true });
-    cache.set(userId, createMemoriesPersistence(db));
-  }
-  return cache.get(userId)!;
-}
-```
-
-Key files to reference:
-- `packages/colonnade/impl/ts/src/sqlite/cluster.ts` — lazy open pattern
-- `packages/colonnade/impl/ts/src/sqlite/sqlite-pragmas.ts` — WAL/performance pragmas to apply on open
+Key files:
+- `app/src/server/memories/service-client.ts` — app-side client cache
+- `knowledge/src/server.ts` — `createLocalSqliteServiceStack` host
 
 ## Backup Strategy (Litestream)
 
-Mirrors the Khora host pattern from `@khoralabs/khora` (`scripts/litestream-config.ts` + `start-khora.ts`):
+Mirrors the Khora host pattern from `@khoralabs/khora` (`scripts/litestream-config.ts` + `start-exedra.ts`):
 
 - `exedra.db` — replicated as a single file: `s3://{bucket}/{prefix}/exedra.sqlite`
-- `memories/` directory — directory-mode watcher: `dir: memories/, pattern: *.db, watch: true` → `s3://{bucket}/{prefix}/memories/`
-  - `watch: true` picks up new per-user and per-org `.db` files automatically as they are created
+- Knowledge databases — **not yet backed up by the app**; live under `{EXEDRA_KNOWLEDGE_DATA_DIR}/v1/*/database.db` on the knowledge service host. A future Litestream sidecar on the knowledge service would watch that tree separately.
 - Config is generated at runtime (temp YAML file), not checked in
-- Litestream runs as a sidecar process alongside the Bun server; `EXEDRA_LITESTREAM=1` to enable
+- Litestream runs as a sidecar process alongside the Exedra app; `EXEDRA_LITESTREAM=1` to enable
 - MinIO for local dev; AWS S3 for prod
 
 ### Relevant env vars
@@ -201,12 +191,12 @@ What is preserved across cutover:
 
 - **DID** — stable; no memories re-keying
 - **Session history** — `messages` rows are portable `UIMessage` JSON (JSONB)
-- **Personal memories** — `memories/{did}.db` paths unchanged
+- **Personal memories** — same `{ kind: "account", ownerKey: did }` database id; knowledge service on-disk encoding is versioned under `v1/`
 
 Research on low-complexity Khora-native web apps: [`.brain/research/khora-native-apps.md`](../../research/khora-native-apps.md).
 
 ## Deployment Targets
 
-- **Custodial (default):** Exedra hosts all three DBs; user/org can export at any time
-- **Self-hosted org:** Company runs Exedra server with their own `{orgId}.db`; personal DBs remain custodial or local
-- **Fully local:** User runs Exedra locally; all three DBs on their machine
+- **Custodial (default):** Exedra app + knowledge service hosted together; user/org can export knowledge DB files from the service data dir
+- **Self-hosted org:** Company runs Exedra + knowledge service with their org database; personal DBs remain custodial or local
+- **Fully local:** User runs the Exedra dev stack (`bun run dev`); `exedra.db` and knowledge data under the configured data dirs

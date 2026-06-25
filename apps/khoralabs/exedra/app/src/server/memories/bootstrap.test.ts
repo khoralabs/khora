@@ -2,10 +2,6 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createNoneAuthStrategy } from "@khoralabs/memories-service-auth";
-import { MemoriesServiceClient } from "@khoralabs/memories-service-client";
-import { createMemoriesServiceHttpServer } from "@khoralabs/memories-service-http";
-import { createLocalSqliteServiceStack } from "@khoralabs/memories-service-storage-sqlite";
 
 import { bootstrapOrgTeamMemories, bootstrapSessionMemories } from "./bootstrap";
 import {
@@ -21,6 +17,13 @@ import { setupTestKnowledgeService } from "./test-knowledge-service";
 
 let dataDir: string;
 let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
+
+function requireKnowledgeService(): NonNullable<typeof knowledgeService> {
+  if (knowledgeService === undefined) {
+    throw new Error("test knowledge service not initialized");
+  }
+  return knowledgeService;
+}
 
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-memories-test-"));
@@ -39,31 +42,6 @@ afterEach(() => {
   delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
 });
 
-async function listScopes(database: { kind: string; ownerKey: string }): Promise<string[]> {
-  const stack = createLocalSqliteServiceStack({
-    dataDir: path.join(dataDir, "knowledge"),
-    sqlCipherKey: "test-knowledge-key",
-  });
-  const server = createMemoriesServiceHttpServer({
-    port: 0,
-    service: stack.service,
-    auth: createNoneAuthStrategy(),
-  });
-  try {
-    const client = new MemoriesServiceClient({ baseUrl: `http://localhost:${server.port}` });
-    await client.openDatabase(database);
-    const handle = await stack.service.getHandle(database);
-    const sqlite = handle.sqlite;
-    if (sqlite === undefined) throw new Error("expected sqlite");
-    return sqlite.db
-      .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
-      .all()
-      .map((row) => row._id);
-  } finally {
-    server.stop(true);
-  }
-}
-
 describe("bootstrap via memories service", () => {
   test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
     const orgId = "org-bootstrap";
@@ -81,12 +59,12 @@ describe("bootstrap via memories service", () => {
     expect(second.orgDatabase).toEqual(first.orgDatabase);
     expect(first.userDatabase).toEqual(second.userDatabase);
 
-    const orgScopes = await listScopes(first.orgDatabase);
+    const orgScopes = await requireKnowledgeService().listScopes(first.orgDatabase);
     expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
       ["_global_", orgScope(orgId), orgTeamScope(orgId, teamId)].sort((a, b) => a.localeCompare(b)),
     );
 
-    const userScopes = await listScopes(first.userDatabase);
+    const userScopes = await requireKnowledgeService().listScopes(first.userDatabase);
     expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
       ["_global_", userScope(userId), userTeamScope(userId, orgId, teamId)].sort((a, b) =>
         a.localeCompare(b),
@@ -108,7 +86,10 @@ describe("bootstrap via memories service", () => {
       userIds: [userId],
     });
 
-    const orgScopes = await listScopes({ kind: "organization", ownerKey: orgId });
+    const orgScopes = await requireKnowledgeService().listScopes({
+      kind: "organization",
+      ownerKey: orgId,
+    });
     expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
       [
         "_global_",
@@ -118,7 +99,10 @@ describe("bootstrap via memories service", () => {
       ].sort((a, b) => a.localeCompare(b)),
     );
 
-    const userScopes = await listScopes({ kind: "account", ownerKey: userId });
+    const userScopes = await requireKnowledgeService().listScopes({
+      kind: "account",
+      ownerKey: userId,
+    });
     expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
       [
         "_global_",

@@ -145,8 +145,6 @@ const resolvedKnowledgeSqlCipherKey =
     process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY,
     appEnv.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY,
     knowledgeEnv.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY,
-    process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY,
-    appEnv.EXEDRA_MEMORIES_SQLCIPHER_KEY,
   ) ?? "dev-knowledge-key";
 
 const sharedEnv = {

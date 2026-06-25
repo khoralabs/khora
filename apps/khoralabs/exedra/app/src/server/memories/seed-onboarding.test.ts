@@ -10,7 +10,7 @@ import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { seedOnboardingMemories } from "./seed-onboarding";
-import { resetMemoriesStoreForTests } from "./store";
+import { resetMemoriesServiceClientCacheForTests } from "./service-client";
 import { setupTestKnowledgeService } from "./test-knowledge-service";
 
 let dataDir: string;
@@ -22,7 +22,7 @@ beforeEach(() => {
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   closeDb();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
@@ -30,7 +30,7 @@ afterEach(() => {
   knowledgeService?.stop();
   knowledgeService = undefined;
   closeDb();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;

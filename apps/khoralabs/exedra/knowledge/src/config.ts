@@ -13,10 +13,8 @@ export function resolveKnowledgeDataDir(): string {
 }
 
 export function resolveKnowledgeSqlCipherKey(): string {
-  const fromKnowledge = process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY?.trim();
-  if (fromKnowledge !== undefined && fromKnowledge.length > 0) return fromKnowledge;
-  const legacy = process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY?.trim();
-  if (legacy !== undefined && legacy.length > 0) return legacy;
+  const key = process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY?.trim();
+  if (key !== undefined && key.length > 0) return key;
   throw new Error("EXEDRA_KNOWLEDGE_SQLCIPHER_KEY is required");
 }
 

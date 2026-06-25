@@ -13,7 +13,7 @@ import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
-import { resetMemoriesStoreForTests } from "../memories/store";
+import { resetMemoriesServiceClientCacheForTests } from "../memories/service-client";
 import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 
 let dataDir: string;
@@ -28,7 +28,7 @@ beforeEach(() => {
   closeDb();
   closeChatDb();
   uninstallTestChatService();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
@@ -40,7 +40,7 @@ afterEach(async () => {
   closeChatDb();
   uninstallTestChatService();
   closeDb();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;

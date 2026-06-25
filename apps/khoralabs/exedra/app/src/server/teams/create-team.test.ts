@@ -7,7 +7,7 @@ import { closeDb, getDb } from "../db/index";
 import { listTeamsForUser } from "../db/membership";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
-import { resetMemoriesStoreForTests } from "../memories/store";
+import { resetMemoriesServiceClientCacheForTests } from "../memories/service-client";
 import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 
 let dataDir: string;
@@ -20,7 +20,7 @@ beforeEach(() => {
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   closeDb();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
@@ -28,7 +28,7 @@ afterEach(() => {
   knowledgeService?.stop();
   knowledgeService = undefined;
   closeDb();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;

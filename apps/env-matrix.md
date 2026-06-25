@@ -7,11 +7,12 @@ Reference for deploying the four Khora web services (Render or similar). Per-app
 | Service | Package | Default port | Start command (prod) | Persistent disk |
 | --- | --- | --- | --- | --- |
 | Khora Labs homepage | `@khoralabs/khoralabs-homepage` | 3000 | `bun run start` | No |
-| Exedra | `@khoralabs/exedra` | 3000 | `bun run start` | Yes (`exedra.db`, `memories/`) |
+| Exedra | `@khoralabs/exedra` | 3000 | `bun run start` | Yes (`exedra.db`) |
+| Exedra knowledge | `@khoralabs/exedra-knowledge` | 3003 | `bun run start` | Yes (`{EXEDRA_KNOWLEDGE_DATA_DIR}/v1/…`) |
 | Khora registry | `@khoralabs/khora-registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
 | Khora server | `@khoralabs/khora-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
 
-Use `bun run start` (not bare `src/index.ts`) on **registry**, **khora-server**, and **exedra** so Litestream sidecars run when enabled.
+Use `bun run start` (not bare `src/index.ts`) on **registry**, **khora-server**, **exedra**, and **exedra-knowledge** so Litestream sidecars run when enabled (exedra app: `exedra.db` only today).
 
 ### Infrastructure (not a Bun web service)
 
@@ -206,11 +207,12 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 
 | Variable | R | K | KH | E | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `EXEDRA_DATA_DIR` | · | · | · | + | C | SQLite root (default `./data`; holds `exedra.db`, `memories/`). |
+| `EXEDRA_DATA_DIR` | · | · | · | + | C | App SQLite root (default `./data`; holds `exedra.db`). |
 | `INVITE_PEPPER` | · | · | · | + | S | **Required.** HMAC pepper for single-use session invite tokens. |
 | `EXEDRA_IDENTITY_KEY` | · | · | · | + | S | **Required.** 32-byte hex AES key for custodial `did:key` identity blobs in `users.identity_encrypted`. |
-| `EXEDRA_MEMORIES_SQLCIPHER_KEY` | · | · | · | + | S | **Required.** SQLCipher key for `memories/{orgId}.db` and encoded user DB files. |
-| `SQLITE_CUSTOM_LIB` | · | · | · | + | C | Optional path to Homebrew/custom sqlite for sqlite-vec (memories extensions). |
+| `EXEDRA_KNOWLEDGE_SERVICE_URL` | · | · | · | + | C | **Required.** Knowledge service base URL (set by `bun run dev` in exedra stack). |
+| `EXEDRA_KNOWLEDGE_SERVICE_TOKEN` | · | · | · | + | S | Bearer token for app/workflow → knowledge service HTTP (falls back to `EXEDRA_INTERNAL_TOKEN` in dev). |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | · | · | · | + | S | Gemini embeddings for memory search (lexical-only fallback when unset). |
 | `AI_API_KEY` | · | · | · | + | S | OpenAI (or compatible) API key for interview agent. |
 | `AI_MODEL` | · | · | · | + | C | Model id (default `gpt-4o`). |
 | `AI_BASE_URL` | · | · | · | + | C | Optional OpenAI-compatible base URL. |
@@ -227,6 +229,17 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `EXEDRA_AUTOLINK_TOP_K` | · | · | · | + | C | Max `retrieval_autolink` edges per belief merge (default `10`). |
 | `EXEDRA_AUTOLINK_MIN_SCORE` | · | · | · | + | C | Optional minimum hybrid search score for autolink neighbors. |
 
+### Exedra knowledge service
+
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PORT` | · | · | · | + | C | Listen port (default `3003`). |
+| `EXEDRA_KNOWLEDGE_DATA_DIR` | · | · | · | + | C | SQLite data root (default `{EXEDRA_DATA_DIR}/knowledge`). On-disk layout: `v1/{base64url([kind, ownerKey])}/database.db`. |
+| `EXEDRA_KNOWLEDGE_SQLCIPHER_KEY` | · | · | · | + | S | **Required.** SQLCipher key for knowledge databases. |
+| `SQLITE_CUSTOM_LIB` | · | · | · | + | C | Path to Homebrew/custom sqlite with extension loading (required for sqlite-vec). |
+| `MEMORIES_SERVICE_AUTH` | · | · | · | + | C | `none` or `server-admin`. |
+| `MEMORIES_SERVICE_ADMIN_TOKEN` | · | · | · | + | S | Bearer token when using `server-admin` (match `EXEDRA_KNOWLEDGE_SERVICE_TOKEN` on app/workflows). |
+
 ### Exedra integrate-memory workflow
 
 | Variable | Kind | Notes |
@@ -234,6 +247,8 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `RENDER_API_KEY` | S | Task server registration (Render Workflows). |
 | `EXEDRA_INTERNAL_URL` | C | Exedra base URL reachable from workflow service (internal hostname in prod). |
 | `EXEDRA_INTERNAL_TOKEN` | S | Same value as Exedra app — `Authorization: Bearer` on internal API calls. |
+| `EXEDRA_KNOWLEDGE_SERVICE_URL` | C | Knowledge service base URL (integrate-memory agent calls memories-service HTTP directly). |
+| `EXEDRA_KNOWLEDGE_SERVICE_TOKEN` | S | Bearer token for knowledge service HTTP. |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | S | LLM + query embeddings for adapter/integrator agents in workflow. |
 | `MEMORIES_INTEGRATOR_MODEL` | C | Default `gemini-2.0-flash`. |
 | `MEMORIES_SEARCH_EMBEDDING_PRESET` | C | `L` / `M` / `H` for hybrid search embeddings (default `M`). |
@@ -330,7 +345,8 @@ BUN_PUBLIC_EXEDRA_STUB_REGISTRY=1
 # EXEDRA_STUB_REGISTRY_OTP=000000
 INVITE_PEPPER=<openssl rand -hex 32>
 EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
-EXEDRA_MEMORIES_SQLCIPHER_KEY=<openssl rand -base64 32>
+EXEDRA_KNOWLEDGE_SERVICE_URL=http://localhost:3003
+EXEDRA_KNOWLEDGE_SERVICE_TOKEN=dev-internal-token
 AI_API_KEY=sk-...
 # Optional — local collector + Grafana (see apps/otel/README.md):
 # OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
@@ -347,7 +363,8 @@ REGISTRY_URL=https://registry.example.com
 EXEDRA_DATA_DIR=/var/data/exedra
 INVITE_PEPPER=<openssl rand -hex 32>
 EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
-EXEDRA_MEMORIES_SQLCIPHER_KEY=<openssl rand -base64 32>
+EXEDRA_KNOWLEDGE_SERVICE_URL=http://exedra-knowledge:3003
+EXEDRA_KNOWLEDGE_SERVICE_TOKEN=<shared-with-knowledge-service>
 AI_API_KEY=sk-...
 AI_MODEL=gpt-4o
 EXEDRA_LITESTREAM=1
@@ -359,6 +376,21 @@ OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
 # OTEL_SERVICE_VERSION=0.1.0
 # EXEDRA_DOCUMENTS_S3_BUCKET=khora-backups-prod
 # EXEDRA_DOCUMENTS_S3_PREFIX=exedra/documents
+```
+
+**exedra-knowledge (production)**
+
+```
+PORT=3003
+EXEDRA_KNOWLEDGE_DATA_DIR=/var/data/knowledge
+EXEDRA_KNOWLEDGE_SQLCIPHER_KEY=<openssl rand -base64 32>
+MEMORIES_SERVICE_AUTH=server-admin
+MEMORIES_SERVICE_ADMIN_TOKEN=<same-as-EXEDRA_KNOWLEDGE_SERVICE_TOKEN>
+SQLITE_CUSTOM_LIB=/usr/lib/libsqlite3.so
+LOG_LEVEL=info
+OTEL_EXPORTER_OTLP_ENDPOINT=http://khora-otel-collector:4318
+OTEL_SERVICE_NAME=exedra-knowledge
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
 ```
 
 **otel-collector (Render Private Service or local Docker)**
@@ -396,7 +428,8 @@ Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `INVITE_PEPPER`, `EXEDRA_ID
 | Registry | `apps/khoralabs/registry/.env.example` |
 | Khora server | `apps/khora/server/.env.example` |
 | Khora Labs homepage | `apps/khoralabs/homepage/.env.example` |
-| Exedra | `apps/exedra/.env.example` |
+| Exedra | `apps/khoralabs/exedra/app/.env.example` |
+| Exedra knowledge | `apps/khoralabs/exedra/knowledge/.env.example` |
 | OTel Collector | `apps/otel/.env.example` |
 
 Litestream shared logic: `scripts/litestream-config.ts`. Local MinIO: `apps/s3/README.md`. Local/prod OTel collector: `apps/otel/README.md`.

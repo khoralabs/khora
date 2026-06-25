@@ -11,7 +11,7 @@ import { getPendingOnboardingInterview, listTeamsForUser } from "../db/membershi
 import { hasPersonalMemoryConsent } from "../db/session-participants";
 import { createOrg, createSession, createTeam, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
-import { resetMemoriesStoreForTests } from "../memories/store";
+import { resetMemoriesServiceClientCacheForTests } from "../memories/service-client";
 import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
 import { getStubRegistryOtp } from "../registry-stub/config";
@@ -50,7 +50,7 @@ beforeEach(async () => {
   process.env.BUN_PUBLIC_EXEDRA_REGISTRY_URL = BASE;
   process.env.EXEDRA_STUB_REGISTRY = "1";
   resetStubRegistryStore();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   closeDb();
   knowledgeService = setupTestKnowledgeService(dataDir);
 });
@@ -59,7 +59,7 @@ afterEach(() => {
   knowledgeService?.stop();
   knowledgeService = undefined;
   closeDb();
-  resetMemoriesStoreForTests();
+  resetMemoriesServiceClientCacheForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;

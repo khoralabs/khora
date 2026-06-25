@@ -38,6 +38,16 @@ App and workflows use:
 - `EXEDRA_KNOWLEDGE_SERVICE_URL`
 - `EXEDRA_KNOWLEDGE_SERVICE_TOKEN`
 
+## On-disk layout
+
+Each memory database is stored as a single SQLCipher file:
+
+```
+{EXEDRA_KNOWLEDGE_DATA_DIR}/v1/{base64url(JSON.stringify([kind, ownerKey]))}/database.db
+```
+
+Placement and ontology registries live under `{EXEDRA_KNOWLEDGE_DATA_DIR}/registry/`.
+
 ## Tests
 
 ```bash

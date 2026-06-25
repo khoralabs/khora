@@ -66,28 +66,37 @@ describe("buildLitestreamYaml", () => {
     }
   });
 
-  test("exedra layout replicates app db and watched memories dir", () => {
+  test("exedra app layout replicates exedra.db only", () => {
     const yaml = buildLitestreamYaml({
       bucket: "khora-backups-prod",
       keyPrefix: "exedra/litestream",
       region: "us-east-1",
-      dbs: [
-        { kind: "file", path: "/data/exedra.db", replicaSuffix: "exedra.sqlite" },
-        {
-          kind: "dir",
-          dir: "/data/memories",
-          pattern: "*.db",
-          watch: true,
-          replicaSuffix: "memories",
-        },
-      ],
+      dbs: [{ kind: "file", path: "/data/exedra.db", replicaSuffix: "exedra.sqlite" }],
     });
     expect(yaml).toContain('path: "/data/exedra.db"');
     expect(yaml).toContain('url: "s3://khora-backups-prod/exedra/litestream/exedra.sqlite"');
-    expect(yaml).toContain('dir: "/data/memories"');
-    expect(yaml).toContain('pattern: "*.db"');
+    expect(yaml).not.toContain('dir: "/data/memories"');
+  });
+
+  test("knowledge service layout can watch flat v1 database tree", () => {
+    const yaml = buildLitestreamYaml({
+      bucket: "khora-backups-prod",
+      keyPrefix: "exedra-knowledge/litestream",
+      region: "us-east-1",
+      dbs: [
+        {
+          kind: "dir",
+          dir: "/data/knowledge/v1",
+          pattern: "*/database.db",
+          watch: true,
+          replicaSuffix: "knowledge",
+        },
+      ],
+    });
+    expect(yaml).toContain('dir: "/data/knowledge/v1"');
+    expect(yaml).toContain('pattern: "*/database.db"');
     expect(yaml).toContain("watch: true");
-    expect(yaml).toContain('url: "s3://khora-backups-prod/exedra/litestream/memories"');
+    expect(yaml).toContain('url: "s3://khora-backups-prod/exedra-knowledge/litestream/knowledge"');
   });
 
   test("readLitestreamLogLevel reads LITESTREAM_LOG_LEVEL", () => {
