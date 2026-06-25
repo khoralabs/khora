@@ -68,6 +68,12 @@ export function ensureScopeChain(
   });
 }
 
+export function ensureScopeChainPaths(
+  scopePaths: readonly NamespacePath[],
+): readonly NamespacePath[] {
+  return scopePaths;
+}
+
 export function ensureOrgTeamScopes(
   persistence: MemoriesPersistence,
   orgId: string,
@@ -123,13 +129,21 @@ export function ensureNamespaceScopeChain(
   persistence: MemoriesPersistence,
   targetNamespace: NamespacePath,
 ): void {
+  ensureScopeChain(persistence, namespaceScopeChainPaths(targetNamespace));
+}
+
+export function namespaceScopeChainPaths(targetNamespace: NamespacePath): NamespacePath[] {
   const segments = targetNamespace.split("/").filter((segment) => segment.length > 0);
-  if (segments.length === 0) return;
+  if (segments.length === 0) return [];
   const paths: NamespacePath[] = [GLOBAL_ROOT];
   let built = "";
   for (const segment of segments) {
     built = built.length > 0 ? `${built}/${segment}` : segment;
     paths.push(built as NamespacePath);
   }
-  ensureScopeChain(persistence, paths);
+  return paths;
+}
+
+export function ensureNamespaceScopeChainPaths(targetNamespace: NamespacePath): NamespacePath[] {
+  return namespaceScopeChainPaths(targetNamespace);
 }

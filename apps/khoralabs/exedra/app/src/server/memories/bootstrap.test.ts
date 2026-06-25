@@ -1,14 +1,12 @@
-import { Database } from "bun:sqlite";
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
+import { createNoneAuthStrategy } from "@khoralabs/memories-service-auth";
+import { MemoriesServiceClient } from "@khoralabs/memories-service-client";
+import { createMemoriesServiceHttpServer } from "@khoralabs/memories-service-http";
+import { createLocalSqliteServiceStack } from "@khoralabs/memories-service-storage-sqlite";
 
-import { closeDb } from "../db/index";
-import { ensureExedraSchema } from "../db/schema";
-import { createOrg, createTeam } from "../db/sessions";
-import { getOrCreateUser } from "../identity/users";
 import { bootstrapOrgTeamMemories, bootstrapSessionMemories } from "./bootstrap";
 import {
   orgScope,
@@ -18,124 +16,116 @@ import {
   userSessionScope,
   userTeamScope,
 } from "./namespaces";
-import { resolveOrgMemoriesDbPath, resolveUserMemoriesDbPath } from "./paths";
-import { resetMemoriesStoreForTests } from "./store";
+import { openOrgMemoriesService, resetMemoriesServiceClientCacheForTests } from "./service-client";
+import { setupTestKnowledgeService } from "./test-knowledge-service";
 
 let dataDir: string;
+let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
 
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-memories-test-"));
   process.env.EXEDRA_DATA_DIR = dataDir;
-  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
-  process.env.EXEDRA_IDENTITY_KEY =
-    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-  closeDb();
-  resetMemoriesStoreForTests();
+  knowledgeService = setupTestKnowledgeService(dataDir);
+  resetMemoriesServiceClientCacheForTests();
 });
 
 afterEach(() => {
-  closeDb();
-  resetMemoriesStoreForTests();
+  knowledgeService?.stop();
+  knowledgeService = undefined;
+  resetMemoriesServiceClientCacheForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
-  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
-  delete process.env.EXEDRA_IDENTITY_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
 });
 
-test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
-  const authzDb = createIsolatedAuthzDatabase();
-  installTestAuthzService(authzDb);
-  const appDb = new Database(":memory:");
-  ensureExedraSchema(appDb);
-  const user = await getOrCreateUser(appDb, "registry-bootstrap");
-  const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
-  const teamId = await createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
+async function listScopes(database: { kind: string; ownerKey: string }): Promise<string[]> {
+  const stack = createLocalSqliteServiceStack({
+    dataDir: path.join(dataDir, "knowledge"),
+    sqlCipherKey: "test-knowledge-key",
+  });
+  const server = createMemoriesServiceHttpServer({
+    port: 0,
+    service: stack.service,
+    auth: createNoneAuthStrategy(),
+  });
+  try {
+    const client = new MemoriesServiceClient({ baseUrl: `http://localhost:${server.port}` });
+    await client.openDatabase(database);
+    const handle = await stack.service.getHandle(database);
+    const sqlite = handle.sqlite;
+    if (sqlite === undefined) throw new Error("expected sqlite");
+    return sqlite.db
+      .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
+      .all()
+      .map((row) => row._id);
+  } finally {
+    server.stop(true);
+  }
+}
 
-  const first = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
-  const second = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
+describe("bootstrap via memories service", () => {
+  test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
+    const orgId = "org-bootstrap";
+    const teamId = "team-bootstrap";
+    const userId = "user-bootstrap";
 
-  expect(first.orgDbPath).toBe(second.orgDbPath);
-  expect(first.userDbPath).toBe(second.userDbPath);
+    const first = await bootstrapOrgTeamMemories({ orgId, teamId, userId });
+    expect(first.orgDatabase.ownerKey).toBe(orgId);
+    expect(first.userDatabase.ownerKey).toBe(userId);
 
-  const orgDb = new Database(first.orgDbPath);
-  const orgScopes = orgDb
-    .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
-    .all()
-    .map((row) => row._id);
-  orgDb.close();
+    const orgAccess = await openOrgMemoriesService(orgId);
+    expect(orgAccess.ontologyHash.length).toBeGreaterThan(0);
 
-  expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
-    ["_global_", orgScope(orgId), orgTeamScope(orgId, teamId)].sort((a, b) => a.localeCompare(b)),
-  );
+    const second = await bootstrapOrgTeamMemories({ orgId, teamId, userId });
+    expect(second.orgDatabase).toEqual(first.orgDatabase);
+    expect(first.userDatabase).toEqual(second.userDatabase);
 
-  const userDb = new Database(first.userDbPath);
-  const userScopes = userDb
-    .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
-    .all()
-    .map((row) => row._id);
-  userDb.close();
+    const orgScopes = await listScopes(first.orgDatabase);
+    expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+      ["_global_", orgScope(orgId), orgTeamScope(orgId, teamId)].sort((a, b) => a.localeCompare(b)),
+    );
 
-  expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
-    ["_global_", userScope(user.id), userTeamScope(user.id, orgId, teamId)].sort((a, b) =>
-      a.localeCompare(b),
-    ),
-  );
-
-  appDb.close();
-});
-
-test("bootstrapSessionMemories creates org and user session scope chains under team", async () => {
-  const authzDb = createIsolatedAuthzDatabase();
-  installTestAuthzService(authzDb);
-  const appDb = new Database(":memory:");
-  ensureExedraSchema(appDb);
-  const user = await getOrCreateUser(appDb, "registry-session-bootstrap");
-  const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
-  const teamId = await createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
-  const sessionId = crypto.randomUUID();
-
-  bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
-  bootstrapSessionMemories({
-    orgId,
-    teamId,
-    sessionId,
-    userIds: [user.id],
+    const userScopes = await listScopes(first.userDatabase);
+    expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+      ["_global_", userScope(userId), userTeamScope(userId, orgId, teamId)].sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    );
   });
 
-  const orgDbPath = resolveOrgMemoriesDbPath(orgId);
-  const userDbPath = resolveUserMemoriesDbPath(user.id);
+  test("bootstrapSessionMemories creates org and user session scope chains under team", async () => {
+    const orgId = "org-session";
+    const teamId = "team-session";
+    const userId = "user-session";
+    const sessionId = crypto.randomUUID();
 
-  const orgDb = new Database(orgDbPath);
-  const orgScopes = orgDb
-    .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
-    .all()
-    .map((row) => row._id);
-  orgDb.close();
+    await bootstrapOrgTeamMemories({ orgId, teamId, userId });
+    await bootstrapSessionMemories({
+      orgId,
+      teamId,
+      sessionId,
+      userIds: [userId],
+    });
 
-  expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
-    [
-      "_global_",
-      orgScope(orgId),
-      orgTeamScope(orgId, teamId),
-      orgSessionScope(orgId, teamId, sessionId),
-    ].sort((a, b) => a.localeCompare(b)),
-  );
+    const orgScopes = await listScopes({ kind: "organization", ownerKey: orgId });
+    expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+      [
+        "_global_",
+        orgScope(orgId),
+        orgTeamScope(orgId, teamId),
+        orgSessionScope(orgId, teamId, sessionId),
+      ].sort((a, b) => a.localeCompare(b)),
+    );
 
-  const userDb = new Database(userDbPath);
-  const userScopes = userDb
-    .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
-    .all()
-    .map((row) => row._id);
-  userDb.close();
-
-  expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
-    [
-      "_global_",
-      userScope(user.id),
-      userTeamScope(user.id, orgId, teamId),
-      userSessionScope(user.id, orgId, teamId, sessionId),
-    ].sort((a, b) => a.localeCompare(b)),
-  );
-
-  appDb.close();
+    const userScopes = await listScopes({ kind: "account", ownerKey: userId });
+    expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+      [
+        "_global_",
+        userScope(userId),
+        userTeamScope(userId, orgId, teamId),
+        userSessionScope(userId, orgId, teamId, sessionId),
+      ].sort((a, b) => a.localeCompare(b)),
+    );
+  });
 });

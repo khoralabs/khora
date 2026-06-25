@@ -14,7 +14,7 @@ import type { ExpandedMemoryDraftWire } from "./belief-integration.ts";
 export async function expandDocument(
   args: DocumentIntegrationParams & { namespace: string },
 ): Promise<ExpandedMemoryDraftWire> {
-  const client = createRemoteMemoriesClient(args.userId);
+  const client = await createRemoteMemoriesClient(args.userId);
   const adapter = new MemoryAdapterClient({
     registry: getAgentRegistry(),
     namespace: args.namespace,

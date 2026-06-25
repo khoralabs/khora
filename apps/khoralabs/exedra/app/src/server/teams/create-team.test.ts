@@ -8,8 +8,10 @@ import { listTeamsForUser } from "../db/membership";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
+import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 
 let dataDir: string;
+let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
 
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-create-team-test-"));
@@ -17,19 +19,22 @@ beforeEach(() => {
   process.env.INVITE_PEPPER = "test-pepper-for-create-team";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   closeDb();
   resetMemoriesStoreForTests();
+  knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
 afterEach(() => {
+  knowledgeService?.stop();
+  knowledgeService = undefined;
   closeDb();
   resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
-  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
 });
 
 test("POST /api/orgs/:orgId/teams creates a second team in an existing org", async () => {

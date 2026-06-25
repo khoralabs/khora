@@ -16,13 +16,7 @@ import {
   type LexicalLinkMergePatch,
   normalizeSearchConfigSnapshot,
 } from "@khoralabs/memories-autolink";
-import {
-  MemoriesClient,
-  type MergeMemoryParamsNode,
-  type SearchHit,
-  searchAsync,
-  wrapSyncMemoriesPersistenceAsAsync,
-} from "@khoralabs/memories-core";
+import type { MergeMemoryParamsNode, SearchHit } from "@khoralabs/memories-core";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
@@ -31,11 +25,10 @@ import {
 } from "@khoralabs/memories-core/helpers";
 import type { IntegratorPlanWire } from "@khoralabs/memories-integrator";
 import { integratorWireToMergeSlice } from "@khoralabs/memories-integrator";
-import { loadSourceMapTextPreview } from "@khoralabs/sqlite-graph-projections";
+import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 import { embedMany } from "ai";
 import { getDb } from "../db/index.js";
 import { logger } from "../logger.js";
-import { openMemoriesAccess } from "../memories/api-handlers.js";
 import {
   createExedraMemoriesEmbeddingModel,
   providerOptionsForDocumentEmbeddingPreset,
@@ -43,9 +36,17 @@ import {
   resolveGeminiApiKey,
 } from "../memories/embedding.js";
 import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
-import { ensureNamespaceScopeChain, ensureScopeChain, userScope } from "../memories/namespaces.js";
+import {
+  ensureNamespaceScopeChainPaths,
+  ensureScopeChainPaths,
+  userScope,
+} from "../memories/namespaces.js";
 import { assertInternalPersonalMemorySearchAllowed } from "../memories/personal-memory-internal-auth.js";
-import { openOrgMemories, openUserMemories } from "../memories/store.js";
+import {
+  type ExedraMemoriesServiceAccess,
+  openOrgMemoriesService,
+  openUserMemoriesService,
+} from "../memories/service-client.js";
 import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
 import { serializeSearchHit } from "./search-hit-serialize.js";
@@ -87,7 +88,7 @@ async function resolvePeerMemoryId(
 }
 
 async function filterMergeSliceEdgesToExistingMemories(
-  client: ReturnType<typeof openUserMemoriesClient>,
+  client: RemoteMemoriesClientAsync,
   namespace: string,
   slice: Pick<MergeMemoryParamsNode, "labels" | "edges" | "properties">,
 ): Promise<Pick<MergeMemoryParamsNode, "labels" | "edges" | "properties">> {
@@ -192,7 +193,7 @@ function autolinkPatchToMergeEdges(
 }
 
 async function applyAutolinkToSlice(
-  client: ReturnType<typeof openUserMemoriesClient>,
+  client: RemoteMemoriesClientAsync,
   namespace: string,
   focalKey: string,
   plaintext: string,
@@ -233,17 +234,17 @@ async function applyAutolinkToSlice(
   };
 }
 
-function openUserMemoriesClient(userId: string) {
-  const namespace = userScope(userId);
-  const persistence = openUserMemories(userId);
-  ensureScopeChain(persistence, [GLOBAL_ROOT, namespace]);
-  return new MemoriesClient(persistence, exedraMemoriesOntology);
+async function openUserMemoriesClient(userId: string): Promise<RemoteMemoriesClientAsync> {
+  const access = await openUserMemoriesService(userId);
+  await access.reads.ensureScopeChain(ensureScopeChainPaths([GLOBAL_ROOT, userScope(userId)]));
+  return access.client;
 }
 
-function openScopedMemoriesClient(args: { userId: string; orgId?: string }) {
+async function openScopedMemoriesClient(args: { userId: string; orgId?: string }) {
   const orgId = args.orgId?.trim();
   if (orgId !== undefined && orgId.length > 0) {
-    return new MemoriesClient(openOrgMemories(orgId), exedraMemoriesOntology);
+    const access = await openOrgMemoriesService(orgId);
+    return access.client;
   }
   return openUserMemoriesClient(args.userId);
 }
@@ -255,12 +256,16 @@ function resolveMemoriesStorageOrgId(namespace: string, orgId?: string): string 
   return trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
 }
 
-function openScopedMemoriesAccess(args: { userId: string; orgId?: string; namespace?: string }) {
+async function openScopedMemoriesAccess(args: {
+  userId: string;
+  orgId?: string;
+  namespace?: string;
+}): Promise<ExedraMemoriesServiceAccess> {
   const storageOrgId = resolveMemoriesStorageOrgId(args.namespace ?? "", args.orgId);
   if (storageOrgId !== undefined) {
-    return openMemoriesAccess(openOrgMemories(storageOrgId));
+    return openOrgMemoriesService(storageOrgId);
   }
-  return openMemoriesAccess(openUserMemories(args.userId));
+  return openUserMemoriesService(args.userId);
 }
 
 export async function runInternalSearch(
@@ -272,27 +277,27 @@ export async function runInternalSearch(
 ): Promise<{ hits: SearchHitSummary[]; namespace: string }> {
   const namespace = namespaceOverride?.trim() || userScope(userId);
   const storageOrgId = resolveMemoriesStorageOrgId(namespace, orgId);
-  const access = openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
+  const access = await openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
   const { content, arms } = await buildHybridSearchContent(query);
 
-  const rawHits = await searchAsync(
-    { persistence: wrapSyncMemoriesPersistenceAsAsync(access.persistence) },
-    {
-      namespace,
-      content,
-      options: { topK, neighbors: false, arms },
-    },
-  );
-
-  const hits: SearchHitSummary[] = rawHits.map((hit: SearchHit) => {
-    const sourceMapId = (hit as SearchHit & { _id: string })._id;
-    return {
-      key: hit.memory.key,
-      namespace: hit.memory.namespace,
-      snippet: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX) ?? "",
-      score: hit.score,
-    };
+  const rawHits = await access.client.search({
+    namespace,
+    content,
+    options: { topK, neighbors: false, arms },
   });
+
+  const hits: SearchHitSummary[] = await Promise.all(
+    rawHits.map(async (hit: SearchHit) => {
+      const sourceMapId = (hit as SearchHit & { _id: string })._id;
+      return {
+        key: hit.memory.key,
+        namespace: hit.memory.namespace,
+        snippet:
+          (await access.reads.getSourceMapTextPreview(sourceMapId, SEARCH_HIT_SNIPPET_MAX)) ?? "",
+        score: hit.score,
+      };
+    }),
+  );
 
   return { hits, namespace };
 }
@@ -338,17 +343,14 @@ async function runInternalAgentSearch(
 ): Promise<{ hits: SearchHitWire[] }> {
   const namespace = paramsWire.namespace?.trim() ?? userScope(userId);
   const storageOrgId = resolveMemoriesStorageOrgId(namespace, orgId);
-  const access = openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
+  const access = await openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
   const content = await enrichSearchContentForAgent(paramsWire.content, paramsWire.options?.arms);
   const params = {
     ...paramsWire,
     content,
-  } as Parameters<typeof searchAsync>[1];
+  } as Parameters<RemoteMemoriesClientAsync["search"]>[0];
 
-  const rawHits = await searchAsync(
-    { persistence: wrapSyncMemoriesPersistenceAsAsync(access.persistence) },
-    params,
-  );
+  const rawHits = await access.client.search(params);
 
   return { hits: rawHits.map((hit: SearchHit) => serializeSearchHit(hit)) };
 }
@@ -404,7 +406,7 @@ export async function handleInternalMemoriesProvenanceHead(req: Request): Promis
   const orgId = url.searchParams.get("orgId")?.trim();
 
   try {
-    const client = openScopedMemoriesClient({ userId, orgId });
+    const client = await openScopedMemoriesClient({ userId, orgId });
     const fn = client.persistence.getProvenanceHeadRootHex;
     if (fn === undefined) {
       return Response.json({ rootHex: "" });
@@ -504,7 +506,7 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
         ...(storageOrgId !== undefined ? { "memories.org_id": storageOrgId } : {}),
       },
       async () => {
-        const client = openScopedMemoriesClient({ userId, orgId: storageOrgId });
+        const client = await openScopedMemoriesClient({ userId, orgId: storageOrgId });
         const embeddingModel = createExedraMemoriesEmbeddingModel();
 
         const input: LogicalMemoryInput = {
@@ -513,10 +515,13 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
           plaintext,
         };
 
+        const access = await openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
         if (storageOrgId !== undefined) {
-          ensureNamespaceScopeChain(client.persistence, input.namespace);
+          await access.reads.ensureScopeChain(ensureNamespaceScopeChainPaths(input.namespace));
         } else {
-          ensureScopeChain(client.persistence, [GLOBAL_ROOT, input.namespace]);
+          await access.reads.ensureScopeChain(
+            ensureScopeChainPaths([GLOBAL_ROOT, input.namespace]),
+          );
         }
 
         const processedContent = await decomposeLogicalMemoryToContent({
@@ -624,11 +629,12 @@ export async function handleInternalMemoriesMergeDocumentChunk(req: Request): Pr
       "internal.memories.merge_document_chunk",
       { "memories.user_id": userId, "memories.key": memoryKey, "memories.namespace": namespace },
       async () => {
-        const client = openScopedMemoriesClient({ userId, orgId: storageOrgId });
+        const client = await openScopedMemoriesClient({ userId, orgId: storageOrgId });
+        const access = await openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
         if (storageOrgId !== undefined) {
-          ensureNamespaceScopeChain(client.persistence, namespace);
+          await access.reads.ensureScopeChain(ensureNamespaceScopeChainPaths(namespace));
         } else {
-          ensureScopeChain(client.persistence, [GLOBAL_ROOT, namespace]);
+          await access.reads.ensureScopeChain(ensureScopeChainPaths([GLOBAL_ROOT, namespace]));
         }
         const embeddingModel = createExedraMemoriesEmbeddingModel();
         const processed: ProcessedLogicalMemory = {

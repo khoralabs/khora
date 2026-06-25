@@ -1,32 +1,15 @@
-import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import {
-  type SearchHit,
-  searchAsync,
-  wrapSyncMemoriesPersistenceAsAsync,
-} from "@khoralabs/memories-core";
+import type { SearchHit } from "@khoralabs/memories-core";
 import type { EmbeddingResolutionPreset } from "@khoralabs/memories-core/helpers";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
-import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
-import {
-  buildNamespaceGraphLayout,
-  buildNamespaceSubtreeGraphLayout,
-  loadEdgePreview,
-  loadSourceMapTextPreview,
-  qualifyMemoryKey,
-} from "@khoralabs/sqlite-graph-projections";
+import { qualifyMemoryKey } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
 import { withSpan } from "../telemetry/spans.js";
+import type { ExedraMemoriesServiceAccess } from "./service-client.js";
 
 const NAMESPACE_ROOT = "_global_";
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
 
 type GraphScope = "exact" | "subtree";
-
-export type MemoriesAccess = {
-  persistence: MemoriesPersistence;
-  db: Database;
-};
 
 let didWarnLexicalOnlySearch = false;
 let didWarnMultiVectorDim = false;
@@ -62,10 +45,10 @@ function providerOptionsForSearchPreset(preset: EmbeddingResolutionPreset) {
   return { google: { outputDimensionality: EMBEDDING_DIM_BY_PRESET[preset] } };
 }
 
-function resolveSearchEmbeddingPreset(
-  persistence: MemoriesPersistence,
+async function resolveSearchEmbeddingPreset(
+  access: ExedraMemoriesServiceAccess,
   bodyResolution: string | undefined,
-): EmbeddingResolutionPreset {
+): Promise<EmbeddingResolutionPreset> {
   const fromBody = parseExplicitEmbeddingPreset(bodyResolution);
   if (fromBody) return fromBody;
 
@@ -74,7 +57,7 @@ function resolveSearchEmbeddingPreset(
   );
   if (fromEnv) return fromEnv;
 
-  const dims = persistence.listVectorEmbeddingIndexDimensions();
+  const dims = await access.reads.listVectorDimensions();
   if (dims.length === 1) {
     const dim = dims[0];
     const preset = dim !== undefined ? dimToEmbeddingPreset(dim) : null;
@@ -91,23 +74,16 @@ function qualifySearchKey(namespace: string, memoryKey: string, scope: GraphScop
   return scope === "subtree" ? qualifyMemoryKey(namespace, memoryKey) : memoryKey;
 }
 
-export function openMemoriesAccess(persistence: MemoriesPersistence): MemoriesAccess {
-  return {
-    persistence,
-    db: getMemoriesSqliteDatabase(persistence),
-  };
-}
-
 export function memoriesUnavailableResponse(message?: string): Response {
-  return jsonResponse({ error: message ?? "Memories database is not configured" }, 503);
+  return jsonResponse({ error: message ?? "Memories service is not configured" }, 503);
 }
 
-export function handleMemoriesNamespaces(
-  access: MemoriesAccess,
+export async function handleMemoriesNamespaces(
+  access: ExedraMemoriesServiceAccess,
   allowedNamespaces?: readonly string[],
-): Response {
+): Promise<Response> {
   try {
-    const allNamespaces = listMemoryNamespaces(access.db);
+    const allNamespaces = await access.reads.listNamespaces();
     const namespaces =
       allowedNamespaces === undefined
         ? allNamespaces
@@ -118,7 +94,10 @@ export function handleMemoriesNamespaces(
   }
 }
 
-export function handleMemoriesGraph(req: Request, access: MemoriesAccess): Response {
+export async function handleMemoriesGraph(
+  req: Request,
+  access: ExedraMemoriesServiceAccess,
+): Promise<Response> {
   const url = new URL(req.url);
   const namespace = url.searchParams.get("namespace")?.trim();
   if (!namespace) {
@@ -126,17 +105,17 @@ export function handleMemoriesGraph(req: Request, access: MemoriesAccess): Respo
   }
   const scope = parseGraphScope(url.searchParams.get("scope"));
   try {
-    const layout =
-      scope === "subtree"
-        ? buildNamespaceSubtreeGraphLayout(access.db, access.persistence, namespace)
-        : buildNamespaceGraphLayout(access.db, access.persistence, namespace);
+    const layout = await access.reads.getGraphLayout(namespace, scope);
     return jsonResponse(layout);
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
 }
 
-export function handleMemoriesEdgePreview(req: Request, access: MemoriesAccess): Response {
+export async function handleMemoriesEdgePreview(
+  req: Request,
+  access: ExedraMemoriesServiceAccess,
+): Promise<Response> {
   const url = new URL(req.url);
   const namespace = url.searchParams.get("namespace")?.trim();
   const edgeId = url.searchParams.get("edgeId")?.trim();
@@ -144,17 +123,20 @@ export function handleMemoriesEdgePreview(req: Request, access: MemoriesAccess):
     return jsonResponse({ error: "missing required query namespace and edgeId" }, 400);
   }
   try {
-    const detail = loadEdgePreview(access.persistence, namespace, edgeId);
-    if (!detail) return jsonResponse({ error: "edge not found in namespace" }, 404);
+    const detail = await access.reads.getEdgePreview(namespace, edgeId);
     return jsonResponse(detail);
   } catch (err) {
-    return jsonResponse({ error: String(err) }, 500);
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("edge not found")) {
+      return jsonResponse({ error: "edge not found in namespace" }, 404);
+    }
+    return jsonResponse({ error: message }, 500);
   }
 }
 
 export async function handleMemoriesSearch(
   req: Request,
-  access: MemoriesAccess,
+  access: ExedraMemoriesServiceAccess,
 ): Promise<Response> {
   let body: {
     namespace?: string;
@@ -201,7 +183,7 @@ export async function handleMemoriesSearch(
       let arms: { lexical: number; vector: number };
 
       if (apiKey) {
-        const resolution = resolveSearchEmbeddingPreset(access.persistence, body.resolution);
+        const resolution = await resolveSearchEmbeddingPreset(access, body.resolution);
         const google = createGoogleGenerativeAI({ apiKey });
         try {
           const { embeddings } = await embedMany({
@@ -227,20 +209,17 @@ export async function handleMemoriesSearch(
         if (!didWarnLexicalOnlySearch) didWarnLexicalOnlySearch = true;
       }
 
-      const hits = await searchAsync(
-        { persistence: wrapSyncMemoriesPersistenceAsAsync(access.persistence) },
-        {
-          namespace,
-          content,
-          options: {
-            topK,
-            neighbors: true,
-            maxNeighbors,
-            arms,
-            ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
-          },
+      const hits = await access.client.search({
+        namespace,
+        content,
+        options: {
+          topK,
+          neighbors: true,
+          maxNeighbors,
+          arms,
+          ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
         },
-      );
+      });
 
       const hitKeys = hits.map((hit: SearchHit) =>
         qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
@@ -262,27 +241,36 @@ export async function handleMemoriesSearch(
       }
 
       const keys = [...new Set([...hitKeys, ...neighborKeys, ...edgeEndpointKeys])];
-      const hitSnippets = hits.map((hit: SearchHit) => {
-        const sourceMapId = (hit as SearchHit & { _id: string })._id;
-        return {
-          key: qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
-          sourceKey: hit.source_key,
-          text: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
-        };
-      });
+      const hitSnippets = await Promise.all(
+        hits.map(async (hit: SearchHit) => {
+          const sourceMapId = (hit as SearchHit & { _id: string })._id;
+          return {
+            key: qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
+            sourceKey: hit.source_key,
+            text: await access.reads.getSourceMapTextPreview(sourceMapId, SEARCH_HIT_SNIPPET_MAX),
+          };
+        }),
+      );
 
-      const edgeHitSnippets = hits.flatMap((hit: SearchHit) => {
-        if (hit.graph.kind !== "edge") return [];
-        const sourceMapId = (hit as SearchHit & { _id: string })._id;
-        return [
-          {
-            edgeId: hit.graph.edge.edgeId,
-            fromKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.fromKey, scope),
-            toKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.toKey, scope),
-            text: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
-          },
-        ];
-      });
+      const edgeHitSnippets = (
+        await Promise.all(
+          hits.map(async (hit: SearchHit) => {
+            if (hit.graph.kind !== "edge") return [];
+            const sourceMapId = (hit as SearchHit & { _id: string })._id;
+            return [
+              {
+                edgeId: hit.graph.edge.edgeId,
+                fromKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.fromKey, scope),
+                toKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.toKey, scope),
+                text: await access.reads.getSourceMapTextPreview(
+                  sourceMapId,
+                  SEARCH_HIT_SNIPPET_MAX,
+                ),
+              },
+            ];
+          }),
+        )
+      ).flat();
 
       return jsonResponse({
         hitCount: hits.length,

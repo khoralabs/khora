@@ -18,7 +18,7 @@ export async function expandBelief(args: {
   userId: string;
   namespace: string;
 }): Promise<ExpandedMemoryDraftWire> {
-  const client = createRemoteMemoriesClient(args.userId);
+  const client = await createRemoteMemoriesClient(args.userId);
   const adapter = new MemoryAdapterClient({
     registry: getAgentRegistry(),
     namespace: args.namespace,

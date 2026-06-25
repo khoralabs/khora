@@ -8,7 +8,6 @@ import {
   isContextDocument,
   resolveDocumentMemoryKey,
 } from "@khoralabs/exedra-workflows-process-document/document-processing";
-import { MemoriesClient } from "@khoralabs/memories-core";
 import { getDb } from "../db/index.js";
 import { readContextTextFromBatch } from "../documents/batch-contribute.js";
 import { getDocumentById, listDocumentsByBatch, patchDocument } from "../documents/db.js";
@@ -16,8 +15,7 @@ import { resolveDocumentOrgId } from "../documents/grant-scope.js";
 import { ExedraDocumentStore } from "../documents/s3-store.js";
 import type { DocumentRecord } from "../documents/types.js";
 import { logger } from "../logger.js";
-import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
-import { openOrgMemories, openUserMemories } from "../memories/store.js";
+import { openOrgMemoriesService, openUserMemoriesService } from "../memories/service-client.js";
 import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
 
@@ -195,9 +193,10 @@ export async function handleInternalDeleteDocumentMemories(
       "internal.documents.delete_memories",
       { "document.id": documentId },
       async () => {
-        const persistence =
-          orgId !== null && orgId.length > 0 ? openOrgMemories(orgId) : openUserMemories(userId);
-        const client = new MemoriesClient(persistence, exedraMemoriesOntology);
+        const access =
+          orgId !== null && orgId.length > 0
+            ? await openOrgMemoriesService(orgId)
+            : await openUserMemoriesService(userId);
         const namespace = document?.targetNamespace ?? "";
         const keys = [resolveDocumentMemoryKey(batchId, documentId)];
         const chunkCount = body.chunkCount ?? 0;
@@ -206,7 +205,7 @@ export async function handleInternalDeleteDocumentMemories(
         }
         for (const key of keys) {
           if (namespace.length === 0) continue;
-          client.deleteMemory({ namespace, key });
+          await access.client.deleteMemory({ namespace, key });
         }
       },
     );

@@ -20,4 +20,11 @@ export {
   userTeamScope,
 } from "./namespaces.js";
 export { resolveOrgMemoriesDbPath, resolveUserMemoriesDbPath } from "./paths.js";
-export { openOrgMemories, openUserMemories, resetMemoriesStoreForTests } from "./store.js";
+export {
+  type ExedraMemoriesServiceAccess,
+  openOrgMemoriesService,
+  openUserMemoriesService,
+  orgMemoriesDatabaseId,
+  resetMemoriesServiceClientCacheForTests,
+  userMemoriesDatabaseId,
+} from "./service-client.js";

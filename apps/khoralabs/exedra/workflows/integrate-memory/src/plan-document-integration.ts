@@ -15,7 +15,7 @@ export async function planDocumentIntegration(args: {
   userId: string;
   namespace: string;
 }): Promise<PlanIntegrationResult> {
-  const client = createRemoteMemoriesClient(args.userId);
+  const client = await createRemoteMemoriesClient(args.userId);
   const integrator = new MemoryIntegratorClient({
     registry: getAgentRegistry(),
     namespace: args.namespace,

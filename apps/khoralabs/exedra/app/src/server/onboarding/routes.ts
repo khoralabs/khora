@@ -201,9 +201,9 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
   const orgId = await createOrg(db, { name: orgName, ownerId: user.id });
   const teamId = await createTeam(db, { orgId, name: teamName, ownerId: user.id });
 
-  let _memories: { orgDbPath: string; userDbPath: string };
+  let _memories: Awaited<ReturnType<typeof bootstrapOrgTeamMemories>>;
   try {
-    _memories = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
+    _memories = await bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
   } catch (err) {
     await rollbackOnboarding(db, { orgId, teamId });
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";

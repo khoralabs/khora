@@ -171,6 +171,7 @@
         "@khoralabs/chat-react": "workspace:*",
         "@khoralabs/exedra-authz": "workspace:*",
         "@khoralabs/exedra-chat": "workspace:*",
+        "@khoralabs/exedra-knowledge": "workspace:*",
         "@khoralabs/exedra-workflows-generate-response": "workspace:*",
         "@khoralabs/exedra-workflows-integrate-memory": "workspace:*",
         "@khoralabs/exedra-workflows-process-document": "workspace:*",
@@ -184,6 +185,11 @@
         "@khoralabs/memories-integrator": "workspace:*",
         "@khoralabs/memories-ontologies": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
+        "@khoralabs/memories-service": "workspace:*",
+        "@khoralabs/memories-service-auth": "workspace:*",
+        "@khoralabs/memories-service-client": "workspace:*",
+        "@khoralabs/memories-service-http": "workspace:*",
+        "@khoralabs/memories-service-storage-sqlite": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/memories-tools": "workspace:*",
         "@khoralabs/observability": "workspace:*",
@@ -271,6 +277,20 @@
         "typescript": "^5",
       },
     },
+    "apps/khoralabs/exedra/knowledge": {
+      "name": "@khoralabs/exedra-knowledge",
+      "dependencies": {
+        "@khoralabs/memories-service-auth": "workspace:*",
+        "@khoralabs/memories-service-http": "workspace:*",
+        "@khoralabs/memories-service-storage-sqlite": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/khoralabs/exedra/workflows/generate-response": {
       "name": "@khoralabs/exedra-workflows-generate-response",
       "version": "1.0.0",
@@ -334,6 +354,7 @@
         "@khoralabs/exedra-authz": "workspace:*",
         "@khoralabs/memories-autolink": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-service-client": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1222,6 +1243,90 @@
         "typescript": "^5",
       },
     },
+    "vendor/memories/packages/memories-service/auth": {
+      "name": "@khoralabs/memories-service-auth",
+      "version": "0.1.0",
+      "dependencies": {
+        "@khoralabs/memories-service": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/memories/packages/memories-service/client": {
+      "name": "@khoralabs/memories-service-client",
+      "version": "0.1.0",
+      "dependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-service": "workspace:*",
+      },
+      "devDependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-service": "workspace:*",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/memories/packages/memories-service/http": {
+      "name": "@khoralabs/memories-service-http",
+      "version": "0.1.0",
+      "dependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-service": "workspace:*",
+        "@khoralabs/memories-service-auth": "workspace:*",
+        "@khoralabs/memories-service-client": "workspace:*",
+        "@khoralabs/memories-service-storage-sqlite": "workspace:*",
+      },
+      "devDependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-service": "workspace:*",
+        "@khoralabs/memories-service-auth": "workspace:*",
+        "@khoralabs/memories-service-client": "workspace:*",
+        "@khoralabs/memories-service-storage-sqlite": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/memories/packages/memories-service/service": {
+      "name": "@khoralabs/memories-service",
+      "version": "0.1.0",
+      "dependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "lru-cache": "^11.5.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/memories/packages/memories-service/storage-sqlite": {
+      "name": "@khoralabs/memories-service-storage-sqlite",
+      "version": "0.1.0",
+      "dependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-service": "workspace:*",
+        "@khoralabs/memories-sqlite": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+        "@khoralabs/sqlite-graph-projections": "workspace:*",
+      },
+      "devDependencies": {
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "vendor/memories/packages/ontologies": {
       "name": "@khoralabs/memories-ontologies",
       "version": "0.1.0",
@@ -1962,6 +2067,8 @@
 
     "@khoralabs/exedra-chat": ["@khoralabs/exedra-chat@workspace:apps/khoralabs/exedra/chat"],
 
+    "@khoralabs/exedra-knowledge": ["@khoralabs/exedra-knowledge@workspace:apps/khoralabs/exedra/knowledge"],
+
     "@khoralabs/exedra-stack": ["@khoralabs/exedra-stack@workspace:apps/khoralabs/exedra"],
 
     "@khoralabs/exedra-workflows-generate-response": ["@khoralabs/exedra-workflows-generate-response@workspace:apps/khoralabs/exedra/workflows/generate-response"],
@@ -2017,6 +2124,16 @@
     "@khoralabs/memories-ontologies": ["@khoralabs/memories-ontologies@workspace:vendor/memories/packages/ontologies"],
 
     "@khoralabs/memories-react-graph": ["@khoralabs/memories-react-graph@workspace:vendor/memories/packages/react/graph"],
+
+    "@khoralabs/memories-service": ["@khoralabs/memories-service@workspace:vendor/memories/packages/memories-service/service"],
+
+    "@khoralabs/memories-service-auth": ["@khoralabs/memories-service-auth@workspace:vendor/memories/packages/memories-service/auth"],
+
+    "@khoralabs/memories-service-client": ["@khoralabs/memories-service-client@workspace:vendor/memories/packages/memories-service/client"],
+
+    "@khoralabs/memories-service-http": ["@khoralabs/memories-service-http@workspace:vendor/memories/packages/memories-service/http"],
+
+    "@khoralabs/memories-service-storage-sqlite": ["@khoralabs/memories-service-storage-sqlite@workspace:vendor/memories/packages/memories-service/storage-sqlite"],
 
     "@khoralabs/memories-spec": ["@khoralabs/memories-spec@workspace:vendor/memories/packages/spec"],
 

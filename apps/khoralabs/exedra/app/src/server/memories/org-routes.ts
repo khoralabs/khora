@@ -8,16 +8,15 @@ import {
   handleMemoriesNamespaces,
   handleMemoriesSearch,
   memoriesUnavailableResponse,
-  openMemoriesAccess,
 } from "./api-handlers.js";
-import { openOrgMemories } from "./store.js";
+import { type ExedraMemoriesServiceAccess, openOrgMemoriesService } from "./service-client.js";
 
 async function resolveOrgMemoriesSession(
   req: Request,
   orgId: string,
 ): Promise<
   | {
-      access: ReturnType<typeof openMemoriesAccess>;
+      access: ExedraMemoriesServiceAccess;
       userId: string;
       db: ReturnType<typeof getDb>;
     }
@@ -30,8 +29,8 @@ async function resolveOrgMemoriesSession(
   const user = await getOrCreateUser(db, auth.session.user.id);
 
   try {
-    const persistence = openOrgMemories(orgId);
-    return { access: openMemoriesAccess(persistence), userId: user.id, db };
+    const access = await openOrgMemoriesService(orgId);
+    return { access, userId: user.id, db };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Memories unavailable";
     return { response: memoriesUnavailableResponse(message) };
@@ -62,7 +61,7 @@ export async function handleOrgMemoriesNamespaces(req: Request, orgId: string): 
   if ("response" in resolved) return resolved.response;
 
   const namespaces = await listReadableOrgNamespaces(resolved.db, resolved.userId, orgId);
-  return handleMemoriesNamespaces(resolved.access, namespaces);
+  return await handleMemoriesNamespaces(resolved.access, namespaces);
 }
 
 export async function handleOrgMemoriesGraph(req: Request, orgId: string): Promise<Response> {

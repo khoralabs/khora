@@ -1,11 +1,14 @@
 import {
-  ensureOrgSessionScopes,
-  ensureOrgTeamScopes,
-  ensureUserSessionScopes,
-  ensureUserTeamScopes,
+  orgScope,
+  orgSessionScope,
+  orgTeamScope,
+  userScope,
+  userSessionScope,
+  userTeamScope,
 } from "./namespaces.js";
-import { resolveOrgMemoriesDbPath, resolveUserMemoriesDbPath } from "./paths.js";
-import { openOrgMemories, openUserMemories } from "./store.js";
+import { openOrgMemoriesService, openUserMemoriesService } from "./service-client.js";
+
+const GLOBAL_ROOT = "_global_";
 
 export type BootstrapOrgTeamMemoriesParams = {
   orgId: string;
@@ -20,34 +23,54 @@ export type BootstrapSessionMemoriesParams = {
   userIds: readonly string[];
 };
 
-export function bootstrapOrgTeamMemories(params: BootstrapOrgTeamMemoriesParams): {
-  orgDbPath: string;
-  userDbPath: string;
-} {
+export async function bootstrapOrgTeamMemories(params: BootstrapOrgTeamMemoriesParams): Promise<{
+  orgDatabase: { kind: string; ownerKey: string };
+  userDatabase: { kind: string; ownerKey: string };
+}> {
   const { orgId, teamId, userId } = params;
-  const orgPersistence = openOrgMemories(orgId);
-  const userPersistence = openUserMemories(userId);
+  const orgAccess = await openOrgMemoriesService(orgId);
+  const userAccess = await openUserMemoriesService(userId);
 
-  ensureOrgTeamScopes(orgPersistence, orgId, teamId);
-  ensureUserTeamScopes(userPersistence, userId, orgId, teamId);
+  await orgAccess.reads.ensureScopeChain([
+    GLOBAL_ROOT,
+    orgScope(orgId),
+    orgTeamScope(orgId, teamId),
+  ]);
+  await userAccess.reads.ensureScopeChain([
+    GLOBAL_ROOT,
+    userScope(userId),
+    userTeamScope(userId, orgId, teamId),
+  ]);
 
   return {
-    orgDbPath: resolveOrgMemoriesDbPath(orgId),
-    userDbPath: resolveUserMemoriesDbPath(userId),
+    orgDatabase: orgAccess.database,
+    userDatabase: userAccess.database,
   };
 }
 
 /** Ensure org + user session namespaces under the team hierarchy. Idempotent. */
-export function bootstrapSessionMemories(params: BootstrapSessionMemoriesParams): void {
+export async function bootstrapSessionMemories(
+  params: BootstrapSessionMemoriesParams,
+): Promise<void> {
   const { orgId, teamId, sessionId, userIds } = params;
-  const orgPersistence = openOrgMemories(orgId);
-  ensureOrgSessionScopes(orgPersistence, orgId, teamId, sessionId);
+  const orgAccess = await openOrgMemoriesService(orgId);
+  await orgAccess.reads.ensureScopeChain([
+    GLOBAL_ROOT,
+    orgScope(orgId),
+    orgTeamScope(orgId, teamId),
+    orgSessionScope(orgId, teamId, sessionId),
+  ]);
 
   const seen = new Set<string>();
   for (const userId of userIds) {
     if (seen.has(userId)) continue;
     seen.add(userId);
-    const userPersistence = openUserMemories(userId);
-    ensureUserSessionScopes(userPersistence, userId, orgId, teamId, sessionId);
+    const userAccess = await openUserMemoriesService(userId);
+    await userAccess.reads.ensureScopeChain([
+      GLOBAL_ROOT,
+      userScope(userId),
+      userTeamScope(userId, orgId, teamId),
+      userSessionScope(userId, orgId, teamId, sessionId),
+    ]);
   }
 }

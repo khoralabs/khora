@@ -12,6 +12,7 @@ import { hasPersonalMemoryConsent } from "../db/session-participants";
 import { createOrg, createSession, createTeam, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
+import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
 import { getStubRegistryOtp } from "../registry-stub/config";
 import {
@@ -37,6 +38,7 @@ function sessionAcceptRequest(
 const BASE = "http://localhost:3000";
 
 let dataDir: string;
+let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
 const origFetch = globalThis.fetch;
 
 beforeEach(async () => {
@@ -45,22 +47,25 @@ beforeEach(async () => {
   process.env.INVITE_PEPPER = "test-pepper-invite-routes";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key-invites";
   process.env.BUN_PUBLIC_EXEDRA_REGISTRY_URL = BASE;
   process.env.EXEDRA_STUB_REGISTRY = "1";
   resetStubRegistryStore();
   resetMemoriesStoreForTests();
   closeDb();
+  knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
 afterEach(() => {
+  knowledgeService?.stop();
+  knowledgeService = undefined;
   closeDb();
   resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
-  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
   delete process.env.BUN_PUBLIC_EXEDRA_REGISTRY_URL;
   delete process.env.EXEDRA_STUB_REGISTRY;
   resetStubRegistryStore();

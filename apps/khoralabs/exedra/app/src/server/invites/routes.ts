@@ -233,7 +233,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
         });
 
         try {
-          bootstrapOrgTeamMemories({
+          await bootstrapOrgTeamMemories({
             orgId: team.orgId,
             teamId: sessionRecord.teamId,
             userId: user.id,
@@ -287,7 +287,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     const team = await getTeam(db, teamId);
     if (team !== null) {
       try {
-        bootstrapOrgTeamMemories({ orgId: team.orgId, teamId, userId: user.id });
+        await bootstrapOrgTeamMemories({ orgId: team.orgId, teamId, userId: user.id });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
         logger.error({ err: message }, "invite team memories bootstrap failed");

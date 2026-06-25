@@ -83,7 +83,7 @@ export async function applyOnboardingCompletionSideEffects(args: {
   const { items: messages } = await getChatServiceClient().listPosts({ threadId, limit: 100 });
   const beliefs = collectBeliefsFromThread(messages);
 
-  seedOnboardingMemories({
+  await seedOnboardingMemories({
     orgId: org.id,
     teamId,
     userId,

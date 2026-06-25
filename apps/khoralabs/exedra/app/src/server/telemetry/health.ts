@@ -27,12 +27,22 @@ function checkDb(): HealthCheck {
   }
 }
 
+function knowledgeSqlCipherKeyCheck(): HealthCheck {
+  const key =
+    process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY?.trim() ??
+    process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY?.trim();
+  return key !== undefined && key.length > 0
+    ? { ok: true }
+    : { ok: false, message: "EXEDRA_KNOWLEDGE_SQLCIPHER_KEY is not set" };
+}
+
 export function buildReadinessChecks(): Record<string, HealthCheck> {
   return {
     db: checkDb(),
     invitePepper: envPresent("INVITE_PEPPER"),
     identityKey: envPresent("EXEDRA_IDENTITY_KEY"),
-    memoriesSqlCipherKey: envPresent("EXEDRA_MEMORIES_SQLCIPHER_KEY"),
+    knowledgeServiceUrl: envPresent("EXEDRA_KNOWLEDGE_SERVICE_URL"),
+    knowledgeSqlCipherKey: knowledgeSqlCipherKeyCheck(),
     aiApiKey:
       getAiApiKey() !== undefined ? { ok: true } : { ok: false, message: "AI_API_KEY is not set" },
     geminiApiKey:

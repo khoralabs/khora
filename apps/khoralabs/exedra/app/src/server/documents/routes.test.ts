@@ -10,26 +10,31 @@ import { ensureExedraSchema } from "../db/schema.js";
 import { createOrg, createSession, createTeam } from "../db/sessions.js";
 import { getOrCreateUser } from "../identity/users.js";
 import { resetMemoriesStoreForTests } from "../memories/store.js";
+import { setupTestKnowledgeService } from "../memories/test-knowledge-service.js";
 
 let dataDir: string;
+let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
 
 beforeEach(() => {
   mock.restore();
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-doc-routes-test-"));
   process.env.EXEDRA_DATA_DIR = dataDir;
-  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   closeDb();
   resetMemoriesStoreForTests();
+  knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
 afterEach(() => {
+  knowledgeService?.stop();
+  knowledgeService = undefined;
   closeDb();
   resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
-  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
   delete process.env.EXEDRA_IDENTITY_KEY;
   delete process.env.EXEDRA_DOCUMENTS_S3_BUCKET;
   mock.restore();

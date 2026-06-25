@@ -47,6 +47,7 @@
     "packages/cli/*/**",
     "vendor/*/**",
     "vendor/memories/packages/*/**",
+    "vendor/memories/packages/memories-service/*/**",
     "vendor/obp/packages/*/**",
     "vendor/relay/*/**"
   ]

@@ -13,7 +13,8 @@
   "dependencies": {
     "@khoralabs/exedra-authz": "workspace:*",
     "@khoralabs/memories-autolink": "workspace:*",
-    "@khoralabs/memories-core": "workspace:*"
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/memories-service-client": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

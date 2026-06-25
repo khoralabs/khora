@@ -12,8 +12,10 @@ import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
+import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 
 let dataDir: string;
+let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
 
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-onboarding-test-"));
@@ -21,19 +23,22 @@ beforeEach(() => {
   process.env.INVITE_PEPPER = "test-pepper-for-onboarding";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   closeDb();
   resetMemoriesStoreForTests();
+  knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
 afterEach(() => {
+  knowledgeService?.stop();
+  knowledgeService = undefined;
   closeDb();
   resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
-  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
 });
 
 test("GET /api/me reports onboardingRequired until user joins a team", async () => {

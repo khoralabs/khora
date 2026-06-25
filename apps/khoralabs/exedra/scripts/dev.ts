@@ -1,5 +1,5 @@
 /**
- * Start Exedra app, authz service, and all workflow task servers for local development.
+ * Start Exedra app, authz service, chat service, knowledge service, and all workflow task servers for local development.
  *
  * Usage (from repo root):
  *   bun run --filter @khoralabs/exedra-stack dev
@@ -14,6 +14,7 @@ const exedraRoot = path.resolve(path.dirname(import.meta.path), "..");
 const appRoot = path.join(exedraRoot, "app");
 const authzRoot = path.join(exedraRoot, "authz");
 const chatRoot = path.join(exedraRoot, "chat");
+const knowledgeRoot = path.join(exedraRoot, "knowledge");
 const workflowsRoot = path.join(exedraRoot, "workflows");
 const dataDir = path.join(appRoot, "data");
 
@@ -24,6 +25,7 @@ const ports = {
   app: 3000,
   authz: 3001,
   chat: 3002,
+  knowledge: 3003,
   generateResponse: 8120,
   integrateMemory: 8121,
   processDocument: 8122,
@@ -117,6 +119,7 @@ function pickEnv(...values: (string | undefined)[]): string | undefined {
 const appEnv = loadEnvFile(path.join(appRoot, ".env"));
 const authzEnv = loadEnvFile(path.join(authzRoot, ".env"));
 const chatEnv = loadEnvFile(path.join(chatRoot, ".env"));
+const knowledgeEnv = loadEnvFile(path.join(knowledgeRoot, ".env"));
 const workflowEnvFiles = [
   path.join(workflowsRoot, "generate-response", ".env"),
   path.join(workflowsRoot, "integrate-memory", ".env"),
@@ -137,14 +140,28 @@ const resolvedAuthzToken =
     authzEnv.AUTHZ_INTERNAL_TOKEN,
   ) ?? DEV_AUTHZ_TOKEN;
 
+const resolvedKnowledgeSqlCipherKey =
+  pickEnv(
+    process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY,
+    appEnv.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY,
+    knowledgeEnv.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY,
+    process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY,
+    appEnv.EXEDRA_MEMORIES_SQLCIPHER_KEY,
+  ) ?? "dev-knowledge-key";
+
 const sharedEnv = {
   ...appEnv,
   ...authzEnv,
   ...chatEnv,
+  ...knowledgeEnv,
   EXEDRA_INTERNAL_TOKEN: resolvedInternalToken,
   AUTHZ_INTERNAL_TOKEN: resolvedAuthzToken,
   AUTHZ_SERVICE_URL: `http://localhost:${ports.authz}`,
   EXEDRA_CHAT_SERVICE_URL: `http://localhost:${ports.chat}`,
+  EXEDRA_KNOWLEDGE_SERVICE_URL: `http://localhost:${ports.knowledge}`,
+  EXEDRA_KNOWLEDGE_SERVICE_TOKEN: resolvedInternalToken,
+  EXEDRA_KNOWLEDGE_DATA_DIR: path.join(dataDir, "knowledge"),
+  EXEDRA_KNOWLEDGE_SQLCIPHER_KEY: resolvedKnowledgeSqlCipherKey,
   AUTHZ_SQLITE_PATH: path.join(dataDir, "authz.db"),
   EXEDRA_CHAT_DB_PATH: path.join(dataDir, "exedra-chat.db"),
   PORT: String(ports.app),
@@ -162,6 +179,8 @@ const workflowSharedEnv = {
   EXEDRA_INTERNAL_TOKEN: sharedEnv.EXEDRA_INTERNAL_TOKEN,
   AUTHZ_SERVICE_URL: sharedEnv.AUTHZ_SERVICE_URL,
   AUTHZ_INTERNAL_TOKEN: sharedEnv.AUTHZ_INTERNAL_TOKEN,
+  EXEDRA_KNOWLEDGE_SERVICE_URL: sharedEnv.EXEDRA_KNOWLEDGE_SERVICE_URL,
+  EXEDRA_KNOWLEDGE_SERVICE_TOKEN: sharedEnv.EXEDRA_KNOWLEDGE_SERVICE_TOKEN,
 };
 
 const services: Service[] = [
@@ -181,6 +200,17 @@ const services: Service[] = [
     env: {
       ...sharedEnv,
       PORT: String(ports.chat),
+    },
+  },
+  {
+    name: "knowledge",
+    cwd: knowledgeRoot,
+    command: ["bun", "run", "start"],
+    env: {
+      ...sharedEnv,
+      PORT: String(ports.knowledge),
+      MEMORIES_SERVICE_AUTH: "server-admin",
+      MEMORIES_SERVICE_ADMIN_TOKEN: resolvedInternalToken,
     },
   },
   {
@@ -256,6 +286,7 @@ console.log("");
 console.log(`  App:               http://localhost:${ports.app}`);
 console.log(`  Authz:             http://localhost:${ports.authz}`);
 console.log(`  Chat:              http://localhost:${ports.chat}`);
+console.log(`  Knowledge:         http://localhost:${ports.knowledge}`);
 console.log(`  generate-response: http://localhost:${ports.generateResponse}`);
 console.log(`  integrate-memory:  http://localhost:${ports.integrateMemory}`);
 console.log(`  process-document:  http://localhost:${ports.processDocument}`);

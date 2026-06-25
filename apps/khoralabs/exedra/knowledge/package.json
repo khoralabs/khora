@@ -1,0 +1,28 @@
+{
+  "name": "@khoralabs/exedra-knowledge",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./test-server": "./src/test-server.ts",
+    "./config": "./src/config.ts"
+  },
+  "scripts": {
+    "start": "bun src/server.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@khoralabs/memories-service-auth": "workspace:*",
+    "@khoralabs/memories-service-http": "workspace:*",
+    "@khoralabs/memories-service-storage-sqlite": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

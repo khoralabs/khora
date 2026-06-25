@@ -8,13 +8,12 @@ import {
   handleMemoriesNamespaces,
   handleMemoriesSearch,
   memoriesUnavailableResponse,
-  openMemoriesAccess,
 } from "./api-handlers.js";
-import { openUserMemories } from "./store.js";
+import { type ExedraMemoriesServiceAccess, openUserMemoriesService } from "./service-client.js";
 
 async function resolveMeMemoriesSession(req: Request): Promise<
   | {
-      access: ReturnType<typeof openMemoriesAccess>;
+      access: ExedraMemoriesServiceAccess;
       userId: string;
       db: ReturnType<typeof getDb>;
     }
@@ -27,8 +26,8 @@ async function resolveMeMemoriesSession(req: Request): Promise<
   const user = await getOrCreateUser(db, auth.session.user.id);
 
   try {
-    const persistence = openUserMemories(user.id);
-    return { access: openMemoriesAccess(persistence), userId: user.id, db };
+    const access = await openUserMemoriesService(user.id);
+    return { access, userId: user.id, db };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Memories unavailable";
     return { response: memoriesUnavailableResponse(message) };
@@ -55,7 +54,7 @@ export async function handleMeMemoriesNamespaces(req: Request): Promise<Response
   if ("response" in resolved) return resolved.response;
 
   const namespaces = await listReadablePersonalNamespaces(resolved.db, resolved.userId);
-  return handleMemoriesNamespaces(resolved.access, namespaces);
+  return await handleMemoriesNamespaces(resolved.access, namespaces);
 }
 
 export async function handleMeMemoriesGraph(req: Request): Promise<Response> {

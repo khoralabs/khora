@@ -56,7 +56,7 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
   const teamId = await createTeam(db, { orgId, name, ownerId: user.id });
 
   try {
-    bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
+    await bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
   } catch (err) {
     await rollbackTeamCreation(db, teamId);
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";

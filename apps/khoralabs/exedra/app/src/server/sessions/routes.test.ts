@@ -14,8 +14,10 @@ import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
+import { setupTestKnowledgeService } from "../memories/test-knowledge-service";
 
 let dataDir: string;
+let knowledgeService: ReturnType<typeof setupTestKnowledgeService> | undefined;
 
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-session-gate-test-"));
@@ -23,16 +25,18 @@ beforeEach(() => {
   process.env.INVITE_PEPPER = "test-pepper-for-sessions";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   closeDb();
   closeChatDb();
   uninstallTestChatService();
   resetMemoriesStoreForTests();
+  knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
 afterEach(async () => {
   const { mock } = await import("bun:test");
   mock.restore();
+  knowledgeService?.stop();
+  knowledgeService = undefined;
   closeChatDb();
   uninstallTestChatService();
   closeDb();
@@ -41,7 +45,8 @@ afterEach(async () => {
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
-  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY;
+  delete process.env.EXEDRA_KNOWLEDGE_SERVICE_URL;
 });
 
 test("manage scopes creates an interview chat thread for newly granted participants", async () => {

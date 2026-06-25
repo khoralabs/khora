@@ -65,10 +65,14 @@ export function resolveIntegratorMaxSteps(): number {
   return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.floor(raw)) : 4;
 }
 
-export function createRemoteMemoriesClient(userId: string): ExedraHttpMemoriesClientAsync {
+export async function createRemoteMemoriesClient(
+  userId: string,
+  orgId?: string,
+): Promise<ExedraHttpMemoriesClientAsync> {
   return createExedraHttpMemoriesClientAsync({
     userId,
-    baseUrl: requireEnv("EXEDRA_INTERNAL_URL"),
-    token: requireEnv("EXEDRA_INTERNAL_TOKEN"),
+    orgId,
+    baseUrl: requireEnv("EXEDRA_KNOWLEDGE_SERVICE_URL"),
+    token: requireEnv("EXEDRA_KNOWLEDGE_SERVICE_TOKEN"),
   });
 }
