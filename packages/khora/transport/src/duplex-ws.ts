@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
-import type { DuplexByteStream } from "@khoralabs/agent-io";
-import { createWebSocketDuplexByteStream } from "@khoralabs/agent-io";
+import type { DuplexByteStream } from "@khoralabs/obp-byte-stream";
+import { createWebSocketDuplexByteStream } from "@khoralabs/obp-byte-stream";
 import { type ConnectInboxOptions, connectInbox, type InboxWsHandlers } from "./inbox-connect";
 
 export type NegotiationDuplexArgs = {

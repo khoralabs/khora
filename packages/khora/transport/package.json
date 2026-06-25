@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/agent-io": "workspace:*",
+    "@khoralabs/obp-byte-stream": "workspace:*",
     "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",

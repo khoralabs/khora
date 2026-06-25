@@ -1,4 +1,4 @@
-/** Monotonic-ish ms; safe in Convex isolates (falls back to `Date.now()`). */
+/** Monotonic-ish ms */
 export function nowMs(): number {
   const p = globalThis.performance;
   if (p && typeof p.now === "function") return p.now();

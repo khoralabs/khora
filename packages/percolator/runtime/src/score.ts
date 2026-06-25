@@ -1,4 +1,4 @@
-import { fuseRrf, type RrfArm } from "@khoralabs/reciprocal-rank-fusion";
+import { fuseRrf, type RrfArm } from "./rrf";
 import type { StandingSearchRequest } from "./search-request";
 import { tokenizeForOverlap } from "./tokenizer";
 import type { PercolatorCandidate } from "./types";
