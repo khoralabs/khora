@@ -17,9 +17,11 @@
       "!!packages/memories",
       "!!packages/obp",
       "!!packages/relay",
+      "!!packages/chat",
       "!!vendor/memories",
       "!!vendor/obp",
-      "!!vendor/relay"
+      "!!vendor/relay",
+      "!!vendor/chat"
     ]
   },
   "formatter": {

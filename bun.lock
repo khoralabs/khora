@@ -436,129 +436,6 @@
         "typescript": "^5",
       },
     },
-    "packages/chat/core": {
-      "name": "@khoralabs/chat-core",
-      "version": "0.0.0",
-      "dependencies": {
-        "ai": "^6.0.205",
-      },
-      "devDependencies": {
-        "@khoralabs/chat-persistence": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/chat/example": {
-      "name": "@khoralabs/chat-example",
-      "version": "0.1.0",
-      "dependencies": {
-        "@khoralabs/chat-core": "workspace:*",
-        "@khoralabs/chat-persistence": "workspace:*",
-        "@khoralabs/chat-persistence-sqlite": "workspace:*",
-        "@khoralabs/chat-react": "workspace:*",
-        "ai": "^6.0.205",
-        "bun-plugin-tailwind": "^0.1.2",
-        "react": "^19",
-        "react-dom": "^19",
-        "tailwindcss": "^4.1.11",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-      },
-    },
-    "packages/chat/persistence": {
-      "name": "@khoralabs/chat-persistence",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/chat-core": "workspace:*",
-        "ai": "^6.0.205",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/chat/react": {
-      "name": "@khoralabs/chat-react",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/chat-core": "workspace:*",
-        "@radix-ui/react-slot": "^1.2.3",
-        "@streamdown/cjk": "^1.0.3",
-        "@streamdown/code": "^1.1.1",
-        "@streamdown/math": "^1.0.2",
-        "@streamdown/mermaid": "^1.0.2",
-        "ai": "^6.0.205",
-        "class-variance-authority": "^0.7.1",
-        "clsx": "^2.1.1",
-        "cmdk": "^1.1.1",
-        "lucide-react": "^1.18.0",
-        "motion": "^12.40.0",
-        "nanoid": "^5.1.11",
-        "radix-ui": "^1.6.0",
-        "shadcn": "^3.0.0",
-        "shiki": "^4.2.0",
-        "streamdown": "^2.5.0",
-        "tailwind-merge": "^3.3.1",
-        "tailwindcss": "^4.1.11",
-        "tw-animate-css": "^1.4.0",
-        "use-stick-to-bottom": "^1.1.6",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^18 || ^19",
-        "react-dom": "^18 || ^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/chat/sqlite": {
-      "name": "@khoralabs/chat-persistence-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/chat-core": "workspace:*",
-        "@khoralabs/chat-persistence": "workspace:*",
-        "ai": "^6.0.205",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/chat/turso": {
-      "name": "@khoralabs/chat-persistence-turso",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/chat-core": "workspace:*",
-        "@khoralabs/chat-persistence": "workspace:*",
-        "@tursodatabase/serverless": "latest",
-        "ai": "^6.0.205",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/cli/cli-flow-nbc": {
       "name": "@khoralabs/cli-flow-nbc",
       "version": "0.0.0",
@@ -1078,6 +955,138 @@
     "packages/vellum/transport": {
       "name": "@khoralabs/vellum-transport",
       "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/chat": {
+      "name": "chat",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/chat/core": {
+      "name": "@khoralabs/chat-core",
+      "version": "0.0.0",
+      "dependencies": {
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@khoralabs/chat-persistence": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/chat/example": {
+      "name": "@khoralabs/chat-example",
+      "version": "0.1.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence": "workspace:*",
+        "@khoralabs/chat-persistence-sqlite": "workspace:*",
+        "@khoralabs/chat-react": "workspace:*",
+        "ai": "^6.0.205",
+        "bun-plugin-tailwind": "^0.1.2",
+        "react": "^19",
+        "react-dom": "^19",
+        "tailwindcss": "^4.1.11",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+      },
+    },
+    "vendor/chat/persistence": {
+      "name": "@khoralabs/chat-persistence",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/chat/react": {
+      "name": "@khoralabs/chat-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@radix-ui/react-slot": "^1.2.3",
+        "@streamdown/cjk": "^1.0.3",
+        "@streamdown/code": "^1.1.1",
+        "@streamdown/math": "^1.0.2",
+        "@streamdown/mermaid": "^1.0.2",
+        "ai": "^6.0.205",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "cmdk": "^1.1.1",
+        "lucide-react": "^1.18.0",
+        "motion": "^12.40.0",
+        "nanoid": "^5.1.11",
+        "radix-ui": "^1.6.0",
+        "shadcn": "^3.0.0",
+        "shiki": "^4.2.0",
+        "streamdown": "^2.5.0",
+        "tailwind-merge": "^3.3.1",
+        "tailwindcss": "^4.1.11",
+        "tw-animate-css": "^1.4.0",
+        "use-stick-to-bottom": "^1.1.6",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^18 || ^19",
+        "react-dom": "^18 || ^19",
+        "typescript": "^5",
+      },
+    },
+    "vendor/chat/sqlite": {
+      "name": "@khoralabs/chat-persistence-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence": "workspace:*",
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "vendor/chat/turso": {
+      "name": "@khoralabs/chat-persistence-turso",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence": "workspace:*",
+        "@tursodatabase/serverless": "latest",
+        "ai": "^6.0.205",
+      },
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
@@ -2012,17 +2021,17 @@
 
     "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
 
-    "@khoralabs/chat-core": ["@khoralabs/chat-core@workspace:packages/chat/core"],
+    "@khoralabs/chat-core": ["@khoralabs/chat-core@workspace:vendor/chat/core"],
 
-    "@khoralabs/chat-example": ["@khoralabs/chat-example@workspace:packages/chat/example"],
+    "@khoralabs/chat-example": ["@khoralabs/chat-example@workspace:vendor/chat/example"],
 
-    "@khoralabs/chat-persistence": ["@khoralabs/chat-persistence@workspace:packages/chat/persistence"],
+    "@khoralabs/chat-persistence": ["@khoralabs/chat-persistence@workspace:vendor/chat/persistence"],
 
-    "@khoralabs/chat-persistence-sqlite": ["@khoralabs/chat-persistence-sqlite@workspace:packages/chat/sqlite"],
+    "@khoralabs/chat-persistence-sqlite": ["@khoralabs/chat-persistence-sqlite@workspace:vendor/chat/sqlite"],
 
-    "@khoralabs/chat-persistence-turso": ["@khoralabs/chat-persistence-turso@workspace:packages/chat/turso"],
+    "@khoralabs/chat-persistence-turso": ["@khoralabs/chat-persistence-turso@workspace:vendor/chat/turso"],
 
-    "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:packages/chat/react"],
+    "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:vendor/chat/react"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
 
@@ -2803,6 +2812,8 @@
     "character-entities-legacy": ["character-entities-legacy@3.0.0", "", {}, "sha512-RpPp0asT/6ufRm//AJVwpViZbGM/MkjQFxJccQRHmISF/22NBtsHqAWmL+/pmkPWoIUJdWyeVleTl1wydHATVQ=="],
 
     "character-reference-invalid": ["character-reference-invalid@2.0.1", "", {}, "sha512-iBZ4F4wRbyORVsu0jPV7gXkOsGYjGHPmAyv+HiHG8gi5PtC9KI2j1+v8/tlibRvjoWX027ypmG/n0HtO5t7unw=="],
+
+    "chat": ["chat@workspace:vendor/chat"],
 
     "chrono-node": ["chrono-node@2.9.1", "", {}, "sha512-nqP8Zp11efCYQIESXPxeDM8ikzN5BDb3Zzou+a66fZq+X2hzKFdsNLQE2/uBAh//BZEMbaMo1eTnagK7hOenAg=="],
 
