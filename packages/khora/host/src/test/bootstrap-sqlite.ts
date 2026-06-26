@@ -7,10 +7,6 @@ import type { HostPersistence } from "@khoralabs/host-runtime";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
-  createRelayColonnadeSocial,
-  createRelayPrincipalLifecycle,
-} from "@khoralabs/relay-colonnade";
-import {
   bootstrapKhoraPercolator,
   createKhoraCatalogApi,
   createKhoraHost,
@@ -19,6 +15,8 @@ import {
   type KhoraHostHealthPort,
   type KhoraHostSpecPort,
 } from "../index";
+import { createKhoraSocial } from "../persistence/colonnade-persistence";
+import { createPrincipalLifecycle } from "../persistence/principal-lifecycle";
 
 export type CreateTestKhoraHostOpts = {
   catalogPath: string;
@@ -47,7 +45,7 @@ export async function createTestKhoraHost(
     projectionStore,
     principalChannelStore,
     tenantKey,
-  } = await createRelayColonnadeSocial({
+  } = await createKhoraSocial({
     catalogPath: opts.catalogPath,
     encryptionProvider: encryption.provider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
@@ -65,7 +63,7 @@ export async function createTestKhoraHost(
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const percolator = bootstrapKhoraPercolator({ catalogDb });
-  const principalLifecycle = createRelayPrincipalLifecycle({
+  const principalLifecycle = createPrincipalLifecycle({
     catalogDb,
     projectionStore,
     principalChannelStore,

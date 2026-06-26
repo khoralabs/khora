@@ -1,4 +1,3 @@
-export type { SessionInit } from "@khoralabs/obp-frames-impl";
 export {
   HOST_EVENT_KIND,
   type HostAppEventConstraint,
@@ -42,6 +41,10 @@ export type {
   HostNotificationRow,
   NotificationBufferPort,
 } from "./registration/notifications";
+export {
+  type PrincipalTeardownWorkerHandle,
+  startPrincipalTeardownWorker,
+} from "./registration/teardown-worker";
 export type {
   PrincipalId,
   PrincipalRegistrationRequest,

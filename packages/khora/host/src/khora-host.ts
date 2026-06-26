@@ -1,6 +1,9 @@
-import { createInboxWsHub, HostRuntime } from "@khoralabs/host-runtime";
+import {
+  createInboxWsHub,
+  HostRuntime,
+  startPrincipalTeardownWorker,
+} from "@khoralabs/host-runtime";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
-import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
 import type { KhoraHostContext } from "./context";
 import type { KhoraHostDeps } from "./khora-host-deps";
 import { createKhoraRelayOnEvent } from "./on-event";

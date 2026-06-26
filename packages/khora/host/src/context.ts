@@ -4,12 +4,12 @@ import type {
   AgentAccountStatusPort,
   HostRuntime,
   PrincipalLifecycle,
+  PrincipalTeardownWorkerHandle,
   SocialRelationshipPersistence,
 } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
-import type { PrincipalTeardownWorkerHandle } from "@khoralabs/relay-colonnade";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";

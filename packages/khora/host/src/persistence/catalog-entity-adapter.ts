@@ -4,7 +4,7 @@ import type {
   HostEntityRow,
   HostEntityUpsert,
 } from "@khoralabs/host-runtime";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
+import type { CatalogProjectionStore } from "./catalog-projection-store";
 
 export function parseEntityRow(projection: unknown, id: string): HostEntityRow | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -27,7 +27,7 @@ export function parseEntityRow(projection: unknown, id: string): HostEntityRow |
 }
 
 export function createCatalogEntityAdapter(
-  store: RelayCatalogProjectionStore,
+  store: CatalogProjectionStore,
   db: Database,
   tenantKey: string,
   namespace: string,

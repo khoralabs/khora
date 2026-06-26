@@ -19,10 +19,10 @@ import {
   type KhoraProfile,
 } from "@khoralabs/khora-contracts";
 import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";
-import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 import { toPercolatorSearch } from "./percolator/adapter";
+import { CatalogProjectionStore } from "./persistence/catalog-projection-store";
 
 function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
   const catalogDb = new Database(":memory:");
@@ -36,7 +36,7 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
       PRIMARY KEY (tenant_key, namespace, entry_key)
     );
   `);
-  const store = new RelayCatalogProjectionStore(catalogDb);
+  const store = new CatalogProjectionStore(catalogDb);
   for (const profile of Object.values(profiles)) {
     store.upsert({
       tenant_key: "relay",

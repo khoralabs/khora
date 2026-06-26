@@ -3,11 +3,11 @@ import type {
   PostOperationOutput,
 } from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
-import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import {
   HOST_EVENT_KIND,
   type HostEventUnion,
   type HostRuntimeEventHandlerCtx,
+  type SocialRelationshipPersistence,
 } from "@khoralabs/host-runtime";
 import {
   type InboxSubscriptionMatch,

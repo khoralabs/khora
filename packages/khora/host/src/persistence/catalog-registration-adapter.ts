@@ -1,13 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { HostRegistrations, PrincipalId } from "@khoralabs/host-runtime";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
-import {
-  RELAY_NAMESPACE_REG_BY_PRINCIPAL,
-  RELAY_NAMESPACE_REG_BY_PROFILE,
-} from "./relay-id-conventions";
-
-const NAMESPACE_BY_PRINCIPAL = RELAY_NAMESPACE_REG_BY_PRINCIPAL;
-const NAMESPACE_BY_PROFILE = RELAY_NAMESPACE_REG_BY_PROFILE;
+import type { CatalogProjectionStore } from "./catalog-projection-store";
+import { NAMESPACE_REG_BY_PRINCIPAL, NAMESPACE_REG_BY_PROFILE } from "./id-conventions";
 
 function readProfileId(projection: unknown): string | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -26,7 +20,7 @@ function readPrincipalId(projection: unknown): PrincipalId | undefined {
 }
 
 export function createCatalogRegistrationAdapter(
-  store: RelayCatalogProjectionStore,
+  store: CatalogProjectionStore,
   db: Database,
   tenantKey: string,
 ): HostRegistrations {
@@ -34,7 +28,7 @@ export function createCatalogRegistrationAdapter(
     exists(principalId: PrincipalId): boolean {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        NAMESPACE_BY_PRINCIPAL,
+        NAMESPACE_REG_BY_PRINCIPAL,
         principalId,
       );
       return found && readProfileId(projection) !== undefined;
@@ -44,13 +38,13 @@ export function createCatalogRegistrationAdapter(
       db.transaction(() => {
         store.upsert({
           tenant_key: tenantKey,
-          namespace: NAMESPACE_BY_PRINCIPAL,
+          namespace: NAMESPACE_REG_BY_PRINCIPAL,
           entry_key: principalId,
           projection: { profileId },
         });
         store.upsert({
           tenant_key: tenantKey,
-          namespace: NAMESPACE_BY_PROFILE,
+          namespace: NAMESPACE_REG_BY_PROFILE,
           entry_key: profileId,
           projection: { principalId },
         });
@@ -60,7 +54,7 @@ export function createCatalogRegistrationAdapter(
     profileIdForPrincipal(principalId: PrincipalId): string | undefined {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        NAMESPACE_BY_PRINCIPAL,
+        NAMESPACE_REG_BY_PRINCIPAL,
         principalId,
       );
       if (!found) {
@@ -72,7 +66,7 @@ export function createCatalogRegistrationAdapter(
     principalForProfileId(profileId: string): PrincipalId | undefined {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        NAMESPACE_BY_PROFILE,
+        NAMESPACE_REG_BY_PROFILE,
         profileId,
       );
       if (!found) {

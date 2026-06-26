@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { RELAY_DEFAULT_TENANT_KEY } from "@khoralabs/relay-colonnade";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host";
 import { createKhoraHostSpecPort } from "./host-spec-port";
 
 describe("host spec port", () => {
@@ -32,7 +32,7 @@ describe("host spec port", () => {
   test("storeSecrets persists before next read", () => {
     const port = createKhoraHostSpecPort({
       catalogDb,
-      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+      tenantKey: DEFAULT_TENANT_KEY,
     });
     port.storeSecrets({ registrationSecret: "secret-abc" });
     expect(port.readEffective().registrationSecret).toBe("secret-abc");
@@ -42,7 +42,7 @@ describe("host spec port", () => {
   test("management token replaces registration secret on disk", () => {
     const port = createKhoraHostSpecPort({
       catalogDb,
-      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+      tenantKey: DEFAULT_TENANT_KEY,
     });
     port.storeSecrets({ registrationSecret: "secret-abc" });
     port.storeSecrets({ managementToken: "mgmt-token" });
@@ -53,7 +53,7 @@ describe("host spec port", () => {
   test("population limit env override and patch clear", () => {
     const port = createKhoraHostSpecPort({
       catalogDb,
-      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+      tenantKey: DEFAULT_TENANT_KEY,
     });
     port.patch({ populationLimit: 99 });
     process.env.KHORA_POPULATION_LIMIT = "10";
@@ -66,7 +66,7 @@ describe("host spec port", () => {
   test("env overrides effective slug and registry URL", () => {
     const port = createKhoraHostSpecPort({
       catalogDb,
-      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+      tenantKey: DEFAULT_TENANT_KEY,
     });
     port.patch({ slug: "stored-slug", registryUrl: "http://registry.example.com" });
     process.env.KHORA_HOST_SLUG = "env-slug";

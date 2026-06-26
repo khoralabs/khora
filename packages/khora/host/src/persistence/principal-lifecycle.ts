@@ -1,7 +1,15 @@
 import type { Database } from "bun:sqlite";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import type { HostPersistence, PrincipalId, PrincipalLifecycle } from "@khoralabs/host-runtime";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
+import type { CatalogProjectionStore } from "./catalog-projection-store";
+import {
+  NAMESPACE_ENTITY_PROFILE,
+  NAMESPACE_PRINCIPAL_TO_USERNAME,
+  NAMESPACE_REG_BY_PRINCIPAL,
+  NAMESPACE_REG_BY_PROFILE,
+  NAMESPACE_USERNAME_TO_PRINCIPAL,
+  USERNAME_INDEX_TENANT_KEY,
+} from "./id-conventions";
 import {
   deletePrincipalTeardownJob,
   insertPendingPrincipalTeardownJob,
@@ -9,24 +17,13 @@ import {
   principalHasActiveTeardownJob,
   tryClaimNextPendingPrincipalTeardownJob,
 } from "./principal-teardown-jobs";
-import {
-  RELAY_NAMESPACE_ENTITY_PROFILE,
-  RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
-  RELAY_NAMESPACE_REG_BY_PRINCIPAL,
-  RELAY_NAMESPACE_REG_BY_PROFILE,
-  RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions";
-import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
+import type { SocialPrincipalChannelStore } from "./social-principal-channel-store";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence";
 
-/** Re-export the generic contract under the legacy name for backward compatibility. */
-export type RelayPrincipalLifecycle = PrincipalLifecycle;
-
-export type RelayPrincipalLifecycleDeps = {
+export type PrincipalLifecycleDeps = {
   readonly catalogDb: Database;
-  readonly projectionStore: RelayCatalogProjectionStore;
-  readonly principalChannelStore: RelaySocialPrincipalChannelStore;
+  readonly projectionStore: CatalogProjectionStore;
+  readonly principalChannelStore: SocialPrincipalChannelStore;
   readonly persistence: HostPersistence;
   readonly tenantKey: string;
   readonly cluster: SqliteColonnadeCluster;
@@ -49,7 +46,7 @@ function readUsernameFromPrincipalMapProjection(projection: unknown): string | u
 }
 
 function deletePrincipalUsernameIndexAndRegistrationRows(p: {
-  projectionStore: RelayCatalogProjectionStore;
+  projectionStore: CatalogProjectionStore;
   tenantKey: string;
   principalId: PrincipalId;
   profileId: string;
@@ -57,21 +54,21 @@ function deletePrincipalUsernameIndexAndRegistrationRows(p: {
   const { projectionStore: store, tenantKey, principalId, profileId } = p;
   const hit = store.lookupProjection(
     USERNAME_INDEX_TENANT_KEY,
-    RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+    NAMESPACE_PRINCIPAL_TO_USERNAME,
     principalId,
   );
   const u = readUsernameFromPrincipalMapProjection(hit.projection);
-  store.deleteRow(USERNAME_INDEX_TENANT_KEY, RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME, principalId);
+  store.deleteRow(USERNAME_INDEX_TENANT_KEY, NAMESPACE_PRINCIPAL_TO_USERNAME, principalId);
   if (u !== undefined) {
-    store.deleteRow(USERNAME_INDEX_TENANT_KEY, RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL, u);
+    store.deleteRow(USERNAME_INDEX_TENANT_KEY, NAMESPACE_USERNAME_TO_PRINCIPAL, u);
   }
-  store.deleteRow(tenantKey, RELAY_NAMESPACE_REG_BY_PRINCIPAL, principalId);
-  store.deleteRow(tenantKey, RELAY_NAMESPACE_REG_BY_PROFILE, profileId);
-  store.deleteRow(tenantKey, RELAY_NAMESPACE_ENTITY_PROFILE, profileId);
+  store.deleteRow(tenantKey, NAMESPACE_REG_BY_PRINCIPAL, principalId);
+  store.deleteRow(tenantKey, NAMESPACE_REG_BY_PROFILE, profileId);
+  store.deleteRow(tenantKey, NAMESPACE_ENTITY_PROFILE, profileId);
 }
 
 function cascadeTeardownWithProfile(
-  deps: RelayPrincipalLifecycleDeps,
+  deps: PrincipalLifecycleDeps,
   principalId: PrincipalId,
   profileId: string,
 ): void {
@@ -96,9 +93,7 @@ function cascadeTeardownWithProfile(
   })();
 }
 
-export function createRelayPrincipalLifecycle(
-  deps: RelayPrincipalLifecycleDeps,
-): RelayPrincipalLifecycle {
+export function createPrincipalLifecycle(deps: PrincipalLifecycleDeps): PrincipalLifecycle {
   return {
     enqueueTeardown(principalId: PrincipalId): boolean {
       const profileId = deps.persistence.registrations.profileIdForPrincipal(principalId);

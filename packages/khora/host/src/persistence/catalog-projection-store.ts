@@ -10,7 +10,7 @@ export type CatalogProjectionListedRow = {
   projection: unknown;
 };
 
-export class RelayCatalogProjectionStore {
+export class CatalogProjectionStore {
   private readonly upsertStmt;
   private readonly lookupStmt;
   private readonly listByPrefixStmt;

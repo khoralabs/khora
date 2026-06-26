@@ -11,6 +11,8 @@ import {
   createColonnadePostResolver,
   createKhoraCatalogApi,
   createKhoraHost,
+  createKhoraSocial,
+  createPrincipalLifecycle,
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
   type KhoraHostContext,
@@ -27,10 +29,6 @@ import {
   ensureCustomSqliteForExtensions,
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
-import {
-  createRelayColonnadeSocial,
-  createRelayPrincipalLifecycle,
-} from "@khoralabs/relay-colonnade";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
@@ -64,7 +62,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     projectionStore,
     principalChannelStore,
     tenantKey,
-  } = await createRelayColonnadeSocial({
+  } = await createKhoraSocial({
     catalogPath: opts.catalogPath,
     encryptionProvider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
@@ -88,7 +86,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       ? { embeddingModel: opts.memories.embeddingModel }
       : {}),
   });
-  const principalLifecycle = createRelayPrincipalLifecycle({
+  const principalLifecycle = createPrincipalLifecycle({
     catalogDb,
     projectionStore,
     principalChannelStore,

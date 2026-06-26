@@ -12,10 +12,10 @@ import type {
   KhoraAdminStatsSummary,
   KhoraColonnadeCluster,
 } from "@khoralabs/khora-host";
-import { countRegisteredPrincipals } from "@khoralabs/relay-colonnade";
+import { countRegisteredPrincipals, NAMESPACE_REG_BY_PRINCIPAL } from "@khoralabs/khora-host";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
-const REG_BY_PRINCIPAL = "relay:reg:by-principal";
+const REG_BY_PRINCIPAL = NAMESPACE_REG_BY_PRINCIPAL;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * MS_PER_DAY;
 const HEARTBEAT_24H_MS = MS_PER_DAY;

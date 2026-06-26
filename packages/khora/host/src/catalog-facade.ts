@@ -1,16 +1,15 @@
 import type { Database } from "bun:sqlite";
-import type { HostPersistence } from "@khoralabs/host-runtime";
+import type { HostPersistence, PrincipalLifecycle } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
+import type { CatalogProjectionStore } from "./persistence/catalog-projection-store";
 import {
-  RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
-  RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
-  type RelayCatalogProjectionStore,
-  type RelayPrincipalLifecycle,
-  registerAgentOnColonnadePersistence,
+  NAMESPACE_PRINCIPAL_TO_USERNAME,
+  NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade";
+} from "./persistence/id-conventions";
+import { registerAgentOnPersistence } from "./persistence/social-registration";
 
-/** Catalog operations used by HTTP adapters; relay projection keys stay inside the host. */
+/** Catalog operations used by HTTP adapters; projection keys stay inside the host. */
 export type KhoraHostCatalogApi = {
   lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined;
   lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined;
@@ -28,17 +27,17 @@ export type KhoraHostCatalogApi = {
 
 export function createKhoraCatalogApi(deps: {
   persistence: HostPersistence;
-  projectionStore: RelayCatalogProjectionStore;
+  projectionStore: CatalogProjectionStore;
   catalogDb: Database;
   tenantKey: string;
-  principalLifecycle: RelayPrincipalLifecycle;
+  principalLifecycle: PrincipalLifecycle;
 }): KhoraHostCatalogApi {
   const { persistence, projectionStore, catalogDb, principalLifecycle } = deps;
 
   function lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined {
     const hit = projectionStore.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
-      RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+      NAMESPACE_USERNAME_TO_PRINCIPAL,
       normalized,
     );
     if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
@@ -51,7 +50,7 @@ export function createKhoraCatalogApi(deps: {
   function lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined {
     const hit = projectionStore.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
-      RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+      NAMESPACE_PRINCIPAL_TO_USERNAME,
       principalId,
     );
     if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
@@ -69,25 +68,21 @@ export function createKhoraCatalogApi(deps: {
     if (current === undefined) return;
     projectionStore.deleteRow(
       USERNAME_INDEX_TENANT_KEY,
-      RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+      NAMESPACE_PRINCIPAL_TO_USERNAME,
       principalId,
     );
-    projectionStore.deleteRow(
-      USERNAME_INDEX_TENANT_KEY,
-      RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
-      current,
-    );
+    projectionStore.deleteRow(USERNAME_INDEX_TENANT_KEY, NAMESPACE_USERNAME_TO_PRINCIPAL, current);
     if (priorNormalizedUsername === undefined) return;
     const username = normalizeUsername(priorNormalizedUsername);
     projectionStore.upsert({
       tenant_key: USERNAME_INDEX_TENANT_KEY,
-      namespace: RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+      namespace: NAMESPACE_USERNAME_TO_PRINCIPAL,
       entry_key: username,
       projection: { principalId },
     });
     projectionStore.upsert({
       tenant_key: USERNAME_INDEX_TENANT_KEY,
-      namespace: RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+      namespace: NAMESPACE_PRINCIPAL_TO_USERNAME,
       entry_key: principalId,
       projection: { username },
     });
@@ -98,7 +93,7 @@ export function createKhoraCatalogApi(deps: {
     lookupNormalizedUsernameForPrincipal,
     rollbackUsernameMapsAfterFailedRegistration,
     applyProfileUsernameAndMaps(input) {
-      registerAgentOnColonnadePersistence(persistence, catalogDb, projectionStore, {
+      registerAgentOnPersistence(persistence, catalogDb, projectionStore, {
         principalId: input.principalId,
         username: input.username,
         profileUpsert: input.profileUpsert,

@@ -1,8 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { AgentAccountStatus, AgentAccountStatusPort } from "@khoralabs/host-runtime";
 
-export type { AgentAccountStatus, AgentAccountStatusPort };
-
 export function createAgentAccountStatusPort(db: Database): AgentAccountStatusPort {
   return {
     getStatus(did: string): AgentAccountStatus | undefined {

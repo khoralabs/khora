@@ -4,8 +4,7 @@ import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs";
 
-/** Tier 1 relay catalog projections (JSON columns + expression indexes). */
-export function ensureRelayCatalogProjectionsSchema(db: Database): void {
+export function ensureKhoraCatalogProjectionsSchema(db: Database): void {
   db.run(`
     CREATE TABLE IF NOT EXISTS relay_catalog_projections (
       tenant_key TEXT NOT NULL,
@@ -20,8 +19,8 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
         tenant_key,
         json_extract(projection, '$.principalId')
       )
-      WHERE namespace = 'relay:social:username-to-principal';
-    CREATE TABLE IF NOT EXISTS relay_social_principal_channels (
+      WHERE namespace = 'khora:social:username-to-principal';
+    CREATE TABLE IF NOT EXISTS khora_social_principal_channels (
       tenant_key TEXT NOT NULL,
       principal_id TEXT NOT NULL,
       channel_id TEXT NOT NULL,
@@ -35,8 +34,7 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
   `);
 }
 
-/** WAL + defaults aligned with colonnade SQLite workloads. */
-export function applyRelaySqlitePragmas(db: Database): void {
+export function applyKhoraSqlitePragmas(db: Database): void {
   db.run(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
@@ -47,14 +45,13 @@ export function applyRelaySqlitePragmas(db: Database): void {
   `);
 }
 
-/** Opens relay catalog DB (Tier 1 projections + percolator standing queries). */
-export async function openRelayCatalogDb(
+export async function openKhoraCatalogDb(
   path: string,
   provider: EncryptionKeyProvider,
 ): Promise<Database> {
   const db = await openEncryptedDatabase(path, { create: true }, "khora", provider);
-  applyRelaySqlitePragmas(db);
-  ensureRelayCatalogProjectionsSchema(db);
+  applyKhoraSqlitePragmas(db);
+  ensureKhoraCatalogProjectionsSchema(db);
   ensurePercolatorSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
   return db;

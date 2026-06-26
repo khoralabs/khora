@@ -3,6 +3,8 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-capabilities";
 import { EnvKeyProvider } from "@khoralabs/colonnade-crypto";
 import {
+  CatalogProjectionStore,
+  NAMESPACE_ENTITY_PROFILE,
   purgeEmptyPendingEmbeddings,
   readPendingEmbeddingQueueSummary,
   resetFailedPendingEmbeddings,
@@ -24,10 +26,6 @@ import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
-import {
-  RELAY_NAMESPACE_ENTITY_PROFILE,
-  RelayCatalogProjectionStore,
-} from "@khoralabs/relay-colonnade";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import {
   buildNamespaceGraphLayout,
@@ -122,8 +120,8 @@ async function listCatalogProfiles(
     new EnvKeyProvider(),
   );
   try {
-    const store = new RelayCatalogProjectionStore(catalogDb);
-    const rows = store.listByPrefix(tenantKey, RELAY_NAMESPACE_ENTITY_PROFILE, "");
+    const store = new CatalogProjectionStore(catalogDb);
+    const rows = store.listByPrefix(tenantKey, NAMESPACE_ENTITY_PROFILE, "");
     const out: Array<{ profileId: string; username?: string }> = [];
     for (const row of rows) {
       const projection = row.projection;

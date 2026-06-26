@@ -4,11 +4,9 @@ import type {
   SocialRelationshipPersistence,
   SocialRelationshipRow,
 } from "@khoralabs/host-runtime";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
-import { RELAY_NAMESPACE_SOCIAL_RELATIONSHIP } from "./relay-id-conventions";
-import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
-
-const NAMESPACE_RELATIONSHIP = RELAY_NAMESPACE_SOCIAL_RELATIONSHIP;
+import type { CatalogProjectionStore } from "./catalog-projection-store";
+import { NAMESPACE_SOCIAL_RELATIONSHIP } from "./id-conventions";
+import type { SocialPrincipalChannelStore } from "./social-principal-channel-store";
 
 function parseRelationshipRow(
   projection: unknown,
@@ -44,8 +42,8 @@ function parseRelationshipRow(
 }
 
 export function createSocialRelationshipPersistence(deps: {
-  projectionStore: RelayCatalogProjectionStore;
-  principalChannelStore: RelaySocialPrincipalChannelStore;
+  projectionStore: CatalogProjectionStore;
+  principalChannelStore: SocialPrincipalChannelStore;
   catalogDb: Database;
   tenantKey: string;
 }): SocialRelationshipPersistence {
@@ -54,7 +52,7 @@ export function createSocialRelationshipPersistence(deps: {
   function getRelationshipImpl(channelId: string): SocialRelationshipRow | undefined {
     const { found, projection } = store.lookupProjection(
       tenantKey,
-      NAMESPACE_RELATIONSHIP,
+      NAMESPACE_SOCIAL_RELATIONSHIP,
       channelId,
     );
     if (!found) {
@@ -77,7 +75,7 @@ export function createSocialRelationshipPersistence(deps: {
       catalogDb.transaction(() => {
         store.upsert({
           tenant_key: tenantKey,
-          namespace: NAMESPACE_RELATIONSHIP,
+          namespace: NAMESPACE_SOCIAL_RELATIONSHIP,
           entry_key: params.channelId,
           projection: row,
         });
@@ -93,7 +91,7 @@ export function createSocialRelationshipPersistence(deps: {
       catalogDb.transaction(() => {
         const { found, projection } = store.lookupProjection(
           tenantKey,
-          NAMESPACE_RELATIONSHIP,
+          NAMESPACE_SOCIAL_RELATIONSHIP,
           params.channelId,
         );
         if (!found) {
@@ -120,7 +118,7 @@ export function createSocialRelationshipPersistence(deps: {
         };
         store.upsert({
           tenant_key: tenantKey,
-          namespace: NAMESPACE_RELATIONSHIP,
+          namespace: NAMESPACE_SOCIAL_RELATIONSHIP,
           entry_key: params.channelId,
           projection: next,
         });
@@ -135,7 +133,7 @@ export function createSocialRelationshipPersistence(deps: {
         const next: SocialRelationshipRow = { ...current, expiresAtMs: params.expiresAtMs };
         store.upsert({
           tenant_key: tenantKey,
-          namespace: NAMESPACE_RELATIONSHIP,
+          namespace: NAMESPACE_SOCIAL_RELATIONSHIP,
           entry_key: params.channelId,
           projection: next,
         });
@@ -164,7 +162,7 @@ export function createSocialRelationshipPersistence(deps: {
         return undefined;
       }
       catalogDb.transaction(() => {
-        store.deleteRow(tenantKey, NAMESPACE_RELATIONSHIP, channelId);
+        store.deleteRow(tenantKey, NAMESPACE_SOCIAL_RELATIONSHIP, channelId);
         principalChannelStore.deleteChannel(tenantKey, r.creatorPrincipalId, channelId);
         if (r.peerPrincipalId !== null) {
           principalChannelStore.deleteChannel(tenantKey, r.peerPrincipalId, channelId);
@@ -177,8 +175,8 @@ export function createSocialRelationshipPersistence(deps: {
 
 /** Tear down catalog relationship entries for every channel this principal participates in. */
 export function purgeSocialRelationshipsForPrincipal(params: {
-  projectionStore: RelayCatalogProjectionStore;
-  principalChannelStore: RelaySocialPrincipalChannelStore;
+  projectionStore: CatalogProjectionStore;
+  principalChannelStore: SocialPrincipalChannelStore;
   catalogDb: Database;
   tenantKey: string;
   principalId: PrincipalId;

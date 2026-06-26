@@ -1,22 +1,22 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/host-runtime";
 
-export class RelaySocialPrincipalChannelStore {
+export class SocialPrincipalChannelStore {
   private readonly insertStmt;
   private readonly deleteStmt;
   private readonly listStmt;
 
   constructor(db: Database) {
     this.insertStmt = db.prepare(
-      `INSERT OR IGNORE INTO relay_social_principal_channels(tenant_key, principal_id, channel_id)
+      `INSERT OR IGNORE INTO khora_social_principal_channels(tenant_key, principal_id, channel_id)
        VALUES (?, ?, ?)`,
     );
     this.deleteStmt = db.prepare(
-      `DELETE FROM relay_social_principal_channels
+      `DELETE FROM khora_social_principal_channels
        WHERE tenant_key = ? AND principal_id = ? AND channel_id = ?`,
     );
     this.listStmt = db.query(
-      `SELECT channel_id FROM relay_social_principal_channels
+      `SELECT channel_id FROM khora_social_principal_channels
        WHERE tenant_key = ? AND principal_id = ?
        ORDER BY channel_id ASC`,
     );

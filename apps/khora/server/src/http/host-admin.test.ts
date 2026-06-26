@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { RELAY_DEFAULT_TENANT_KEY } from "@khoralabs/relay-colonnade";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 import type { HostRouteDeps } from "./deps";
 import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./host-admin";
@@ -28,7 +28,7 @@ describe("host admin config", () => {
     `);
     hostSpec = createKhoraHostSpecPort({
       catalogDb,
-      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+      tenantKey: DEFAULT_TENANT_KEY,
     });
   });
 

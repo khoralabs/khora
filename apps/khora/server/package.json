@@ -29,7 +29,6 @@
     "@khoralabs/memories-react-graph": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/sqlite-graph-projections": "workspace:*",
-    "@khoralabs/relay-colonnade": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/sqlite-crypto": "^0.1.0",
     "@khoralabs/observability": "workspace:*",

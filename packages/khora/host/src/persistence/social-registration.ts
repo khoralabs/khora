@@ -5,23 +5,21 @@ import type {
   SocialRegisterAgentInput,
 } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
+import type { CatalogProjectionStore } from "./catalog-projection-store";
 import {
-  RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
-  RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+  NAMESPACE_PRINCIPAL_TO_USERNAME,
+  NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions";
-
-export { USERNAME_INDEX_TENANT_KEY } from "./relay-id-conventions";
+} from "./id-conventions";
 
 /**
  * Upsert profile + principal↔profile registration and username maps in one SQLite transaction.
- * Usernames are **globally** unique in the catalog (not scoped to the relay tenant on `persistence`).
+ * Usernames are globally unique in the catalog (not scoped to the tenant on `persistence`).
  */
-export function registerAgentOnColonnadePersistence(
+export function registerAgentOnPersistence(
   persistence: HostPersistence,
   catalogDb: Database,
-  store: RelayCatalogProjectionStore,
+  store: CatalogProjectionStore,
   input: SocialRegisterAgentInput,
 ): SocialAgentIdentity {
   const username = normalizeUsername(input.username);
@@ -33,7 +31,7 @@ export function registerAgentOnColonnadePersistence(
 
     const usernameHit = store.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
-      RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+      NAMESPACE_USERNAME_TO_PRINCIPAL,
       username,
     );
     if (
@@ -49,7 +47,7 @@ export function registerAgentOnColonnadePersistence(
 
     const principalHit = store.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
-      RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+      NAMESPACE_PRINCIPAL_TO_USERNAME,
       input.principalId,
     );
     if (
@@ -59,19 +57,19 @@ export function registerAgentOnColonnadePersistence(
     ) {
       const prevU = (principalHit.projection as Record<string, unknown>).username;
       if (typeof prevU === "string" && prevU !== username) {
-        store.deleteRow(USERNAME_INDEX_TENANT_KEY, RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL, prevU);
+        store.deleteRow(USERNAME_INDEX_TENANT_KEY, NAMESPACE_USERNAME_TO_PRINCIPAL, prevU);
       }
     }
 
     store.upsert({
       tenant_key: USERNAME_INDEX_TENANT_KEY,
-      namespace: RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+      namespace: NAMESPACE_USERNAME_TO_PRINCIPAL,
       entry_key: username,
       projection: { principalId: input.principalId },
     });
     store.upsert({
       tenant_key: USERNAME_INDEX_TENANT_KEY,
-      namespace: RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+      namespace: NAMESPACE_PRINCIPAL_TO_USERNAME,
       entry_key: input.principalId,
       projection: { username },
     });

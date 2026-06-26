@@ -13,7 +13,7 @@ import {
   ensureCustomSqliteForExtensions,
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
-import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
+import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
 import { encodePostId } from "../post-address-id";
 import { createColonnadePostResolver } from "../resolve-post";
 import { createKhoraMemoriesIndexer } from "./indexer";
@@ -40,7 +40,7 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
       PRIMARY KEY (tenant_key, namespace, entry_key)
     );
   `);
-  const projectionStore = new RelayCatalogProjectionStore(catalogDb);
+  const projectionStore = new CatalogProjectionStore(catalogDb);
   const profileBody = JSON.stringify(profile);
   projectionStore.upsert({
     tenant_key: "relay",

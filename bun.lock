@@ -124,7 +124,6 @@
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/obp-byte-stream": "workspace:*",
         "@khoralabs/observability": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@khoralabs/sqlite-graph-projections": "workspace:*",
         "@opentelemetry/api": "^1.9.0",
@@ -501,7 +500,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/obp-byte-stream": "workspace:*",
-        "@khoralabs/obp-frames-impl": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -577,6 +575,7 @@
       "name": "@khoralabs/khora-host",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
@@ -586,8 +585,8 @@
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
         "zod": "^4",
       },
       "devDependencies": {
@@ -595,7 +594,6 @@
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -627,24 +625,6 @@
       "peerDependencies": {
         "react": "^19",
         "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/relay-colonnade": {
-      "name": "@khoralabs/relay-colonnade",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
-        "@khoralabs/host-runtime": "workspace:*",
-        "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/percolator-sqlite": "workspace:*",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
         "typescript": "^5",
       },
     },
@@ -2190,8 +2170,6 @@
     "@khoralabs/relay-admission": ["@khoralabs/relay-admission@workspace:vendor/relay/packages/relay-admission"],
 
     "@khoralabs/relay-client": ["@khoralabs/relay-client@workspace:vendor/relay/packages/relay-client"],
-
-    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
 
     "@khoralabs/relay-contracts": ["@khoralabs/relay-contracts@workspace:vendor/relay/packages/relay-contracts"],
 

@@ -1,9 +1,9 @@
-import type { RelayPrincipalLifecycle } from "./principal-lifecycle";
+import type { PrincipalLifecycle } from "../persistence/types";
 
 export type PrincipalTeardownWorkerHandle = { stop(): void };
 
 export function startPrincipalTeardownWorker(opts: {
-  lifecycle: RelayPrincipalLifecycle;
+  lifecycle: PrincipalLifecycle;
   intervalMs?: number;
 }): PrincipalTeardownWorkerHandle {
   const intervalMs = opts.intervalMs ?? 500;

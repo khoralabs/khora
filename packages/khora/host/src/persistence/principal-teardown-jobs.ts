@@ -3,7 +3,6 @@ import type { PrincipalId } from "@khoralabs/host-runtime";
 
 export type PrincipalTeardownJobState = "pending" | "running" | "completed" | "failed";
 
-/** Ensures durable teardown job metadata table on relay catalog SQLite. */
 export function ensurePrincipalTeardownJobsSchema(db: Database): void {
   db.run(`
     CREATE TABLE IF NOT EXISTS principal_teardown_jobs (
