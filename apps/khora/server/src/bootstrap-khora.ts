@@ -100,6 +100,9 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
         percolator.percolator.deactivateQuery(query.id);
       }
     },
+    onPhase1Teardown(principalId) {
+      invitesRepoValue?.deleteTokensForPrincipal(principalId);
+    },
   });
   const catalog = createKhoraCatalogApi({
     persistence,

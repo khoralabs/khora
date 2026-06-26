@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
-import type { HostPersistence, PrincipalId } from "@khoralabs/host-runtime";
+import type { HostPersistence, PrincipalId, PrincipalLifecycle } from "@khoralabs/host-runtime";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   deletePrincipalTeardownJob,
@@ -20,6 +20,9 @@ import {
 import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence";
 
+/** Re-export the generic contract under the legacy name for backward compatibility. */
+export type RelayPrincipalLifecycle = PrincipalLifecycle;
+
 export type RelayPrincipalLifecycleDeps = {
   readonly catalogDb: Database;
   readonly projectionStore: RelayCatalogProjectionStore;
@@ -27,18 +30,14 @@ export type RelayPrincipalLifecycleDeps = {
   readonly persistence: HostPersistence;
   readonly tenantKey: string;
   readonly cluster: SqliteColonnadeCluster;
+  /** Called at the start of principal teardown cascade (e.g. deactivate percolator standing queries). */
   readonly onPrincipalTeardown?: (principalId: PrincipalId) => void;
-};
-
-export type RelayPrincipalLifecycle = {
-  /** Phase 1: clear registration + username index, enqueue durable job. */
-  enqueueTeardown(principalId: PrincipalId): boolean;
-  /** Inbox post-pointer deliverability (registration + no active job). */
-  isPostPointerDeliverable(authorPrincipalId: PrincipalId | undefined): boolean;
-  /** Claim one pending job, run phase 2 + cell purge, finalize job row. */
-  runNextTeardownJob(): Promise<boolean>;
-  /** Eager full teardown without job queue (admin / tests). */
-  cascadeTeardownNow(principalId: PrincipalId): boolean;
+  /**
+   * Called synchronously during phase 1 unregister and at the start of the cascade path.
+   * Use this for cleanup that must happen immediately when a principal is removed
+   * (e.g. invalidate invite tokens).
+   */
+  readonly onPhase1Teardown?: (principalId: PrincipalId) => void;
 };
 
 function readUsernameFromPrincipalMapProjection(projection: unknown): string | undefined {
@@ -47,16 +46,6 @@ function readUsernameFromPrincipalMapProjection(projection: unknown): string | u
   }
   const u = (projection as Record<string, unknown>).username;
   return typeof u === "string" && u.length > 0 ? u : undefined;
-}
-
-function deleteInviteTokensForDid(catalogDb: Database, did: PrincipalId): void {
-  try {
-    catalogDb
-      .prepare(`DELETE FROM khora_invite_tokens WHERE minted_by_did = ? OR consumed_by_did = ?`)
-      .run(did, did);
-  } catch {
-    /* optional in minimal catalogs */
-  }
 }
 
 function deletePrincipalUsernameIndexAndRegistrationRows(p: {
@@ -87,6 +76,7 @@ function cascadeTeardownWithProfile(
   profileId: string,
 ): void {
   deps.onPrincipalTeardown?.(principalId);
+  deps.onPhase1Teardown?.(principalId);
 
   purgeSocialRelationshipsForPrincipal({
     projectionStore: deps.projectionStore,
@@ -104,8 +94,6 @@ function cascadeTeardownWithProfile(
       profileId,
     });
   })();
-
-  deleteInviteTokensForDid(deps.catalogDb, principalId);
 }
 
 export function createRelayPrincipalLifecycle(
@@ -131,7 +119,7 @@ export function createRelayPrincipalLifecycle(
           nowMs,
         });
       })();
-      deleteInviteTokensForDid(deps.catalogDb, principalId);
+      deps.onPhase1Teardown?.(principalId);
       return true;
     },
 

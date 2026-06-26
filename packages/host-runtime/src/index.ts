@@ -31,6 +31,7 @@ export type {
   HostEntityUpsert,
   HostPersistence,
   HostRegistrations,
+  PrincipalLifecycle,
   SocialAgentIdentity,
   SocialRegisterAgentInput,
   SocialRelationshipPersistence,

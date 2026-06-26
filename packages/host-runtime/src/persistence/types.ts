@@ -94,6 +94,27 @@ export type AgentAccountStatusPort = {
 };
 
 // ---------------------------------------------------------------------------
+// Principal lifecycle contract
+// ---------------------------------------------------------------------------
+
+/**
+ * Behavior contract for principal registration teardown.
+ * Phase 1 (enqueueTeardown) clears registration data synchronously and enqueues a durable job.
+ * Phase 2 (runNextTeardownJob) performs the full async cascade (social graph, cell purge).
+ * Implementation and persistence strategy are chosen by the server.
+ */
+export type PrincipalLifecycle = {
+  /** Phase 1: clear registration + username index, enqueue durable teardown job. Returns false if principal not found. */
+  enqueueTeardown(principalId: PrincipalId): boolean;
+  /** Returns false when the author has no registration or has an active teardown job in progress. */
+  isPostPointerDeliverable(authorPrincipalId: PrincipalId | undefined): boolean;
+  /** Claim one pending teardown job, run phase 2 cascade + cell purge, finalize job row. */
+  runNextTeardownJob(): Promise<boolean>;
+  /** Eager full teardown without the job queue (admin / tests). */
+  cascadeTeardownNow(principalId: PrincipalId): boolean;
+};
+
+// ---------------------------------------------------------------------------
 // Host persistence facade
 // ---------------------------------------------------------------------------
 
