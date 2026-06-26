@@ -22,6 +22,7 @@ export {
   startPrincipalTeardownWorker,
 } from "./principal-teardown-worker";
 export {
+  type ColonnadeBasePersistence,
   createRelayColonnadePersistence,
   createRelayColonnadePersistenceFromDatabases,
 } from "./relay-colonnade-persistence";
@@ -40,12 +41,6 @@ export {
 export { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
 export { registerAgentOnColonnadePersistence } from "./social-registration";
 export { createSocialRelationshipPersistence } from "./social-relationship-persistence";
-export type {
-  SocialAgentIdentity,
-  SocialRegisterAgentInput,
-  SocialRelationshipPersistence,
-  SocialRelationshipRow,
-} from "./social-types";
 export {
   applyRelaySqlitePragmas,
   ensureRelayCatalogProjectionsSchema,

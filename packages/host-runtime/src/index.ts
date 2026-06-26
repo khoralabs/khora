@@ -24,11 +24,17 @@ export {
   type HostPersistenceClient,
 } from "./persistence/client";
 export type {
+  AgentAccountStatus,
+  AgentAccountStatusPort,
   HostEntityPersistence,
   HostEntityRow,
   HostEntityUpsert,
   HostPersistence,
   HostRegistrations,
+  SocialAgentIdentity,
+  SocialRegisterAgentInput,
+  SocialRelationshipPersistence,
+  SocialRelationshipRow,
 } from "./persistence/types";
 export type {
   HostNotification,

@@ -83,6 +83,19 @@ function createTestRelayPersistence(profile: KhoraProfile) {
       profileIdForPrincipal: () => profile.id,
       principalForProfileId: () => "did:test:author",
     },
+    social: {
+      createRelationship: () => {},
+      getRelationship: () => undefined,
+      bindPeer: () => {},
+      refreshRelationshipTicketExpiry: () => {},
+      listRelationshipsForPrincipal: () => [],
+      deleteRelationship: () => undefined,
+    },
+    agentAccountStatus: {
+      getStatus: () => undefined,
+      setStatus: () => {},
+      clearStatus: () => {},
+    },
   });
 }
 

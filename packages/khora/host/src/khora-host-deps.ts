@@ -3,11 +3,7 @@ import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistenc
 import type { HostPersistence } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
-import type {
-  AgentAccountStatusPort,
-  RelayPrincipalLifecycle,
-  SocialRelationshipPersistence,
-} from "@khoralabs/relay-colonnade";
+import type { RelayPrincipalLifecycle } from "@khoralabs/relay-colonnade";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
@@ -20,7 +16,6 @@ import type {
 
 export type KhoraHostDeps = {
   persistence: HostPersistence;
-  social: SocialRelationshipPersistence;
   tenantKey: string;
   cluster: KhoraColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
@@ -32,7 +27,6 @@ export type KhoraHostDeps = {
   percolator: KhoraPercolatorHost;
   health: KhoraHostHealthPort;
   adminStats: KhoraAdminStatsPort;
-  agentAccountStatus: AgentAccountStatusPort;
   hostSpec: KhoraHostSpecPort;
   catalog: KhoraHostCatalogApi;
   outboxPayloadCodec: OutboxPayloadCodec;

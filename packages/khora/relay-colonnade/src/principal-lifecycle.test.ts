@@ -94,12 +94,21 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
   applyTestEncryptionEnv();
   const dir = nextDir();
   const encryptionProvider = new TestKeyProvider();
-  const { persistence, projectionStore, principalChannelStore, catalogDb, tenantKey } =
-    await createRelayColonnadeSocial({
-      catalogPath: join(dir, "c.sqlite"),
-      tenantKey: "tn",
-      encryptionProvider,
-    });
+  const {
+    profiles,
+    registrations,
+    social,
+    agentAccountStatus,
+    projectionStore,
+    principalChannelStore,
+    catalogDb,
+    tenantKey,
+  } = await createRelayColonnadeSocial({
+    catalogPath: join(dir, "c.sqlite"),
+    tenantKey: "tn",
+    encryptionProvider,
+  });
+  const persistence: HostPersistence = { profiles, registrations, social, agentAccountStatus };
   const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: join(dir, "cells"),

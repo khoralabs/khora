@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
-import type { HostPersistence } from "@khoralabs/host-runtime";
+import type {
+  HostPersistence,
+  SocialAgentIdentity,
+  SocialRegisterAgentInput,
+} from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
@@ -7,7 +11,6 @@ import {
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions";
-import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types";
 
 export { USERNAME_INDEX_TENANT_KEY } from "./relay-id-conventions";
 

@@ -3,6 +3,7 @@ import {
   ColonnadePublicationClient,
   createSqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
+import type { HostPersistence } from "@khoralabs/host-runtime";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
@@ -37,12 +38,21 @@ export async function createTestKhoraHost(
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? false;
   const encryption = createTestEncryptionMaterial();
-  const { persistence, social, catalogDb, projectionStore, principalChannelStore, tenantKey } =
-    await createRelayColonnadeSocial({
-      catalogPath: opts.catalogPath,
-      encryptionProvider: encryption.provider,
-      ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
-    });
+  const {
+    profiles,
+    registrations,
+    social,
+    agentAccountStatus,
+    catalogDb,
+    projectionStore,
+    principalChannelStore,
+    tenantKey,
+  } = await createRelayColonnadeSocial({
+    catalogPath: opts.catalogPath,
+    encryptionProvider: encryption.provider,
+    ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
+  });
+  const persistence: HostPersistence = { profiles, registrations, social, agentAccountStatus };
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
@@ -131,15 +141,8 @@ export async function createTestKhoraHost(
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };
   const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
-  const agentAccountStatus = {
-    getStatus: () => undefined,
-    setStatus: () => {},
-    clearStatus: () => {},
-  };
-
   return createKhoraHost({
     persistence,
-    social,
     tenantKey,
     cluster,
     publicationClient,
@@ -149,7 +152,6 @@ export async function createTestKhoraHost(
     catalog,
     health,
     adminStats,
-    agentAccountStatus,
     hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     percolator,

@@ -86,6 +86,19 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
       profileIdForPrincipal: () => profile.id,
       principalForProfileId: () => "did:test:author",
     },
+    social: {
+      createRelationship: () => {},
+      getRelationship: () => undefined,
+      bindPeer: () => {},
+      refreshRelationshipTicketExpiry: () => {},
+      listRelationshipsForPrincipal: () => [],
+      deleteRelationship: () => undefined,
+    },
+    agentAccountStatus: {
+      getStatus: () => undefined,
+      setStatus: () => {},
+      clearStatus: () => {},
+    },
   });
   const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({

@@ -6,6 +6,7 @@ import {
 } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import {
   createHostPersistenceClient,
   type HostPersistence,
@@ -18,7 +19,6 @@ import {
   type KhoraProfile,
 } from "@khoralabs/khora-contracts";
 import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";
-import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
@@ -55,7 +55,7 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
     Object.entries(profiles).map(([principalId, profile]) => [profile.id, principalId]),
   );
 
-  const persistenceClient = createHostPersistenceClient({
+  const persistence: HostPersistence = {
     profiles: {
       upsert: (record) => {
         store.upsert({
@@ -89,9 +89,21 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
       profileIdForPrincipal: (principalId) => profiles[principalId]?.id,
       principalForProfileId: (profileId) => principalForProfile[profileId],
     },
-  });
-
-  const persistence = {} as unknown as HostPersistence;
+    social: {
+      createRelationship: () => {},
+      getRelationship: () => undefined,
+      bindPeer: () => {},
+      refreshRelationshipTicketExpiry: () => {},
+      listRelationshipsForPrincipal: () => [],
+      deleteRelationship: () => undefined,
+    },
+    agentAccountStatus: {
+      getStatus: () => undefined,
+      setStatus: () => {},
+      clearStatus: () => {},
+    },
+  };
+  const persistenceClient = createHostPersistenceClient(persistence);
 
   return { persistence, persistenceClient };
 }
