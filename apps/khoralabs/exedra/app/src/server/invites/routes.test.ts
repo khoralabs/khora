@@ -2,9 +2,11 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { closeChatDb } from "@khoralabs/exedra-chat";
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
 import { listAccountRowsForSession } from "../accounts/resolve-rows";
 import { canReadPersonalKg, grantSessionCreatorAccess, hasGrant } from "../authz";
+import { uninstallTestChatService } from "../chat/test-service";
 import { closeDb, getDb } from "../db/index";
 import { mintSessionParticipantInvite } from "../db/invites";
 import { getPendingOnboardingInterview, listTeamsForUser } from "../db/membership";
@@ -52,12 +54,16 @@ beforeEach(async () => {
   resetStubRegistryStore();
   resetMemoriesServiceClientCacheForTests();
   closeDb();
+  closeChatDb();
+  uninstallTestChatService();
   knowledgeService = setupTestKnowledgeService(dataDir);
 });
 
 afterEach(() => {
   knowledgeService?.stop();
   knowledgeService = undefined;
+  closeChatDb();
+  uninstallTestChatService();
   closeDb();
   resetMemoriesServiceClientCacheForTests();
   rmSync(dataDir, { recursive: true, force: true });
@@ -84,7 +90,7 @@ async function stubFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
   if (path === "/api/auth/get-session") {
     return handleStubGetSession(req);
   }
-  return Response.json({ error: "not found" }, { status: 404 });
+  return origFetch(input, init);
 }
 
 async function signInCookie(email: string): Promise<{ cookie: string; registryUserId: string }> {

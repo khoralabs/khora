@@ -12,7 +12,7 @@ export async function bootstrapSessionMemoriesForTeamSession(
     throw new Error("Team not found");
   }
 
-  bootstrapSessionMemories({
+  await bootstrapSessionMemories({
     orgId: team.orgId,
     teamId: params.teamId,
     sessionId: params.sessionId,
