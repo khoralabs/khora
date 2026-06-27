@@ -1,0 +1,10 @@
+export const DEFAULT_TENANT_KEY = "khora";
+export const USERNAME_INDEX_TENANT_KEY = "khora:username-index-global";
+export const NAMESPACE_ENTITY_PROFILE = "khora:entity:profile";
+export const NAMESPACE_REG_BY_PRINCIPAL = "khora:reg:by-principal";
+export const NAMESPACE_REG_BY_PROFILE = "khora:reg:by-profile";
+export const NAMESPACE_USERNAME_TO_PRINCIPAL = "khora:social:username-to-principal";
+export const NAMESPACE_PRINCIPAL_TO_USERNAME = "khora:social:principal-to-username";
+export const NAMESPACE_SOCIAL_RELATIONSHIP = "khora:social:relationship";
+export const NAMESPACE_HOST_SPEC = "khora:host:spec";
+export const TABLE_SOCIAL_PRINCIPAL_CHANNELS = "khora_social_principal_channels";

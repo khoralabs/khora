@@ -2,7 +2,6 @@ import { DEFAULT_MIN_SCORE, FILTER_ONLY_MATCH_SCORE } from "./constants";
 import { isFilterOnlyMode, passesSearchFilters } from "./filters";
 import type { PercolatorPersistence } from "./persistence/port";
 import { scoreCandidateAgainstSearch } from "./score";
-import { extractQueryTerms } from "./tokenizer";
 import type {
   PercolatorCandidate,
   PercolatorMatch,
@@ -32,6 +31,8 @@ function resolveMinScore(create: StandingQueryCreate): number {
 
 export function createPercolator(deps: CreatePercolatorDeps): Percolator {
   const { persistence, embedText } = deps;
+  // queryId → embedded vector; evicted on any mutation of that query
+  const embeddingCache = new Map<string, number[]>();
 
   return {
     registerQuery(create: StandingQueryCreate, now = Date.now()): StandingQuery {
@@ -44,19 +45,18 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
         createdAtMs: existing?.createdAtMs ?? now,
         updatedAtMs: now,
       };
-      persistence.withTransaction(() => {
-        persistence.upsertQuery(query);
-        const terms = extractQueryTerms(create.search.content.text ?? "");
-        persistence.replaceQueryTerms(query.id, terms);
-      });
+      embeddingCache.delete(create.id);
+      persistence.upsertQuery(query);
       return query;
     },
 
     deactivateQuery(queryId: string, now = Date.now()): void {
+      embeddingCache.delete(queryId);
       persistence.deactivateQuery(queryId, now);
     },
 
     deleteQuery(queryId: string): void {
+      embeddingCache.delete(queryId);
       persistence.deleteQuery(queryId);
     },
 
@@ -72,34 +72,40 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
       candidate: PercolatorCandidate,
       now = Date.now(),
     ): Promise<PercolatorMatch[]> {
-      const queries = persistence.listActiveQueries(now);
       const matches: PercolatorMatch[] = [];
 
-      for (const query of queries) {
+      for (const query of persistence.listActiveFilterQueries(now)) {
+        if (query.ownerId === candidate.authorId) continue;
+        if (!passesSearchFilters(candidate, query.search)) continue;
+        if (FILTER_ONLY_MATCH_SCORE >= query.minScore) {
+          matches.push({
+            queryId: query.id,
+            ownerId: query.ownerId,
+            candidateId: candidate.candidateId,
+            score: FILTER_ONLY_MATCH_SCORE,
+            matchMode: "filter-only",
+          });
+        }
+      }
+
+      for (const query of persistence.listActiveSemanticQueries(now)) {
         if (query.ownerId === candidate.authorId) continue;
         if (!passesSearchFilters(candidate, query.search)) continue;
 
-        if (isFilterOnlyMode(query.search)) {
-          if (FILTER_ONLY_MATCH_SCORE >= query.minScore) {
-            matches.push({
-              queryId: query.id,
-              ownerId: query.ownerId,
-              candidateId: candidate.candidateId,
-              score: FILTER_ONLY_MATCH_SCORE,
-              matchMode: "filter-only",
-            });
-          }
-          continue;
-        }
+        // isFilterOnlyMode should never be true here, but guard defensively
+        if (isFilterOnlyMode(query.search)) continue;
 
         let queryVector: number[] | undefined = query.search.content.vector;
         const queryText = query.search.content.text?.trim() ?? "";
-        if (
-          (queryVector === undefined || queryVector.length === 0) &&
-          queryText.length > 0 &&
-          embedText !== undefined
-        ) {
-          queryVector = await embedText(queryText);
+        if ((queryVector === undefined || queryVector.length === 0) && queryText.length > 0) {
+          if (embedText !== undefined) {
+            let cached = embeddingCache.get(query.id);
+            if (cached === undefined) {
+              cached = await embedText(queryText);
+              embeddingCache.set(query.id, cached);
+            }
+            queryVector = cached;
+          }
         }
 
         const score = scoreCandidateAgainstSearch(candidate, query.search, queryVector);

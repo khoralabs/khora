@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import {
+  isFilterOnlyMode,
   type PercolatorPersistence,
   type StandingQuery,
   zStandingSearchRequest,
@@ -17,7 +18,26 @@ type QueryRow = {
   expires_at_ms: number | null;
 };
 
-function rowToQuery(row: QueryRow): StandingQuery {
+type SemanticQueryRow = QueryRow & { vector: Buffer | null };
+
+function encodeVector(vec: readonly number[]): Uint8Array {
+  const f32 = new Float32Array(vec);
+  return new Uint8Array(f32.buffer);
+}
+
+function decodeVector(blob: Buffer): number[] {
+  const f32 = new Float32Array(
+    blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength),
+  );
+  return Array.from(f32);
+}
+
+function searchToJson(query: StandingQuery): string {
+  const { vector: _vec, ...restContent } = query.search.content;
+  return JSON.stringify({ ...query.search, content: restContent });
+}
+
+function rowToFilterQuery(row: QueryRow): StandingQuery {
   const search = zStandingSearchRequest.parse(JSON.parse(row.search_json));
   return {
     id: row.id,
@@ -31,13 +51,34 @@ function rowToQuery(row: QueryRow): StandingQuery {
   };
 }
 
+function rowToSemanticQuery(row: SemanticQueryRow): StandingQuery {
+  const search = zStandingSearchRequest.parse(JSON.parse(row.search_json));
+  if (row.vector !== null && row.vector.byteLength > 0) {
+    search.content.vector = decodeVector(row.vector);
+  }
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    search,
+    minScore: row.min_score,
+    active: row.active !== 0,
+    createdAtMs: row.created_at_ms,
+    updatedAtMs: row.updated_at_ms,
+    ...(row.expires_at_ms !== null ? { expiresAtMs: row.expires_at_ms } : {}),
+  };
+}
+
+const FILTER_COLS =
+  "id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
+const SEMANTIC_COLS =
+  "id, owner_id, search_json, vector, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
+
 export function createPercolatorSqlitePersistence(db: Database): PercolatorPersistence {
   ensurePercolatorSchema(db);
 
-  const upsertStmt = db.prepare(`
-    INSERT INTO standing_queries (
-      id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  const upsertFilterStmt = db.prepare(`
+    INSERT INTO percolator_filter_queries (${FILTER_COLS})
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       owner_id = excluded.owner_id,
       search_json = excluded.search_json,
@@ -47,93 +88,115 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
       expires_at_ms = excluded.expires_at_ms
   `);
 
-  const deactivateStmt = db.prepare(`
-    UPDATE standing_queries SET active = 0, updated_at_ms = ? WHERE id = ?
+  const upsertSemanticStmt = db.prepare(`
+    INSERT INTO percolator_semantic_queries (${SEMANTIC_COLS})
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      owner_id = excluded.owner_id,
+      search_json = excluded.search_json,
+      vector = excluded.vector,
+      min_score = excluded.min_score,
+      active = excluded.active,
+      updated_at_ms = excluded.updated_at_ms,
+      expires_at_ms = excluded.expires_at_ms
   `);
 
-  const deleteQueryStmt = db.prepare(`DELETE FROM standing_queries WHERE id = ?`);
-  const deleteTermsStmt = db.prepare(`DELETE FROM standing_query_terms WHERE query_id = ?`);
-  const insertTermStmt = db.prepare(
-    `INSERT OR IGNORE INTO standing_query_terms (term, query_id) VALUES (?, ?)`,
+  const deleteFilterStmt = db.prepare(`DELETE FROM percolator_filter_queries WHERE id = ?`);
+  const deleteSemanticStmt = db.prepare(`DELETE FROM percolator_semantic_queries WHERE id = ?`);
+
+  const deactivateFilterStmt = db.prepare(
+    `UPDATE percolator_filter_queries SET active = 0, updated_at_ms = ? WHERE id = ?`,
+  );
+  const deactivateSemanticStmt = db.prepare(
+    `UPDATE percolator_semantic_queries SET active = 0, updated_at_ms = ? WHERE id = ?`,
   );
 
-  const getQueryStmt = db.query<QueryRow, [string]>(
-    `SELECT id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms
-     FROM standing_queries WHERE id = ?`,
+  const getFilterStmt = db.query<QueryRow, [string]>(
+    `SELECT ${FILTER_COLS} FROM percolator_filter_queries WHERE id = ?`,
+  );
+  const getSemanticStmt = db.query<SemanticQueryRow, [string]>(
+    `SELECT ${SEMANTIC_COLS} FROM percolator_semantic_queries WHERE id = ?`,
   );
 
-  const listByOwnerStmt = db.query<QueryRow, [string]>(
-    `SELECT id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms
-     FROM standing_queries WHERE owner_id = ? ORDER BY created_at_ms ASC`,
+  const listFilterByOwnerStmt = db.query<QueryRow, [string]>(
+    `SELECT ${FILTER_COLS} FROM percolator_filter_queries WHERE owner_id = ? ORDER BY created_at_ms ASC`,
+  );
+  const listSemanticByOwnerStmt = db.query<SemanticQueryRow, [string]>(
+    `SELECT ${SEMANTIC_COLS} FROM percolator_semantic_queries WHERE owner_id = ? ORDER BY created_at_ms ASC`,
   );
 
-  const listActiveStmt = db.query<QueryRow, [number]>(
-    `SELECT id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms
-     FROM standing_queries
+  const listActiveFilterStmt = db.query<QueryRow, [number]>(
+    `SELECT ${FILTER_COLS} FROM percolator_filter_queries
+     WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+     ORDER BY created_at_ms ASC`,
+  );
+  const listActiveSemanticStmt = db.query<SemanticQueryRow, [number]>(
+    `SELECT ${SEMANTIC_COLS} FROM percolator_semantic_queries
      WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
      ORDER BY created_at_ms ASC`,
   );
 
-  const findTermsStmt = db.query<{ query_id: string }, [string]>(
-    `SELECT query_id FROM standing_query_terms WHERE term = ?`,
-  );
-
   return {
-    withTransaction<T>(fn: () => T): T {
-      return db.transaction(fn)();
-    },
-
     upsertQuery(query: StandingQuery): void {
-      upsertStmt.run(
-        query.id,
-        query.ownerId,
-        JSON.stringify(query.search),
-        query.minScore,
-        query.active ? 1 : 0,
-        query.createdAtMs,
-        query.updatedAtMs,
-        query.expiresAtMs ?? null,
-      );
+      if (isFilterOnlyMode(query.search)) {
+        deleteSemanticStmt.run(query.id);
+        upsertFilterStmt.run(
+          query.id,
+          query.ownerId,
+          searchToJson(query),
+          query.minScore,
+          query.active ? 1 : 0,
+          query.createdAtMs,
+          query.updatedAtMs,
+          query.expiresAtMs ?? null,
+        );
+      } else {
+        deleteFilterStmt.run(query.id);
+        const vec = query.search.content.vector;
+        upsertSemanticStmt.run(
+          query.id,
+          query.ownerId,
+          searchToJson(query),
+          vec !== undefined && vec.length > 0 ? encodeVector(vec) : null,
+          query.minScore,
+          query.active ? 1 : 0,
+          query.createdAtMs,
+          query.updatedAtMs,
+          query.expiresAtMs ?? null,
+        );
+      }
     },
 
     deactivateQuery(queryId: string, now: number): void {
-      deactivateStmt.run(now, queryId);
+      deactivateFilterStmt.run(now, queryId);
+      deactivateSemanticStmt.run(now, queryId);
     },
 
     deleteQuery(queryId: string): void {
-      deleteTermsStmt.run(queryId);
-      deleteQueryStmt.run(queryId);
+      deleteFilterStmt.run(queryId);
+      deleteSemanticStmt.run(queryId);
     },
 
     getQuery(queryId: string): StandingQuery | undefined {
-      const row = getQueryStmt.get(queryId);
-      if (row === null || row === undefined) return undefined;
-      return rowToQuery(row);
+      const filterRow = getFilterStmt.get(queryId);
+      if (filterRow !== null && filterRow !== undefined) return rowToFilterQuery(filterRow);
+      const semanticRow = getSemanticStmt.get(queryId);
+      if (semanticRow !== null && semanticRow !== undefined) return rowToSemanticQuery(semanticRow);
+      return undefined;
     },
 
     listQueriesByOwner(ownerId: string): StandingQuery[] {
-      return listByOwnerStmt.all(ownerId).map(rowToQuery);
+      const filterRows = listFilterByOwnerStmt.all(ownerId).map(rowToFilterQuery);
+      const semanticRows = listSemanticByOwnerStmt.all(ownerId).map(rowToSemanticQuery);
+      return [...filterRows, ...semanticRows].sort((a, b) => a.createdAtMs - b.createdAtMs);
     },
 
-    listActiveQueries(now: number): StandingQuery[] {
-      return listActiveStmt.all(now).map(rowToQuery);
+    listActiveFilterQueries(now: number): StandingQuery[] {
+      return listActiveFilterStmt.all(now).map(rowToFilterQuery);
     },
 
-    replaceQueryTerms(queryId: string, terms: readonly string[]): void {
-      deleteTermsStmt.run(queryId);
-      for (const term of terms) {
-        insertTermStmt.run(term, queryId);
-      }
-    },
-
-    findQueryIdsByAnyTerm(terms: readonly string[]): string[] {
-      const out = new Set<string>();
-      for (const term of terms) {
-        for (const row of findTermsStmt.all(term)) {
-          out.add(row.query_id);
-        }
-      }
-      return [...out];
+    listActiveSemanticQueries(now: number): StandingQuery[] {
+      return listActiveSemanticStmt.all(now).map(rowToSemanticQuery);
     },
   };
 }

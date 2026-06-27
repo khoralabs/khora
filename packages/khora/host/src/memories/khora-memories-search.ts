@@ -1,4 +1,4 @@
-import type { PrincipalId } from "@khoralabs/host-runtime";
+import type { PrincipalId, SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import type {
   KhoraSearchQuery,
   KhoraSearchRequest,
@@ -7,7 +7,6 @@ import type {
 import type { MemoriesClient, SearchParams } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { canReadPost } from "../post-visibility";
 import { hydrateMemoryLabels, type KhoraCanonicalStore } from "./khora-canonical-store";
 import type { khoraOntology } from "./khora-ontology";

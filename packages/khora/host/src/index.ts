@@ -43,6 +43,16 @@ export {
   topicSubscriptionSearch,
 } from "./percolator/subscription-searches";
 export { topicSlugsToLabelKinds, topicSlugToLabelKind } from "./percolator/topic-labels";
+export {
+  createPrincipalLifecycle,
+  type PrincipalLifecycleDeps,
+} from "./persistence/principal-lifecycle";
+export type {
+  ClaimedTeardownJob,
+  KhoraHostPersistence,
+  PrincipalTeardownQueuePort,
+  UsernameIndexPort,
+} from "./persistence/types";
 export type {
   KhoraAdminCatalogStats,
   KhoraAdminCellDetail,

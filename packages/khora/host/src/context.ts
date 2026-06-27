@@ -1,15 +1,15 @@
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import type { HostRuntime } from "@khoralabs/host-runtime";
+import type {
+  AgentAccountStatusPort,
+  HostRuntime,
+  PrincipalLifecycle,
+  PrincipalTeardownWorkerHandle,
+  SocialRelationshipPersistence,
+} from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
-import type {
-  AgentAccountStatusPort,
-  PrincipalTeardownWorkerHandle,
-  RelayPrincipalLifecycle,
-  SocialRelationshipPersistence,
-} from "@khoralabs/relay-colonnade";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
@@ -30,7 +30,7 @@ export type KhoraHostContext = {
   cluster: KhoraColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   cellPoolCount: number;
-  principalLifecycle: RelayPrincipalLifecycle;
+  principalLifecycle: PrincipalLifecycle;
   social: SocialRelationshipPersistence;
   invitesRepo: KhoraInvitesRepo | undefined;
   principalTeardownWorker: PrincipalTeardownWorkerHandle;

@@ -30,4 +30,6 @@ export type KhoraInvitesRepo = {
     plaintext: string,
     loadProfileForDid: (did: string) => unknown | null | undefined,
   ): InvitePreviewResult;
+  /** Delete all invite tokens minted by or consumed by the given principal (called on principal teardown). */
+  deleteTokensForPrincipal(did: string): void;
 };

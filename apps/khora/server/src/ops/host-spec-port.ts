@@ -6,7 +6,6 @@ import {
   zKhoraHostSpec,
 } from "@khoralabs/khora-contracts";
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
-import { RELAY_NAMESPACE_HOST_SPEC, RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import {
   envHostDisplayName,
   envHostSlug,
@@ -15,6 +14,8 @@ import {
   envPublicBaseUrl,
   envRegistryUrl,
 } from "../env";
+import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
+import { NAMESPACE_HOST_SPEC } from "../persistence/id-conventions";
 
 const HOST_SPEC_ENTRY_KEY = "self";
 
@@ -30,12 +31,12 @@ export function createKhoraHostSpecPort(deps: {
   catalogDb: Database;
   tenantKey: string;
 }): KhoraHostSpecPort {
-  const store = new RelayCatalogProjectionStore(deps.catalogDb);
+  const store = new CatalogProjectionStore(deps.catalogDb);
 
   function readStored(): KhoraHostSpec | null {
     const { found, projection } = store.lookupProjection(
       deps.tenantKey,
-      RELAY_NAMESPACE_HOST_SPEC,
+      NAMESPACE_HOST_SPEC,
       HOST_SPEC_ENTRY_KEY,
     );
     if (!found) {
@@ -48,7 +49,7 @@ export function createKhoraHostSpecPort(deps: {
     const next: KhoraHostSpec = { ...spec, updatedAtMs: Date.now() };
     store.upsert({
       tenant_key: deps.tenantKey,
-      namespace: RELAY_NAMESPACE_HOST_SPEC,
+      namespace: NAMESPACE_HOST_SPEC,
       entry_key: HOST_SPEC_ENTRY_KEY,
       projection: next,
       updated_at_ms: next.updatedAtMs,

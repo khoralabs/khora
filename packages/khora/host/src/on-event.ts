@@ -7,6 +7,7 @@ import {
   HOST_EVENT_KIND,
   type HostEventUnion,
   type HostRuntimeEventHandlerCtx,
+  type SocialRelationshipPersistence,
 } from "@khoralabs/host-runtime";
 import {
   type InboxSubscriptionMatch,
@@ -19,7 +20,6 @@ import {
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import { toPercolatorSearch } from "./percolator/adapter";

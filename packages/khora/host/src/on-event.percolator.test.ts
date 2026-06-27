@@ -6,6 +6,7 @@ import {
 } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import {
   createHostPersistenceClient,
   type HostPersistence,
@@ -18,8 +19,6 @@ import {
   type KhoraProfile,
 } from "@khoralabs/khora-contracts";
 import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";
-import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
-import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 import { toPercolatorSearch } from "./percolator/adapter";
@@ -36,18 +35,25 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
       PRIMARY KEY (tenant_key, namespace, entry_key)
     );
   `);
-  const store = new RelayCatalogProjectionStore(catalogDb);
+  const upsertStmt = catalogDb.prepare(
+    `INSERT OR REPLACE INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
+  );
+  const lookupStmt = catalogDb.prepare(
+    `SELECT projection FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+  );
+  function upsert(tenantKey: string, ns: string, key: string, value: unknown) {
+    upsertStmt.run(tenantKey, ns, key, JSON.stringify(value), Date.now());
+  }
+  function lookup(tenantKey: string, ns: string, key: string): unknown | undefined {
+    const row = lookupStmt.get(tenantKey, ns, key) as { projection: string } | null | undefined;
+    return row != null ? JSON.parse(row.projection) : undefined;
+  }
   for (const profile of Object.values(profiles)) {
-    store.upsert({
-      tenant_key: "relay",
-      namespace: "relay:entity:profile",
-      entry_key: profile.id,
-      projection: {
-        id: profile.id,
-        memoryId: null,
-        bodyJson: JSON.stringify(profile),
-        updatedAtMs: Date.now(),
-      },
+    upsert("relay", "relay:entity:profile", profile.id, {
+      id: profile.id,
+      memoryId: null,
+      bodyJson: JSON.stringify(profile),
+      updatedAtMs: Date.now(),
     });
   }
 
@@ -55,24 +61,20 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
     Object.entries(profiles).map(([principalId, profile]) => [profile.id, principalId]),
   );
 
-  const persistenceClient = createHostPersistenceClient({
+  const persistence: HostPersistence = {
     profiles: {
       upsert: (record) => {
-        store.upsert({
-          tenant_key: "relay",
-          namespace: "relay:entity:profile",
-          entry_key: record.id,
-          projection: {
-            id: record.id,
-            memoryId: record.memoryId ?? null,
-            bodyJson: record.bodyJson,
-            updatedAtMs: Date.now(),
-          },
+        upsert("relay", "relay:entity:profile", record.id, {
+          id: record.id,
+          memoryId: record.memoryId ?? null,
+          bodyJson: record.bodyJson,
+          updatedAtMs: Date.now(),
         });
       },
       getById: (id) => {
-        const { found, projection } = store.lookupProjection("relay", "relay:entity:profile", id);
-        if (!found || projection === null || typeof projection !== "object") return undefined;
+        const projection = lookup("relay", "relay:entity:profile", id);
+        if (projection === null || typeof projection !== "object" || Array.isArray(projection))
+          return undefined;
         const o = projection as Record<string, unknown>;
         return {
           id: typeof o.id === "string" ? o.id : id,
@@ -85,13 +87,26 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
     },
     registrations: {
       upsert: () => {},
+      delete: () => {},
       exists: () => true,
       profileIdForPrincipal: (principalId) => profiles[principalId]?.id,
       principalForProfileId: (profileId) => principalForProfile[profileId],
     },
-  });
-
-  const persistence = {} as unknown as HostPersistence;
+    social: {
+      createRelationship: () => {},
+      getRelationship: () => undefined,
+      bindPeer: () => {},
+      refreshRelationshipTicketExpiry: () => {},
+      listRelationshipsForPrincipal: () => [],
+      deleteRelationship: () => undefined,
+    },
+    agentAccountStatus: {
+      getStatus: () => undefined,
+      setStatus: () => {},
+      clearStatus: () => {},
+    },
+  };
+  const persistenceClient = createHostPersistenceClient(persistence);
 
   return { persistence, persistenceClient };
 }

@@ -1,6 +1,9 @@
-import { createInboxWsHub, HostRuntime } from "@khoralabs/host-runtime";
+import {
+  createInboxWsHub,
+  HostRuntime,
+  startPrincipalTeardownWorker,
+} from "@khoralabs/host-runtime";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
-import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
 import type { KhoraHostContext } from "./context";
 import type { KhoraHostDeps } from "./khora-host-deps";
 import { createKhoraRelayOnEvent } from "./on-event";
@@ -20,7 +23,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
       publicationClient: deps.publicationClient,
       memories: deps.memories,
       percolator: deps.percolator,
-      social: deps.social,
+      social: deps.persistence.social,
     }),
   });
   const runTeardownWorker = deps.startPrincipalTeardownWorker ?? true;
@@ -31,7 +34,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     host,
     auth: deps.auth,
     tenantKey: deps.tenantKey,
-    social: deps.social,
+    social: deps.persistence.social,
     invitesRepo: deps.invitesRepo,
     cluster: deps.cluster,
     publicationClient: deps.publicationClient,
@@ -39,7 +42,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     principalLifecycle: deps.principalLifecycle,
     health: deps.health,
     adminStats: deps.adminStats,
-    agentAccountStatus: deps.agentAccountStatus,
+    agentAccountStatus: deps.persistence.agentAccountStatus,
     hostSpec: deps.hostSpec,
     outboxPayloadCodec: deps.outboxPayloadCodec,
     principalTeardownWorker,

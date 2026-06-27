@@ -87,6 +87,10 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
      ORDER BY created_at_ms DESC
      LIMIT ?`,
   );
+  const deleteForPrincipal = db.prepare(
+    `DELETE FROM khora_invite_tokens WHERE minted_by_did = ? OR consumed_by_did = ?`,
+  );
+
   const selectByHashForPreview = db.query<
     {
       consumed_at_ms: number | null;
@@ -177,6 +181,10 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
         kind: r.kind,
         mintedByDid: r.minted_by_did,
       }));
+    },
+
+    deleteTokensForPrincipal(did: string): void {
+      deleteForPrincipal.run(did, did);
     },
 
     previewInviteToken(plaintext, loadProfileForDid): InvitePreviewResult {

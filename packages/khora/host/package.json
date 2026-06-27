@@ -21,9 +21,8 @@
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
-    "@khoralabs/percolator-sqlite": "workspace:*",
-    "@khoralabs/relay-colonnade": "workspace:*",
     "@khoralabs/sourcemaps": "^0.1.0",
     "zod": "^4"
   },
@@ -34,7 +33,6 @@
     "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
-    "@khoralabs/relay-colonnade": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"

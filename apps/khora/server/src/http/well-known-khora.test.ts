@@ -1,9 +1,9 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { RELAY_DEFAULT_TENANT_KEY } from "@khoralabs/relay-colonnade";
 import { buildKhoraHostDiscovery } from "../ops/build-host-discovery";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
+import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";
 import type { HostRouteDeps } from "./deps";
 import { handleWellKnownKhora } from "./well-known-khora";
 
@@ -37,7 +37,7 @@ describe("well-known khora", () => {
     `);
     hostSpec = createKhoraHostSpecPort({
       catalogDb,
-      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+      tenantKey: DEFAULT_TENANT_KEY,
     });
     for (const key of [
       "PORT",
