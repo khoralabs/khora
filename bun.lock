@@ -414,6 +414,7 @@
         "@khoralabs/relay-client": "workspace:*",
         "@khoralabs/relay-contracts": "workspace:*",
         "@khoralabs/relay-crypto": "workspace:*",
+        "@khoralabs/relay-mls": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
       },
@@ -562,6 +563,8 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
+        "@khoralabs/vellum-client": "workspace:*",
+        "@khoralabs/vellum-contracts": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -920,6 +923,7 @@
         "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/relay-client": "workspace:*",
         "@khoralabs/relay-crypto": "workspace:*",
+        "@khoralabs/relay-mls": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
         "@khoralabs/vellum-transport": "workspace:*",
         "zod": "^4",
@@ -968,6 +972,7 @@
         "@khoralabs/memories-service-http": "workspace:*",
         "@khoralabs/memories-service-storage-core": "workspace:*",
         "@khoralabs/memories-service-storage-sqlite": "workspace:*",
+        "@khoralabs/relay-server-http": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",

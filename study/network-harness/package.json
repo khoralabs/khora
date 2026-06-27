@@ -13,6 +13,7 @@
   "dependencies": {
     "@khoralabs/khora-managed-agents": "workspace:*",
     "@khoralabs/khora-server": "workspace:*",
+    "@khoralabs/relay-server-http": "workspace:*",
     "@khoralabs/memories-service-auth": "workspace:*",
     "@khoralabs/memories-service-client": "workspace:*",
     "@khoralabs/memories-service-http": "workspace:*",

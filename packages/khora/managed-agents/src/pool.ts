@@ -74,7 +74,7 @@ export class ManagedAgentPool {
     await this.#store.add({ did: signer.did, keyPath });
 
     if (onSpawned !== undefined) {
-      await onSpawned(new AgentHandle({ signer, baseUrl: this.#baseUrl }));
+      await onSpawned(new AgentHandle({ signer, baseUrl: this.#baseUrl, keyPath }));
     }
 
     return signer.did;
@@ -97,7 +97,9 @@ export class ManagedAgentPool {
 
     if (signer !== undefined) {
       if (onRemoving !== undefined) {
-        await onRemoving(new AgentHandle({ signer, baseUrl: this.#baseUrl }));
+        await onRemoving(
+          new AgentHandle({ signer, baseUrl: this.#baseUrl, keyPath: record.keyPath }),
+        );
       }
       const client = new KhoraClient({ baseUrl: this.#baseUrl, signer });
       await client.unregister();
@@ -125,7 +127,7 @@ export class ManagedAgentPool {
       throw new Error(`Key file missing for agent ${did} at ${record.keyPath}`);
     }
 
-    const handle = new AgentHandle({ signer, baseUrl: this.#baseUrl });
+    const handle = new AgentHandle({ signer, baseUrl: this.#baseUrl, keyPath: record.keyPath });
     await onFocused?.(handle);
     return handle;
   }

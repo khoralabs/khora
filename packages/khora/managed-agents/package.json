@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@khoralabs/agent-persisted-signer": "workspace:*",
-    "@khoralabs/khora-client": "workspace:*"
+    "@khoralabs/khora-client": "workspace:*",
+    "@khoralabs/vellum-client": "workspace:*",
+    "@khoralabs/vellum-contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -4,10 +4,35 @@ import {
   KhoraClient,
   type KhoraClientEvent,
 } from "@khoralabs/khora-client";
+import { VellumClient, type VellumClientOptions } from "@khoralabs/vellum-client";
+import type {
+  ChainInitResponse,
+  ChainStateResponse,
+  VellumChainRow,
+} from "@khoralabs/vellum-contracts";
 
 export type AgentHandleOptions = {
   signer: PersistableRelaySigner;
   baseUrl: string;
+  /** Path to the agent's persisted Ed25519 key file (for vellum operations). */
+  keyPath?: string;
+};
+
+export type VellumHandle = {
+  connect(options?: {
+    webSocketUrl?: string;
+    upgradeNonce?: string;
+  }): Promise<"spawned" | "already-running">;
+  chainCreate(input: {
+    counterpartyDid: string;
+    sessionId?: string;
+    genesisHash?: string;
+    genesisTurn?: Record<string, unknown>;
+  }): Promise<ChainInitResponse>;
+  chainRelease(sessionId: string): Promise<void>;
+  sendTurn(sessionId: string, body: Record<string, unknown>): Promise<void>;
+  getChainSnapshot(): Promise<ChainStateResponse>;
+  listChains(): VellumChainRow[];
 };
 
 export type AgentInboxEventHandler = (event: KhoraClientEvent) => void;
@@ -38,10 +63,37 @@ const MAX_BACKOFF_MS = 30_000;
 export class AgentHandle {
   readonly did: string;
   readonly client: KhoraClient;
+  readonly #keyPath: string | undefined;
 
   constructor(opts: AgentHandleOptions) {
     this.did = opts.signer.did;
     this.client = new KhoraClient({ baseUrl: opts.baseUrl, signer: opts.signer });
+    this.#keyPath = opts.keyPath;
+  }
+
+  /**
+   * Create a `VellumHandle` for a specific relay channel. Provides typed
+   * access to connect, chainCreate, sendTurn, and read operations.
+   */
+  vellum(
+    channelId: string,
+    opts: Pick<VellumClientOptions, "relayBaseUrl" | "dataDir">,
+  ): VellumHandle {
+    const clientOpts: VellumClientOptions = {
+      channelId,
+      relayBaseUrl: opts.relayBaseUrl,
+      dataDir: opts.dataDir,
+      keyPath: this.#keyPath,
+    };
+    const c = new VellumClient(clientOpts);
+    return {
+      connect: (o) => c.connect(o),
+      chainCreate: (i) => c.chainCreate(i),
+      chainRelease: (s) => c.chainRelease(s),
+      sendTurn: (s, b) => c.sendTurn(s, b),
+      getChainSnapshot: () => c.getChainSnapshot(),
+      listChains: () => c.listChainsFromStore(),
+    };
   }
 
   /**

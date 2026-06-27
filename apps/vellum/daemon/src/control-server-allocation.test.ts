@@ -24,7 +24,6 @@ test("chain/init rejects without relay allocation when check enabled", async () 
     session_id: "unallocated",
     genesis_hash: "aa".repeat(32),
     party_dids: ["did:key:alice", "did:key:bob"],
-    peer_identity_key: "cc".repeat(32),
   });
 
   const res = await fetch(`http://${server.hostname}:${server.port}/chain/init`, {

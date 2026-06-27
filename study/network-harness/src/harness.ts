@@ -5,6 +5,7 @@ import { startKhoraServer } from "@khoralabs/khora-server/start-server";
 import { createNoAuthProvider, MemoriesServiceClient } from "@khoralabs/memories-service-client";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service-storage-core";
 import { startMemoriesService } from "./memories";
+import { startRelayServer } from "./relay";
 
 export type NetworkHarnessOptions = {
   dataDir: string;
@@ -12,6 +13,8 @@ export type NetworkHarnessOptions = {
   serverPort?: number;
   /** Override the port the memories service binds to. Defaults to a random free port. */
   memoriesPort?: number;
+  /** Override the port the relay server binds to. Defaults to a random free port. */
+  relayPort?: number;
   sqlCipherKey?: string;
   outboxKeyHex?: string;
   cellPoolCount?: number;
@@ -20,6 +23,8 @@ export type NetworkHarnessOptions = {
 export type NetworkHarnessHandle = {
   /** Base URL of the running khora server. */
   readonly serverBaseUrl: string;
+  /** Base URL of the relay server (for vellum channel operations). */
+  readonly relayBaseUrl: string;
   /** Base URL of the shared memories service. */
   readonly memoriesBaseUrl: string;
   /** All agent DIDs currently in the pool. */
@@ -61,6 +66,7 @@ export async function startNetworkHarness(
   const serverDataDir = path.join(opts.dataDir, "server");
   const memoriesDataDir = path.join(opts.dataDir, "memories");
   const agentsDataDir = path.join(opts.dataDir, "agents");
+  const relayDataDir = path.join(opts.dataDir, "relay");
 
   const server = await startKhoraServer({
     dataDir: serverDataDir,
@@ -69,6 +75,12 @@ export async function startNetworkHarness(
     outboxKeyHex: opts.outboxKeyHex,
     cellPoolCount: opts.cellPoolCount,
     useCellWorkers: false,
+  });
+
+  const relay = await startRelayServer({
+    dataDir: relayDataDir,
+    port: opts.relayPort,
+    sqlCipherKey: opts.sqlCipherKey,
   });
 
   const memories = startMemoriesService({
@@ -89,6 +101,7 @@ export async function startNetworkHarness(
 
   return {
     serverBaseUrl: server.baseUrl,
+    relayBaseUrl: relay.baseUrl,
     memoriesBaseUrl: memories.baseUrl,
     get agentDids() {
       return pool.list();
@@ -97,6 +110,7 @@ export async function startNetworkHarness(
     pool,
     stop() {
       memories.stop();
+      relay.stop();
       server.close();
     },
   };

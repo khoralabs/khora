@@ -8,20 +8,14 @@ import {
 } from "@khoralabs/agent-persisted-signer";
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
-import type { NbcTurnBody } from "@khoralabs/obp-nbc";
 import {
   createObpSqlitePersistenceClient,
   openObpDatabase,
 } from "@khoralabs/obp-sqlite-persistence";
 import { RelayClient } from "@khoralabs/relay-client";
 import { relayWsUpgradeProtocol } from "@khoralabs/relay-contracts";
-import {
-  bytesToHex,
-  deriveX3dhResponder,
-  generateOneTimePreKeys,
-  generateSignedPreKey,
-  parseX3dhInitMessage,
-} from "@khoralabs/relay-crypto";
+import { base64UrlToBytes } from "@khoralabs/relay-crypto";
+import { fetchMlsWelcomeHttp, MlsGroupSession } from "@khoralabs/relay-mls";
 import { cfgDataDir, channelSqlitePath, type VellumPathConfig } from "@khoralabs/vellum-contracts";
 import {
   readVellumControlFile,
@@ -30,14 +24,7 @@ import {
 } from "./control-pid";
 import { startVellumControlServer, type VellumControlServerState } from "./control-server";
 import { connectObpOverRelay } from "./relay-obp-adapter";
-import {
-  ensureVellumMetaSchema,
-  loadPreKeySecrets,
-  upsertChainRow,
-  upsertPreKeySecrets,
-  upsertRosterEntry,
-  upsertSessionKey,
-} from "./vellum-sqlite-meta";
+import { ensureVellumMetaSchema, upsertChainRow, upsertRosterEntry } from "./vellum-sqlite-meta";
 
 export type RunVellumDaemonOptions = {
   relayBaseUrl: string;
@@ -55,20 +42,6 @@ function logLine(json: boolean, label: string, payload: unknown): void {
   } else {
     console.log(`[${label}] ${JSON.stringify(payload)}`);
   }
-}
-
-function x3dhFromTurnBody(body: NbcTurnBody): ReturnType<typeof parseX3dhInitMessage> | undefined {
-  const port = body.ports[0];
-  if (port === undefined || port.ref.length === 0) return undefined;
-  try {
-    const parsed = JSON.parse(port.ref) as unknown;
-    if (typeof parsed === "object" && parsed !== null && "x3dh" in parsed) {
-      return parseX3dhInitMessage((parsed as { x3dh: unknown }).x3dh);
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
 }
 
 /**
@@ -100,27 +73,16 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     };
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
-    const rawIdentityPriv = identityPrivFromPersistableAgent(opts.signer);
+    const ed25519PrivKey = identityPrivFromPersistableAgent(opts.signer);
     const channelClient = new RelayClient({
       relayBaseUrl: opts.relayBaseUrl,
       signer: opts.signer,
     });
 
-    const { bundle: spk, priv: spkPriv } = await generateSignedPreKey(rawIdentityPriv, 1);
-    const otks = generateOneTimePreKeys(10, 1);
-    upsertPreKeySecrets(
-      db,
-      spk.keyId,
-      bytesToHex(spkPriv),
-      otks.map((o) => ({ otkId: o.bundle.keyId, otkPrivHex: bytesToHex(o.priv) })),
-      Date.now(),
-    );
-    await channelClient.publishPreKeys({
-      identityKey: frameSigner.actor,
-      signedPreKey: spk,
-      oneTimePreKeys: otks.map((o) => o.bundle),
-    });
-    logLine(json, "vellum_prekeys_published", { did: frameSigner.did });
+    const kpm = channelClient.createKeyPackageManager(frameSigner.did, ed25519PrivKey);
+    await kpm.replenishIfNeeded();
+    kpm.startAutoReplenish();
+    logLine(json, "vellum_keypackages_published", { did: frameSigner.did });
 
     try {
       logLine(json, "vellum_open", { channelId: opts.channelId, sqlitePath });
@@ -141,31 +103,58 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
             onSessionReady: async (handle) => {
               state.handles.set(handle.sessionId, handle);
               upsertChainRow(db, handle.sessionId, handle.init.genesis_hash, Date.now());
-              logLine(json, "vellum_chain_ready", {
-                sessionId: handle.sessionId,
-              });
-            },
-            onIncomingOffer: async (body, session) => {
-              const initMessage = x3dhFromTurnBody(body);
-              if (initMessage === undefined) return null;
-              const peerParty = session.init.parties.find((p) => p.pubkey !== frameSigner.actor);
-              if (peerParty === undefined) return null;
-              try {
-                const { spkPriv, otkPriv } = loadPreKeySecrets(db, initMessage.opkId);
-                const sk = await deriveX3dhResponder({
-                  myIdentityPriv: rawIdentityPriv,
-                  mySpkPriv: spkPriv,
-                  myOtkPriv: otkPriv,
-                  initMessage,
-                  peerIdentityKey: peerParty.pubkey,
-                });
-                upsertSessionKey(db, session.sessionId, bytesToHex(sk), Date.now());
-                logLine(json, "vellum_x3dh_responder", { sessionId: session.sessionId });
-              } catch (e) {
-                const msg = e instanceof Error ? e.message : String(e);
-                logLine(json, "vellum_x3dh_responder_error", { error: msg });
+              logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
+
+              // Responder: join MLS group using the Welcome published by the initiator
+              const peerParty = handle.init.parties.find((p) => p.pubkey !== frameSigner.actor);
+              if (peerParty !== undefined) {
+                void (async () => {
+                  try {
+                    const fetched = await fetchMlsWelcomeHttp(
+                      opts.relayBaseUrl,
+                      opts.signer,
+                      opts.channelId,
+                      handle.sessionId,
+                    );
+                    const welcomeBytes = base64UrlToBytes(fetched.welcome);
+                    const stored = await kpm.listStoredKeyPackages();
+                    // Find a matching stored KeyPackage by trying each (Welcome contains the target init key)
+                    let joined = false;
+                    for (const s of stored) {
+                      try {
+                        const mlsSession = new MlsGroupSession(
+                          handle.sessionId,
+                          frameSigner.did,
+                          ed25519PrivKey,
+                        );
+                        await mlsSession.joinFromWelcome(
+                          welcomeBytes,
+                          s.privatePackage,
+                          s.publicPackage,
+                        );
+                        joined = true;
+                        break;
+                      } catch {
+                        // try next
+                      }
+                    }
+                    if (joined) {
+                      logLine(json, "vellum_mls_joined", { sessionId: handle.sessionId });
+                    } else {
+                      logLine(json, "vellum_mls_join_failed", {
+                        sessionId: handle.sessionId,
+                        error: "no matching KeyPackage",
+                      });
+                    }
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.message : String(e);
+                    logLine(json, "vellum_mls_join_error", {
+                      sessionId: handle.sessionId,
+                      error: msg,
+                    });
+                  }
+                })();
               }
-              return null;
             },
           },
         },
@@ -215,6 +204,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
         console.error(msg);
       }
     } finally {
+      kpm.stopAutoReplenish();
       serverStop?.();
       removeVellumControlFile(opts.cfg, opts.channelId);
       try {

@@ -20,6 +20,7 @@
   "dependencies": {
     "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/relay-crypto": "workspace:*",
+    "@khoralabs/relay-mls": "workspace:*",
     "@khoralabs/agent-persisted-signer": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/obp-frames-impl": "workspace:*",

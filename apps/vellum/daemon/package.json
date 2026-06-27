@@ -29,6 +29,7 @@
     "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/relay-contracts": "workspace:*",
     "@khoralabs/relay-crypto": "workspace:*",
+    "@khoralabs/relay-mls": "workspace:*",
     "@khoralabs/vellum-client": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*"
   },

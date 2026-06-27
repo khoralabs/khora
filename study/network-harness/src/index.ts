@@ -1,3 +1,4 @@
+export type { VellumHandle } from "@khoralabs/khora-managed-agents";
 export {
   createBearerTokenAuthProvider,
   createNoAuthProvider,
@@ -17,3 +18,4 @@ export {
   type MemoriesServiceOptions,
   startMemoriesService,
 } from "./memories";
+export { type RelayServerHandle, type RelayServerOptions, startRelayServer } from "./relay";

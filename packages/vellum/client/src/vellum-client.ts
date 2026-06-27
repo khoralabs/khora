@@ -9,7 +9,13 @@ import {
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import { RelayClient } from "@khoralabs/relay-client";
-import { buildX3dhInitiator, bytesToHex, verifySignedPreKey } from "@khoralabs/relay-crypto";
+import { base64UrlToBytes } from "@khoralabs/relay-crypto";
+import {
+  fetchKeyPackageHttp,
+  generateRouteHandle,
+  MlsGroupSession,
+  publishMlsWelcomeHttp,
+} from "@khoralabs/relay-mls";
 import {
   type ChainInitResponse,
   ChainInitResponseSchema,
@@ -43,6 +49,8 @@ export type VellumClientOptions = {
   readPersistence?: VellumReadModel | undefined;
   /** Defaults to env-selected HTTP (`VELLUM_CONTROL_TRANSPORT`, default `http`). */
   controlTransport?: VellumControlTransport | undefined;
+  /** Override the agent identity key path (overrides env vars and defaultIdentityPath). */
+  keyPath?: string | undefined;
 };
 
 function readControlPlane(
@@ -114,6 +122,15 @@ export class VellumClient {
       new SqliteVellumReadModel(channelSqlitePath(cfgDataDir(this.pathConfig), opts.channelId));
   }
 
+  private resolveKeyPath(): string {
+    return (
+      this.opts.keyPath?.trim() ??
+      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
+      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+      defaultIdentityPath()
+    );
+  }
+
   private controlBaseUrl(): string {
     const cp = readControlPlane(this.pathConfig, this.opts.channelId);
     if (cp === undefined) {
@@ -142,10 +159,7 @@ export class VellumClient {
       return "already-running";
     }
 
-    const idPath =
-      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
-      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
-      defaultIdentityPath();
+    const idPath = this.resolveKeyPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);
@@ -198,10 +212,7 @@ export class VellumClient {
     genesisHash?: string;
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
-    const idPath =
-      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
-      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
-      defaultIdentityPath();
+    const idPath = this.resolveKeyPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);
@@ -210,7 +221,7 @@ export class VellumClient {
     const peerDid = input.counterpartyDid.trim();
     const sessionId = input.sessionId?.trim() ?? randomUUID();
     const genesis = input.genesisHash?.trim() ?? randomGenesisSha256();
-    const rawIdentityPriv = identityPrivFromPersistableAgent(signer);
+    const ed25519PrivKey = identityPrivFromPersistableAgent(signer);
 
     const channelClient = new RelayClient({
       relayBaseUrl: this.opts.relayBaseUrl,
@@ -221,41 +232,40 @@ export class VellumClient {
       sessionId,
     });
 
-    const peerBundle = await channelClient.fetchPreKeys(peerDid);
-    if (!(await verifySignedPreKey(peerBundle))) {
-      await channelClient.releaseSession(this.opts.channelId, sessionId).catch(() => {});
-      throw new Error(`invalid signed prekey for ${peerDid}`);
-    }
-    const { sk, initMessage } = await buildX3dhInitiator({
-      myIdentityPriv: rawIdentityPriv,
-      peerBundle,
-    });
-
-    const baseTurn = input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE;
-    const ports = Array.isArray(baseTurn.ports) ? [...baseTurn.ports] : [];
-    const firstPort =
-      typeof ports[0] === "object" && ports[0] !== null
-        ? { ...(ports[0] as Record<string, unknown>) }
-        : {};
-    firstPort.ref = JSON.stringify({ x3dh: initMessage });
-    if (ports.length === 0) {
-      ports.push(firstPort);
-    } else {
-      ports[0] = firstPort;
-    }
-    const genesisTurn = { ...baseTurn, ports };
-
-    const payload = {
-      init: {
-        session_id: sessionId,
-        genesis_hash: genesis,
-        party_dids: [myDid, peerDid] as [string, string],
-        peer_identity_key: peerBundle.identityKey,
-      },
-      genesis_turn: genesisTurn,
-      x3dh_session_key: bytesToHex(sk),
-    };
     try {
+      // Fetch peer KeyPackage and establish MLS group as initiator
+      const fetched = await fetchKeyPackageHttp(this.opts.relayBaseUrl, signer, peerDid);
+      const peerKeyPackageBytes = base64UrlToBytes(fetched.keyPackage);
+      const mlsSession = new MlsGroupSession(sessionId, myDid, ed25519PrivKey);
+      const { welcomeBase64Url } = await mlsSession.createWithPeer(peerKeyPackageBytes, peerDid);
+      const route = generateRouteHandle();
+      await publishMlsWelcomeHttp(this.opts.relayBaseUrl, signer, this.opts.channelId, sessionId, {
+        welcome: welcomeBase64Url,
+        route,
+      });
+
+      const baseTurn = input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE;
+      const ports = Array.isArray(baseTurn.ports) ? [...baseTurn.ports] : [];
+      const firstPort =
+        typeof ports[0] === "object" && ports[0] !== null
+          ? { ...(ports[0] as Record<string, unknown>) }
+          : {};
+      firstPort.ref = JSON.stringify({ mls_route: route });
+      if (ports.length === 0) {
+        ports.push(firstPort);
+      } else {
+        ports[0] = firstPort;
+      }
+      const genesisTurn = { ...baseTurn, ports };
+
+      const payload = {
+        init: {
+          session_id: sessionId,
+          genesis_hash: genesis,
+          party_dids: [myDid, peerDid] as [string, string],
+        },
+        genesis_turn: genesisTurn,
+      };
       const res = await this.control().fetch("/chain/init", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -274,10 +284,7 @@ export class VellumClient {
 
   /** Release a bilateral chain slot on the relay (frees quota). */
   async chainRelease(sessionId: string): Promise<void> {
-    const idPath =
-      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
-      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
-      defaultIdentityPath();
+    const idPath = this.resolveKeyPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);

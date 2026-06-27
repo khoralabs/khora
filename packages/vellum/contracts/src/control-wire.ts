@@ -7,7 +7,6 @@ export const ChainInitWireSchema = z.object({
   session_id: z.string(),
   genesis_hash: z.string().regex(/^[0-9a-f]{64}$/),
   party_dids: z.tuple([z.string(), z.string()]),
-  peer_identity_key: z.string(),
 });
 
 export type ChainInitWire = z.infer<typeof ChainInitWireSchema>;
@@ -19,8 +18,6 @@ export const ChainInitRequestSchema = z.object({
   init: ChainInitWireSchema,
   /** Opening multiplex initiator MUST supply genesis extend-offer + ≥1 port (no bind). */
   genesis_turn: GenesisTurnWireSchema,
-  /** Initiator-computed X3DH session key (hex); stored locally on chain init. */
-  x3dh_session_key: z.string().optional(),
 });
 
 export type ChainInitRequest = z.infer<typeof ChainInitRequestSchema>;

@@ -13,7 +13,7 @@ import {
   type ChainStateResponse,
   TurnRequestSchema,
 } from "@khoralabs/vellum-contracts";
-import { upsertChainRow, upsertSessionKey } from "./vellum-sqlite-meta";
+import { getRosterActor, upsertChainRow } from "./vellum-sqlite-meta";
 
 function parseGenesisTurnOrThrow(raw: Record<string, unknown>) {
   const nb = parseNbcTurnBody(raw);
@@ -131,7 +131,13 @@ export function startVellumControlServer(opts: {
 
           const [didA, didB] = wi.party_dids;
           const peerDid = didA === myDid ? didB : didA;
-          const peerPubkeyHex = wi.peer_identity_key;
+          const peerPubkeyHex = getRosterActor(db, peerDid);
+          if (peerPubkeyHex === undefined) {
+            return Response.json(
+              { error: `peer not found in roster: ${peerDid}` },
+              { status: 404 },
+            );
+          }
           const wire = sessionInitFromWire({
             session_id: wi.session_id,
             genesis_hash: wi.genesis_hash,
@@ -139,10 +145,6 @@ export function startVellumControlServer(opts: {
             actor_pubkeys: [myActorPubkeyHex, peerPubkeyHex],
           });
           const norm = normalizeSessionInit(wire);
-
-          if (parsed.data.x3dh_session_key !== undefined) {
-            upsertSessionKey(db, norm.session_id, parsed.data.x3dh_session_key, Date.now());
-          }
 
           try {
             const handle = await state.conn.init(norm, {});
