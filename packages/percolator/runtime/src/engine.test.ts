@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createInMemoryPercolatorPersistence, createPercolator, extractQueryTerms } from "./index";
+import { createInMemoryPercolatorPersistence, createPercolator } from "./index";
 
 describe("createPercolator", () => {
   test("filter-only empty query matches candidate with required label", async () => {
@@ -172,19 +172,6 @@ describe("createPercolator", () => {
       now,
     );
     expect(matches).toHaveLength(0);
-  });
-
-  test("findQueryIdsByAnyTerm is superset of matching query ids", () => {
-    const persistence = createInMemoryPercolatorPersistence();
-    const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
-      id: "q-platform",
-      ownerId: "owner-a",
-      search: { content: { text: "platform beta" } },
-    });
-    const terms = extractQueryTerms("platform beta partners");
-    const ids = persistence.findQueryIdsByAnyTerm(terms);
-    expect(ids).toContain("q-platform");
   });
 
   test("does not match query owned by candidate author", async () => {

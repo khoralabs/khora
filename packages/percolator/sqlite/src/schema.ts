@@ -12,14 +12,6 @@ CREATE TABLE IF NOT EXISTS standing_queries (
 
 CREATE INDEX IF NOT EXISTS idx_standing_queries_owner ON standing_queries(owner_id);
 CREATE INDEX IF NOT EXISTS idx_standing_queries_active ON standing_queries(active, expires_at_ms);
-
-CREATE TABLE IF NOT EXISTS standing_query_terms (
-  term TEXT NOT NULL,
-  query_id TEXT NOT NULL,
-  PRIMARY KEY (term, query_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_standing_query_terms_term ON standing_query_terms(term);
 `.trim();
 
 export function ensurePercolatorSchema(db: { run: (sql: string) => void }): void {

@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createPercolator, extractQueryTerms } from "@khoralabs/percolator";
+import { createPercolator } from "@khoralabs/percolator";
 import { createPercolatorSqlitePersistence } from "./index";
 
 describe("createPercolatorSqlitePersistence", () => {
@@ -57,30 +57,6 @@ describe("createPercolatorSqlitePersistence", () => {
     expect(matches).toHaveLength(3);
     expect(matches.some((m) => m.queryId === "filter" && m.matchMode === "filter-only")).toBe(true);
     expect(matches.filter((m) => m.matchMode === "semantic")).toHaveLength(2);
-  });
-
-  test("term index maintenance in sqlite", () => {
-    const db = new Database(":memory:");
-    const persistence = createPercolatorSqlitePersistence(db);
-    const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
-      id: "q1",
-      ownerId: "owner-a",
-      search: { content: { text: "design partners" } },
-    });
-    percolator.registerQuery({
-      id: "q2",
-      ownerId: "owner-b",
-      search: { content: { text: "platform beta" } },
-    });
-    const terms = extractQueryTerms("platform design");
-    const ids = persistence.findQueryIdsByAnyTerm(terms);
-    expect(ids).toContain("q1");
-    expect(ids).toContain("q2");
-
-    percolator.deleteQuery("q1");
-    const afterDelete = persistence.findQueryIdsByAnyTerm(extractQueryTerms("design"));
-    expect(afterDelete).not.toContain("q1");
   });
 
   test("deactivated query excluded from active list", async () => {

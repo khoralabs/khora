@@ -2,7 +2,6 @@ import { DEFAULT_MIN_SCORE, FILTER_ONLY_MATCH_SCORE } from "./constants";
 import { isFilterOnlyMode, passesSearchFilters } from "./filters";
 import type { PercolatorPersistence } from "./persistence/port";
 import { scoreCandidateAgainstSearch } from "./score";
-import { extractQueryTerms } from "./tokenizer";
 import type {
   PercolatorCandidate,
   PercolatorMatch,
@@ -44,11 +43,7 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
         createdAtMs: existing?.createdAtMs ?? now,
         updatedAtMs: now,
       };
-      persistence.withTransaction(() => {
-        persistence.upsertQuery(query);
-        const terms = extractQueryTerms(create.search.content.text ?? "");
-        persistence.replaceQueryTerms(query.id, terms);
-      });
+      persistence.upsertQuery(query);
       return query;
     },
 

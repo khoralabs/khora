@@ -52,10 +52,6 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
   `);
 
   const deleteQueryStmt = db.prepare(`DELETE FROM standing_queries WHERE id = ?`);
-  const deleteTermsStmt = db.prepare(`DELETE FROM standing_query_terms WHERE query_id = ?`);
-  const insertTermStmt = db.prepare(
-    `INSERT OR IGNORE INTO standing_query_terms (term, query_id) VALUES (?, ?)`,
-  );
 
   const getQueryStmt = db.query<QueryRow, [string]>(
     `SELECT id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms
@@ -74,15 +70,7 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
      ORDER BY created_at_ms ASC`,
   );
 
-  const findTermsStmt = db.query<{ query_id: string }, [string]>(
-    `SELECT query_id FROM standing_query_terms WHERE term = ?`,
-  );
-
   return {
-    withTransaction<T>(fn: () => T): T {
-      return db.transaction(fn)();
-    },
-
     upsertQuery(query: StandingQuery): void {
       upsertStmt.run(
         query.id,
@@ -101,7 +89,6 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
     },
 
     deleteQuery(queryId: string): void {
-      deleteTermsStmt.run(queryId);
       deleteQueryStmt.run(queryId);
     },
 
@@ -117,23 +104,6 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
 
     listActiveQueries(now: number): StandingQuery[] {
       return listActiveStmt.all(now).map(rowToQuery);
-    },
-
-    replaceQueryTerms(queryId: string, terms: readonly string[]): void {
-      deleteTermsStmt.run(queryId);
-      for (const term of terms) {
-        insertTermStmt.run(term, queryId);
-      }
-    },
-
-    findQueryIdsByAnyTerm(terms: readonly string[]): string[] {
-      const out = new Set<string>();
-      for (const term of terms) {
-        for (const row of findTermsStmt.all(term)) {
-          out.add(row.query_id);
-        }
-      }
-      return [...out];
     },
   };
 }

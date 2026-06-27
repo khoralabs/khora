@@ -8,7 +8,7 @@ export {
   type StandingSearchRequest,
   zStandingSearchRequest,
 } from "./search-request";
-export { extractQueryTerms, tokenizeForOverlap } from "./tokenizer";
+export { tokenizeForOverlap } from "./tokenizer";
 export type {
   PercolatorCandidate,
   PercolatorMatch,
