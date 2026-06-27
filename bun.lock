@@ -724,6 +724,23 @@
         "typescript": "^5",
       },
     },
+    "packages/libs/persisted-signer": {
+      "name": "@khoralabs/agent-persisted-signer",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/relay-crypto": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-base": "^4.2.1",
+        "iso-signatures": "^0.5.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/percolator/runtime": {
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
@@ -743,23 +760,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/percolator": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/persisted-signer": {
-      "name": "@khoralabs/agent-persisted-signer",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/relay-crypto": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-base": "^4.2.1",
-        "iso-signatures": "^0.5.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -2142,7 +2142,7 @@
 
     "@khoralabs/agent-capabilities-otel": ["@khoralabs/agent-capabilities-otel@0.1.1", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.0", "@opentelemetry/api": "^1.9.0", "pino": "^9.6.0" }, "peerDependencies": { "typescript": "^5" } }, "sha512-dsJSsS4IONrmwsWp/sqLwZVkzvHwr1mf9sZXNF2z9ELp6Bs+7e5HM7FMnN9JvhlAx63CI8YQuDhVOHRcrPt+zw=="],
 
-    "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/persisted-signer"],
+    "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/libs/persisted-signer"],
 
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/libs/blog"],
 
