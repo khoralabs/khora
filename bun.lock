@@ -613,6 +613,34 @@
         "typescript": "^5",
       },
     },
+    "packages/khora/percolator/runtime": {
+      "name": "@khoralabs/percolator",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/percolator/sqlite": {
+      "name": "@khoralabs/percolator-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/percolator": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/khora/react": {
       "name": "@khoralabs/khora-react",
       "version": "0.0.0",
@@ -732,34 +760,6 @@
         "@noble/ed25519": "^3.1.0",
         "iso-base": "^4.2.1",
         "iso-signatures": "^0.5.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/percolator/runtime": {
-      "name": "@khoralabs/percolator",
-      "version": "0.0.0",
-      "dependencies": {
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/percolator/sqlite": {
-      "name": "@khoralabs/percolator-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/percolator": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -2312,9 +2312,9 @@
 
     "@khoralabs/observability": ["@khoralabs/observability@workspace:packages/libs/observability"],
 
-    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/percolator/runtime"],
+    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator/runtime"],
 
-    "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/percolator/sqlite"],
+    "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/khora/percolator/sqlite"],
 
     "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/registry/accounts"],
 
