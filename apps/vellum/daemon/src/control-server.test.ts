@@ -5,6 +5,7 @@ import type {
   FrameSessionHandle,
   SessionInitNormalized,
 } from "@khoralabs/obp-frames-impl";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-persistence";
 import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
 import { startVellumControlServer } from "./control-server";
@@ -15,6 +16,7 @@ const testSigner = testControlSigner("did:key:alice");
 const testServerOpts = {
   signer: testSigner,
   myActorPubkeyHex: "ee".repeat(32),
+  persistence: createInMemoryObpPersistenceClient(),
 };
 
 function mkConn(opts: { turns: unknown[] }): FrameMultiplexOpenerApi {

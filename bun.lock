@@ -965,6 +965,8 @@
       "name": "@khoralabs/khora-network-harness",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-managed-agents": "workspace:*",
         "@khoralabs/khora-server": "workspace:*",
         "@khoralabs/memories-service-auth": "workspace:*",
@@ -972,6 +974,7 @@
         "@khoralabs/memories-service-http": "workspace:*",
         "@khoralabs/memories-service-storage-core": "workspace:*",
         "@khoralabs/memories-service-storage-sqlite": "workspace:*",
+        "@khoralabs/relay-client": "workspace:*",
         "@khoralabs/relay-server-http": "workspace:*",
       },
       "devDependencies": {

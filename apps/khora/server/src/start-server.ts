@@ -20,6 +20,8 @@ export type StartKhoraServerOptions = {
   outboxKeyHex?: string;
   cellPoolCount?: number;
   useCellWorkers?: boolean;
+  /** When true, enables an in-process memories+percolator so subscriptions fan out to inboxes. */
+  enableMemories?: boolean;
 };
 
 export type KhoraServerHandle = {
@@ -46,6 +48,9 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
     useCellWorkers: opts.useCellWorkers ?? false,
     encryption,
     startPrincipalTeardownWorker: false,
+    ...(opts.enableMemories
+      ? { memories: { dbPath: path.join(opts.dataDir, "memories.sqlite") } }
+      : {}),
   });
 
   const deps: HostRouteDeps = {

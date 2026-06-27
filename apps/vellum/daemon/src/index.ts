@@ -100,7 +100,8 @@ const handle = runVellumDaemon({
 
 function shutdown(): void {
   handle.close();
-  process.exit(0);
+  // Let the async cleanup (stopAutoReplenish, db.close, etc.) run before exit.
+  // The process exits naturally once the event loop drains.
 }
 
 process.on("SIGINT", shutdown);

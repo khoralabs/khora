@@ -7,6 +7,7 @@ import {
   sessionInitFromWire,
 } from "@khoralabs/obp-frames-impl";
 import { type NbcTurnBody, parseNbcTurnBody } from "@khoralabs/obp-nbc";
+import type { ObpPersistenceClient } from "@khoralabs/obp-persistence";
 import {
   ChainInitRequestSchema,
   type ChainInitResponse,
@@ -50,6 +51,7 @@ function obpTableCount(db: Database, table: string): number {
 export function startVellumControlServer(opts: {
   state: VellumControlServerState;
   db: Database;
+  persistence: ObpPersistenceClient;
   signer: PersistableRelaySigner;
   myActorPubkeyHex: string;
   /** When set, chain/init requires a prior relay allocation for session_id. */
@@ -60,7 +62,7 @@ export function startVellumControlServer(opts: {
   stop(): void;
 } {
   const mux = { tail: Promise.resolve() };
-  const { state, db, isSessionAllocated, signer, myActorPubkeyHex } = opts;
+  const { state, db, persistence, isSessionAllocated, signer, myActorPubkeyHex } = opts;
   const myDid = signer.did;
   const server = Bun.serve({
     port: 0,
@@ -150,6 +152,9 @@ export function startVellumControlServer(opts: {
             const handle = await state.conn.init(norm, {});
             state.handles.set(norm.session_id, handle);
             upsertChainRow(db, norm.session_id, norm.genesis_hash, Date.now());
+            for (const party of norm.parties) {
+              await persistence.registerParty({ id: party.id, name: party.id });
+            }
             await handle.sendTurn(genesisNb);
             const out: ChainInitResponse = {
               ok: true,

@@ -26,6 +26,6 @@ export const zVellumAppConfigBase = z
       .describe("Default channel WebSocket URL when env not set"),
     daemonJson: z.boolean().optional().describe("JSON log lines from vellum-daemon"),
   })
-  .strict();
+  .strip();
 
 export type VellumAppConfigBase = z.infer<typeof zVellumAppConfigBase>;

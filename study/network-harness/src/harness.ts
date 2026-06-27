@@ -68,6 +68,14 @@ export async function startNetworkHarness(
   const agentsDataDir = path.join(opts.dataDir, "agents");
   const relayDataDir = path.join(opts.dataDir, "relay");
 
+  // Memories must start first — it calls Database.setCustomSQLite which must
+  // run before any bun:sqlite Database is opened by the khora or relay servers.
+  const memories = startMemoriesService({
+    dataDir: memoriesDataDir,
+    sqlCipherKey: opts.sqlCipherKey ?? "harness-memories-key",
+    port: opts.memoriesPort,
+  });
+
   const server = await startKhoraServer({
     dataDir: serverDataDir,
     port: opts.serverPort,
@@ -75,18 +83,13 @@ export async function startNetworkHarness(
     outboxKeyHex: opts.outboxKeyHex,
     cellPoolCount: opts.cellPoolCount,
     useCellWorkers: false,
+    enableMemories: true,
   });
 
   const relay = await startRelayServer({
     dataDir: relayDataDir,
     port: opts.relayPort,
     sqlCipherKey: opts.sqlCipherKey,
-  });
-
-  const memories = startMemoriesService({
-    dataDir: memoriesDataDir,
-    sqlCipherKey: opts.sqlCipherKey ?? "harness-memories-key",
-    port: opts.memoriesPort,
   });
 
   const memoriesClient = new MemoriesServiceClient({

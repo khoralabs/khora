@@ -103,6 +103,9 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
             onSessionReady: async (handle) => {
               state.handles.set(handle.sessionId, handle);
               upsertChainRow(db, handle.sessionId, handle.init.genesis_hash, Date.now());
+              for (const party of handle.init.parties) {
+                await persistence.registerParty({ id: party.id, name: party.id });
+              }
               logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
 
               // Responder: join MLS group using the Welcome published by the initiator
@@ -173,6 +176,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
           const server = startVellumControlServer({
             state,
             db,
+            persistence,
             signer: opts.signer,
             myActorPubkeyHex: frameSigner.actor,
             isSessionAllocated: (sessionId) =>

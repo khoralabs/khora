@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-persistence";
 import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
 import { startVellumControlServer } from "./control-server";
@@ -15,6 +16,7 @@ test("chain/init rejects without relay allocation when check enabled", async () 
   const server = startVellumControlServer({
     state: { conn: undefined, handles: new Map() },
     db,
+    persistence: createInMemoryObpPersistenceClient(),
     signer,
     myActorPubkeyHex: "bb".repeat(32),
     isSessionAllocated: (sessionId) => allocated.has(sessionId),

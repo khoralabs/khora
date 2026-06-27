@@ -23,6 +23,8 @@ export type VellumHandle = {
     webSocketUrl?: string;
     upgradeNonce?: string;
   }): Promise<"spawned" | "already-running">;
+  /** Stop the daemon subprocess for this channel. */
+  disconnect(): void;
   chainCreate(input: {
     counterpartyDid: string;
     sessionId?: string;
@@ -88,6 +90,7 @@ export class AgentHandle {
     const c = new VellumClient(clientOpts);
     return {
       connect: (o) => c.connect(o),
+      disconnect: () => c.disconnect(),
       chainCreate: (i) => c.chainCreate(i),
       chainRelease: (s) => c.chainRelease(s),
       sendTurn: (s, b) => c.sendTurn(s, b),

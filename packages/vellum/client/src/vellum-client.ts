@@ -96,7 +96,7 @@ function randomGenesisSha256(): string {
 }
 
 function daemonEntryPath(): string {
-  return fileURLToPath(new URL("../../daemon/src/index.ts", import.meta.url));
+  return fileURLToPath(new URL("../../../../apps/vellum/daemon/src/index.ts", import.meta.url));
 }
 
 function httpFailMessage(statusText: string, j: unknown): string {
@@ -196,6 +196,7 @@ export class VellumClient {
         VELLUM_BASE_URL: this.opts.relayBaseUrl,
         ...(lastBlobId !== undefined ? { VELLUM_LAST_BLOB_ID: String(lastBlobId) } : {}),
         ...(dataDir !== undefined ? { VELLUM_DATA_DIR: dataDir } : {}),
+        ...(this.opts.keyPath !== undefined ? { VELLUM_AGENT_KEY_PATH: this.opts.keyPath } : {}),
       },
       stdout: "inherit",
       stderr: "inherit",
@@ -204,6 +205,18 @@ export class VellumClient {
 
     await waitForControlPlane(this.pathConfig, this.opts.channelId, 15_000);
     return "spawned";
+  }
+
+  /** Send SIGTERM to the daemon process if one is running for this channel. */
+  disconnect(): void {
+    const cp = readControlPlane(this.pathConfig, this.opts.channelId);
+    if (cp !== undefined && isPidAlive(cp.pid)) {
+      try {
+        process.kill(cp.pid, "SIGTERM");
+      } catch {
+        // already dead
+      }
+    }
   }
 
   async chainCreate(input: {
@@ -238,25 +251,12 @@ export class VellumClient {
       const peerKeyPackageBytes = base64UrlToBytes(fetched.keyPackage);
       const mlsSession = new MlsGroupSession(sessionId, myDid, ed25519PrivKey);
       const { welcomeBase64Url } = await mlsSession.createWithPeer(peerKeyPackageBytes, peerDid);
-      const route = generateRouteHandle();
       await publishMlsWelcomeHttp(this.opts.relayBaseUrl, signer, this.opts.channelId, sessionId, {
         welcome: welcomeBase64Url,
-        route,
+        route: generateRouteHandle(),
       });
 
-      const baseTurn = input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE;
-      const ports = Array.isArray(baseTurn.ports) ? [...baseTurn.ports] : [];
-      const firstPort =
-        typeof ports[0] === "object" && ports[0] !== null
-          ? { ...(ports[0] as Record<string, unknown>) }
-          : {};
-      firstPort.ref = JSON.stringify({ mls_route: route });
-      if (ports.length === 0) {
-        ports.push(firstPort);
-      } else {
-        ports[0] = firstPort;
-      }
-      const genesisTurn = { ...baseTurn, ports };
+      const genesisTurn = input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE;
 
       const payload = {
         init: {

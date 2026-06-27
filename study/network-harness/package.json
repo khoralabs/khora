@@ -11,8 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-managed-agents": "workspace:*",
     "@khoralabs/khora-server": "workspace:*",
+    "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/relay-server-http": "workspace:*",
     "@khoralabs/memories-service-auth": "workspace:*",
     "@khoralabs/memories-service-client": "workspace:*",

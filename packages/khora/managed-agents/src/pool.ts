@@ -69,7 +69,8 @@ export class ManagedAgentPool {
     await saveIdentity(keyPath, signer);
 
     const client = new KhoraClient({ baseUrl: this.#baseUrl, signer });
-    await client.register();
+    const username = `agent-${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    await client.register({ metadata: { username } });
 
     await this.#store.add({ did: signer.did, keyPath });
 
