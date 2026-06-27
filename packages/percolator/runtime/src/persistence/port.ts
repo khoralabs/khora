@@ -6,6 +6,6 @@ export type PercolatorPersistence = {
   deleteQuery(queryId: string): void;
   getQuery(queryId: string): StandingQuery | undefined;
   listQueriesByOwner(ownerId: string): StandingQuery[];
-  /** Active, unexpired queries — used for exhaustive evaluation. */
-  listActiveQueries(now: number): StandingQuery[];
+  listActiveFilterQueries(now: number): StandingQuery[];
+  listActiveSemanticQueries(now: number): StandingQuery[];
 };

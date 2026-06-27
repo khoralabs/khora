@@ -1,3 +1,4 @@
+import { isFilterOnlyMode } from "../filters";
 import type { StandingQuery } from "../types";
 import type { PercolatorPersistence } from "./port";
 
@@ -28,9 +29,25 @@ export function createInMemoryPercolatorPersistence(): PercolatorPersistence {
       return [...queries.values()].filter((q) => q.ownerId === ownerId).map((q) => ({ ...q }));
     },
 
-    listActiveQueries(now: number): StandingQuery[] {
+    listActiveFilterQueries(now: number): StandingQuery[] {
       return [...queries.values()]
-        .filter((q) => q.active && (q.expiresAtMs === undefined || q.expiresAtMs > now))
+        .filter(
+          (q) =>
+            q.active &&
+            (q.expiresAtMs === undefined || q.expiresAtMs > now) &&
+            isFilterOnlyMode(q.search),
+        )
+        .map((q) => ({ ...q }));
+    },
+
+    listActiveSemanticQueries(now: number): StandingQuery[] {
+      return [...queries.values()]
+        .filter(
+          (q) =>
+            q.active &&
+            (q.expiresAtMs === undefined || q.expiresAtMs > now) &&
+            !isFilterOnlyMode(q.search),
+        )
         .map((q) => ({ ...q }));
     },
   };
