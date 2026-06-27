@@ -50,6 +50,7 @@
     "vendor/memories/packages/*/**",
     "vendor/memories/packages/memories-service/*/**",
     "vendor/obp/packages/*/**",
-    "vendor/relay/*/**"
+    "vendor/relay/*/**",
+    "study/**"
   ]
 }

@@ -957,6 +957,25 @@
         "typescript": "^5",
       },
     },
+    "study/network-harness": {
+      "name": "@khoralabs/khora-network-harness",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/khora-managed-agents": "workspace:*",
+        "@khoralabs/khora-server": "workspace:*",
+        "@khoralabs/memories-service-auth": "workspace:*",
+        "@khoralabs/memories-service-client": "workspace:*",
+        "@khoralabs/memories-service-http": "workspace:*",
+        "@khoralabs/memories-service-storage-core": "workspace:*",
+        "@khoralabs/memories-service-storage-sqlite": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "vendor/chat": {
       "name": "chat",
       "devDependencies": {
@@ -2186,6 +2205,8 @@
     "@khoralabs/khora-invites": ["@khoralabs/khora-invites@workspace:packages/khora/invites"],
 
     "@khoralabs/khora-managed-agents": ["@khoralabs/khora-managed-agents@workspace:apps/khora/managed-agents"],
+
+    "@khoralabs/khora-network-harness": ["@khoralabs/khora-network-harness@workspace:study/network-harness"],
 
     "@khoralabs/khora-plugin-inbox-buffer": ["@khoralabs/khora-plugin-inbox-buffer@workspace:apps/khora/plugins/inbox-buffer"],
 

@@ -1,0 +1,28 @@
+{
+  "name": "@khoralabs/khora-network-harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@khoralabs/khora-managed-agents": "workspace:*",
+    "@khoralabs/khora-server": "workspace:*",
+    "@khoralabs/memories-service-auth": "workspace:*",
+    "@khoralabs/memories-service-client": "workspace:*",
+    "@khoralabs/memories-service-http": "workspace:*",
+    "@khoralabs/memories-service-storage-core": "workspace:*",
+    "@khoralabs/memories-service-storage-sqlite": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

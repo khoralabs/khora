@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
+  "exports": {
+    "./start-server": "./src/start-server.ts"
+  },
   "scripts": {
     "preinstall": "bun ../../../scripts/install-litestream.ts --output .bin/litestream",
     "start": "NODE_ENV=production bun run scripts/start-khora.ts",

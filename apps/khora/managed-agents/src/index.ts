@@ -6,5 +6,5 @@ export {
   type AgentInboxOptions,
   type InboxConnection,
 } from "./handle";
-export { ManagedAgentPool, type ManagedAgentPoolOptions } from "./pool";
+export { type AgentCallback, ManagedAgentPool, type ManagedAgentPoolOptions } from "./pool";
 export { type AgentRecord, AgentStore } from "./store";
