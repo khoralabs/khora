@@ -451,37 +451,6 @@
         "typescript": "^5",
       },
     },
-    "packages/cli/cli-flow-nbc": {
-      "name": "@khoralabs/cli-flow-nbc",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/cli-kit": "workspace:*",
-        "@khoralabs/obp-model": "workspace:*",
-        "@khoralabs/obp-nbc": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/cli/cli-kit": {
-      "name": "@khoralabs/cli-kit",
-      "version": "0.0.0",
-      "dependencies": {
-        "log-symbols": "^7.0.1",
-        "picocolors": "^1.1.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/colonnade/crypto": {
       "name": "@khoralabs/colonnade-crypto",
       "version": "0.0.0",
@@ -721,6 +690,37 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/libs/cli/cli-flow-nbc": {
+      "name": "@khoralabs/cli-flow-nbc",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/cli-kit": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/libs/cli/cli-kit": {
+      "name": "@khoralabs/cli-kit",
+      "version": "0.0.0",
+      "dependencies": {
+        "log-symbols": "^7.0.1",
+        "picocolors": "^1.1.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -2160,9 +2160,9 @@
 
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:vendor/chat/react"],
 
-    "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
+    "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/libs/cli/cli-flow-nbc"],
 
-    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/cli/cli-kit"],
+    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli/cli-kit"],
 
     "@khoralabs/colonnade-crypto": ["@khoralabs/colonnade-crypto@workspace:packages/colonnade/crypto"],
 
