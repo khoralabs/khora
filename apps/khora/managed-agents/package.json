@@ -1,0 +1,23 @@
+{
+  "name": "@khoralabs/khora-managed-agents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/khora-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

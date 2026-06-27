@@ -56,6 +56,20 @@
         "typescript": "^5",
       },
     },
+    "apps/khora/managed-agents": {
+      "name": "@khoralabs/khora-managed-agents",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/khora/plugins/inbox-buffer": {
       "name": "@khoralabs/khora-plugin-inbox-buffer",
       "version": "0.0.0",
@@ -2170,6 +2184,8 @@
     "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/khora/host"],
 
     "@khoralabs/khora-invites": ["@khoralabs/khora-invites@workspace:packages/khora/invites"],
+
+    "@khoralabs/khora-managed-agents": ["@khoralabs/khora-managed-agents@workspace:apps/khora/managed-agents"],
 
     "@khoralabs/khora-plugin-inbox-buffer": ["@khoralabs/khora-plugin-inbox-buffer@workspace:apps/khora/plugins/inbox-buffer"],
 
