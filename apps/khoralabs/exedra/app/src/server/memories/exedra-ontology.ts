@@ -1,4 +1,4 @@
-import { retrievalAutolinkOntology } from "@khoralabs/memories-autolink";
+import { retrievalSimilarityOntology } from "@khoralabs/memories-autolink";
 import { defineOntology } from "@khoralabs/memories-core";
 import { mergeOntologies } from "@khoralabs/memories-core/helpers";
 import z from "zod";
@@ -50,7 +50,7 @@ export const exedraOntology = defineOntology({
 });
 
 /** App-wide client ontology including retrieval autolink edge kinds. */
-export const exedraMemoriesOntology = mergeOntologies(exedraOntology, retrievalAutolinkOntology);
+export const exedraMemoriesOntology = mergeOntologies(exedraOntology, retrievalSimilarityOntology);
 
 export type ExedraOntology = typeof exedraOntology;
 export type ExedraMemoriesOntology = typeof exedraMemoriesOntology;

@@ -2,10 +2,11 @@
 .memories
 .obp
 .khora
-*.sqlite
+*.db
 *.wal
 *.journal
 .bin
+
 
 # dependencies (bun install)
 node_modules

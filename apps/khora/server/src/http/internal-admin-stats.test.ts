@@ -19,7 +19,7 @@ import type { HostRouteDeps } from "./deps";
 const ROOT_TOKEN = "test-root-token-16chars";
 const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 
-const REG_BY_PRINCIPAL = "relay:reg:by-principal";
+const REG_BY_PRINCIPAL = "khora:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-stats-test-"));
 const cellsDir = join(testRoot, "cells");
 mkdirSync(cellsDir, { recursive: true });
@@ -60,7 +60,7 @@ function seedCatalog(): void {
       `INSERT INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
        VALUES (?, ?, ?, '{}', ?)`,
     )
-    .run("relay", "relay:social:username-to-principal", "alice", Date.now());
+    .run("relay", "khora:social:username-to-principal", "alice", Date.now());
   catalogDb
     .prepare(
       `INSERT INTO standing_queries (id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms)

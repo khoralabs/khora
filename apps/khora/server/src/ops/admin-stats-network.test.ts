@@ -8,7 +8,7 @@ import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "./admin-stats-port";
 
 const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
-const REG_BY_PRINCIPAL = "relay:reg:by-principal";
+const REG_BY_PRINCIPAL = "khora:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-network-test-"));
 const cellsDir = join(testRoot, "cells");
 mkdirSync(cellsDir, { recursive: true });
@@ -40,7 +40,7 @@ function registerPrincipal(did: string, username?: string): void {
          (tenant_key, namespace, entry_key, projection, updated_at_ms)
          VALUES (?, ?, ?, '{}', ?)`,
       )
-      .run("relay", "relay:social:username-to-principal", username, Date.now());
+      .run("relay", "khora:social:username-to-principal", username, Date.now());
   }
 }
 
