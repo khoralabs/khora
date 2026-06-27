@@ -56,18 +56,6 @@
         "typescript": "^5",
       },
     },
-    "apps/khora/plugins/inbox-buffer": {
-      "name": "@khoralabs/khora-plugin-inbox-buffer",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
     "apps/khora/registry": {
       "name": "@khoralabs/khora-registry",
       "version": "0.1.0",
@@ -607,6 +595,18 @@
         "typescript": "^5",
       },
       "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/plugins/inbox-buffer": {
+      "name": "@khoralabs/khora-plugin-inbox-buffer",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/khora-client": "workspace:*",
+        "@khoralabs/khora-transport": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5",
       },
     },
@@ -2208,7 +2208,7 @@
 
     "@khoralabs/khora-network-harness": ["@khoralabs/khora-network-harness@workspace:study/network-harness"],
 
-    "@khoralabs/khora-plugin-inbox-buffer": ["@khoralabs/khora-plugin-inbox-buffer@workspace:apps/khora/plugins/inbox-buffer"],
+    "@khoralabs/khora-plugin-inbox-buffer": ["@khoralabs/khora-plugin-inbox-buffer@workspace:packages/khora/plugins/inbox-buffer"],
 
     "@khoralabs/khora-react": ["@khoralabs/khora-react@workspace:packages/khora/react"],
 
