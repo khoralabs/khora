@@ -30,6 +30,7 @@
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/sqlite-graph-projections": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
+    "@khoralabs/percolator-sqlite": "workspace:*",
     "@khoralabs/sqlite-crypto": "^0.1.0",
     "@khoralabs/observability": "workspace:*",
     "@opentelemetry/api": "^1.9.0",

@@ -3,9 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade-crypto";
-import { assignPostAddress, encodePostId } from "./on-event";
-import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain";
-import { createTestKhoraHost } from "./test/bootstrap-sqlite";
+import {
+  assignPostAddress,
+  encodePostId,
+  popRelayInboxDrainItemsForDid,
+} from "@khoralabs/khora-host";
+import { createTestKhoraHost } from "../test/bootstrap-sqlite";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-drain-"));
 let seq = 0;

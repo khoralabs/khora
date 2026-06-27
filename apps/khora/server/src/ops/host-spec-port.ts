@@ -6,7 +6,6 @@ import {
   zKhoraHostSpec,
 } from "@khoralabs/khora-contracts";
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
-import { CatalogProjectionStore, NAMESPACE_HOST_SPEC } from "@khoralabs/khora-host";
 import {
   envHostDisplayName,
   envHostSlug,
@@ -15,6 +14,8 @@ import {
   envPublicBaseUrl,
   envRegistryUrl,
 } from "../env";
+import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
+import { NAMESPACE_HOST_SPEC } from "../persistence/id-conventions";
 
 const HOST_SPEC_ENTRY_KEY = "self";
 

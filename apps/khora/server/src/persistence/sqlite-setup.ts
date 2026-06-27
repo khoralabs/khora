@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
 import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
-import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs";
+import { ensurePrincipalTeardownJobsSchema } from "./teardown-queue";
 
 export function ensureKhoraCatalogProjectionsSchema(db: Database): void {
   db.run(`

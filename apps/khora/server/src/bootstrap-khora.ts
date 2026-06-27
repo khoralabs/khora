@@ -3,7 +3,7 @@ import {
   ColonnadePublicationClient,
   createSqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
-import { createHostPersistenceClient, type HostPersistence } from "@khoralabs/host-runtime";
+import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
 import {
   bootstrapKhoraMemories,
@@ -11,7 +11,6 @@ import {
   createColonnadePostResolver,
   createKhoraCatalogApi,
   createKhoraHost,
-  createKhoraSocial,
   createPrincipalLifecycle,
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
@@ -35,6 +34,7 @@ import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
 import { createKhoraHostHealthPort } from "./ops/health-port";
 import { createKhoraHostSpecPort } from "./ops/host-spec-port";
+import { openKhoraHostPersistence } from "./persistence/khora-persistence";
 
 export type BootstrapKhoraHostOpts = {
   catalogPath: string;
@@ -53,21 +53,12 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   const encryption = opts.encryption;
   const encryptionProvider = new EnvKeyProvider();
   const outboxKey = await encryptionProvider.getOutboxFieldKey();
-  const {
-    profiles,
-    registrations,
-    social,
-    agentAccountStatus,
-    catalogDb,
-    projectionStore,
-    principalChannelStore,
-    tenantKey,
-  } = await createKhoraSocial({
+  const { persistence, catalogDb } = await openKhoraHostPersistence({
     catalogPath: opts.catalogPath,
     encryptionProvider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
-  const persistence: HostPersistence = { profiles, registrations, social, agentAccountStatus };
+  const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
@@ -87,12 +78,11 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       : {}),
   });
   const principalLifecycle = createPrincipalLifecycle({
-    catalogDb,
-    projectionStore,
-    principalChannelStore,
     persistence,
-    tenantKey,
-    cluster,
+    purgePrincipalCells: async (principalId) => {
+      const cellId = cluster.assignPrincipalToCell(principalId);
+      await cluster.resolveCell(cellId).purgePrincipal(principalId);
+    },
     onPrincipalTeardown(principalId) {
       for (const query of percolator.percolator.listQueriesByOwner(principalId)) {
         percolator.percolator.deactivateQuery(query.id);
@@ -102,13 +92,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       invitesRepoValue?.deleteTokensForPrincipal(principalId);
     },
   });
-  const catalog = createKhoraCatalogApi({
-    persistence,
-    projectionStore,
-    catalogDb,
-    tenantKey,
-    principalLifecycle,
-  });
+  const catalog = createKhoraCatalogApi({ persistence, principalLifecycle });
   const health = createKhoraHostHealthPort(catalogDb);
   const hostSpec = createKhoraHostSpecPort({ catalogDb, tenantKey });
   const adminStats = createKhoraAdminStatsPort({

@@ -24,7 +24,6 @@
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
     "@khoralabs/percolator-sqlite": "workspace:*",
-    "@khoralabs/sqlite-crypto": "^0.1.0",
     "@khoralabs/sourcemaps": "^0.1.0",
     "zod": "^4"
   },

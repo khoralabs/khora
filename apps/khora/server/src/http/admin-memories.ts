@@ -3,8 +3,6 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-capabilities";
 import { EnvKeyProvider } from "@khoralabs/colonnade-crypto";
 import {
-  CatalogProjectionStore,
-  NAMESPACE_ENTITY_PROFILE,
   purgeEmptyPendingEmbeddings,
   readPendingEmbeddingQueueSummary,
   resetFailedPendingEmbeddings,
@@ -37,6 +35,8 @@ import {
 import { embedMany } from "ai";
 import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
+import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
+import { NAMESPACE_ENTITY_PROFILE } from "../persistence/id-conventions";
 import { withConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";

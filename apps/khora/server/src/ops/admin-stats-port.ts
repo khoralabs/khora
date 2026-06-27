@@ -12,8 +12,9 @@ import type {
   KhoraAdminStatsSummary,
   KhoraColonnadeCluster,
 } from "@khoralabs/khora-host";
-import { countRegisteredPrincipals, NAMESPACE_REG_BY_PRINCIPAL } from "@khoralabs/khora-host";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
+import { countRegisteredPrincipals } from "../persistence/count-registered-principals";
+import { NAMESPACE_REG_BY_PRINCIPAL } from "../persistence/id-conventions";
 
 const REG_BY_PRINCIPAL = NAMESPACE_REG_BY_PRINCIPAL;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

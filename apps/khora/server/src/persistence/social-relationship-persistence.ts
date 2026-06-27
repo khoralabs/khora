@@ -19,9 +19,7 @@ function parseRelationshipRow(
   const cid = typeof o.channelId === "string" ? o.channelId : channelId;
   const creatorPrincipalId =
     typeof o.creatorPrincipalId === "string" ? (o.creatorPrincipalId as PrincipalId) : undefined;
-  if (creatorPrincipalId === undefined) {
-    return undefined;
-  }
+  if (creatorPrincipalId === undefined) return undefined;
   const peer =
     o.peerPrincipalId === null || o.peerPrincipalId === undefined
       ? null
@@ -49,15 +47,13 @@ export function createSocialRelationshipPersistence(deps: {
 }): SocialRelationshipPersistence {
   const { projectionStore: store, principalChannelStore, catalogDb, tenantKey } = deps;
 
-  function getRelationshipImpl(channelId: string): SocialRelationshipRow | undefined {
+  function getImpl(channelId: string): SocialRelationshipRow | undefined {
     const { found, projection } = store.lookupProjection(
       tenantKey,
       NAMESPACE_SOCIAL_RELATIONSHIP,
       channelId,
     );
-    if (!found) {
-      return undefined;
-    }
+    if (!found) return undefined;
     return parseRelationshipRow(projection, channelId);
   }
 
@@ -83,9 +79,7 @@ export function createSocialRelationshipPersistence(deps: {
       })();
     },
 
-    getRelationship(channelId: string): SocialRelationshipRow | undefined {
-      return getRelationshipImpl(channelId);
-    },
+    getRelationship: getImpl,
 
     bindPeer(params): void {
       catalogDb.transaction(() => {
@@ -94,48 +88,37 @@ export function createSocialRelationshipPersistence(deps: {
           NAMESPACE_SOCIAL_RELATIONSHIP,
           params.channelId,
         );
-        if (!found) {
-          throw new Error(`SocialRelationship: unknown channel ${params.channelId}`);
-        }
+        if (!found) throw new Error(`SocialRelationship: unknown channel ${params.channelId}`);
         const current = parseRelationshipRow(projection, params.channelId);
-        if (current === undefined) {
+        if (current === undefined)
           throw new Error(`SocialRelationship: corrupt row for ${params.channelId}`);
-        }
         if (current.peerPrincipalId !== null) {
-          if (current.peerPrincipalId === params.peerPrincipalId) {
-            return;
-          }
+          if (current.peerPrincipalId === params.peerPrincipalId) return;
           throw new Error(
             `SocialRelationship: channel ${params.channelId} already bound to another peer`,
           );
         }
-        if (params.peerPrincipalId === current.creatorPrincipalId) {
+        if (params.peerPrincipalId === current.creatorPrincipalId)
           throw new Error("SocialRelationship: peer cannot be the creator");
-        }
-        const next: SocialRelationshipRow = {
-          ...current,
-          peerPrincipalId: params.peerPrincipalId,
-        };
         store.upsert({
           tenant_key: tenantKey,
           namespace: NAMESPACE_SOCIAL_RELATIONSHIP,
           entry_key: params.channelId,
-          projection: next,
+          projection: { ...current, peerPrincipalId: params.peerPrincipalId },
         });
         principalChannelStore.insertChannel(tenantKey, params.peerPrincipalId, params.channelId);
       })();
     },
 
-    refreshRelationshipTicketExpiry(params: { channelId: string; expiresAtMs: number }): void {
+    refreshRelationshipTicketExpiry(params): void {
       catalogDb.transaction(() => {
-        const current = getRelationshipImpl(params.channelId);
+        const current = getImpl(params.channelId);
         if (current === undefined) return;
-        const next: SocialRelationshipRow = { ...current, expiresAtMs: params.expiresAtMs };
         store.upsert({
           tenant_key: tenantKey,
           namespace: NAMESPACE_SOCIAL_RELATIONSHIP,
           entry_key: params.channelId,
-          projection: next,
+          projection: { ...current, expiresAtMs: params.expiresAtMs },
         });
       })();
     },
@@ -145,22 +128,16 @@ export function createSocialRelationshipPersistence(deps: {
       const out: SocialRelationshipRow[] = [];
       for (let i = ids.length - 1; i >= 0; i--) {
         const channelId = ids[i];
-        if (channelId === undefined) {
-          continue;
-        }
-        const row = getRelationshipImpl(channelId);
-        if (row !== undefined) {
-          out.push(row);
-        }
+        if (channelId === undefined) continue;
+        const row = getImpl(channelId);
+        if (row !== undefined) out.push(row);
       }
       return out;
     },
 
     deleteRelationship(channelId: string): SocialRelationshipRow | undefined {
-      const r = getRelationshipImpl(channelId);
-      if (r === undefined) {
-        return undefined;
-      }
+      const r = getImpl(channelId);
+      if (r === undefined) return undefined;
       catalogDb.transaction(() => {
         store.deleteRow(tenantKey, NAMESPACE_SOCIAL_RELATIONSHIP, channelId);
         principalChannelStore.deleteChannel(tenantKey, r.creatorPrincipalId, channelId);
@@ -171,19 +148,4 @@ export function createSocialRelationshipPersistence(deps: {
       return r;
     },
   };
-}
-
-/** Tear down catalog relationship entries for every channel this principal participates in. */
-export function purgeSocialRelationshipsForPrincipal(params: {
-  projectionStore: CatalogProjectionStore;
-  principalChannelStore: SocialPrincipalChannelStore;
-  catalogDb: Database;
-  tenantKey: string;
-  principalId: PrincipalId;
-}): void {
-  const social = createSocialRelationshipPersistence(params);
-  const rels = social.listRelationshipsForPrincipal(params.principalId);
-  for (const r of rels) {
-    social.deleteRelationship(r.channelId);
-  }
 }

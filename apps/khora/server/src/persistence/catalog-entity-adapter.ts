@@ -41,20 +41,13 @@ export function createCatalogEntityAdapter(
         updatedAtMs: Date.now(),
       };
       db.transaction(() => {
-        store.upsert({
-          tenant_key: tenantKey,
-          namespace,
-          entry_key: record.id,
-          projection,
-        });
+        store.upsert({ tenant_key: tenantKey, namespace, entry_key: record.id, projection });
       })();
     },
 
     getById(id: string): HostEntityRow | undefined {
       const { found, projection } = store.lookupProjection(tenantKey, namespace, id);
-      if (!found) {
-        return undefined;
-      }
+      if (!found) return undefined;
       return parseEntityRow(projection, id);
     },
 

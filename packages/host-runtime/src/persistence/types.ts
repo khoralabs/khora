@@ -26,6 +26,7 @@ export interface HostEntityPersistence {
 export interface HostRegistrations {
   exists(principalId: PrincipalId): boolean;
   upsert(principalId: PrincipalId, profileId: string): void;
+  delete(principalId: PrincipalId, profileId: string): void;
   profileIdForPrincipal(principalId: PrincipalId): string | undefined;
   principalForProfileId(profileId: string): PrincipalId | undefined;
 }

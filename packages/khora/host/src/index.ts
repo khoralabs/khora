@@ -44,37 +44,15 @@ export {
 } from "./percolator/subscription-searches";
 export { topicSlugsToLabelKinds, topicSlugToLabelKind } from "./percolator/topic-labels";
 export {
-  type CatalogProjectionListedRow,
-  CatalogProjectionStore,
-  escapeSqlLikeLiteral,
-} from "./persistence/catalog-projection-store";
-export {
-  type ColonnadeBasePersistence,
-  createKhoraPersistenceFromDatabases,
-  createKhoraSocial,
-} from "./persistence/colonnade-persistence";
-export { countRegisteredPrincipals } from "./persistence/count-registered-principals";
-export {
-  DEFAULT_TENANT_KEY,
-  NAMESPACE_ENTITY_PROFILE,
-  NAMESPACE_HOST_SPEC,
-  NAMESPACE_PRINCIPAL_TO_USERNAME,
-  NAMESPACE_REG_BY_PRINCIPAL,
-  NAMESPACE_REG_BY_PROFILE,
-  NAMESPACE_SOCIAL_RELATIONSHIP,
-  NAMESPACE_USERNAME_TO_PRINCIPAL,
-  TABLE_SOCIAL_PRINCIPAL_CHANNELS,
-  USERNAME_INDEX_TENANT_KEY,
-} from "./persistence/id-conventions";
-export {
   createPrincipalLifecycle,
   type PrincipalLifecycleDeps,
 } from "./persistence/principal-lifecycle";
-export {
-  applyKhoraSqlitePragmas,
-  ensureKhoraCatalogProjectionsSchema,
-  openKhoraCatalogDb,
-} from "./persistence/sqlite-setup";
+export type {
+  ClaimedTeardownJob,
+  KhoraHostPersistence,
+  PrincipalTeardownQueuePort,
+  UsernameIndexPort,
+} from "./persistence/types";
 export type {
   KhoraAdminCatalogStats,
   KhoraAdminCellDetail,

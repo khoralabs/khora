@@ -51,15 +51,20 @@ export function createCatalogRegistrationAdapter(
       })();
     },
 
+    delete(principalId: PrincipalId, profileId: string): void {
+      db.transaction(() => {
+        store.deleteRow(tenantKey, NAMESPACE_REG_BY_PRINCIPAL, principalId);
+        store.deleteRow(tenantKey, NAMESPACE_REG_BY_PROFILE, profileId);
+      })();
+    },
+
     profileIdForPrincipal(principalId: PrincipalId): string | undefined {
       const { found, projection } = store.lookupProjection(
         tenantKey,
         NAMESPACE_REG_BY_PRINCIPAL,
         principalId,
       );
-      if (!found) {
-        return undefined;
-      }
+      if (!found) return undefined;
       return readProfileId(projection);
     },
 
@@ -69,9 +74,7 @@ export function createCatalogRegistrationAdapter(
         NAMESPACE_REG_BY_PROFILE,
         profileId,
       );
-      if (!found) {
-        return undefined;
-      }
+      if (!found) return undefined;
       return readPrincipalId(projection);
     },
   };
