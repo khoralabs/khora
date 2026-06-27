@@ -15,6 +15,7 @@ import {
   type KhoraHostHealthPort,
   type KhoraHostSpecPort,
 } from "@khoralabs/khora-host";
+import { createPercolatorSqlitePersistence } from "@khoralabs/percolator-sqlite";
 import { openKhoraHostPersistence } from "../persistence/khora-persistence";
 
 export type CreateTestKhoraHostOpts = {
@@ -52,7 +53,9 @@ export async function createTestKhoraHost(
     },
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
-  const percolator = bootstrapKhoraPercolator({ catalogDb });
+  const percolator = bootstrapKhoraPercolator({
+    persistence: createPercolatorSqlitePersistence(catalogDb),
+  });
   const principalLifecycle = createPrincipalLifecycle({
     persistence,
     purgePrincipalCells: async (principalId) => {

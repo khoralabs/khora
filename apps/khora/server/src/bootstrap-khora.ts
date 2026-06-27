@@ -28,6 +28,7 @@ import {
   ensureCustomSqliteForExtensions,
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
+import { createPercolatorSqlitePersistence } from "@khoralabs/percolator-sqlite";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
@@ -72,7 +73,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
   const percolator = bootstrapKhoraPercolator({
-    catalogDb,
+    persistence: createPercolatorSqlitePersistence(catalogDb),
     ...(opts.memories?.embeddingModel !== undefined
       ? { embeddingModel: opts.memories.embeddingModel }
       : {}),

@@ -23,7 +23,6 @@
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
-    "@khoralabs/percolator-sqlite": "workspace:*",
     "@khoralabs/sourcemaps": "^0.1.0",
     "zod": "^4"
   },

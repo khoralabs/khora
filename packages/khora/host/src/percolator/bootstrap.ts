@@ -1,18 +1,19 @@
-import type { Database } from "bun:sqlite";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import { createPercolator, type Percolator } from "@khoralabs/percolator";
-import { createPercolatorSqlitePersistence } from "@khoralabs/percolator-sqlite";
+import {
+  createPercolator,
+  type Percolator,
+  type PercolatorPersistence,
+} from "@khoralabs/percolator";
 
 export type KhoraPercolatorHost = {
   percolator: Percolator;
 };
 
 export function bootstrapKhoraPercolator(deps: {
-  catalogDb: Database;
+  persistence: PercolatorPersistence;
   embeddingModel?: EmbeddingModel;
 }): KhoraPercolatorHost {
-  const persistence = createPercolatorSqlitePersistence(deps.catalogDb);
   const embedText =
     deps.embeddingModel !== undefined
       ? async (text: string): Promise<number[]> => {
@@ -21,6 +22,6 @@ export function bootstrapKhoraPercolator(deps: {
         }
       : undefined;
   return {
-    percolator: createPercolator({ persistence, embedText }),
+    percolator: createPercolator({ persistence: deps.persistence, embedText }),
   };
 }
