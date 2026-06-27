@@ -50,7 +50,7 @@ export class AgentStore {
   async #flush(): Promise<void> {
     await mkdir(path.dirname(this.#filePath), { recursive: true });
     const payload: StoreFile = { agents: this.#agents };
-    await Bun.write(this.#filePath, JSON.stringify(payload, null, 2) + "\n");
+    await Bun.write(this.#filePath, `${JSON.stringify(payload, null, 2)}\n`);
   }
 
   /** Derive a key file path for a new agent DID. */
