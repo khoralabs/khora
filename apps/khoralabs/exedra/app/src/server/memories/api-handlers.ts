@@ -1,7 +1,10 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { SearchHit } from "@khoralabs/memories-core";
 import type { EmbeddingResolutionPreset } from "@khoralabs/memories-core/helpers";
-import { qualifyMemoryKey } from "@khoralabs/sqlite-graph-projections";
+import {
+  buildNamespaceGraphLayoutFromUmapInput,
+  qualifyMemoryKey,
+} from "@khoralabs/memories-projections";
 import { embedMany } from "ai";
 import { withSpan } from "../telemetry/spans.js";
 import type { ExedraMemoriesServiceAccess } from "./service-client.js";
@@ -105,7 +108,8 @@ export async function handleMemoriesGraph(
   }
   const scope = parseGraphScope(url.searchParams.get("scope"));
   try {
-    const layout = await access.reads.getGraphLayout(namespace, scope);
+    const umapInput = await access.reads.fetchUmapInput({ namespace, scope });
+    const layout = buildNamespaceGraphLayoutFromUmapInput(umapInput);
     return jsonResponse(layout);
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);

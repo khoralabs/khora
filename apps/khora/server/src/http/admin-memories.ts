@@ -23,15 +23,15 @@ import {
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
-import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
-import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
+import { qualifyMemoryKey } from "@khoralabs/memories-projections";
 import {
   buildNamespaceGraphLayout,
   buildNamespaceSubtreeGraphLayout,
   loadEdgePreview,
   loadSourceMapTextPreview,
-  qualifyMemoryKey,
-} from "@khoralabs/sqlite-graph-projections";
+} from "@khoralabs/memories-projections-sqlite";
+import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
+import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
