@@ -2,48 +2,53 @@ import { describe, expect, test } from "bun:test";
 import { zKhoraSearchResponse } from "./khora-search";
 
 const SIG = "dGVzdC1zaWduYXR1cmU";
+// A valid atp0-encoded post id with authorPrincipalId "did:key:abc"
+const POST_ID = `atp0:${Buffer.from(JSON.stringify({ p: "did:key:abc", r: "ob_1234", n: 16 }), "utf8").toString("base64url")}`;
 
 describe("zKhoraSearchResponse", () => {
-  test("parses hit with hydrated post", () => {
+  test("parses hit with original post and authorDid", () => {
     const parsed = zKhoraSearchResponse.parse({
       hits: [
         {
           _id: "sm_1",
           score: 0.42,
+          sourceKey: "body",
           memory: { _id: "mem_1", namespace: "global", key: "k", kind: "node" },
           labels: [],
           graph: { kind: "node" },
-          hydrated: {
+          original: {
             kind: "post",
-            entity: {
-              id: "post-1",
+            post: {
+              id: POST_ID,
               kind: "post",
               body: "hello",
-              authorProfileId: "did:key:abc",
+              authorProfileId: "p1",
               authorSignature: SIG,
             },
+            authorDid: "did:key:abc",
           },
         },
       ],
     });
     expect(parsed.hits).toHaveLength(1);
-    expect(parsed.hits[0]?.hydrated?.kind).toBe("post");
-    if (parsed.hits[0]?.hydrated?.kind === "post") {
-      expect(parsed.hits[0].hydrated.entity.body).toBe("hello");
+    expect(parsed.hits[0]?.original?.kind).toBe("post");
+    if (parsed.hits[0]?.original?.kind === "post") {
+      expect(parsed.hits[0].original.post.body).toBe("hello");
+      expect(parsed.hits[0].original.authorDid).toBe("did:key:abc");
     }
   });
 
-  test("parses hit with hydrated profile neighbor", () => {
+  test("parses hit with ghost original and profile neighbor", () => {
     const parsed = zKhoraSearchResponse.parse({
       hits: [
         {
           score: 0.1,
-          hydrated: { kind: "ghost", postId: "gone" },
+          original: { kind: "ghost", postId: "gone" },
           neighbors: [
             {
               _id: "mem_n",
               labels: [],
-              hydrated: {
+              original: {
                 kind: "profile",
                 entity: { id: "p1", username: "alice" },
               },
@@ -52,18 +57,18 @@ describe("zKhoraSearchResponse", () => {
         },
       ],
     });
-    expect(parsed.hits[0]?.neighbors?.[0]?.hydrated?.kind).toBe("profile");
+    expect(parsed.hits[0]?.neighbors?.[0]?.original?.kind).toBe("profile");
   });
 
-  test("parses hit with hydrated subscription", () => {
+  test("parses hit with subscription original", () => {
     const parsed = zKhoraSearchResponse.parse({
       hits: [
         {
           score: 0.2,
-          hydrated: {
+          original: {
             kind: "subscription",
-            entity: {
-              id: "sub-1",
+            post: {
+              id: POST_ID,
               kind: "subscription",
               body: "Looking for partners",
               authorProfileId: "p1",
@@ -73,10 +78,11 @@ describe("zKhoraSearchResponse", () => {
                 options: { labels: { some: ["khora_topic:platform"] } },
               },
             },
+            authorDid: "did:key:abc",
           },
         },
       ],
     });
-    expect(parsed.hits[0]?.hydrated?.kind).toBe("subscription");
+    expect(parsed.hits[0]?.original?.kind).toBe("subscription");
   });
 });

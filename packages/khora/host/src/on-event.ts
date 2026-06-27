@@ -4,6 +4,7 @@ import type {
 } from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
 import {
+  deliverNotification,
   HOST_EVENT_KIND,
   type HostEventUnion,
   type HostRuntimeEventHandlerCtx,
@@ -63,7 +64,7 @@ async function publishPost(params: {
   memories?: KhoraMemoriesHost;
   percolator?: KhoraPercolatorHost;
   social?: SocialRelationshipPersistence;
-}): Promise<PostOperationOutput> {
+}): Promise<PostOperationOutput & { byRecipient: Map<string, InboxSubscriptionMatch[]> }> {
   const { ctx, tenantKey, post, cluster, publicationClient, fanOut, memories, percolator, social } =
     params;
   const address = decodePostId(post.id);
@@ -136,7 +137,7 @@ async function publishPost(params: {
       }))
     : [];
 
-  return publicationClient.postOperation({
+  const output = await publicationClient.postOperation({
     author_principal_id: authorPrincipalId,
     author_cell_id: authorCellId,
     tenant_key: tenantKey,
@@ -150,6 +151,7 @@ async function publishPost(params: {
       fan_out_targets,
     },
   });
+  return { ...output, byRecipient };
 }
 
 function registerSubscriptionQuery(
@@ -232,7 +234,7 @@ export function createKhoraRelayOnEvent(deps: {
       if (post.kind === "subscription" && percolator !== undefined && address !== undefined) {
         registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
       }
-      await publishPost({
+      const result = await publishPost({
         ctx,
         tenantKey,
         post,
@@ -243,6 +245,28 @@ export function createKhoraRelayOnEvent(deps: {
         percolator,
         social,
       });
+      // Push live inbox notifications to any connected WebSocket subscribers.
+      const { inboxHub, notificationBuffer } = ctx;
+      if (
+        inboxHub !== undefined &&
+        notificationBuffer !== undefined &&
+        result.generated_inbox_refs.length > 0
+      ) {
+        const authorPrincipalId = address?.authorPrincipalId;
+        await Promise.all(
+          result.generated_inbox_refs.map((ref) =>
+            deliverNotification(notificationBuffer, inboxHub, ref.recipient_principal_id, {
+              kind: "inbox_post",
+              payload: {
+                postId: post.id,
+                postKind: post.kind,
+                authorPrincipalId,
+                subscriptionMatches: result.byRecipient.get(ref.recipient_principal_id) ?? [],
+              },
+            }),
+          ),
+        );
+      }
       if (memories !== undefined) {
         await memories.indexer.indexPost(post);
       }

@@ -525,15 +525,17 @@ describe("KhoraClient", () => {
         hits: [
           {
             score: 0.5,
-            hydrated: {
+            sourceKey: "body",
+            original: {
               kind: "post",
-              entity: {
+              post: {
                 id: "post-1",
                 kind: "post",
                 body: "hello world",
                 authorProfileId: "p1",
                 authorSignature: TEST_AUTHOR_SIGNATURE,
               },
+              authorDid: "did:key:author",
             },
           },
         ],
@@ -546,7 +548,7 @@ describe("KhoraClient", () => {
     });
     const out = await c.search({ q: "hello", topK: 5, neighbors: true });
     expect(out.hits).toHaveLength(1);
-    expect(out.hits[0]?.hydrated?.kind).toBe("post");
+    expect(out.hits[0]?.original?.kind).toBe("post");
   });
 
   test("searchAdvanced POST /v1/search with JSON body", async () => {

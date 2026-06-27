@@ -1,5 +1,6 @@
 import type { PrincipalId, SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import type {
+  KhoraSearchOriginal,
   KhoraSearchQuery,
   KhoraSearchRequest,
   KhoraSearchResponse,
@@ -7,6 +8,7 @@ import type {
 import type { MemoriesClient, SearchParams } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import { authorPrincipalIdFromPostId } from "../post-address-id";
 import { canReadPost } from "../post-visibility";
 import { hydrateMemoryLabels, type KhoraCanonicalStore } from "./khora-canonical-store";
 import type { khoraOntology } from "./khora-ontology";
@@ -72,6 +74,20 @@ export async function executeKhoraMemoriesSearch(deps: {
     ) {
       continue;
     }
+
+    // Derive author DID from the address-encoded post ID — not stored on the node.
+    let original: KhoraSearchResponse["hits"][number]["original"];
+    if (hydrated !== undefined) {
+      if (hydrated.kind === "post" || hydrated.kind === "subscription") {
+        const authorDid = authorPrincipalIdFromPostId(hydrated.entity.id) ?? "";
+        original = { kind: hydrated.kind, post: hydrated.entity, authorDid };
+      } else if (hydrated.kind === "profile") {
+        original = { kind: "profile", entity: hydrated.entity };
+      } else {
+        original = { kind: "ghost", postId: hydrated.postId };
+      }
+    }
+
     const neighbors = hit.neighbors
       ? (
           await Promise.all(
@@ -85,15 +101,33 @@ export async function executeKhoraMemoriesSearch(deps: {
               ) {
                 return undefined;
               }
-              return {
-                ...n,
-                hydrated: neighborHydrated,
-              };
+              let neighborOriginal: KhoraSearchOriginal | undefined;
+              if (neighborHydrated !== undefined) {
+                if (neighborHydrated.kind === "post" || neighborHydrated.kind === "subscription") {
+                  const authorDid = authorPrincipalIdFromPostId(neighborHydrated.entity.id) ?? "";
+                  neighborOriginal = {
+                    kind: neighborHydrated.kind,
+                    post: neighborHydrated.entity,
+                    authorDid,
+                  };
+                } else if (neighborHydrated.kind === "profile") {
+                  neighborOriginal = { kind: "profile", entity: neighborHydrated.entity };
+                } else {
+                  neighborOriginal = { kind: "ghost", postId: neighborHydrated.postId };
+                }
+              }
+              return { ...n, original: neighborOriginal };
             }),
           )
         ).filter((n): n is NonNullable<typeof n> => n !== undefined)
       : undefined;
-    enriched.push({ ...hit, hydrated, neighbors } as KhoraSearchResponse["hits"][number]);
+
+    enriched.push({
+      ...hit,
+      sourceKey: hit.source_key,
+      original,
+      neighbors,
+    } as KhoraSearchResponse["hits"][number]);
   }
   return { hits: enriched };
 }

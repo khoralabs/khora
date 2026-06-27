@@ -6,11 +6,11 @@ import { withKhoraClient } from "../flows/context";
 import { parseTopK, queryFromFlags } from "../lib/flags";
 
 function formatSearchHit(hit: KhoraSearchHit): string {
-  const h = hit.hydrated;
-  if (h === undefined) return "hit";
-  if (h.kind === "profile") return `profile:${h.entity.username}`;
-  if (h.kind === "ghost") return `ghost:${h.postId}`;
-  return `${h.kind}:${h.entity.id}`;
+  const o = hit.original;
+  if (o === undefined) return "hit";
+  if (o.kind === "profile") return `profile:${o.entity.username}`;
+  if (o.kind === "ghost") return `ghost:${o.postId}`;
+  return `${o.kind}:${o.post.id}`;
 }
 
 export async function handleSearch(flags: FlagMap): Promise<void> {

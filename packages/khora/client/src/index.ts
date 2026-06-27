@@ -18,7 +18,7 @@ export type {
   KhoraRegistrationRequestBody,
   KhoraRegistrationResult,
   KhoraSearchHit,
-  KhoraSearchHydratedEntity,
+  KhoraSearchOriginal,
   KhoraSearchQuery,
   KhoraSearchRequest,
   KhoraSearchResponse,

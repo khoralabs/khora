@@ -45,25 +45,33 @@ export {
   zKhoraStandingSearchRequest,
 } from "./khora-standing-search";
 
-export const zKhoraSearchHydratedEntity = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("post"), entity: zKhoraPost }),
-  z.object({ kind: z.literal("subscription"), entity: zKhoraPost }),
+/**
+ * The original entity resolved from the author's outbox via sourcemap.
+ * For posts and subscriptions, `authorDid` is derived from the address-encoded post ID —
+ * it is not stored on the node, but computed at query time.
+ */
+export const zKhoraSearchOriginal = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("post"), post: zKhoraPost, authorDid: z.string() }),
+  z.object({ kind: z.literal("subscription"), post: zKhoraPost, authorDid: z.string() }),
   z.object({ kind: z.literal("profile"), entity: zKhoraProfile }),
   z.object({ kind: z.literal("ghost"), postId: z.string() }),
 ]);
 
-export type KhoraSearchHydratedEntity = z.infer<typeof zKhoraSearchHydratedEntity>;
+export type KhoraSearchOriginal = z.infer<typeof zKhoraSearchOriginal>;
 
 const zKhoraSearchNeighborHit = z
   .object({
-    hydrated: zKhoraSearchHydratedEntity.optional(),
+    original: zKhoraSearchOriginal.optional(),
   })
   .loose();
 
 export const zKhoraSearchHit = z
   .object({
     score: z.number(),
-    hydrated: zKhoraSearchHydratedEntity.optional(),
+    /** Which content feature of the memory matched (e.g. "body", "query"). */
+    sourceKey: z.string().optional(),
+    /** Original entity resolved from the author's outbox. */
+    original: zKhoraSearchOriginal.optional(),
     neighbors: z.array(zKhoraSearchNeighborHit).optional(),
   })
   .loose();

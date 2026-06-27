@@ -101,67 +101,69 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
             validateNbcBindPayloadForPort(bindPolicy, bindPayload) as JsonDocument,
           handlers: {
             onSessionReady: async (handle) => {
-              state.handles.set(handle.sessionId, handle);
               upsertChainRow(db, handle.sessionId, handle.init.genesis_hash, Date.now());
               for (const party of handle.init.parties) {
                 await persistence.registerParty({ id: party.id, name: party.id });
               }
-              logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
 
-              // Responder: join MLS group using the Welcome published by the initiator
+              // Responder: await MLS join before registering handle so sendTurn is gated
+              // until the MLS session exists. On failure the handle is still registered
+              // (degraded mode) so the chain remains usable without MLS encryption.
               const peerParty = handle.init.parties.find((p) => p.pubkey !== frameSigner.actor);
               if (peerParty !== undefined) {
-                void (async () => {
-                  try {
-                    const fetched = await fetchMlsWelcomeHttp(
-                      opts.relayBaseUrl,
-                      opts.signer,
-                      opts.channelId,
-                      handle.sessionId,
-                    );
-                    const welcomeBytes = base64UrlToBytes(fetched.welcome);
-                    const stored = await kpm.listStoredKeyPackages();
-                    // Find a matching stored KeyPackage by trying each (Welcome contains the target init key)
-                    let joined = false;
-                    for (const s of stored) {
-                      try {
-                        const mlsSession = new MlsGroupSession(
-                          handle.sessionId,
-                          frameSigner.did,
-                          ed25519PrivKey,
-                        );
-                        await mlsSession.joinFromWelcome(
-                          welcomeBytes,
-                          s.privatePackage,
-                          s.publicPackage,
-                        );
-                        joined = true;
-                        break;
-                      } catch {
-                        // try next
-                      }
+                try {
+                  const fetched = await fetchMlsWelcomeHttp(
+                    opts.relayBaseUrl,
+                    opts.signer,
+                    opts.channelId,
+                    handle.sessionId,
+                  );
+                  const welcomeBytes = base64UrlToBytes(fetched.welcome);
+                  const stored = await kpm.listStoredKeyPackages();
+                  // Find a matching stored KeyPackage by trying each (Welcome contains the target init key)
+                  let joined = false;
+                  for (const s of stored) {
+                    try {
+                      const mlsSession = new MlsGroupSession(
+                        handle.sessionId,
+                        frameSigner.did,
+                        ed25519PrivKey,
+                      );
+                      await mlsSession.joinFromWelcome(
+                        welcomeBytes,
+                        s.privatePackage,
+                        s.publicPackage,
+                      );
+                      joined = true;
+                      break;
+                    } catch {
+                      // try next key package
                     }
-                    if (joined) {
-                      logLine(json, "vellum_mls_joined", { sessionId: handle.sessionId });
-                    } else {
-                      logLine(json, "vellum_mls_join_failed", {
-                        sessionId: handle.sessionId,
-                        error: "no matching KeyPackage",
-                      });
-                    }
-                  } catch (e) {
-                    const msg = e instanceof Error ? e.message : String(e);
-                    logLine(json, "vellum_mls_join_error", {
+                  }
+                  if (joined) {
+                    logLine(json, "vellum_mls_joined", { sessionId: handle.sessionId });
+                  } else {
+                    logLine(json, "vellum_mls_join_failed", {
                       sessionId: handle.sessionId,
-                      error: msg,
+                      error: "no matching KeyPackage",
                     });
                   }
-                })();
+                } catch (e) {
+                  const msg = e instanceof Error ? e.message : String(e);
+                  logLine(json, "vellum_mls_join_error", {
+                    sessionId: handle.sessionId,
+                    error: msg,
+                  });
+                }
               }
+
+              // Register handle after MLS attempt — turns queued by callers until this point
+              state.handles.set(handle.sessionId, handle);
+              logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
             },
           },
         },
-        async (conn) => {
+        async (conn, getFrameCount) => {
           state.conn = conn;
 
           await channelClient.registerActor(opts.channelId, frameSigner.actor);
@@ -184,21 +186,40 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
           });
           serverStop = server.stop;
           const existing = readVellumControlFile(opts.cfg, opts.channelId);
+          const initialLastBlobId = opts.lastBlobId ?? existing?.lastBlobId;
           writeVellumControlFile(opts.cfg, opts.channelId, {
             pid: process.pid,
             controlPort: server.port,
             channelId: opts.channelId,
-            ...(opts.lastBlobId !== undefined
-              ? { lastBlobId: opts.lastBlobId }
-              : existing?.lastBlobId !== undefined
-                ? { lastBlobId: existing.lastBlobId }
-                : {}),
+            ...(initialLastBlobId !== undefined ? { lastBlobId: initialLastBlobId } : {}),
           });
           logLine(json, "vellum_control", {
             hostname: server.hostname,
             port: server.port,
           });
-          await hold;
+
+          // Periodically update lastBlobId estimate in the control file so crash-recovery
+          // reconnects replay as few frames as possible. frameCount + initialLastBlobId
+          // approximates the relay's current spool position (imprecise but directionally
+          // correct — OBP replay is idempotent via INSERT OR IGNORE).
+          const blobIdUpdateInterval =
+            initialLastBlobId !== undefined
+              ? setInterval(() => {
+                  const est = initialLastBlobId + getFrameCount();
+                  writeVellumControlFile(opts.cfg, opts.channelId, {
+                    pid: process.pid,
+                    controlPort: server.port,
+                    channelId: opts.channelId,
+                    lastBlobId: est,
+                  });
+                }, 30_000)
+              : undefined;
+
+          try {
+            await hold;
+          } finally {
+            if (blobIdUpdateInterval !== undefined) clearInterval(blobIdUpdateInterval);
+          }
         },
       );
     } catch (e) {

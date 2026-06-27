@@ -1,6 +1,6 @@
 export type {
   KhoraSearchHit,
-  KhoraSearchHydratedEntity,
+  KhoraSearchOriginal,
   KhoraSearchQuery,
   KhoraSearchRequest,
   KhoraSearchResponse,

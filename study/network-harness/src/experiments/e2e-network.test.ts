@@ -8,43 +8,11 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
-import { loadIdentity } from "@khoralabs/agent-persisted-signer";
 import type { KhoraClientEvent } from "@khoralabs/khora-client";
-import { AgentStore } from "@khoralabs/khora-managed-agents";
-import { RelayClient } from "@khoralabs/relay-client";
 import { type NetworkHarnessHandle, startNetworkHarness } from "../harness";
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-async function waitFor(
-  condition: () => boolean | Promise<boolean>,
-  opts: { timeoutMs?: number; pollMs?: number; label?: string } = {},
-): Promise<void> {
-  const { timeoutMs = 10_000, pollMs = 200, label = "condition" } = opts;
-  const deadline = Date.now() + timeoutMs;
-  while (true) {
-    if (await condition()) return;
-    if (Date.now() > deadline) throw new Error(`waitFor timed out: ${label}`);
-    await Bun.sleep(pollMs);
-  }
-}
-
-function inboxHasPost(events: KhoraClientEvent[], postId: string): boolean {
-  return events.some((e) => {
-    if (e.type === "inbox:notification") {
-      const n = e.notification as { kind: string; payload: { postId: string } };
-      return n.kind === "inbox_post" && n.payload.postId === postId;
-    }
-    if (e.type === "inbox:drain") {
-      // Subscription fan-outs arrive via drain on WS connect
-      return e.items.some((item) => {
-        const proj = item.projection as Record<string, unknown> | null | undefined;
-        return proj?.postId === postId;
-      });
-    }
-    return false;
-  });
-}
+import { inboxHasPost } from "../lib/inbox";
+import { openVellumChain } from "../lib/vellum";
+import { waitFor } from "../lib/wait-for";
 
 // ── harness ───────────────────────────────────────────────────────────────────
 
@@ -124,72 +92,20 @@ describe("multi-agent OBP network", () => {
     // Charlie's own post doesn't generate a self-notification
     expect(inboxHasPost(charlieEvents, post.id)).toBe(false);
 
-    // ── 6. Load agent identities for relay channel management ─────────────
-    const aliceKeyPath = AgentStore.keyPath(agentsDataDir, aliceDid);
-    const bobKeyPath = AgentStore.keyPath(agentsDataDir, bobDid);
-
-    const aliceSigner = await loadIdentity(aliceKeyPath);
-    const bobSigner = await loadIdentity(bobKeyPath);
-    if (!aliceSigner || !bobSigner) throw new Error("failed to load agent signers");
-
-    // ── 7. Alice creates a relay channel; Bob joins via invite token ──────
-    const aliceRelayClient = new RelayClient({
-      relayBaseUrl: harness.relayBaseUrl,
-      signer: aliceSigner,
-    });
-    const bobRelayClient = new RelayClient({
-      relayBaseUrl: harness.relayBaseUrl,
-      signer: bobSigner,
-    });
-
-    const { channelId, inviteToken } = await aliceRelayClient.createChannel({});
-    expect(channelId).toBeTruthy();
-    if (inviteToken) {
-      await bobRelayClient.joinChannel({ inviteToken });
-    }
-
-    // ── 8. Connect vellum daemons for Alice and Bob ───────────────────────
+    // ── 6–9. Alice opens a Vellum channel with Bob and establishes an OBP chain
     const vellumDataDir = path.join(dataDir, "vellum");
-
-    const aliceVellum = alice.vellum(channelId, {
+    const {
+      initiatorVellum: aliceVellum,
+      responderVellum: bobVellum,
+      sessionId,
+    } = await openVellumChain(alice, bob, {
       relayBaseUrl: harness.relayBaseUrl,
-      dataDir: path.join(vellumDataDir, "alice"),
+      agentsDataDir,
+      vellumDataDir,
+      initiatorLabel: "alice",
+      responderLabel: "bob",
     });
-    const bobVellum = bob.vellum(channelId, {
-      relayBaseUrl: harness.relayBaseUrl,
-      dataDir: path.join(vellumDataDir, "bob"),
-    });
-
-    const [aliceConnect, bobConnect] = await Promise.all([
-      aliceVellum.connect(),
-      bobVellum.connect(),
-    ]);
-    expect(aliceConnect).toBe("spawned");
-    expect(bobConnect).toBe("spawned");
-
-    // Allow daemons to publish KeyPackages and sync the roster
-    await Bun.sleep(3_000);
-
-    // ── 9. Alice creates an OBP chain with Bob ────────────────────────────
-    const chainResp = await aliceVellum.chainCreate({ counterpartyDid: bobDid });
-    expect(chainResp.ok).toBe(true);
-    const sessionId = chainResp.session_id;
     expect(sessionId).toBeTruthy();
-
-    // Alice's chain list updates synchronously after chainCreate returns
-    await waitFor(() => aliceVellum.listChains().some((c) => c.session_id === sessionId), {
-      timeoutMs: 5_000,
-      label: "alice chain in store",
-    });
-
-    // Bob's daemon processes onSessionReady asynchronously; poll his control server
-    await waitFor(
-      async () => {
-        const snap = await bobVellum.getChainSnapshot().catch(() => null);
-        return snap?.chains.some((c) => c.session_id === sessionId) ?? false;
-      },
-      { timeoutMs: 20_000, pollMs: 500, label: "bob sees chain" },
-    );
 
     // ── 10. Alice sends an offer turn on the chain ────────────────────────
     const offerTurn = {
