@@ -13,6 +13,7 @@ export {
   loadVellumAppConfig,
 } from "./load";
 export { mergeVellumAppConfigLayers } from "./merge";
+export { normalizeVellumAppConfigRaw } from "./normalize";
 export {
   defaultVellumCliConfigPath,
   defaultVellumDaemonConfigPath,

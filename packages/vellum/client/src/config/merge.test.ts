@@ -4,10 +4,10 @@ import { mergeVellumAppConfigLayers } from "./merge";
 describe("mergeVellumAppConfigLayers", () => {
   test("last wins on overlapping keys", () => {
     const merged = mergeVellumAppConfigLayers([
-      { baseUrl: "http://a", dataDir: "/x" },
-      { baseUrl: "http://b" },
+      { relayBaseUrl: "http://a", dataDir: "/x" },
+      { relayBaseUrl: "http://b" },
     ]);
-    expect(merged.baseUrl).toBe("http://b");
+    expect(merged.relayBaseUrl).toBe("http://b");
     expect(merged.dataDir).toBe("/x");
   });
 

@@ -7,6 +7,7 @@ export const ChainInitWireSchema = z.object({
   session_id: z.string(),
   genesis_hash: z.string().regex(/^[0-9a-f]{64}$/),
   party_dids: z.tuple([z.string(), z.string()]),
+  peer_identity_key: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
 export type ChainInitWire = z.infer<typeof ChainInitWireSchema>;

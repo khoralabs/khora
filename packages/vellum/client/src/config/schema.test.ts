@@ -34,6 +34,24 @@ describe("zVellumAppConfigBase", () => {
     const r = zVellumAppConfigBase.safeParse({ extra: 1 });
     expect(r.success).toBe(false);
   });
+
+  test("loadVellumAppConfig maps legacy baseUrl to relayBaseUrl", () => {
+    const { config } = loadVellumAppConfig({
+      schema: zVellumAppConfigBase,
+      layers: [{ baseUrl: "http://legacy-relay" }],
+      filePath: null,
+    });
+    expect(config.relayBaseUrl).toBe("http://legacy-relay");
+  });
+
+  test("loadVellumAppConfig prefers relayBaseUrl over legacy baseUrl", () => {
+    const { config } = loadVellumAppConfig({
+      schema: zVellumAppConfigBase,
+      layers: [{ baseUrl: "http://legacy-relay" }, { relayBaseUrl: "http://canonical-relay" }],
+      filePath: null,
+    });
+    expect(config.relayBaseUrl).toBe("http://canonical-relay");
+  });
 });
 
 describe("loadVellumAppConfig", () => {

@@ -258,11 +258,19 @@ export class VellumClient {
 
       const genesisTurn = input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE;
 
+      const roster = await channelClient.getRoster(this.opts.channelId);
+      const peerMember = roster.members.find((m) => m.principalUri === peerDid);
+      const peerIdentityKey = peerMember?.actorPubkey?.trim();
+      if (peerIdentityKey === undefined || !/^[0-9a-f]{64}$/.test(peerIdentityKey)) {
+        throw new Error(`peer identity key not in roster for ${peerDid}`);
+      }
+
       const payload = {
         init: {
           session_id: sessionId,
           genesis_hash: genesis,
           party_dids: [myDid, peerDid] as [string, string],
+          peer_identity_key: peerIdentityKey,
         },
         genesis_turn: genesisTurn,
       };
