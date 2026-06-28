@@ -81,7 +81,13 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
 
     const kpm = channelClient.createKeyPackageManager(frameSigner.did, ed25519PrivKey);
     await kpm.replenishIfNeeded();
-    kpm.startAutoReplenish();
+    kpm.startAutoReplenish({
+      onGiveUp: (error, attempts) => {
+        const msg = error instanceof Error ? error.message : String(error);
+        logLine(json, "vellum_keypackage_replenish_fatal", { error: msg, attempts });
+        process.exit(1);
+      },
+    });
     logLine(json, "vellum_keypackages_published", { did: frameSigner.did });
 
     try {
@@ -161,6 +167,27 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
               state.handles.set(handle.sessionId, handle);
               logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
             },
+            onFrameError: (() => {
+              // Rate-limit logging: at most 1 log per second + a summary count.
+              // Prevents a junk-flooding peer from filling disk.
+              let suppressed = 0;
+              let lastLogMs = 0;
+              return (e: unknown, context: string) => {
+                const now = Date.now();
+                if (now - lastLogMs >= 1000) {
+                  const msg = e instanceof Error ? e.message : String(e);
+                  logLine(json, "vellum_frame_skipped", {
+                    context,
+                    error: msg,
+                    ...(suppressed > 0 ? { suppressed } : {}),
+                  });
+                  suppressed = 0;
+                  lastLogMs = now;
+                } else {
+                  suppressed++;
+                }
+              };
+            })(),
           },
         },
         async (conn, getFrameCount) => {

@@ -41,19 +41,23 @@ function filterEchoedInits(
       for await (const chunk of inner.read()) {
         if (ownedIds.size > 0) {
           try {
-            const text = new TextDecoder().decode(chunk);
-            const parsed = JSON.parse(text) as unknown;
-            if (
-              parsed !== null &&
-              typeof parsed === "object" &&
-              "init" in parsed &&
-              parsed.init !== null &&
-              typeof parsed.init === "object" &&
-              "session_id" in parsed.init &&
-              typeof (parsed.init as Record<string, unknown>).session_id === "string" &&
-              ownedIds.has((parsed.init as Record<string, unknown>).session_id as string)
-            ) {
-              continue; // drop echoed init
+            // OBP wire format: uint32_be(length) followed by JSON payload.
+            // Must skip the 4-byte length prefix before parsing JSON.
+            if (chunk.length > 4) {
+              const text = new TextDecoder().decode(chunk.subarray(4));
+              const parsed = JSON.parse(text) as unknown;
+              if (
+                parsed !== null &&
+                typeof parsed === "object" &&
+                "init" in parsed &&
+                parsed.init !== null &&
+                typeof parsed.init === "object" &&
+                "session_id" in parsed.init &&
+                typeof (parsed.init as Record<string, unknown>).session_id === "string" &&
+                ownedIds.has((parsed.init as Record<string, unknown>).session_id as string)
+              ) {
+                continue; // drop echoed init
+              }
             }
           } catch {
             // not JSON or malformed — pass through and let the multiplex handle it
