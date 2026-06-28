@@ -10,11 +10,11 @@ import type {
 } from "./types";
 
 export type Percolator = {
-  registerQuery(create: StandingQueryCreate, now?: number): StandingQuery;
-  deactivateQuery(queryId: string, now?: number): void;
-  deleteQuery(queryId: string): void;
-  getQuery(queryId: string): StandingQuery | undefined;
-  listQueriesByOwner(ownerId: string): StandingQuery[];
+  registerQuery(create: StandingQueryCreate, now?: number): Promise<StandingQuery>;
+  deactivateQuery(queryId: string, now?: number): Promise<void>;
+  deleteQuery(queryId: string): Promise<void>;
+  getQuery(queryId: string): Promise<StandingQuery | undefined>;
+  listQueriesByOwner(ownerId: string): Promise<StandingQuery[]>;
   evaluateCandidate(candidate: PercolatorCandidate, now?: number): Promise<PercolatorMatch[]>;
 };
 
@@ -35,9 +35,9 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
   const embeddingCache = new Map<string, number[]>();
 
   return {
-    registerQuery(create: StandingQueryCreate, now = Date.now()): StandingQuery {
+    async registerQuery(create: StandingQueryCreate, now = Date.now()): Promise<StandingQuery> {
       const minScore = resolveMinScore(create);
-      const existing = persistence.getQuery(create.id);
+      const existing = await persistence.getQuery(create.id);
       const query: StandingQuery = {
         ...create,
         minScore,
@@ -46,25 +46,25 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
         updatedAtMs: now,
       };
       embeddingCache.delete(create.id);
-      persistence.upsertQuery(query);
+      await persistence.upsertQuery(query);
       return query;
     },
 
-    deactivateQuery(queryId: string, now = Date.now()): void {
+    async deactivateQuery(queryId: string, now = Date.now()): Promise<void> {
       embeddingCache.delete(queryId);
-      persistence.deactivateQuery(queryId, now);
+      await persistence.deactivateQuery(queryId, now);
     },
 
-    deleteQuery(queryId: string): void {
+    async deleteQuery(queryId: string): Promise<void> {
       embeddingCache.delete(queryId);
-      persistence.deleteQuery(queryId);
+      await persistence.deleteQuery(queryId);
     },
 
-    getQuery(queryId: string): StandingQuery | undefined {
+    async getQuery(queryId: string): Promise<StandingQuery | undefined> {
       return persistence.getQuery(queryId);
     },
 
-    listQueriesByOwner(ownerId: string): StandingQuery[] {
+    async listQueriesByOwner(ownerId: string): Promise<StandingQuery[]> {
       return persistence.listQueriesByOwner(ownerId);
     },
 
@@ -74,7 +74,7 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
     ): Promise<PercolatorMatch[]> {
       const matches: PercolatorMatch[] = [];
 
-      for (const query of persistence.listActiveFilterQueries(now)) {
+      for (const query of await persistence.listActiveFilterQueries(now)) {
         if (query.ownerId === candidate.authorId) continue;
         if (!passesSearchFilters(candidate, query.search)) continue;
         if (FILTER_ONLY_MATCH_SCORE >= query.minScore) {
@@ -88,7 +88,7 @@ export function createPercolator(deps: CreatePercolatorDeps): Percolator {
         }
       }
 
-      for (const query of persistence.listActiveSemanticQueries(now)) {
+      for (const query of await persistence.listActiveSemanticQueries(now)) {
         if (query.ownerId === candidate.authorId) continue;
         if (!passesSearchFilters(candidate, query.search)) continue;
 

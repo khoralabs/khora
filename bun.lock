@@ -637,8 +637,14 @@
     },
     "packages/khora/percolator/turso-serverless": {
       "name": "@khoralabs/percolator-turso-serverless",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/percolator": "workspace:*",
+        "@tursodatabase/serverless": "^1.2.3",
+      },
       "devDependencies": {
         "@types/bun": "latest",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",

@@ -172,7 +172,7 @@ describe("percolator inbox subscriptionMatches", () => {
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
     };
-    percolator.percolator.registerQuery({
+    await percolator.percolator.registerQuery({
       id: "sub-query-1",
       ownerId: "did:sub",
       search: {
@@ -258,7 +258,7 @@ describe("percolator inbox subscriptionMatches", () => {
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
     };
-    percolator.percolator.registerQuery({
+    await percolator.percolator.registerQuery({
       id: "sub-query-topic",
       ownerId: "did:sub",
       search: {
@@ -342,7 +342,7 @@ describe("percolator inbox subscriptionMatches", () => {
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
     };
-    percolator.percolator.registerQuery({
+    await percolator.percolator.registerQuery({
       id: "sub-query-author",
       ownerId: "did:sub",
       search: toPercolatorSearch(authorSubscriptionSearch(authorProfile.id, root)),
@@ -418,7 +418,7 @@ describe("percolator inbox subscriptionMatches", () => {
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
     };
-    percolator.percolator.registerQuery({
+    await percolator.percolator.registerQuery({
       id: "sub-query-private",
       ownerId: "did:sub",
       search: {
@@ -503,7 +503,7 @@ describe("percolator inbox subscriptionMatches", () => {
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
     };
-    percolator.percolator.registerQuery({
+    await percolator.percolator.registerQuery({
       id: "sub-query-peer",
       ownerId: "did:peer",
       search: {
@@ -511,7 +511,7 @@ describe("percolator inbox subscriptionMatches", () => {
         options: { labels: { some: ["khora_topic:network"] } },
       },
     });
-    percolator.percolator.registerQuery({
+    await percolator.percolator.registerQuery({
       id: "sub-query-stranger",
       ownerId: "did:stranger",
       search: {

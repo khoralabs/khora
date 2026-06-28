@@ -1,12 +1,13 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createPercolator } from "@khoralabs/percolator";
-import { createPercolatorSqlitePersistence } from "./index";
+import { tursoClientsFromBunSqlite } from "./testing/bun-sqlite-adapter";
+import { createPercolatorTursoPersistence } from "./turso";
 
-describe("createPercolatorSqlitePersistence", () => {
+describe("createPercolatorTursoPersistence", () => {
   test("persists and reloads standing query with search json round-trip", async () => {
     const db = new Database(":memory:");
-    const persistence = createPercolatorSqlitePersistence(db);
+    const persistence = await createPercolatorTursoPersistence(tursoClientsFromBunSqlite(db));
     const percolator = createPercolator({ persistence });
     const search = {
       namespace: "global/agents/alice",
@@ -24,9 +25,9 @@ describe("createPercolatorSqlitePersistence", () => {
     expect(loaded?.minScore).toBe(0.005);
   });
 
-  test("filter-only and semantic evaluation via sqlite persistence", async () => {
+  test("filter-only and semantic evaluation via turso persistence", async () => {
     const db = new Database(":memory:");
-    const persistence = createPercolatorSqlitePersistence(db);
+    const persistence = await createPercolatorTursoPersistence(tursoClientsFromBunSqlite(db));
     const percolator = createPercolator({ persistence });
     await percolator.registerQuery({
       id: "filter",
@@ -61,7 +62,7 @@ describe("createPercolatorSqlitePersistence", () => {
 
   test("deactivated query excluded from active list", async () => {
     const db = new Database(":memory:");
-    const persistence = createPercolatorSqlitePersistence(db);
+    const persistence = await createPercolatorTursoPersistence(tursoClientsFromBunSqlite(db));
     const percolator = createPercolator({ persistence });
     const now = 5_000;
     await percolator.registerQuery({ id: "q1", ownerId: "owner-a", search: { content: {} } }, now);
@@ -78,5 +79,11 @@ describe("createPercolatorSqlitePersistence", () => {
       now,
     );
     expect(matches).toHaveLength(0);
+  });
+});
+
+describe("Turso percolator integration", () => {
+  test.skip("requires TURSO_DATABASE_URL and TURSO_AUTH_TOKEN", () => {
+    expect(true).toBe(true);
   });
 });

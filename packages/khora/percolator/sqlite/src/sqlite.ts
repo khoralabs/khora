@@ -137,7 +137,7 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
   );
 
   return {
-    upsertQuery(query: StandingQuery): void {
+    async upsertQuery(query: StandingQuery): Promise<void> {
       if (isFilterOnlyMode(query.search)) {
         deleteSemanticStmt.run(query.id);
         upsertFilterStmt.run(
@@ -167,17 +167,17 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
       }
     },
 
-    deactivateQuery(queryId: string, now: number): void {
+    async deactivateQuery(queryId: string, now: number): Promise<void> {
       deactivateFilterStmt.run(now, queryId);
       deactivateSemanticStmt.run(now, queryId);
     },
 
-    deleteQuery(queryId: string): void {
+    async deleteQuery(queryId: string): Promise<void> {
       deleteFilterStmt.run(queryId);
       deleteSemanticStmt.run(queryId);
     },
 
-    getQuery(queryId: string): StandingQuery | undefined {
+    async getQuery(queryId: string): Promise<StandingQuery | undefined> {
       const filterRow = getFilterStmt.get(queryId);
       if (filterRow !== null && filterRow !== undefined) return rowToFilterQuery(filterRow);
       const semanticRow = getSemanticStmt.get(queryId);
@@ -185,17 +185,17 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
       return undefined;
     },
 
-    listQueriesByOwner(ownerId: string): StandingQuery[] {
+    async listQueriesByOwner(ownerId: string): Promise<StandingQuery[]> {
       const filterRows = listFilterByOwnerStmt.all(ownerId).map(rowToFilterQuery);
       const semanticRows = listSemanticByOwnerStmt.all(ownerId).map(rowToSemanticQuery);
       return [...filterRows, ...semanticRows].sort((a, b) => a.createdAtMs - b.createdAtMs);
     },
 
-    listActiveFilterQueries(now: number): StandingQuery[] {
+    async listActiveFilterQueries(now: number): Promise<StandingQuery[]> {
       return listActiveFilterStmt.all(now).map(rowToFilterQuery);
     },
 
-    listActiveSemanticQueries(now: number): StandingQuery[] {
+    async listActiveSemanticQueries(now: number): Promise<StandingQuery[]> {
       return listActiveSemanticStmt.all(now).map(rowToSemanticQuery);
     },
   };

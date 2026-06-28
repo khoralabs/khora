@@ -5,7 +5,7 @@ describe("createPercolator", () => {
   test("filter-only empty query matches candidate with required label", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: {
@@ -29,7 +29,7 @@ describe("createPercolator", () => {
   test("filter-only rejects candidate missing label", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: {
@@ -51,7 +51,7 @@ describe("createPercolator", () => {
   test("namespace scope excludes out-of-scope candidate", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: {
@@ -74,12 +74,12 @@ describe("createPercolator", () => {
   test("semantic mode returns all queries above threshold exhaustively", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: { content: { text: "platform beta" }, options: { minScore: 0.001 } },
     });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q2",
       ownerId: "owner-b",
       search: { content: { text: "platform partners" }, options: { minScore: 0.001 } },
@@ -100,7 +100,7 @@ describe("createPercolator", () => {
   test("semantic mode excludes query below minScore", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: { content: { text: "platform" } },
@@ -120,7 +120,7 @@ describe("createPercolator", () => {
   test("minScore on create overrides search.options.minScore", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    const q = percolator.registerQuery({
+    const q = await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: { content: { text: "alpha" }, options: { minScore: 0.5 } },
@@ -142,7 +142,7 @@ describe("createPercolator", () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
     const now = 1_000_000;
-    percolator.registerQuery(
+    await percolator.registerQuery(
       {
         id: "expired",
         ownerId: "owner-a",
@@ -151,7 +151,7 @@ describe("createPercolator", () => {
       },
       now,
     );
-    percolator.registerQuery(
+    await percolator.registerQuery(
       {
         id: "active",
         ownerId: "owner-b",
@@ -159,7 +159,7 @@ describe("createPercolator", () => {
       },
       now,
     );
-    percolator.deactivateQuery("active", now);
+    await percolator.deactivateQuery("active", now);
     const matches = await percolator.evaluateCandidate(
       {
         candidateId: "c1",
@@ -177,7 +177,7 @@ describe("createPercolator", () => {
   test("does not match query owned by candidate author", async () => {
     const persistence = createInMemoryPercolatorPersistence();
     const percolator = createPercolator({ persistence });
-    percolator.registerQuery({
+    await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
       search: { content: {} },

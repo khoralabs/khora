@@ -6,30 +6,30 @@ export function createInMemoryPercolatorPersistence(): PercolatorPersistence {
   const queries = new Map<string, StandingQuery>();
 
   return {
-    upsertQuery(query: StandingQuery): void {
+    async upsertQuery(query: StandingQuery): Promise<void> {
       queries.set(query.id, { ...query });
     },
 
-    deactivateQuery(queryId: string, now: number): void {
+    async deactivateQuery(queryId: string, now: number): Promise<void> {
       const cur = queries.get(queryId);
       if (cur === undefined) return;
       queries.set(queryId, { ...cur, active: false, updatedAtMs: now });
     },
 
-    deleteQuery(queryId: string): void {
+    async deleteQuery(queryId: string): Promise<void> {
       queries.delete(queryId);
     },
 
-    getQuery(queryId: string): StandingQuery | undefined {
+    async getQuery(queryId: string): Promise<StandingQuery | undefined> {
       const q = queries.get(queryId);
       return q === undefined ? undefined : { ...q };
     },
 
-    listQueriesByOwner(ownerId: string): StandingQuery[] {
+    async listQueriesByOwner(ownerId: string): Promise<StandingQuery[]> {
       return [...queries.values()].filter((q) => q.ownerId === ownerId).map((q) => ({ ...q }));
     },
 
-    listActiveFilterQueries(now: number): StandingQuery[] {
+    async listActiveFilterQueries(now: number): Promise<StandingQuery[]> {
       return [...queries.values()]
         .filter(
           (q) =>
@@ -40,7 +40,7 @@ export function createInMemoryPercolatorPersistence(): PercolatorPersistence {
         .map((q) => ({ ...q }));
     },
 
-    listActiveSemanticQueries(now: number): StandingQuery[] {
+    async listActiveSemanticQueries(now: number): Promise<StandingQuery[]> {
       return [...queries.values()]
         .filter(
           (q) =>

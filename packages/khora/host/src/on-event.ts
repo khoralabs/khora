@@ -158,9 +158,9 @@ function registerSubscriptionQuery(
   percolator: KhoraPercolatorHost,
   post: KhoraPost,
   ownerPrincipalId: string,
-): void {
-  if (post.kind !== "subscription" || post.search === undefined) return;
-  percolator.percolator.registerQuery({
+): Promise<void> {
+  if (post.kind !== "subscription" || post.search === undefined) return Promise.resolve();
+  return percolator.percolator.registerQuery({
     id: post.id,
     ownerId: ownerPrincipalId,
     search: toPercolatorSearch(post.search),
@@ -232,7 +232,7 @@ export function createKhoraRelayOnEvent(deps: {
       const post = event.payload.post;
       const address = decodePostId(post.id);
       if (post.kind === "subscription" && percolator !== undefined && address !== undefined) {
-        registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
+        await registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
       }
       const result = await publishPost({
         ctx,
@@ -278,7 +278,7 @@ export function createKhoraRelayOnEvent(deps: {
       const previous = event.payload.previous;
       const address = decodePostId(post.id);
       if (post.kind === "subscription" && percolator !== undefined && address !== undefined) {
-        registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
+        await registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
       }
       await publishPost({
         ctx,
@@ -297,7 +297,7 @@ export function createKhoraRelayOnEvent(deps: {
     if (event.kind === KHORA_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
       if (post.kind === "subscription" && percolator !== undefined) {
-        percolator.percolator.deactivateQuery(post.id);
+        await percolator.percolator.deactivateQuery(post.id);
       }
       await deletePostOutboxRecord(cluster, post.id);
       if (memories !== undefined) {
