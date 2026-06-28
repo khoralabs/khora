@@ -1,13 +1,8 @@
+import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
-import {
-  findHostByBaseUrl,
-  getRegistryCatalogDb,
-  initCatalogSchema,
-  normalizeKhoraHostBaseUrl,
-  resetRegistryCatalogDb,
-  seedDefaultHost,
-} from "./index";
+import { initRegistryDomainSchema } from "@khoralabs/registry-persistence";
+import { createRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
+import { findHostByBaseUrl, normalizeKhoraHostBaseUrl, seedDefaultHost } from "./index";
 
 describe("normalizeKhoraHostBaseUrl", () => {
   test("strips trailing slash and lowercases hostname", () => {
@@ -26,28 +21,27 @@ describe("normalizeKhoraHostBaseUrl", () => {
 });
 
 describe("findHostByBaseUrl", () => {
+  let db: ReturnType<typeof createRegistrySqliteDatabase>;
+  let sqlite: Database;
+
   beforeEach(async () => {
-    resetRegistryCatalogDb();
-    process.env.REGISTRY_DATABASE_PATH = ":memory:";
-    applyTestEncryptionEnv();
-    const db = getRegistryCatalogDb();
-    await initCatalogSchema(db);
-    seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    sqlite = new Database(":memory:");
+    db = createRegistrySqliteDatabase(sqlite);
+    await initRegistryDomainSchema(db);
+    await seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
   });
 
   afterEach(() => {
-    delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryCatalogDb();
+    void db.close();
+    sqlite.close();
   });
 
-  test("matches loopback alias against seeded host", () => {
-    const db = getRegistryCatalogDb();
-    const host = findHostByBaseUrl(db, "http://127.0.0.1:8788");
+  test("matches loopback alias against seeded host", async () => {
+    const host = await findHostByBaseUrl(db, "http://127.0.0.1:8788");
     expect(host?.slug).toBe("khora-local");
   });
 
-  test("returns null when port differs", () => {
-    const db = getRegistryCatalogDb();
-    expect(findHostByBaseUrl(db, "http://localhost:8787")).toBeNull();
+  test("returns null when port differs", async () => {
+    expect(await findHostByBaseUrl(db, "http://localhost:8787")).toBeNull();
   });
 });

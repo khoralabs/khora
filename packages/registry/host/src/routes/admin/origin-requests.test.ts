@@ -1,17 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import {
-  ensureRegistrySchema,
-  getRegistryDatabase,
-  resetRegistryDatabase,
-} from "@khoralabs/registry-auth";
+import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
   listHostTrustedOriginStrings,
   registerKhoraHost,
   requestHostTrustedOrigin,
 } from "@khoralabs/registry-catalog";
+import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleAdminHostOriginRequestApprove,
@@ -38,26 +35,30 @@ describe("operator origin requests", () => {
   const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(async () => {
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    initTestRegistryHostRuntime(getRegistryDatabase());
+    initTestRegistryHostRuntime(getRegistrySqliteBundle().registry);
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
   });
 
   test("approve and reject origin requests", async () => {
-    const db = getRegistryDatabase();
-    const host = activateKhoraHost(
-      db,
-      registerKhoraHost(db, { slug: "op-host", baseUrl: "https://host.example.com" }).host.id,
+    const db = getRegistrySqliteBundle().registry;
+    const host = (
+      await activateKhoraHost(
+        db,
+        (
+          await registerKhoraHost(db, { slug: "op-host", baseUrl: "https://host.example.com" })
+        ).host.id,
+      )
     ).host;
-    const pending = requestHostTrustedOrigin(db, host.id, "https://app.example.com");
-    const rejected = requestHostTrustedOrigin(db, host.id, "https://other.example.com");
+    const pending = await requestHostTrustedOrigin(db, host.id, "https://app.example.com");
+    const rejected = await requestHostTrustedOrigin(db, host.id, "https://other.example.com");
     const cookie = await loginCookie(auth);
 
     const listRes = await handleAdminHostOriginRequests(
@@ -90,6 +91,6 @@ describe("operator origin requests", () => {
       pending.id,
     );
     expect(approveRes.status).toBe(200);
-    expect(listHostTrustedOriginStrings(db, host.id)).toEqual(["https://app.example.com"]);
+    expect(await listHostTrustedOriginStrings(db, host.id)).toEqual(["https://app.example.com"]);
   });
 });

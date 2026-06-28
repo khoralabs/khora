@@ -10,6 +10,7 @@ import {
   TrustedOriginConflictError,
   verifyHostManagementToken,
 } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { registryHostRuntime } from "../runtime";
 import { hostRegistryJson, hostToFullJson } from "./host-json";
 
@@ -23,11 +24,11 @@ function readBearerToken(req: Request): string | null {
   return token.length > 0 ? token : null;
 }
 
-function registryStateResponse(
-  host: NonNullable<ReturnType<typeof verifyHostManagementToken>>,
-  db: import("bun:sqlite").Database,
-): Response {
-  const state = readHostRegistryState(db, host.id);
+async function registryStateResponse(
+  host: Awaited<ReturnType<typeof verifyHostManagementToken>> & object,
+  db: RegistryDatabase,
+): Promise<Response> {
+  const state = await readHostRegistryState(db, host.id);
   if (state === null) {
     return Response.json({ error: "Host not found" }, { status: 404 });
   }
@@ -51,17 +52,17 @@ function mapOriginRequestError(err: unknown): { message: string; status: number 
   return { message: msg, status };
 }
 
-export function handleHostRegistryGet(req: Request, slug: string): Response {
+export async function handleHostRegistryGet(req: Request, slug: string): Promise<Response> {
   const token = readBearerToken(req);
   if (token === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = verifyHostManagementToken(db, slug, token);
+  const host = await verifyHostManagementToken(db, slug, token);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return registryStateResponse(host, db);
+  return await registryStateResponse(host, db);
 }
 
 export async function handleHostRegistryOriginRequestPost(
@@ -73,7 +74,7 @@ export async function handleHostRegistryOriginRequestPost(
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = verifyHostManagementToken(db, slug, token);
+  const host = await verifyHostManagementToken(db, slug, token);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -90,7 +91,7 @@ export async function handleHostRegistryOriginRequestPost(
   }
 
   try {
-    const request = requestHostTrustedOrigin(db, host.id, origin);
+    const request = await requestHostTrustedOrigin(db, host.id, origin);
     return Response.json({ ok: true, request }, { status: 201 });
   } catch (err: unknown) {
     const mapped = mapOriginRequestError(err);
@@ -98,24 +99,24 @@ export async function handleHostRegistryOriginRequestPost(
   }
 }
 
-export function handleHostRegistryOriginRequestDelete(
+export async function handleHostRegistryOriginRequestDelete(
   req: Request,
   slug: string,
   requestId: string,
-): Response {
+): Promise<Response> {
   const token = readBearerToken(req);
   if (token === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = verifyHostManagementToken(db, slug, token);
+  const host = await verifyHostManagementToken(db, slug, token);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    cancelHostTrustedOriginRequest(db, host.id, requestId.trim());
-    return registryStateResponse(host, db);
+    await cancelHostTrustedOriginRequest(db, host.id, requestId.trim());
+    return await registryStateResponse(host, db);
   } catch (err: unknown) {
     const mapped = mapOriginRequestError(err);
     return Response.json({ error: mapped.message }, { status: mapped.status });
@@ -131,7 +132,7 @@ export async function handleHostRegistryOriginDelete(
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = verifyHostManagementToken(db, slug, token);
+  const host = await verifyHostManagementToken(db, slug, token);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -148,8 +149,8 @@ export async function handleHostRegistryOriginDelete(
   }
 
   try {
-    removeHostTrustedOrigin(db, host.id, origin);
-    return registryStateResponse(host, db);
+    await removeHostTrustedOrigin(db, host.id, origin);
+    return await registryStateResponse(host, db);
   } catch (err: unknown) {
     const mapped = mapOriginRequestError(err);
     return Response.json({ error: mapped.message }, { status: mapped.status });
@@ -171,7 +172,7 @@ export async function handleHostRegistryQuotaRequestPost(
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = verifyHostManagementToken(db, slug, token);
+  const host = await verifyHostManagementToken(db, slug, token);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -187,7 +188,7 @@ export async function handleHostRegistryQuotaRequestPost(
   }
 
   try {
-    const request = requestHostTrustedOriginQuota(db, host.id, body.requestedIncluded);
+    const request = await requestHostTrustedOriginQuota(db, host.id, body.requestedIncluded);
     return Response.json({ ok: true, request }, { status: 201 });
   } catch (err: unknown) {
     const mapped = mapQuotaRequestError(err);
@@ -195,38 +196,38 @@ export async function handleHostRegistryQuotaRequestPost(
   }
 }
 
-export function handleHostRegistryQuotaRequestDelete(
+export async function handleHostRegistryQuotaRequestDelete(
   req: Request,
   slug: string,
   requestId: string,
-): Response {
+): Promise<Response> {
   const token = readBearerToken(req);
   if (token === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = verifyHostManagementToken(db, slug, token);
+  const host = await verifyHostManagementToken(db, slug, token);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    cancelHostTrustedOriginQuotaRequest(db, host.id, requestId.trim());
-    return registryStateResponse(host, db);
+    await cancelHostTrustedOriginQuotaRequest(db, host.id, requestId.trim());
+    return await registryStateResponse(host, db);
   } catch (err: unknown) {
     const mapped = mapQuotaRequestError(err);
     return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 }
 
-export function hostRegistryFullJson(
+export async function hostRegistryFullJson(
   host: Parameters<typeof hostToFullJson>[0],
-  db: import("bun:sqlite").Database,
+  db: RegistryDatabase,
   managementToken: string | null,
-): Record<string, unknown> {
-  const state = readHostRegistryState(db, host.id);
+): Promise<Record<string, unknown>> {
+  const state = await readHostRegistryState(db, host.id);
   return {
-    host: hostToFullJson(host, db),
+    host: await hostToFullJson(host, db),
     ...(managementToken !== null ? { managementToken } : {}),
     ...(state !== null ? hostRegistryJson(host, state) : {}),
   };

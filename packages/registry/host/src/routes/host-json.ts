@@ -1,6 +1,6 @@
-import type { Database } from "bun:sqlite";
 import type { HostRegistryState, KhoraHost } from "@khoralabs/registry-catalog";
 import { readHostRegistryState } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 
 export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
   return {
@@ -39,8 +39,11 @@ export function hostToPublicJson(host: KhoraHost): Record<string, unknown> {
   };
 }
 
-export function hostToFullJson(host: KhoraHost, db: Database): Record<string, unknown> {
-  const state = readHostRegistryState(db, host.id);
+export async function hostToFullJson(
+  host: KhoraHost,
+  db: RegistryDatabase,
+): Promise<Record<string, unknown>> {
+  const state = await readHostRegistryState(db, host.id);
   return {
     ...hostToPublicJson(host),
     status: host.status,

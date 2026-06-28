@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
@@ -8,9 +7,10 @@ import {
   hashDeviceCode,
 } from "@khoralabs/registry-accounts";
 import type { RegistryIdentityPort } from "@khoralabs/registry-host";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 
 export type DeviceRouteDeps = {
-  db: Database;
+  db: RegistryDatabase;
   identity: RegistryIdentityPort;
   publicUrl: () => string;
   deviceVerificationPath: string;
@@ -29,7 +29,7 @@ export async function handleDeviceAuthorize(
     /* optional body */
   }
 
-  const { device, deviceCode } = createDeviceAuthorization(deps.db, {
+  const { device, deviceCode } = await createDeviceAuthorization(deps.db, {
     sourceApp: sourceApp ?? deps.defaultSourceApp,
   });
   const base = deps.publicUrl();
@@ -73,7 +73,10 @@ export async function handleDeviceApprove(req: Request, deps: DeviceRouteDeps): 
   }
 
   try {
-    const device = approveDeviceAuthorization(deps.db, { userCode, sessionToken: sessionCookie });
+    const device = await approveDeviceAuthorization(deps.db, {
+      userCode,
+      sessionToken: sessionCookie,
+    });
     return Response.json({ ok: true, user_code: device.userCode });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "approve failed";
@@ -100,13 +103,7 @@ export async function handleDeviceToken(req: Request, deps: DeviceRouteDeps): Pr
   }
 
   const hash = hashDeviceCode(deviceCode);
-  const existing = deps.db
-    .prepare(
-      `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
-              approved_at_ms, consumed_at_ms, source_app, created_at_ms
-       FROM device_authorizations WHERE device_code_hash = ? LIMIT 1`,
-    )
-    .get(hash) as {
+  const existing = await deps.db.queryOne<{
     id: string;
     device_code_hash: string;
     user_code: string;
@@ -117,9 +114,14 @@ export async function handleDeviceToken(req: Request, deps: DeviceRouteDeps): Pr
     consumed_at_ms: number | null;
     source_app: string | null;
     created_at_ms: number;
-  } | null;
+  }>(
+    `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
+            approved_at_ms, consumed_at_ms, source_app, created_at_ms
+     FROM device_authorizations WHERE device_code_hash = ? LIMIT 1`,
+    [hash],
+  );
 
-  if (existing === null) {
+  if (existing === undefined) {
     return Response.json({ error: "Unknown device" }, { status: 404 });
   }
 
@@ -136,7 +138,7 @@ export async function handleDeviceToken(req: Request, deps: DeviceRouteDeps): Pr
     createdAtMs: existing.created_at_ms,
   };
 
-  const checked = expireDeviceIfNeeded(deps.db, device);
+  const checked = await expireDeviceIfNeeded(deps.db, device);
   if (checked.status === "expired") {
     return Response.json({ error: "expired", status: "expired" }, { status: 400 });
   }
@@ -147,7 +149,7 @@ export async function handleDeviceToken(req: Request, deps: DeviceRouteDeps): Pr
     return Response.json({ status: "authorization_pending" }, { status: 428 });
   }
 
-  const consumed = consumeDeviceAuthorization(deps.db, deviceCode);
+  const consumed = await consumeDeviceAuthorization(deps.db, deviceCode);
   if (consumed === null || consumed.sessionToken === null) {
     return Response.json({ error: "token unavailable" }, { status: 500 });
   }

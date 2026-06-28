@@ -1,27 +1,26 @@
-import type { Database } from "bun:sqlite";
 import {
   findActiveHostBySlug,
   findHostByBaseUrl,
   type KhoraHost,
 } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
+import { registryHostRuntime } from "../runtime";
 
-export function resolveRegistryHost(
-  db: Database,
+export async function resolveRegistryHost(
+  db: RegistryDatabase,
   params: { hostBaseUrl?: string; hostSlug?: string },
-): KhoraHost | null {
+): Promise<KhoraHost | null> {
   const slug = params.hostSlug?.trim();
   if (slug !== undefined && slug.length > 0) {
-    const bySlug = findActiveHostBySlug(db, slug);
+    const bySlug = await findActiveHostBySlug(db, slug);
     if (bySlug !== null) return bySlug;
   }
   const baseUrl = params.hostBaseUrl?.trim();
   if (baseUrl !== undefined && baseUrl.length > 0) {
-    return findHostByBaseUrl(db, baseUrl);
+    return await findHostByBaseUrl(db, baseUrl);
   }
   return null;
 }
-
-import { registryHostRuntime } from "../runtime";
 
 export function registryPublicUrl(): string {
   return registryHostRuntime().publicUrl();

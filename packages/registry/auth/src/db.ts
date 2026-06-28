@@ -1,5 +1,14 @@
 export {
-  getRegistryCatalogDb as getRegistryDatabase,
+  getRegistrySqliteBundle,
+  getRegistrySqliteDatabase,
+  getRegistrySqliteDatabase as getRegistryDatabase,
   registryDatabasePath,
-  resetRegistryCatalogDb as resetRegistryDatabase,
-} from "@khoralabs/registry-catalog";
+  resetRegistrySqliteDatabase as resetRegistryDatabase,
+} from "@khoralabs/registry-sqlite";
+
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
+import { getRegistrySqliteBundle } from "@khoralabs/registry-sqlite";
+
+export function getRegistryDomainDatabase(): RegistryDatabase {
+  return getRegistrySqliteBundle().registry;
+}

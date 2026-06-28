@@ -1,41 +1,41 @@
+import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
+import { initRegistryDomainSchema } from "@khoralabs/registry-persistence";
+import { createRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import {
-  getRegistryCatalogDb,
-  initCatalogSchema,
   initializeRegistrationRequirements,
   probeHostHealth,
   readRegistrationPolicyFromEnv,
   recordHostHealthProbe,
   registerKhoraHost,
-  resetRegistryCatalogDb,
 } from "./index";
 
-function registerLabHost() {
-  const db = getRegistryCatalogDb();
-  const policy = readRegistrationPolicyFromEnv();
-  return registerKhoraHost(db, {
-    slug: "lab",
-    baseUrl: "http://localhost:8788",
-    registrationRequirements: initializeRegistrationRequirements(policy),
-  });
-}
-
 describe("probeHostHealth", () => {
+  let db: ReturnType<typeof createRegistrySqliteDatabase>;
+  let sqlite: Database;
+
   beforeEach(async () => {
-    resetRegistryCatalogDb();
-    process.env.REGISTRY_DATABASE_PATH = ":memory:";
-    applyTestEncryptionEnv();
-    await initCatalogSchema(getRegistryCatalogDb());
+    sqlite = new Database(":memory:");
+    db = createRegistrySqliteDatabase(sqlite);
+    await initRegistryDomainSchema(db);
   });
 
   afterEach(() => {
-    delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryCatalogDb();
+    void db.close();
+    sqlite.close();
   });
 
+  async function registerLabHost() {
+    const policy = readRegistrationPolicyFromEnv();
+    return registerKhoraHost(db, {
+      slug: "lab",
+      baseUrl: "http://localhost:8788",
+      registrationRequirements: initializeRegistrationRequirements(policy),
+    });
+  }
+
   test("ready 200 marks up with ready endpoint", async () => {
-    const { host } = registerLabHost();
+    const { host } = await registerLabHost();
     const fetchImpl = async (url: string) => {
       expect(url).toBe("http://localhost:8788/ready");
       return new Response("ready", { status: 200 });
@@ -49,7 +49,7 @@ describe("probeHostHealth", () => {
   });
 
   test("ready fail then health 200 marks up via health", async () => {
-    const { host } = registerLabHost();
+    const { host } = await registerLabHost();
     const fetchImpl = async (url: string) => {
       if (url.endsWith("/ready")) {
         return new Response("not ready", { status: 503 });
@@ -67,22 +67,32 @@ describe("probeHostHealth", () => {
 });
 
 describe("recordHostHealthProbe", () => {
+  let db: ReturnType<typeof createRegistrySqliteDatabase>;
+  let sqlite: Database;
+
   beforeEach(async () => {
-    resetRegistryCatalogDb();
-    process.env.REGISTRY_DATABASE_PATH = ":memory:";
-    applyTestEncryptionEnv();
-    await initCatalogSchema(getRegistryCatalogDb());
+    sqlite = new Database(":memory:");
+    db = createRegistrySqliteDatabase(sqlite);
+    await initRegistryDomainSchema(db);
   });
 
   afterEach(() => {
-    delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryCatalogDb();
+    void db.close();
+    sqlite.close();
   });
 
-  test("syncs health_check requirement with probe columns", () => {
-    const db = getRegistryCatalogDb();
-    const { host } = registerLabHost();
-    const updated = recordHostHealthProbe(db, host.id, {
+  async function registerLabHost() {
+    const policy = readRegistrationPolicyFromEnv();
+    return registerKhoraHost(db, {
+      slug: "lab",
+      baseUrl: "http://localhost:8788",
+      registrationRequirements: initializeRegistrationRequirements(policy),
+    });
+  }
+
+  test("syncs health_check requirement with probe columns", async () => {
+    const { host } = await registerLabHost();
+    const updated = await recordHostHealthProbe(db, host.id, {
       status: "up",
       latencyMs: 42,
       probedEndpoint: "ready",
@@ -94,10 +104,9 @@ describe("recordHostHealthProbe", () => {
     expect(healthReq?.detail).toContain("ready");
   });
 
-  test("failed probe marks requirement failed", () => {
-    const db = getRegistryCatalogDb();
-    const { host } = registerLabHost();
-    const updated = recordHostHealthProbe(db, host.id, {
+  test("failed probe marks requirement failed", async () => {
+    const { host } = await registerLabHost();
+    const updated = await recordHostHealthProbe(db, host.id, {
       status: "down",
       latencyMs: null,
       probedEndpoint: null,

@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 
 /** DDL owned by registry-catalog `initCatalogSchema`. */
-export function initAccountsSchema(_db: Database): void {}
+export async function initAccountsSchema(_db: RegistryDatabase): Promise<void> {}

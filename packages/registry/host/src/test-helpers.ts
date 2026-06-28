@@ -1,8 +1,8 @@
-import type { Database } from "bun:sqlite";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { initRegistryHostRuntime } from "./runtime";
 
 /** Minimal runtime for unit tests that call route handlers directly. */
-export function initTestRegistryHostRuntime(db: Database): void {
+export function initTestRegistryHostRuntime(db: RegistryDatabase): void {
   initRegistryHostRuntime({
     db,
     identity: {

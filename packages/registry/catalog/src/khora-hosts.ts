@@ -1,9 +1,9 @@
-import type { Database } from "bun:sqlite";
 import type {
   HostHealthProbedEndpoint,
   HostHealthStatus,
   KhoraHost,
 } from "@khoralabs/registry-catalog-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { normalizeHostHealthPath } from "./host-health-path";
 import { issueHostManagementToken } from "./host-management-token";
 import {
@@ -60,9 +60,12 @@ function storageBaseUrl(raw: string): string {
   return url.origin;
 }
 
-function findHostByNormalizedBaseUrl(db: Database, baseUrl: string): KhoraHost | null {
+async function findHostByNormalizedBaseUrl(
+  db: RegistryDatabase,
+  baseUrl: string,
+): Promise<KhoraHost | null> {
   const target = normalizeKhoraHostBaseUrl(baseUrl);
-  const rows = db.prepare(`SELECT ${HOST_COLUMNS} FROM khora_hosts`).all() as KhoraHostRow[];
+  const rows = await db.queryAll<KhoraHostRow>(`SELECT ${HOST_COLUMNS} FROM khora_hosts`);
   for (const row of rows) {
     try {
       if (normalizeKhoraHostBaseUrl(row.base_url) === target) {
@@ -75,74 +78,90 @@ function findHostByNormalizedBaseUrl(db: Database, baseUrl: string): KhoraHost |
   return null;
 }
 
-export function findHostBySlug(db: Database, slug: string): KhoraHost | null {
-  const row = db
-    .prepare(`SELECT ${HOST_COLUMNS} FROM khora_hosts WHERE slug = ? LIMIT 1`)
-    .get(normalizeHostSlug(slug)) as KhoraHostRow | null;
-  return row === null ? null : mapHost(row);
+export async function findHostBySlug(
+  db: RegistryDatabase,
+  slug: string,
+): Promise<KhoraHost | null> {
+  const row = await db.queryOne<KhoraHostRow>(
+    `SELECT ${HOST_COLUMNS} FROM khora_hosts WHERE slug = ? LIMIT 1`,
+    [normalizeHostSlug(slug)],
+  );
+  return row === undefined ? null : mapHost(row);
 }
 
-export function findActiveHostBySlug(db: Database, slug: string): KhoraHost | null {
-  const host = findHostBySlug(db, slug);
+export async function findActiveHostBySlug(
+  db: RegistryDatabase,
+  slug: string,
+): Promise<KhoraHost | null> {
+  const host = await findHostBySlug(db, slug);
   return host !== null && host.status === "active" ? host : null;
 }
 
-export function findPublicHostBySlug(db: Database, slug: string): KhoraHost | null {
-  return findActiveHostBySlug(db, slug);
+export async function findPublicHostBySlug(
+  db: RegistryDatabase,
+  slug: string,
+): Promise<KhoraHost | null> {
+  return await findActiveHostBySlug(db, slug);
 }
 
-export function findHostById(db: Database, hostId: string): KhoraHost | null {
-  const row = db
-    .prepare(`SELECT ${HOST_COLUMNS} FROM khora_hosts WHERE id = ? LIMIT 1`)
-    .get(hostId) as KhoraHostRow | null;
-  return row === null ? null : mapHost(row);
+export async function findHostById(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<KhoraHost | null> {
+  const row = await db.queryOne<KhoraHostRow>(
+    `SELECT ${HOST_COLUMNS} FROM khora_hosts WHERE id = ? LIMIT 1`,
+    [hostId],
+  );
+  return row === undefined ? null : mapHost(row);
 }
 
-export function listAllHosts(db: Database): KhoraHost[] {
-  const rows = db
-    .prepare(`SELECT ${HOST_COLUMNS} FROM khora_hosts ORDER BY slug ASC`)
-    .all() as KhoraHostRow[];
+export async function listAllHosts(db: RegistryDatabase): Promise<KhoraHost[]> {
+  const rows = await db.queryAll<KhoraHostRow>(
+    `SELECT ${HOST_COLUMNS} FROM khora_hosts ORDER BY slug ASC`,
+  );
   return rows.map(mapHost);
 }
 
-export function listActiveHosts(db: Database): KhoraHost[] {
-  const rows = db
-    .prepare(`SELECT ${HOST_COLUMNS} FROM khora_hosts WHERE status = 'active' ORDER BY slug ASC`)
-    .all() as KhoraHostRow[];
+export async function listActiveHosts(db: RegistryDatabase): Promise<KhoraHost[]> {
+  const rows = await db.queryAll<KhoraHostRow>(
+    `SELECT ${HOST_COLUMNS} FROM khora_hosts WHERE status = 'active' ORDER BY slug ASC`,
+  );
   return rows.map(mapHost);
 }
 
 /** Hosts probed by the registry health poller (active and pending). */
-export function listHostsForHealthPoll(db: Database): KhoraHost[] {
-  return listAllHosts(db).filter((host) => host.status === "active" || host.status === "pending");
+export async function listHostsForHealthPoll(db: RegistryDatabase): Promise<KhoraHost[]> {
+  return (await listAllHosts(db)).filter(
+    (host) => host.status === "active" || host.status === "pending",
+  );
 }
 
-export function listPublicHosts(db: Database): KhoraHost[] {
-  return listActiveHosts(db);
+export async function listPublicHosts(db: RegistryDatabase): Promise<KhoraHost[]> {
+  return await listActiveHosts(db);
 }
 
-export function saveHostRegistrationRequirements(
-  db: Database,
+export async function saveHostRegistrationRequirements(
+  db: RegistryDatabase,
   hostId: string,
   requirements: RegistrationRequirementState[],
-): KhoraHost {
-  const existing = findHostById(db, hostId);
+): Promise<KhoraHost> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
-  db.prepare(`UPDATE khora_hosts SET registration_requirements = ? WHERE id = ?`).run(
+  await db.exec(`UPDATE khora_hosts SET registration_requirements = ? WHERE id = ?`, [
     serializeRegistrationRequirements(requirements),
     hostId,
-  );
-  const host = findHostById(db, hostId);
+  ]);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host registration requirements update failed");
   }
   return host;
 }
 
-export function registerKhoraHost(
-  db: Database,
+export async function registerKhoraHost(
+  db: RegistryDatabase,
   params: {
     slug: string;
     baseUrl: string;
@@ -153,17 +172,17 @@ export function registerKhoraHost(
     healthPath?: string;
     registrationRequirements?: RegistrationRequirementState[];
   },
-): { host: KhoraHost; registrationSecret: string } {
+): Promise<{ host: KhoraHost; registrationSecret: string }> {
   const slug = normalizeHostSlug(params.slug);
   const baseUrl = storageBaseUrl(params.baseUrl);
   normalizeKhoraHostBaseUrl(baseUrl);
   const healthReadyPath = normalizeHostHealthPath(params.healthReadyPath ?? "/ready");
   const healthPath = normalizeHostHealthPath(params.healthPath ?? "/health");
 
-  if (findHostBySlug(db, slug) !== null) {
+  if ((await findHostBySlug(db, slug)) !== null) {
     throw new Error(`host slug already registered: ${slug}`);
   }
-  if (findHostByNormalizedBaseUrl(db, baseUrl) !== null) {
+  if ((await findHostByNormalizedBaseUrl(db, baseUrl)) !== null) {
     throw new Error(`host base URL already registered: ${baseUrl}`);
   }
 
@@ -173,33 +192,34 @@ export function registerKhoraHost(
     params.registrationRequirements !== undefined
       ? serializeRegistrationRequirements(params.registrationRequirements)
       : null;
-  db.prepare(
+  await db.exec(
     `INSERT INTO khora_hosts (
        id, slug, base_url, display_name, description, status, opted_in_at_ms, capabilities,
        health_ready_path, health_path, registration_requirements
      ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
-  ).run(
-    id,
-    slug,
-    baseUrl,
-    params.displayName?.trim() || null,
-    params.description?.trim() || null,
-    now,
-    params.capabilities === undefined ? null : JSON.stringify(params.capabilities),
-    healthReadyPath,
-    healthPath,
-    requirementsJson,
+    [
+      id,
+      slug,
+      baseUrl,
+      params.displayName?.trim() || null,
+      params.description?.trim() || null,
+      now,
+      params.capabilities === undefined ? null : JSON.stringify(params.capabilities),
+      healthReadyPath,
+      healthPath,
+      requirementsJson,
+    ],
   );
-  const registrationSecret = issueHostRegistrationSecret(db, id);
-  const host = findHostById(db, id);
+  const registrationSecret = await issueHostRegistrationSecret(db, id);
+  const host = await findHostById(db, id);
   if (host === null) {
     throw new Error("khora host insert failed");
   }
   return { host, registrationSecret };
 }
 
-export function updateHostHealthCheck(
-  db: Database,
+export async function updateHostHealthCheck(
+  db: RegistryDatabase,
   hostId: string,
   params: {
     status: HostHealthStatus;
@@ -207,32 +227,33 @@ export function updateHostHealthCheck(
     latencyMs: number | null;
     probedEndpoint: HostHealthProbedEndpoint | null;
   },
-): KhoraHost {
-  const existing = findHostById(db, hostId);
+): Promise<KhoraHost> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
-  db.prepare(
+  await db.exec(
     `UPDATE khora_hosts SET
        health_status = ?,
        health_checked_at_ms = ?,
        health_latency_ms = ?,
        health_probed_endpoint = ?
      WHERE id = ?`,
-  ).run(params.status, params.checkedAtMs, params.latencyMs, params.probedEndpoint, hostId);
-  const host = findHostById(db, hostId);
+    [params.status, params.checkedAtMs, params.latencyMs, params.probedEndpoint, hostId],
+  );
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host health update failed");
   }
   return host;
 }
 
-export function activateKhoraHost(
-  db: Database,
+export async function activateKhoraHost(
+  db: RegistryDatabase,
   hostId: string,
   options?: { satisfyOperatorApproval?: boolean },
-): { host: KhoraHost; managementToken: string | null } {
-  const existing = findHostById(db, hostId);
+): Promise<{ host: KhoraHost; managementToken: string | null }> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
@@ -250,52 +271,58 @@ export function activateKhoraHost(
         ? { ...item, status: "satisfied" as const, checkedAtMs: Date.now() }
         : item,
     );
-    saveHostRegistrationRequirements(db, hostId, requirements);
+    await saveHostRegistrationRequirements(db, hostId, requirements);
   }
 
-  db.prepare(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`).run(hostId);
-  const managementToken = issueHostManagementToken(db, hostId);
+  await db.exec(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`, [hostId]);
+  const managementToken = await issueHostManagementToken(db, hostId);
   if (managementToken !== null) {
-    storePendingManagementToken(db, hostId, managementToken);
+    await storePendingManagementToken(db, hostId, managementToken);
   }
-  clearHostRegistrationSecret(db, hostId);
-  const host = findHostById(db, hostId);
+  await clearHostRegistrationSecret(db, hostId);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host activate failed");
   }
   return { host, managementToken };
 }
 
-export function deliverPendingManagementToken(db: Database, hostId: string): string | null {
+export async function deliverPendingManagementToken(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<string | null> {
   return takePendingManagementToken(db, hostId);
 }
 
-export function suspendKhoraHost(db: Database, hostId: string): KhoraHost {
-  const existing = findHostById(db, hostId);
+export async function suspendKhoraHost(db: RegistryDatabase, hostId: string): Promise<KhoraHost> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
   if (existing.status === "suspended") {
     return existing;
   }
-  db.prepare(`UPDATE khora_hosts SET status = 'suspended' WHERE id = ?`).run(hostId);
-  const host = findHostById(db, hostId);
+  await db.exec(`UPDATE khora_hosts SET status = 'suspended' WHERE id = ?`, [hostId]);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host suspend failed");
   }
   return host;
 }
 
-export function reactivateKhoraHost(db: Database, hostId: string): KhoraHost {
-  const existing = findHostById(db, hostId);
+export async function reactivateKhoraHost(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<KhoraHost> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
   if (existing.status !== "suspended") {
     throw new Error(`cannot reactivate host in status: ${existing.status}`);
   }
-  db.prepare(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`).run(hostId);
-  const host = findHostById(db, hostId);
+  await db.exec(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`, [hostId]);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host reactivate failed");
   }
@@ -304,25 +331,26 @@ export function reactivateKhoraHost(db: Database, hostId: string): KhoraHost {
 
 export type DeletedKhoraHostRef = { slug: string; baseUrl: string };
 
-export function deleteKhoraHost(db: Database, hostId: string): DeletedKhoraHostRef {
-  const existing = findHostById(db, hostId);
+export async function deleteKhoraHost(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<DeletedKhoraHostRef> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
   const ref = { slug: existing.slug, baseUrl: existing.baseUrl };
-  db.prepare(
+  await db.exec(
     `UPDATE agent_account_bindings SET bound_via_host_id = NULL WHERE bound_via_host_id = ?`,
-  ).run(hostId);
-  const result = db.prepare(`DELETE FROM khora_hosts WHERE id = ?`).run(hostId);
-  if (result.changes === 0) {
-    throw new Error("host delete failed");
-  }
+    [hostId],
+  );
+  await db.exec(`DELETE FROM khora_hosts WHERE id = ?`, [hostId]);
   return ref;
 }
 
 /** Dev bootstrap: insert or return existing host as active. */
-export function seedDefaultHost(
-  db: Database,
+export async function seedDefaultHost(
+  db: RegistryDatabase,
   params: {
     slug: string;
     baseUrl: string;
@@ -330,12 +358,12 @@ export function seedDefaultHost(
     healthReadyPath?: string;
     healthPath?: string;
   },
-): KhoraHost {
+): Promise<KhoraHost> {
   const slug = normalizeHostSlug(params.slug);
-  const existing = findHostBySlug(db, slug);
+  const existing = await findHostBySlug(db, slug);
   if (existing !== null) {
     if (existing.status !== "active") {
-      const activated = activateKhoraHost(db, existing.id);
+      const activated = await activateKhoraHost(db, existing.id);
       return activated.host;
     }
     return existing;
@@ -346,28 +374,29 @@ export function seedDefaultHost(
   const baseUrl = storageBaseUrl(params.baseUrl);
   const healthReadyPath = normalizeHostHealthPath(params.healthReadyPath ?? "/ready");
   const healthPath = normalizeHostHealthPath(params.healthPath ?? "/health");
-  db.prepare(
+  await db.exec(
     `INSERT INTO khora_hosts (
        id, slug, base_url, status, opted_in_at_ms, capabilities,
        health_ready_path, health_path
      ) VALUES (?, ?, ?, 'active', ?, ?, ?, ?)`,
-  ).run(
-    id,
-    slug,
-    baseUrl,
-    now,
-    params.capabilities === undefined ? null : JSON.stringify(params.capabilities),
-    healthReadyPath,
-    healthPath,
+    [
+      id,
+      slug,
+      baseUrl,
+      now,
+      params.capabilities === undefined ? null : JSON.stringify(params.capabilities),
+      healthReadyPath,
+      healthPath,
+    ],
   );
-  const host = findHostById(db, id);
+  const host = await findHostById(db, id);
   if (host === null) {
     throw new Error("khora host insert failed");
   }
   return host;
 }
 
-export function countHosts(db: Database): number {
-  const row = db.prepare(`SELECT COUNT(*) AS n FROM khora_hosts`).get() as { n: number };
-  return row.n;
+export async function countHosts(db: RegistryDatabase): Promise<number> {
+  const row = await db.queryOne<{ n: number }>(`SELECT COUNT(*) AS n FROM khora_hosts`);
+  return row?.n ?? 0;
 }

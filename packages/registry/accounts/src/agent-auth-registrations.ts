@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import { createHash, timingSafeEqual } from "node:crypto";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { AgentAuthRegistration, AgentAuthRegistrationStatus } from "./ceremony-types";
 import { normalizeEmail } from "./normalize";
 import type { AgentAuthRegistrationRow } from "./types-internal";
@@ -26,10 +26,10 @@ function generateClaimToken(): string {
   return `clm_${Buffer.from(crypto.getRandomValues(new Uint8Array(24))).toString("base64url")}`;
 }
 
-export function createAgentAuthRegistration(
-  db: Database,
+export async function createAgentAuthRegistration(
+  db: RegistryDatabase,
   params: { email: string; now?: number },
-): { registration: AgentAuthRegistration; claimToken: string } {
+): Promise<{ registration: AgentAuthRegistration; claimToken: string }> {
   const now = params.now ?? Date.now();
   const email = normalizeEmail(params.email);
   const claimToken = generateClaimToken();
@@ -37,19 +37,19 @@ export function createAgentAuthRegistration(
   const id = crypto.randomUUID();
   const expiresAtMs = now + AGENT_AUTH_TTL_MS;
 
-  db.prepare(
+  await db.exec(
     `INSERT INTO agent_auth_registrations (
        id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
      ) VALUES (?, ?, ?, NULL, ?, 'pending_claim', ?)`,
-  ).run(id, email, claimTokenHash, expiresAtMs, now);
+    [id, email, claimTokenHash, expiresAtMs, now],
+  );
 
-  const row = db
-    .prepare(
-      `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
-       FROM agent_auth_registrations WHERE id = ? LIMIT 1`,
-    )
-    .get(id) as AgentAuthRegistrationRow | null;
-  if (row === null) {
+  const row = await db.queryOne<AgentAuthRegistrationRow>(
+    `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
+     FROM agent_auth_registrations WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  if (row === undefined) {
     throw new Error("agent auth registration insert failed");
   }
   return { registration: mapRegistration(row), claimToken };
@@ -60,70 +60,74 @@ function generateOtp(): string {
   return String(n % 1_000_000).padStart(6, "0");
 }
 
-export function setAgentAuthOtpHash(db: Database, registrationId: string, otp: string): void {
-  db.prepare(`UPDATE agent_auth_registrations SET otp_hash = ? WHERE id = ?`).run(
+export async function setAgentAuthOtpHash(
+  db: RegistryDatabase,
+  registrationId: string,
+  otp: string,
+): Promise<void> {
+  await db.exec(`UPDATE agent_auth_registrations SET otp_hash = ? WHERE id = ?`, [
     hashAgentAuthSecret(otp),
     registrationId,
-  );
+  ]);
 }
 
-export function createAgentAuthRegistrationWithOtp(
-  db: Database,
+export async function createAgentAuthRegistrationWithOtp(
+  db: RegistryDatabase,
   params: { email: string; now?: number },
-): { registration: AgentAuthRegistration; claimToken: string; otp: string } {
-  const { registration, claimToken } = createAgentAuthRegistration(db, params);
+): Promise<{ registration: AgentAuthRegistration; claimToken: string; otp: string }> {
+  const { registration, claimToken } = await createAgentAuthRegistration(db, params);
   const otp = generateOtp();
-  setAgentAuthOtpHash(db, registration.id, otp);
-  const updated = db
-    .prepare(
-      `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
-       FROM agent_auth_registrations WHERE id = ? LIMIT 1`,
-    )
-    .get(registration.id) as AgentAuthRegistrationRow;
+  await setAgentAuthOtpHash(db, registration.id, otp);
+  const updated = await db.queryOne<AgentAuthRegistrationRow>(
+    `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
+     FROM agent_auth_registrations WHERE id = ? LIMIT 1`,
+    [registration.id],
+  );
+  if (updated === undefined) {
+    throw new Error("agent auth registration otp update failed");
+  }
   return { registration: mapRegistration(updated), claimToken, otp };
 }
 
-export function findAgentAuthByClaimToken(
-  db: Database,
+export async function findAgentAuthByClaimToken(
+  db: RegistryDatabase,
   claimToken: string,
-): AgentAuthRegistration | null {
+): Promise<AgentAuthRegistration | null> {
   const hash = hashAgentAuthSecret(claimToken);
-  const row = db
-    .prepare(
-      `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
-       FROM agent_auth_registrations WHERE claim_token_hash = ? LIMIT 1`,
-    )
-    .get(hash) as AgentAuthRegistrationRow | null;
-  return row === null ? null : mapRegistration(row);
+  const row = await db.queryOne<AgentAuthRegistrationRow>(
+    `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
+     FROM agent_auth_registrations WHERE claim_token_hash = ? LIMIT 1`,
+    [hash],
+  );
+  return row === undefined ? null : mapRegistration(row);
 }
 
-export function findPendingAgentAuthByEmail(
-  db: Database,
+export async function findPendingAgentAuthByEmail(
+  db: RegistryDatabase,
   email: string,
-): AgentAuthRegistration | null {
+): Promise<AgentAuthRegistration | null> {
   const normalized = normalizeEmail(email);
-  const row = db
-    .prepare(
-      `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
-       FROM agent_auth_registrations
-       WHERE email = ? AND status = 'pending_claim'
-       ORDER BY created_at_ms DESC LIMIT 1`,
-    )
-    .get(normalized) as AgentAuthRegistrationRow | null;
-  return row === null ? null : mapRegistration(row);
+  const row = await db.queryOne<AgentAuthRegistrationRow>(
+    `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
+     FROM agent_auth_registrations
+     WHERE email = ? AND status = 'pending_claim'
+     ORDER BY created_at_ms DESC LIMIT 1`,
+    [normalized],
+  );
+  return row === undefined ? null : mapRegistration(row);
 }
 
-export function expireAgentAuthIfNeeded(
-  db: Database,
+export async function expireAgentAuthIfNeeded(
+  db: RegistryDatabase,
   registration: AgentAuthRegistration,
   now?: number,
-): AgentAuthRegistration {
+): Promise<AgentAuthRegistration> {
   const t = now ?? Date.now();
   if (registration.status !== "pending_claim") return registration;
   if (registration.expiresAtMs > t) return registration;
-  db.prepare(`UPDATE agent_auth_registrations SET status = 'expired' WHERE id = ?`).run(
+  await db.exec(`UPDATE agent_auth_registrations SET status = 'expired' WHERE id = ?`, [
     registration.id,
-  );
+  ]);
   return { ...registration, status: "expired" };
 }
 
@@ -136,22 +140,22 @@ export function verifyAgentAuthOtp(registration: AgentAuthRegistration, otp: str
   return timingSafeEqual(a, b);
 }
 
-export function consumeClaimToken(
-  db: Database,
+export async function consumeClaimToken(
+  db: RegistryDatabase,
   registrationId: string,
   now?: number,
-): AgentAuthRegistration | null {
+): Promise<AgentAuthRegistration | null> {
   const _t = now ?? Date.now();
-  db.prepare(
+  await db.exec(
     `UPDATE agent_auth_registrations SET status = 'claimed' WHERE id = ? AND status = 'pending_claim'`,
-  ).run(registrationId);
-  const row = db
-    .prepare(
-      `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
-       FROM agent_auth_registrations WHERE id = ? LIMIT 1`,
-    )
-    .get(registrationId) as AgentAuthRegistrationRow | null;
-  if (row === null || row.status !== "claimed") return null;
+    [registrationId],
+  );
+  const row = await db.queryOne<AgentAuthRegistrationRow>(
+    `SELECT id, email, claim_token_hash, otp_hash, expires_at_ms, status, created_at_ms
+     FROM agent_auth_registrations WHERE id = ? LIMIT 1`,
+    [registrationId],
+  );
+  if (row === undefined || row.status !== "claimed") return null;
   return mapRegistration(row);
 }
 

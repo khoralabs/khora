@@ -26,7 +26,7 @@ function mockHost(overrides: Partial<KhoraHost> = {}): KhoraHost {
 }
 
 describe("hostToPublicJson", () => {
-  test("includes health block", () => {
+  test("includes health block", async () => {
     const json = hostToPublicJson(mockHost());
     expect(json.health).toEqual({
       status: "up",

@@ -44,16 +44,16 @@ export function handleAdminHostSuspend(
   consoleAuth: ConsoleAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
     try {
-      const host = suspendKhoraHost(db, id);
+      const host = await suspendKhoraHost(db, id);
       reloadAuthTrustedOrigins();
-      return Response.json({ host: hostToFullJson(host, db) });
+      return Response.json({ host: await hostToFullJson(host, db) });
     } catch (err: unknown) {
       const mapped = mapHostLifecycleError(err, "suspend failed");
       return Response.json({ error: mapped.message }, { status: mapped.status });
@@ -66,16 +66,16 @@ export function handleAdminHostReactivate(
   consoleAuth: ConsoleAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
     try {
-      const host = reactivateKhoraHost(db, id);
+      const host = await reactivateKhoraHost(db, id);
       reloadAuthTrustedOrigins();
-      return Response.json({ host: hostToFullJson(host, db) });
+      return Response.json({ host: await hostToFullJson(host, db) });
     } catch (err: unknown) {
       const mapped = mapHostLifecycleError(err, "reactivate failed");
       return Response.json({ error: mapped.message }, { status: mapped.status });
@@ -88,14 +88,14 @@ export function handleAdminHostDelete(
   consoleAuth: ConsoleAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
     try {
-      const deleted = deleteKhoraHost(db, id);
+      const deleted = await deleteKhoraHost(db, id);
       reloadAuthTrustedOrigins();
       return Response.json({ ok: true, slug: deleted.slug, baseUrl: deleted.baseUrl });
     } catch (err: unknown) {
@@ -117,12 +117,12 @@ export function handleAdminHostActivate(
     }
     const db = registryHostRuntime().db;
     try {
-      const { host, managementToken } = activateKhoraHost(db, id, {
+      const { host, managementToken } = await activateKhoraHost(db, id, {
         satisfyOperatorApproval: true,
       });
       const probed = await probeHostHealthById(db, host.id);
       return Response.json({
-        host: hostToFullJson(probed ?? host, db),
+        host: await hostToFullJson(probed ?? host, db),
         ...(managementToken !== null ? { managementToken } : {}),
       });
     } catch (err: unknown) {
@@ -163,7 +163,7 @@ export function handleAdminHostRegistry(
 
     const db = registryHostRuntime().db;
     try {
-      const host = updateHostRegistrySettings(db, id, {
+      const host = await updateHostRegistrySettings(db, id, {
         ...(body.registryParticipationEnabled !== undefined
           ? { registryParticipationEnabled: body.registryParticipationEnabled }
           : {}),
@@ -172,7 +172,7 @@ export function handleAdminHostRegistry(
           : {}),
       });
       reloadAuthTrustedOrigins();
-      return Response.json({ host: hostToFullJson(host, db) });
+      return Response.json({ host: await hostToFullJson(host, db) });
     } catch (err: unknown) {
       if (
         err instanceof InvalidTrustedOriginError ||
@@ -193,17 +193,17 @@ export function handleAdminHostOriginRequests(
   consoleAuth: ConsoleAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
-    if (findHostById(db, id) === null) {
+    if ((await findHostById(db, id)) === null) {
       return Response.json({ error: "host not found" }, { status: 404 });
     }
-    const pending = listHostTrustedOriginRequests(db, id, "pending");
-    const rejected = listHostTrustedOriginRequests(db, id, "rejected").slice(0, 20);
+    const pending = await listHostTrustedOriginRequests(db, id, "pending");
+    const rejected = (await listHostTrustedOriginRequests(db, id, "rejected")).slice(0, 20);
     return Response.json({ pending, rejected });
   });
 }
@@ -227,21 +227,21 @@ export function handleAdminHostOriginRequestApprove(
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
-    const request = listHostTrustedOriginRequests(db, id).find((item) => item.id === rid);
+    const request = (await listHostTrustedOriginRequests(db, id)).find((item) => item.id === rid);
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "origin request not found" }, { status: 404 });
     }
     try {
-      const { host } = approveHostTrustedOriginRequest(db, rid);
+      const { host } = await approveHostTrustedOriginRequest(db, rid);
       reloadAuthTrustedOrigins();
-      return Response.json({ host: hostToFullJson(host, db) });
+      return Response.json({ host: await hostToFullJson(host, db) });
     } catch (err: unknown) {
       const mapped = mapOriginApprovalError(err);
       return Response.json({ error: mapped.message }, { status: mapped.status });
@@ -255,19 +255,19 @@ export function handleAdminHostOriginRequestReject(
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
-    const request = listHostTrustedOriginRequests(db, id).find((item) => item.id === rid);
+    const request = (await listHostTrustedOriginRequests(db, id)).find((item) => item.id === rid);
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "origin request not found" }, { status: 404 });
     }
     try {
-      rejectHostTrustedOriginRequest(db, rid);
+      await rejectHostTrustedOriginRequest(db, rid);
       return Response.json({ ok: true });
     } catch (err: unknown) {
       const mapped = mapOriginApprovalError(err);
@@ -281,17 +281,17 @@ export function handleAdminHostQuotaRequests(
   consoleAuth: ConsoleAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
-    if (findHostById(db, id) === null) {
+    if ((await findHostById(db, id)) === null) {
       return Response.json({ error: "host not found" }, { status: 404 });
     }
-    const pending = listHostTrustedOriginQuotaRequests(db, id, "pending");
-    const rejected = listHostTrustedOriginQuotaRequests(db, id, "rejected").slice(0, 20);
+    const pending = await listHostTrustedOriginQuotaRequests(db, id, "pending");
+    const rejected = (await listHostTrustedOriginQuotaRequests(db, id, "rejected")).slice(0, 20);
     return Response.json({ pending, rejected });
   });
 }
@@ -308,20 +308,22 @@ export function handleAdminHostQuotaRequestApprove(
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
-    const request = listHostTrustedOriginQuotaRequests(db, id).find((item) => item.id === rid);
+    const request = (await listHostTrustedOriginQuotaRequests(db, id)).find(
+      (item) => item.id === rid,
+    );
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "quota request not found" }, { status: 404 });
     }
     try {
-      const { host } = approveHostTrustedOriginQuotaRequest(db, rid);
-      return Response.json({ host: hostToFullJson(host, db) });
+      const { host } = await approveHostTrustedOriginQuotaRequest(db, rid);
+      return Response.json({ host: await hostToFullJson(host, db) });
     } catch (err: unknown) {
       const mapped = mapQuotaApprovalError(err);
       return Response.json({ error: mapped.message }, { status: mapped.status });
@@ -335,19 +337,21 @@ export function handleAdminHostQuotaRequestReject(
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
-    const request = listHostTrustedOriginQuotaRequests(db, id).find((item) => item.id === rid);
+    const request = (await listHostTrustedOriginQuotaRequests(db, id)).find(
+      (item) => item.id === rid,
+    );
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "quota request not found" }, { status: 404 });
     }
     try {
-      rejectHostTrustedOriginQuotaRequest(db, rid);
+      await rejectHostTrustedOriginQuotaRequest(db, rid);
       return Response.json({ ok: true });
     } catch (err: unknown) {
       const mapped = mapQuotaApprovalError(err);

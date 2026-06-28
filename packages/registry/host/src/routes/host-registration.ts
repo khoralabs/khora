@@ -6,6 +6,7 @@ import {
   tryAutoActivateHost,
   verifyHostRegistrationSecret,
 } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { probeHostHealth } from "../host-health";
 import { registryHostRuntime } from "../runtime";
 import { hostToFullJson } from "./host-json";
@@ -26,49 +27,49 @@ function envProbeTimeoutMs(): number {
   return Number.isFinite(n) && n > 0 ? n : 5000;
 }
 
-function resolveHostForRegistrationSecret(
-  db: import("bun:sqlite").Database,
+async function resolveHostForRegistrationSecret(
+  db: RegistryDatabase,
   slug: string,
   secret: string,
 ) {
-  const hostId = verifyHostRegistrationSecret(db, slug, secret);
+  const hostId = await verifyHostRegistrationSecret(db, slug, secret);
   if (hostId !== null) {
-    return findHostBySlug(db, slug);
+    return await findHostBySlug(db, slug);
   }
-  const host = findHostBySlug(db, slug);
+  const host = await findHostBySlug(db, slug);
   if (host !== null && host.status === "active") {
     return host;
   }
   return null;
 }
 
-function registrationResponse(
-  db: import("bun:sqlite").Database,
-  host: NonNullable<ReturnType<typeof findHostBySlug>>,
+async function registrationResponse(
+  db: RegistryDatabase,
+  host: NonNullable<Awaited<ReturnType<typeof findHostBySlug>>>,
   extras?: Record<string, unknown>,
-): Response {
+): Promise<Response> {
   const policy = readHostRegistrationPolicy();
   const managementToken =
-    host.status === "active" ? deliverPendingManagementToken(db, host.id) : null;
+    host.status === "active" ? await deliverPendingManagementToken(db, host.id) : null;
   return Response.json({
     ...registrationStatusJson(host, policy),
-    host: hostToFullJson(host, db),
+    host: await hostToFullJson(host, db),
     ...(managementToken !== null ? { managementToken } : {}),
     ...extras,
   });
 }
 
-export function handleHostRegistrationGet(req: Request, slug: string): Response {
+export async function handleHostRegistrationGet(req: Request, slug: string): Promise<Response> {
   const secret = readBearerToken(req);
   if (secret === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const host = resolveHostForRegistrationSecret(db, slug, secret);
+  const host = await resolveHostForRegistrationSecret(db, slug, secret);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return registrationResponse(db, host);
+  return await registrationResponse(db, host);
 }
 
 export async function handleHostRegistrationClaim(req: Request, slug: string): Promise<Response> {
@@ -77,11 +78,11 @@ export async function handleHostRegistrationClaim(req: Request, slug: string): P
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = registryHostRuntime().db;
-  const hostId = verifyHostRegistrationSecret(db, slug, secret);
+  const hostId = await verifyHostRegistrationSecret(db, slug, secret);
   if (hostId === null) {
-    const host = findHostBySlug(db, slug);
+    const host = await findHostBySlug(db, slug);
     if (host !== null && host.status === "active") {
-      return registrationResponse(db, host, { activated: false });
+      return await registrationResponse(db, host, { activated: false });
     }
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -94,12 +95,12 @@ export async function handleHostRegistrationClaim(req: Request, slug: string): P
 
   let managementToken = result.managementToken;
   if (managementToken === null && result.host.status === "active") {
-    managementToken = deliverPendingManagementToken(db, result.host.id);
+    managementToken = await deliverPendingManagementToken(db, result.host.id);
   }
 
   return Response.json({
     ...registrationStatusJson(result.host, policy),
-    host: hostToFullJson(result.host, db),
+    host: await hostToFullJson(result.host, db),
     activated: result.activated,
     ...(managementToken !== null ? { managementToken } : {}),
   });

@@ -1,9 +1,9 @@
-import type { Database } from "bun:sqlite";
 import type { ConsoleAuth } from "@khoralabs/khora-console";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { RegistryIdentityPort } from "./ports/identity";
 
 export type RegistryHostRuntime = {
-  db: Database;
+  db: RegistryDatabase;
   identity: RegistryIdentityPort;
   consoleAuth: ConsoleAuth | null;
   publicUrl: () => string;

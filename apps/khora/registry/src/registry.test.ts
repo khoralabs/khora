@@ -3,7 +3,7 @@ import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { subscribeMarketing } from "@khoralabs/registry-accounts";
 import {
   ensureRegistrySchema,
-  getRegistryDatabase,
+  getRegistryDomainDatabase,
   resetRegistryDatabase,
 } from "@khoralabs/registry-auth";
 import { seedDefaultHost } from "@khoralabs/registry-catalog";
@@ -14,7 +14,7 @@ describe("registry domain", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    seedDefaultHost(getRegistryDatabase(), {
+    await seedDefaultHost(getRegistryDomainDatabase(), {
       slug: "khora-local",
       baseUrl: "http://localhost:8788",
     });
@@ -25,9 +25,9 @@ describe("registry domain", () => {
     resetRegistryDatabase();
   });
 
-  test("marketing subscribe stores consent", () => {
-    const db = getRegistryDatabase();
-    const consent = subscribeMarketing(db, {
+  test("marketing subscribe stores consent", async () => {
+    const db = getRegistryDomainDatabase();
+    const consent = await subscribeMarketing(db, {
       email: "a@b.com",
       listSlug: "khora-waitlist",
       sourceApp: "test",

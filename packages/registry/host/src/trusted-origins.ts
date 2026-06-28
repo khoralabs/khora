@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import { listRegistryTrustedOrigins } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 
 export function readRegistrySelfOrigins(): string[] {
   const port = process.env.PORT?.trim() ?? "4000";
@@ -9,6 +9,6 @@ export function readRegistrySelfOrigins(): string[] {
 }
 
 /** Registry + trusted host origins (see @khoralabs/registry-catalog listRegistryTrustedOrigins). */
-export function readRegistryTrustedOrigins(db: Database): string[] {
-  return [...new Set([...readRegistrySelfOrigins(), ...listRegistryTrustedOrigins(db)])];
+export async function readRegistryTrustedOrigins(db: RegistryDatabase): Promise<string[]> {
+  return [...new Set([...readRegistrySelfOrigins(), ...(await listRegistryTrustedOrigins(db))])];
 }

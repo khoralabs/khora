@@ -1,8 +1,8 @@
-import type { Database } from "bun:sqlite";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { RegistryIdentityPort } from "./ports/identity";
 
 export type RegistryHostContext = {
-  db: Database;
+  db: RegistryDatabase;
   identity: RegistryIdentityPort;
   fetch(req: Request): Promise<Response>;
   stop(): void;

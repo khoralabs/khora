@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { DeviceAuthorization, DeviceAuthorizationStatus } from "./ceremony-types";
 import type { DeviceAuthorizationRow } from "./types-internal";
 
@@ -37,10 +37,10 @@ function generateUserCode(): string {
   return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 
-export function createDeviceAuthorization(
-  db: Database,
+export async function createDeviceAuthorization(
+  db: RegistryDatabase,
   params?: { sourceApp?: string; now?: number },
-): { device: DeviceAuthorization; deviceCode: string } {
+): Promise<{ device: DeviceAuthorization; deviceCode: string }> {
   const now = params?.now ?? Date.now();
   const deviceCode = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64url");
   const deviceCodeHash = hashDeviceCode(deviceCode);
@@ -48,61 +48,59 @@ export function createDeviceAuthorization(
   const userCode = generateUserCode().toUpperCase();
   const expiresAtMs = now + DEVICE_TTL_MS;
 
-  db.prepare(
+  await db.exec(
     `INSERT INTO device_authorizations (
        id, device_code_hash, user_code, status, expires_at_ms, source_app, created_at_ms
      ) VALUES (?, ?, ?, 'pending', ?, ?, ?)`,
-  ).run(id, deviceCodeHash, userCode, expiresAtMs, params?.sourceApp ?? null, now);
+    [id, deviceCodeHash, userCode, expiresAtMs, params?.sourceApp ?? null, now],
+  );
 
-  const row = db
-    .prepare(
-      `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
-              approved_at_ms, consumed_at_ms, source_app, created_at_ms
-       FROM device_authorizations WHERE id = ? LIMIT 1`,
-    )
-    .get(id) as DeviceAuthorizationRow | null;
-  if (row === null) {
+  const row = await db.queryOne<DeviceAuthorizationRow>(
+    `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
+            approved_at_ms, consumed_at_ms, source_app, created_at_ms
+     FROM device_authorizations WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  if (row === undefined) {
     throw new Error("device authorization insert failed");
   }
   return { device: mapDevice(row), deviceCode };
 }
 
-export function findDeviceByCodeHash(
-  db: Database,
+export async function findDeviceByCodeHash(
+  db: RegistryDatabase,
   deviceCodeHash: string,
-): DeviceAuthorization | null {
-  const row = db
-    .prepare(
-      `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
-              approved_at_ms, consumed_at_ms, source_app, created_at_ms
-       FROM device_authorizations WHERE device_code_hash = ? LIMIT 1`,
-    )
-    .get(deviceCodeHash) as DeviceAuthorizationRow | null;
-  return row === null ? null : mapDevice(row);
+): Promise<DeviceAuthorization | null> {
+  const row = await db.queryOne<DeviceAuthorizationRow>(
+    `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
+            approved_at_ms, consumed_at_ms, source_app, created_at_ms
+     FROM device_authorizations WHERE device_code_hash = ? LIMIT 1`,
+    [deviceCodeHash],
+  );
+  return row === undefined ? null : mapDevice(row);
 }
 
-export function findPendingDeviceByUserCode(
-  db: Database,
+export async function findPendingDeviceByUserCode(
+  db: RegistryDatabase,
   userCode: string,
-): DeviceAuthorization | null {
+): Promise<DeviceAuthorization | null> {
   const normalized = userCode.trim().toUpperCase();
-  const row = db
-    .prepare(
-      `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
-              approved_at_ms, consumed_at_ms, source_app, created_at_ms
-       FROM device_authorizations
-       WHERE user_code = ? AND status = 'pending'
-       ORDER BY created_at_ms DESC LIMIT 1`,
-    )
-    .get(normalized) as DeviceAuthorizationRow | null;
-  return row === null ? null : mapDevice(row);
+  const row = await db.queryOne<DeviceAuthorizationRow>(
+    `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
+            approved_at_ms, consumed_at_ms, source_app, created_at_ms
+     FROM device_authorizations
+     WHERE user_code = ? AND status = 'pending'
+     ORDER BY created_at_ms DESC LIMIT 1`,
+    [normalized],
+  );
+  return row === undefined ? null : mapDevice(row);
 }
 
-export function expireDeviceIfNeeded(
-  db: Database,
+export async function expireDeviceIfNeeded(
+  db: RegistryDatabase,
   device: DeviceAuthorization,
   now?: number,
-): DeviceAuthorization {
+): Promise<DeviceAuthorization> {
   const t = now ?? Date.now();
   if (device.status !== "pending" && device.status !== "approved") {
     return device;
@@ -110,53 +108,54 @@ export function expireDeviceIfNeeded(
   if (device.expiresAtMs > t) {
     return device;
   }
-  db.prepare(`UPDATE device_authorizations SET status = 'expired' WHERE id = ?`).run(device.id);
+  await db.exec(`UPDATE device_authorizations SET status = 'expired' WHERE id = ?`, [device.id]);
   return { ...device, status: "expired" };
 }
 
-export function approveDeviceAuthorization(
-  db: Database,
+export async function approveDeviceAuthorization(
+  db: RegistryDatabase,
   params: { userCode: string; sessionToken: string; now?: number },
-): DeviceAuthorization {
+): Promise<DeviceAuthorization> {
   const now = params.now ?? Date.now();
-  const device = findPendingDeviceByUserCode(db, params.userCode);
+  const device = await findPendingDeviceByUserCode(db, params.userCode);
   if (device === null) {
     throw new Error("device authorization not found");
   }
-  const checked = expireDeviceIfNeeded(db, device, now);
+  const checked = await expireDeviceIfNeeded(db, device, now);
   if (checked.status === "expired") {
     throw new Error("device authorization expired");
   }
-  db.prepare(
+  await db.exec(
     `UPDATE device_authorizations
      SET status = 'approved', session_token = ?, approved_at_ms = ?
      WHERE id = ?`,
-  ).run(params.sessionToken, now, device.id);
-  const updated = findDeviceByCodeHash(db, device.deviceCodeHash);
+    [params.sessionToken, now, device.id],
+  );
+  const updated = await findDeviceByCodeHash(db, device.deviceCodeHash);
   if (updated === null) {
     throw new Error("device authorization approve failed");
   }
   return updated;
 }
 
-export function consumeDeviceAuthorization(
-  db: Database,
+export async function consumeDeviceAuthorization(
+  db: RegistryDatabase,
   deviceCode: string,
   now?: number,
-): DeviceAuthorization | null {
+): Promise<DeviceAuthorization | null> {
   const hash = hashDeviceCode(deviceCode);
-  const device = findDeviceByCodeHash(db, hash);
+  const device = await findDeviceByCodeHash(db, hash);
   if (device === null) return null;
   const t = now ?? Date.now();
-  const checked = expireDeviceIfNeeded(db, device, t);
+  const checked = await expireDeviceIfNeeded(db, device, t);
   if (checked.status !== "approved" || checked.sessionToken === null) {
     return checked;
   }
-  db.prepare(
+  await db.exec(
     `UPDATE device_authorizations SET status = 'consumed', consumed_at_ms = ? WHERE id = ?`,
-  ).run(t, device.id);
-  const updated = findDeviceByCodeHash(db, hash);
-  return updated;
+    [t, device.id],
+  );
+  return findDeviceByCodeHash(db, hash);
 }
 
 export function deviceSessionCookie(sessionToken: string): string {

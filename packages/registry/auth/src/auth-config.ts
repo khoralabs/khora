@@ -1,17 +1,28 @@
+import type { Database } from "bun:sqlite";
 import { createLogger } from "@khoralabs/observability/logger";
 import { findBlockedEmail, linkBetterAuthUser } from "@khoralabs/registry-accounts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
+import { createClient } from "@libsql/client";
+import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
+import { Kysely } from "kysely";
+import type { RegistryAuthDatabaseSchema, RegistryAuthKysely } from "./auth-database-schema";
 import { isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
-import { getRegistryDatabase } from "./db";
+import { getRegistryDomainDatabase, getRegistrySqliteDatabase } from "./db";
 import { sendOtpEmail } from "./ses";
 
 const logger = createLogger({ name: "registry-auth" });
 
+export type { RegistryAuthDatabaseSchema, RegistryAuthKysely } from "./auth-database-schema";
+export type RegistryAuthDatabase = Database | RegistryAuthKysely;
+
 export type RegistryAuthOptions = {
   baseURL?: string;
+  database?: RegistryAuthDatabase;
+  domainDatabase?: RegistryDatabase;
   /** Returns all browser origins allowed to call /api/auth (registry + trusted host origins). */
-  resolveTrustedOrigins?: () => string[];
+  resolveTrustedOrigins?: () => string[] | Promise<string[]>;
 };
 
 function readRegistryPort(): string {
@@ -81,27 +92,73 @@ function shouldUseSecureCookies(baseURL: string): boolean {
   return baseURL.startsWith("https://");
 }
 
-function syncAccountForUser(userId: string, email: string): void {
-  linkBetterAuthUser(getRegistryDatabase(), {
-    providerSubject: userId,
-    email,
-  });
+function isSqliteAuthDatabase(db: RegistryAuthDatabase): db is Database {
+  return "prepare" in db && typeof db.prepare === "function";
 }
 
-function assertEmailAllowedForAuth(email: string): void {
-  const blocked = findBlockedEmail(getRegistryDatabase(), email);
-  if (blocked !== null) {
-    throw new Error("email blocked");
+function resolveAuthDatabase(opts: RegistryAuthOptions): RegistryAuthDatabase {
+  if (opts.database !== undefined) return opts.database;
+
+  const tursoUrl = process.env.REGISTRY_TURSO_URL?.trim() ?? process.env.TURSO_DATABASE_URL?.trim();
+  if (tursoUrl !== undefined && tursoUrl.length > 0) {
+    const authToken =
+      process.env.REGISTRY_TURSO_AUTH_TOKEN?.trim() ?? process.env.TURSO_AUTH_TOKEN?.trim();
+    const client = createClient({ url: tursoUrl, authToken });
+    return new Kysely<RegistryAuthDatabaseSchema>({
+      dialect: new LibsqlDialect({ client: client as never }),
+    });
   }
+
+  return getRegistrySqliteDatabase();
+}
+
+function resolveDomainDatabase(opts: RegistryAuthOptions): RegistryDatabase {
+  return opts.domainDatabase ?? getRegistryDomainDatabase();
+}
+
+async function readAuthUserById(
+  authDb: RegistryAuthDatabase,
+  userId: string,
+): Promise<{ id: string; email: string } | undefined> {
+  if (isSqliteAuthDatabase(authDb)) {
+    return (
+      (authDb.prepare(`SELECT id, email FROM user WHERE id = ? LIMIT 1`).get(userId) as {
+        id: string;
+        email: string;
+      } | null) ?? undefined
+    );
+  }
+  const row = await authDb
+    .selectFrom("user")
+    .select(["id", "email"])
+    .where("id", "=", userId)
+    .executeTakeFirst();
+  return row;
 }
 
 export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
   const { baseURL, secret, cookieDomain } = readAuthEnv(opts);
   const port = readRegistryPort();
   const fallbackOrigins = [baseURL, `http://localhost:${port}`, `http://127.0.0.1:${port}`];
+  const authDb = resolveAuthDatabase(opts);
+  const domainDb = resolveDomainDatabase(opts);
+
+  async function syncAccountForUser(userId: string, email: string): Promise<void> {
+    await linkBetterAuthUser(domainDb, {
+      providerSubject: userId,
+      email,
+    });
+  }
+
+  async function assertEmailAllowedForAuth(email: string): Promise<void> {
+    const blocked = await findBlockedEmail(domainDb, email);
+    if (blocked !== null) {
+      throw new Error("email blocked");
+    }
+  }
 
   return betterAuth({
-    database: getRegistryDatabase(),
+    database: authDb,
     baseURL,
     basePath: "/api/auth",
     secret,
@@ -147,24 +204,21 @@ export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
       user: {
         create: {
           before: async (user) => {
-            assertEmailAllowedForAuth(user.email);
+            await assertEmailAllowedForAuth(user.email);
             const role = isBootstrapStaffEmail(user.email) ? "staff" : "user";
             return { data: { ...user, role } };
           },
           after: async (user) => {
-            syncAccountForUser(user.id, user.email);
+            await syncAccountForUser(user.id, user.email);
           },
         },
       },
       session: {
         create: {
           after: async (session) => {
-            const db = getRegistryDatabase();
-            const row = db
-              .prepare(`SELECT id, email FROM user WHERE id = ? LIMIT 1`)
-              .get(session.userId) as { id: string; email: string } | null;
-            if (row !== null) {
-              syncAccountForUser(row.id, row.email);
+            const row = await readAuthUserById(authDb, session.userId);
+            if (row !== undefined) {
+              await syncAccountForUser(row.id, row.email);
             }
           },
         },

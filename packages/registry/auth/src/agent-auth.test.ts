@@ -3,11 +3,14 @@ import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import {
   ensureRegistrySchema,
   getRegistryAuth,
-  getRegistryDatabase,
   reloadRegistryAuth,
-  resetRegistryDatabase,
 } from "@khoralabs/registry-auth";
 import { seedDefaultHost } from "@khoralabs/registry-catalog";
+import {
+  type createRegistrySqliteDatabase,
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/registry-sqlite";
 import {
   type AgentAuthRouteDeps,
   handleAgentAuthClaimComplete,
@@ -17,7 +20,7 @@ import {
 } from "./routes/agent-auth";
 import { setCaptureOtpForTests } from "./ses";
 
-function agentAuthDeps(db: ReturnType<typeof getRegistryDatabase>): AgentAuthRouteDeps {
+function agentAuthDeps(db: ReturnType<typeof createRegistrySqliteDatabase>): AgentAuthRouteDeps {
   return {
     db,
     publicUrl: () => "http://localhost:4000",
@@ -41,7 +44,7 @@ describe("registry agent auth", () => {
   let deps: AgentAuthRouteDeps;
 
   beforeEach(async () => {
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     reloadRegistryAuth();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     process.env.BETTER_AUTH_SECRET = "test-secret-with-at-least-32-characters-long";
@@ -50,9 +53,9 @@ describe("registry agent auth", () => {
     await ensureRegistrySchema();
     reloadRegistryAuth();
     getRegistryAuth();
-    const db = getRegistryDatabase();
+    const db = getRegistrySqliteBundle().registry;
     deps = agentAuthDeps(db);
-    seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    await seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     capturedOtps.clear();
     setCaptureOtpForTests(({ email, otp }) => {
       capturedOtps.set(email, otp);
@@ -65,7 +68,7 @@ describe("registry agent auth", () => {
     delete process.env.BETTER_AUTH_SECRET;
     if (prevOtpLog === undefined) delete process.env.REGISTRY_AUTH_OTP_LOG;
     else process.env.REGISTRY_AUTH_OTP_LOG = prevOtpLog;
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     reloadRegistryAuth();
   });
 
@@ -79,7 +82,7 @@ describe("registry agent auth", () => {
   }
 
   test("PRM and AS metadata expose agent_auth register and claim URIs", async () => {
-    const prm = handleOAuthProtectedResourceMetadata(deps);
+    const prm = await handleOAuthProtectedResourceMetadata(deps);
     expect(prm.status).toBe(200);
     const prmJson = (await prm.json()) as {
       authorization_servers: string[];
@@ -88,7 +91,7 @@ describe("registry agent auth", () => {
     expect(prmJson.authorization_servers[0]).toContain("localhost");
     expect(prmJson.scopes_supported).toContain("registry.session");
 
-    const asRes = handleOAuthAuthorizationServerMetadata(deps);
+    const asRes = await handleOAuthAuthorizationServerMetadata(deps);
     const asJson = (await asRes.json()) as {
       agent_auth: { register_uri: string; claim_complete_uri: string };
     };

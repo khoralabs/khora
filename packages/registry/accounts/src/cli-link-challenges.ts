@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import type { CliLinkChallenge } from "@khoralabs/registry-accounts-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { CliLinkChallengeRow } from "./types-internal";
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
@@ -15,47 +15,49 @@ function mapChallenge(row: CliLinkChallengeRow): CliLinkChallenge {
   };
 }
 
-export function createCliLinkChallenge(
-  db: Database,
+export async function createCliLinkChallenge(
+  db: RegistryDatabase,
   agentDid: string,
   params?: { now?: number },
-): CliLinkChallenge {
+): Promise<CliLinkChallenge> {
   const now = params?.now ?? Date.now();
   const id = crypto.randomUUID();
   const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url");
   const expiresAtMs = now + CHALLENGE_TTL_MS;
-  db.prepare(
+  await db.exec(
     `INSERT INTO cli_link_challenges (id, agent_did, nonce, expires_at_ms, created_at_ms)
      VALUES (?, ?, ?, ?, ?)`,
-  ).run(id, agentDid, nonce, expiresAtMs, now);
-  const row = db
-    .prepare(
-      `SELECT id, agent_did, nonce, expires_at_ms, consumed_at_ms, created_at_ms
-       FROM cli_link_challenges WHERE id = ? LIMIT 1`,
-    )
-    .get(id) as CliLinkChallengeRow | null;
-  if (row === null) {
+    [id, agentDid, nonce, expiresAtMs, now],
+  );
+  const row = await db.queryOne<CliLinkChallengeRow>(
+    `SELECT id, agent_did, nonce, expires_at_ms, consumed_at_ms, created_at_ms
+     FROM cli_link_challenges WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  if (row === undefined) {
     throw new Error("cli link challenge insert failed");
   }
   return mapChallenge(row);
 }
 
-export function findCliLinkChallenge(db: Database, challengeId: string): CliLinkChallenge | null {
-  const row = db
-    .prepare(
-      `SELECT id, agent_did, nonce, expires_at_ms, consumed_at_ms, created_at_ms
-       FROM cli_link_challenges WHERE id = ? LIMIT 1`,
-    )
-    .get(challengeId) as CliLinkChallengeRow | null;
-  return row === null ? null : mapChallenge(row);
+export async function findCliLinkChallenge(
+  db: RegistryDatabase,
+  challengeId: string,
+): Promise<CliLinkChallenge | null> {
+  const row = await db.queryOne<CliLinkChallengeRow>(
+    `SELECT id, agent_did, nonce, expires_at_ms, consumed_at_ms, created_at_ms
+     FROM cli_link_challenges WHERE id = ? LIMIT 1`,
+    [challengeId],
+  );
+  return row === undefined ? null : mapChallenge(row);
 }
 
-export function consumeCliLinkChallenge(
-  db: Database,
+export async function consumeCliLinkChallenge(
+  db: RegistryDatabase,
   params: { challengeId: string; agentDid: string; now?: number },
-): CliLinkChallenge {
+): Promise<CliLinkChallenge> {
   const now = params.now ?? Date.now();
-  const challenge = findCliLinkChallenge(db, params.challengeId);
+  const challenge = await findCliLinkChallenge(db, params.challengeId);
   if (challenge === null) {
     throw new Error("challenge not found");
   }
@@ -68,11 +70,11 @@ export function consumeCliLinkChallenge(
   if (challenge.expiresAtMs < now) {
     throw new Error("challenge expired");
   }
-  db.prepare(`UPDATE cli_link_challenges SET consumed_at_ms = ? WHERE id = ?`).run(
+  await db.exec(`UPDATE cli_link_challenges SET consumed_at_ms = ? WHERE id = ?`, [
     now,
     challenge.id,
-  );
-  const updated = findCliLinkChallenge(db, challenge.id);
+  ]);
+  const updated = await findCliLinkChallenge(db, challenge.id);
   if (updated === null) {
     throw new Error("challenge consume failed");
   }

@@ -1,8 +1,7 @@
-import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import { readRegistryTrustedOrigins } from "./trusted-origins";
 
-export function readTrustedOrigins(): string[] {
-  return readRegistryTrustedOrigins(getRegistryDatabase());
+export async function readTrustedOrigins(): Promise<string[]> {
+  return readRegistryTrustedOrigins();
 }
 
 export function corsHeadersForTrustedOrigins(
@@ -20,19 +19,19 @@ export function corsHeadersForTrustedOrigins(
   return {};
 }
 
-export function corsHeaders(origin: string | null): HeadersInit {
-  return corsHeadersForTrustedOrigins(readTrustedOrigins(), origin);
+export async function corsHeaders(origin: string | null): Promise<HeadersInit> {
+  return corsHeadersForTrustedOrigins(await readTrustedOrigins(), origin);
 }
 
-export function withCors(req: Request, res: Response): Response {
+export async function withCors(req: Request, res: Response): Promise<Response> {
   const headers = new Headers(res.headers);
-  for (const [key, value] of Object.entries(corsHeaders(req.headers.get("origin")))) {
+  for (const [key, value] of Object.entries(await corsHeaders(req.headers.get("origin")))) {
     headers.set(key, value);
   }
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
-export function handleOptions(req: Request): Response | null {
+export async function handleOptions(req: Request): Promise<Response | null> {
   if (req.method !== "OPTIONS") return null;
-  return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("origin")) });
+  return new Response(null, { status: 204, headers: await corsHeaders(req.headers.get("origin")) });
 }

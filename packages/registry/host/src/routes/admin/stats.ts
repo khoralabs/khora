@@ -7,11 +7,11 @@ export function handleAdminStatsSummary(
   req: Request,
   consoleAuth: ConsoleAuth | null,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () =>
-    Response.json(getRegistryAdminSummary(registryHostRuntime().db)),
+  return withConsoleAuth(req, consoleAuth, async () =>
+    Response.json(await getRegistryAdminSummary(registryHostRuntime().db)),
   );
 }
 
-export function adminStatsSummaryResponse(): Response {
-  return Response.json(getRegistryAdminSummary(registryHostRuntime().db));
+export async function adminStatsSummaryResponse(): Promise<Response> {
+  return Response.json(await getRegistryAdminSummary(registryHostRuntime().db));
 }

@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import type {
   HostRegistryState,
   HostTrustedOrigin,
@@ -6,6 +5,7 @@ import type {
   HostTrustedOriginRequest,
   KhoraHost,
 } from "@khoralabs/registry-catalog-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { verifyHostManagementToken as verifyHostManagementTokenId } from "./host-management-token";
 import { findHostById, listActiveHosts } from "./khora-hosts";
 import type {
@@ -21,12 +21,12 @@ import {
 
 export type { HostRegistryState } from "@khoralabs/registry-catalog-contracts";
 
-export function verifyHostManagementToken(
-  db: Database,
+export async function verifyHostManagementToken(
+  db: RegistryDatabase,
   slug: string,
   token: string,
-): KhoraHost | null {
-  const hostId = verifyHostManagementTokenId(db, slug, token);
+): Promise<KhoraHost | null> {
+  const hostId = await verifyHostManagementTokenId(db, slug, token);
   if (hostId === null) {
     return null;
   }
@@ -93,36 +93,44 @@ function mapTrustedOrigin(row: HostTrustedOriginRow): HostTrustedOrigin {
   };
 }
 
-export function countHostTrustedOrigins(db: Database, hostId: string): number {
-  const row = db
-    .prepare(`SELECT COUNT(*) AS n FROM host_trusted_origins WHERE host_id = ?`)
-    .get(hostId) as { n: number };
-  return row.n;
+export async function countHostTrustedOrigins(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<number> {
+  const row = await db.queryOne<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM host_trusted_origins WHERE host_id = ?`,
+    [hostId],
+  );
+  return row?.n ?? 0;
 }
 
-export function countPendingHostTrustedOriginRequests(db: Database, hostId: string): number {
-  const row = db
-    .prepare(
-      `SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE host_id = ? AND status = 'pending'`,
-    )
-    .get(hostId) as { n: number };
-  return row.n;
+export async function countPendingHostTrustedOriginRequests(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<number> {
+  const row = await db.queryOne<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE host_id = ? AND status = 'pending'`,
+    [hostId],
+  );
+  return row?.n ?? 0;
 }
 
-export function countAllPendingHostTrustedOriginRequests(db: Database): number {
-  const row = db
-    .prepare(`SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE status = 'pending'`)
-    .get() as { n: number };
-  return row.n;
+export async function countAllPendingHostTrustedOriginRequests(
+  db: RegistryDatabase,
+): Promise<number> {
+  const row = await db.queryOne<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE status = 'pending'`,
+  );
+  return row?.n ?? 0;
 }
 
-export function countAllPendingHostTrustedOriginQuotaRequests(db: Database): number {
-  const row = db
-    .prepare(
-      `SELECT COUNT(*) AS n FROM host_trusted_origin_quota_requests WHERE status = 'pending'`,
-    )
-    .get() as { n: number };
-  return row.n;
+export async function countAllPendingHostTrustedOriginQuotaRequests(
+  db: RegistryDatabase,
+): Promise<number> {
+  const row = await db.queryOne<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM host_trusted_origin_quota_requests WHERE status = 'pending'`,
+  );
+  return row?.n ?? 0;
 }
 
 function mapOriginRequest(row: HostTrustedOriginRequestRow): HostTrustedOriginRequest {
@@ -136,29 +144,35 @@ function mapOriginRequest(row: HostTrustedOriginRequestRow): HostTrustedOriginRe
   };
 }
 
-function findOriginRequestById(db: Database, requestId: string): HostTrustedOriginRequest | null {
-  const row = db
-    .prepare(
-      `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT} FROM host_trusted_origin_requests WHERE id = ? LIMIT 1`,
-    )
-    .get(requestId) as HostTrustedOriginRequestRow | null;
-  return row === null ? null : mapOriginRequest(row);
+async function findOriginRequestById(
+  db: RegistryDatabase,
+  requestId: string,
+): Promise<HostTrustedOriginRequest | null> {
+  const row = await db.queryOne<HostTrustedOriginRequestRow>(
+    `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT} FROM host_trusted_origin_requests WHERE id = ? LIMIT 1`,
+    [requestId],
+  );
+  return row === undefined ? null : mapOriginRequest(row);
 }
 
-function assertOriginNotRegisteredElsewhere(db: Database, hostId: string, origin: string): void {
-  const approved = db
-    .prepare(`SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`)
-    .get(origin) as { host_id: string } | null;
-  if (approved !== null && approved.host_id !== hostId) {
+async function assertOriginNotRegisteredElsewhere(
+  db: RegistryDatabase,
+  hostId: string,
+  origin: string,
+): Promise<void> {
+  const approved = await db.queryOne<{ host_id: string }>(
+    `SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`,
+    [origin],
+  );
+  if (approved !== undefined && approved.host_id !== hostId) {
     throw new TrustedOriginConflictError(origin);
   }
-  const pending = db
-    .prepare(
-      `SELECT host_id FROM host_trusted_origin_requests
-       WHERE origin = ? AND status = 'pending' LIMIT 1`,
-    )
-    .get(origin) as { host_id: string } | null;
-  if (pending !== null && pending.host_id !== hostId) {
+  const pending = await db.queryOne<{ host_id: string }>(
+    `SELECT host_id FROM host_trusted_origin_requests
+     WHERE origin = ? AND status = 'pending' LIMIT 1`,
+    [origin],
+  );
+  if (pending !== undefined && pending.host_id !== hostId) {
     throw new TrustedOriginConflictError(origin);
   }
 }
@@ -169,76 +183,87 @@ export function assertOriginQuota(host: KhoraHost, nextCount: number): void {
   }
 }
 
-export function listHostTrustedOrigins(db: Database, hostId: string): HostTrustedOrigin[] {
-  const rows = db
-    .prepare(
-      `SELECT ${HOST_TRUSTED_ORIGIN_SELECT} FROM host_trusted_origins WHERE host_id = ? ORDER BY origin ASC`,
-    )
-    .all(hostId) as HostTrustedOriginRow[];
+export async function listHostTrustedOrigins(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<HostTrustedOrigin[]> {
+  const rows = await db.queryAll<HostTrustedOriginRow>(
+    `SELECT ${HOST_TRUSTED_ORIGIN_SELECT} FROM host_trusted_origins WHERE host_id = ? ORDER BY origin ASC`,
+    [hostId],
+  );
   return rows.map(mapTrustedOrigin);
 }
 
-export function listHostTrustedOriginStrings(db: Database, hostId: string): string[] {
-  return listHostTrustedOrigins(db, hostId).map((row) => row.origin);
+export async function listHostTrustedOriginStrings(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<string[]> {
+  return (await listHostTrustedOrigins(db, hostId)).map((row) => row.origin);
 }
 
-export function addHostTrustedOrigin(db: Database, hostId: string, rawOrigin: string): KhoraHost {
-  const host = findHostById(db, hostId);
+export async function addHostTrustedOrigin(
+  db: RegistryDatabase,
+  hostId: string,
+  rawOrigin: string,
+): Promise<KhoraHost> {
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
   const origin = normalizeTrustedOrigin(rawOrigin);
-  const nextCount = countHostTrustedOrigins(db, hostId) + 1;
+  const nextCount = (await countHostTrustedOrigins(db, hostId)) + 1;
   assertOriginQuota(host, nextCount);
 
-  const existingGlobal = db
-    .prepare(`SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`)
-    .get(origin) as { host_id: string } | null;
-  if (existingGlobal !== null && existingGlobal.host_id !== hostId) {
+  const existingGlobal = await db.queryOne<{ host_id: string }>(
+    `SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`,
+    [origin],
+  );
+  if (existingGlobal !== undefined && existingGlobal.host_id !== hostId) {
     throw new TrustedOriginConflictError(origin);
   }
-  if (existingGlobal !== null) {
+  if (existingGlobal !== undefined) {
     return host;
   }
 
-  db.prepare(
+  await db.exec(
     `INSERT INTO host_trusted_origins (id, host_id, origin, created_at_ms) VALUES (?, ?, ?, ?)`,
-  ).run(crypto.randomUUID(), hostId, origin, Date.now());
+    [crypto.randomUUID(), hostId, origin, Date.now()],
+  );
 
-  const updated = findHostById(db, hostId);
+  const updated = await findHostById(db, hostId);
   if (updated === null) {
     throw new Error("host trusted origin insert failed");
   }
   return updated;
 }
 
-export function removeHostTrustedOrigin(
-  db: Database,
+export async function removeHostTrustedOrigin(
+  db: RegistryDatabase,
   hostId: string,
   rawOrigin: string,
-): KhoraHost {
-  const host = findHostById(db, hostId);
+): Promise<KhoraHost> {
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
   const origin = normalizeTrustedOrigin(rawOrigin);
-  db.prepare(`DELETE FROM host_trusted_origins WHERE host_id = ? AND origin = ?`).run(
+  await db.exec(`DELETE FROM host_trusted_origins WHERE host_id = ? AND origin = ?`, [
     hostId,
     origin,
-  );
-  const updated = findHostById(db, hostId);
+  ]);
+  const updated = await findHostById(db, hostId);
   if (updated === null) {
     throw new Error("host trusted origin delete failed");
   }
   return updated;
 }
 
-export function replaceHostTrustedOrigins(
-  db: Database,
+export async function replaceHostTrustedOrigins(
+  db: RegistryDatabase,
   hostId: string,
   rawOrigins: string[],
-): KhoraHost {
-  const host = findHostById(db, hostId);
+): Promise<KhoraHost> {
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
@@ -246,60 +271,59 @@ export function replaceHostTrustedOrigins(
   assertOriginQuota(host, origins.length);
 
   for (const origin of origins) {
-    const existingGlobal = db
-      .prepare(`SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`)
-      .get(origin) as { host_id: string } | null;
-    if (existingGlobal !== null && existingGlobal.host_id !== hostId) {
+    const existingGlobal = await db.queryOne<{ host_id: string }>(
+      `SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`,
+      [origin],
+    );
+    if (existingGlobal !== undefined && existingGlobal.host_id !== hostId) {
       throw new TrustedOriginConflictError(origin);
     }
   }
 
-  db.prepare(`DELETE FROM host_trusted_origins WHERE host_id = ?`).run(hostId);
-  const insert = db.prepare(
-    `INSERT INTO host_trusted_origins (id, host_id, origin, created_at_ms) VALUES (?, ?, ?, ?)`,
-  );
+  await db.exec(`DELETE FROM host_trusted_origins WHERE host_id = ?`, [hostId]);
   const now = Date.now();
   for (const origin of origins) {
-    insert.run(crypto.randomUUID(), hostId, origin, now);
+    await db.exec(
+      `INSERT INTO host_trusted_origins (id, host_id, origin, created_at_ms) VALUES (?, ?, ?, ?)`,
+      [crypto.randomUUID(), hostId, origin, now],
+    );
   }
 
-  const updated = findHostById(db, hostId);
+  const updated = await findHostById(db, hostId);
   if (updated === null) {
     throw new Error("host trusted origins replace failed");
   }
   return updated;
 }
 
-export function listHostTrustedOriginRequests(
-  db: Database,
+export async function listHostTrustedOriginRequests(
+  db: RegistryDatabase,
   hostId: string,
   status?: HostTrustedOriginRequest["status"],
-): HostTrustedOriginRequest[] {
+): Promise<HostTrustedOriginRequest[]> {
   const rows =
     status === undefined
-      ? (db
-          .prepare(
-            `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT}
-             FROM host_trusted_origin_requests WHERE host_id = ?
-             ORDER BY requested_at_ms DESC`,
-          )
-          .all(hostId) as HostTrustedOriginRequestRow[])
-      : (db
-          .prepare(
-            `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT}
-             FROM host_trusted_origin_requests WHERE host_id = ? AND status = ?
-             ORDER BY requested_at_ms DESC`,
-          )
-          .all(hostId, status) as HostTrustedOriginRequestRow[]);
+      ? await db.queryAll<HostTrustedOriginRequestRow>(
+          `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT}
+           FROM host_trusted_origin_requests WHERE host_id = ?
+           ORDER BY requested_at_ms DESC`,
+          [hostId],
+        )
+      : await db.queryAll<HostTrustedOriginRequestRow>(
+          `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT}
+           FROM host_trusted_origin_requests WHERE host_id = ? AND status = ?
+           ORDER BY requested_at_ms DESC`,
+          [hostId, status],
+        );
   return rows.map(mapOriginRequest);
 }
 
-export function requestHostTrustedOrigin(
-  db: Database,
+export async function requestHostTrustedOrigin(
+  db: RegistryDatabase,
   hostId: string,
   rawOrigin: string,
-): HostTrustedOriginRequest {
-  const host = findHostById(db, hostId);
+): Promise<HostTrustedOriginRequest> {
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
@@ -307,88 +331,92 @@ export function requestHostTrustedOrigin(
     throw new Error("only active hosts can request trusted origins");
   }
   const origin = normalizeTrustedOrigin(rawOrigin);
-  assertOriginNotRegisteredElsewhere(db, hostId, origin);
+  await assertOriginNotRegisteredElsewhere(db, hostId, origin);
 
-  const existingApproved = db
-    .prepare(`SELECT id FROM host_trusted_origins WHERE host_id = ? AND origin = ? LIMIT 1`)
-    .get(hostId, origin);
-  if (existingApproved !== null && existingApproved !== undefined) {
+  const existingApproved = await db.queryOne<{ id: string }>(
+    `SELECT id FROM host_trusted_origins WHERE host_id = ? AND origin = ? LIMIT 1`,
+    [hostId, origin],
+  );
+  if (existingApproved !== undefined) {
     throw new InvalidTrustedOriginError("origin is already approved");
   }
 
-  const existingPending = db
-    .prepare(
-      `SELECT id FROM host_trusted_origin_requests
-       WHERE host_id = ? AND origin = ? AND status = 'pending' LIMIT 1`,
-    )
-    .get(hostId, origin);
-  if (existingPending !== null && existingPending !== undefined) {
+  const existingPending = await db.queryOne<{ id: string }>(
+    `SELECT id FROM host_trusted_origin_requests
+     WHERE host_id = ? AND origin = ? AND status = 'pending' LIMIT 1`,
+    [hostId, origin],
+  );
+  if (existingPending !== undefined) {
     throw new InvalidTrustedOriginError("origin request is already pending");
   }
 
   const nextCount =
-    countHostTrustedOrigins(db, hostId) + countPendingHostTrustedOriginRequests(db, hostId) + 1;
+    (await countHostTrustedOrigins(db, hostId)) +
+    (await countPendingHostTrustedOriginRequests(db, hostId)) +
+    1;
   assertOriginQuota(host, nextCount);
 
   const id = crypto.randomUUID();
   const now = Date.now();
-  db.prepare(
+  await db.exec(
     `INSERT INTO host_trusted_origin_requests
        (id, host_id, origin, status, requested_at_ms)
      VALUES (?, ?, ?, 'pending', ?)`,
-  ).run(id, hostId, origin, now);
-  const created = findOriginRequestById(db, id);
+    [id, hostId, origin, now],
+  );
+  const created = await findOriginRequestById(db, id);
   if (created === null) {
     throw new Error("origin request insert failed");
   }
   return created;
 }
 
-export function cancelHostTrustedOriginRequest(
-  db: Database,
+export async function cancelHostTrustedOriginRequest(
+  db: RegistryDatabase,
   hostId: string,
   requestId: string,
-): void {
-  const request = findOriginRequestById(db, requestId);
+): Promise<void> {
+  const request = await findOriginRequestById(db, requestId);
   if (request === null || request.hostId !== hostId) {
     throw new Error("origin request not found");
   }
   if (request.status !== "pending") {
     throw new Error("only pending origin requests can be cancelled");
   }
-  db.prepare(`DELETE FROM host_trusted_origin_requests WHERE id = ?`).run(requestId);
+  await db.exec(`DELETE FROM host_trusted_origin_requests WHERE id = ?`, [requestId]);
 }
 
-export function approveHostTrustedOriginRequest(
-  db: Database,
+export async function approveHostTrustedOriginRequest(
+  db: RegistryDatabase,
   requestId: string,
-): { host: KhoraHost; request: HostTrustedOriginRequest } {
-  const request = findOriginRequestById(db, requestId);
+): Promise<{ host: KhoraHost; request: HostTrustedOriginRequest }> {
+  const request = await findOriginRequestById(db, requestId);
   if (request === null) {
     throw new Error("origin request not found");
   }
   if (request.status !== "pending") {
     throw new Error("origin request is not pending");
   }
-  const host = addHostTrustedOrigin(db, request.hostId, request.origin);
+  const host = await addHostTrustedOrigin(db, request.hostId, request.origin);
   const now = Date.now();
-  db.prepare(
+  await db.exec(
     `UPDATE host_trusted_origin_requests
      SET status = 'approved', reviewed_at_ms = ?
      WHERE id = ?`,
-  ).run(now, requestId);
-  const updated = findOriginRequestById(db, requestId);
+    [now, requestId],
+  );
+  const updated = await findOriginRequestById(db, requestId);
   if (updated === null) {
     throw new Error("origin request approve failed");
   }
   return { host, request: updated };
 }
 
-export function rejectHostTrustedOriginRequest(
-  db: Database,
+export async function rejectHostTrustedOriginRequest(
+  db: RegistryDatabase,
   requestId: string,
-): HostTrustedOriginRequest {
-  const request = findOriginRequestById(db, requestId);
+): Promise<HostTrustedOriginRequest> {
+  const request = await findOriginRequestById(db, requestId);
   if (request === null) {
     throw new Error("origin request not found");
   }
@@ -396,12 +424,13 @@ export function rejectHostTrustedOriginRequest(
     throw new Error("origin request is not pending");
   }
   const now = Date.now();
-  db.prepare(
+  await db.exec(
     `UPDATE host_trusted_origin_requests
      SET status = 'rejected', reviewed_at_ms = ?
      WHERE id = ?`,
-  ).run(now, requestId);
-  const updated = findOriginRequestById(db, requestId);
+    [now, requestId],
+  );
+  const updated = await findOriginRequestById(db, requestId);
   if (updated === null) {
     throw new Error("origin request reject failed");
   }
@@ -419,57 +448,54 @@ function mapQuotaRequest(row: HostTrustedOriginQuotaRequestRow): HostTrustedOrig
   };
 }
 
-function findQuotaRequestById(
-  db: Database,
+async function findQuotaRequestById(
+  db: RegistryDatabase,
   requestId: string,
-): HostTrustedOriginQuotaRequest | null {
-  const row = db
-    .prepare(
-      `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
-       FROM host_trusted_origin_quota_requests WHERE id = ? LIMIT 1`,
-    )
-    .get(requestId) as HostTrustedOriginQuotaRequestRow | null;
-  return row === null ? null : mapQuotaRequest(row);
+): Promise<HostTrustedOriginQuotaRequest | null> {
+  const row = await db.queryOne<HostTrustedOriginQuotaRequestRow>(
+    `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
+     FROM host_trusted_origin_quota_requests WHERE id = ? LIMIT 1`,
+    [requestId],
+  );
+  return row === undefined ? null : mapQuotaRequest(row);
 }
 
-export function listHostTrustedOriginQuotaRequests(
-  db: Database,
+export async function listHostTrustedOriginQuotaRequests(
+  db: RegistryDatabase,
   hostId: string,
   status?: HostTrustedOriginQuotaRequest["status"],
-): HostTrustedOriginQuotaRequest[] {
+): Promise<HostTrustedOriginQuotaRequest[]> {
   const rows =
     status === undefined
-      ? (db
-          .prepare(
-            `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
-             FROM host_trusted_origin_quota_requests WHERE host_id = ?
-             ORDER BY requested_at_ms DESC`,
-          )
-          .all(hostId) as HostTrustedOriginQuotaRequestRow[])
-      : (db
-          .prepare(
-            `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
-             FROM host_trusted_origin_quota_requests WHERE host_id = ? AND status = ?
-             ORDER BY requested_at_ms DESC`,
-          )
-          .all(hostId, status) as HostTrustedOriginQuotaRequestRow[]);
+      ? await db.queryAll<HostTrustedOriginQuotaRequestRow>(
+          `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
+           FROM host_trusted_origin_quota_requests WHERE host_id = ?
+           ORDER BY requested_at_ms DESC`,
+          [hostId],
+        )
+      : await db.queryAll<HostTrustedOriginQuotaRequestRow>(
+          `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
+           FROM host_trusted_origin_quota_requests WHERE host_id = ? AND status = ?
+           ORDER BY requested_at_ms DESC`,
+          [hostId, status],
+        );
   return rows.map(mapQuotaRequest);
 }
 
-export function findPendingHostTrustedOriginQuotaRequest(
-  db: Database,
+export async function findPendingHostTrustedOriginQuotaRequest(
+  db: RegistryDatabase,
   hostId: string,
-): HostTrustedOriginQuotaRequest | null {
-  const rows = listHostTrustedOriginQuotaRequests(db, hostId, "pending");
+): Promise<HostTrustedOriginQuotaRequest | null> {
+  const rows = await listHostTrustedOriginQuotaRequests(db, hostId, "pending");
   return rows[0] ?? null;
 }
 
-export function requestHostTrustedOriginQuota(
-  db: Database,
+export async function requestHostTrustedOriginQuota(
+  db: RegistryDatabase,
   hostId: string,
   requestedIncluded: number,
-): HostTrustedOriginQuotaRequest {
-  const host = findHostById(db, hostId);
+): Promise<HostTrustedOriginQuotaRequest> {
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
@@ -483,70 +509,72 @@ export function requestHostTrustedOriginQuota(
   if (target <= host.includedTrustedOrigins) {
     throw new Error("requested quota must exceed current included trusted origins");
   }
-  const existingPending = findPendingHostTrustedOriginQuotaRequest(db, hostId);
+  const existingPending = await findPendingHostTrustedOriginQuotaRequest(db, hostId);
   if (existingPending !== null) {
     throw new Error("quota request is already pending");
   }
 
   const id = crypto.randomUUID();
   const now = Date.now();
-  db.prepare(
+  await db.exec(
     `INSERT INTO host_trusted_origin_quota_requests
        (id, host_id, requested_included, status, requested_at_ms)
      VALUES (?, ?, ?, 'pending', ?)`,
-  ).run(id, hostId, target, now);
-  const created = findQuotaRequestById(db, id);
+    [id, hostId, target, now],
+  );
+  const created = await findQuotaRequestById(db, id);
   if (created === null) {
     throw new Error("quota request insert failed");
   }
   return created;
 }
 
-export function cancelHostTrustedOriginQuotaRequest(
-  db: Database,
+export async function cancelHostTrustedOriginQuotaRequest(
+  db: RegistryDatabase,
   hostId: string,
   requestId: string,
-): void {
-  const request = findQuotaRequestById(db, requestId);
+): Promise<void> {
+  const request = await findQuotaRequestById(db, requestId);
   if (request === null || request.hostId !== hostId) {
     throw new Error("quota request not found");
   }
   if (request.status !== "pending") {
     throw new Error("only pending quota requests can be cancelled");
   }
-  db.prepare(`DELETE FROM host_trusted_origin_quota_requests WHERE id = ?`).run(requestId);
+  await db.exec(`DELETE FROM host_trusted_origin_quota_requests WHERE id = ?`, [requestId]);
 }
 
-export function approveHostTrustedOriginQuotaRequest(
-  db: Database,
+export async function approveHostTrustedOriginQuotaRequest(
+  db: RegistryDatabase,
   requestId: string,
-): { host: KhoraHost; request: HostTrustedOriginQuotaRequest } {
-  const request = findQuotaRequestById(db, requestId);
+): Promise<{ host: KhoraHost; request: HostTrustedOriginQuotaRequest }> {
+  const request = await findQuotaRequestById(db, requestId);
   if (request === null) {
     throw new Error("quota request not found");
   }
   if (request.status !== "pending") {
     throw new Error("quota request is not pending");
   }
-  const host = setHostIncludedTrustedOrigins(db, request.hostId, request.requestedIncluded);
+  const host = await setHostIncludedTrustedOrigins(db, request.hostId, request.requestedIncluded);
   const now = Date.now();
-  db.prepare(
+  await db.exec(
     `UPDATE host_trusted_origin_quota_requests
      SET status = 'approved', reviewed_at_ms = ?
      WHERE id = ?`,
-  ).run(now, requestId);
-  const updated = findQuotaRequestById(db, requestId);
+    [now, requestId],
+  );
+  const updated = await findQuotaRequestById(db, requestId);
   if (updated === null) {
     throw new Error("quota request approve failed");
   }
   return { host, request: updated };
 }
 
-export function rejectHostTrustedOriginQuotaRequest(
-  db: Database,
+export async function rejectHostTrustedOriginQuotaRequest(
+  db: RegistryDatabase,
   requestId: string,
-): HostTrustedOriginQuotaRequest {
-  const request = findQuotaRequestById(db, requestId);
+): Promise<HostTrustedOriginQuotaRequest> {
+  const request = await findQuotaRequestById(db, requestId);
   if (request === null) {
     throw new Error("quota request not found");
   }
@@ -554,83 +582,84 @@ export function rejectHostTrustedOriginQuotaRequest(
     throw new Error("quota request is not pending");
   }
   const now = Date.now();
-  db.prepare(
+  await db.exec(
     `UPDATE host_trusted_origin_quota_requests
      SET status = 'rejected', reviewed_at_ms = ?
      WHERE id = ?`,
-  ).run(now, requestId);
-  const updated = findQuotaRequestById(db, requestId);
+    [now, requestId],
+  );
+  const updated = await findQuotaRequestById(db, requestId);
   if (updated === null) {
     throw new Error("quota request reject failed");
   }
   return updated;
 }
 
-export function setHostRegistryParticipation(
-  db: Database,
+export async function setHostRegistryParticipation(
+  db: RegistryDatabase,
   hostId: string,
   enabled: boolean,
-): KhoraHost {
-  const existing = findHostById(db, hostId);
+): Promise<KhoraHost> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
   if (enabled && existing.status !== "active") {
     throw new Error("only active hosts can participate in the registry");
   }
-  db.prepare(`UPDATE khora_hosts SET registry_participation_enabled = ? WHERE id = ?`).run(
+  await db.exec(`UPDATE khora_hosts SET registry_participation_enabled = ? WHERE id = ?`, [
     enabled ? 1 : 0,
     hostId,
-  );
-  const host = findHostById(db, hostId);
+  ]);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host registry participation update failed");
   }
   return host;
 }
 
-export function setHostIncludedTrustedOrigins(
-  db: Database,
+export async function setHostIncludedTrustedOrigins(
+  db: RegistryDatabase,
   hostId: string,
   included: number,
-): KhoraHost {
-  const existing = findHostById(db, hostId);
+): Promise<KhoraHost> {
+  const existing = await findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
   if (!Number.isFinite(included) || included < 0) {
     throw new Error("included trusted origins must be a non-negative number");
   }
-  db.prepare(`UPDATE khora_hosts SET included_trusted_origins = ? WHERE id = ?`).run(
+  await db.exec(`UPDATE khora_hosts SET included_trusted_origins = ? WHERE id = ?`, [
     Math.floor(included),
     hostId,
-  );
-  const host = findHostById(db, hostId);
+  ]);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host included trusted origins update failed");
   }
   return host;
 }
 
-export function updateHostRegistrySettings(
-  db: Database,
+export async function updateHostRegistrySettings(
+  db: RegistryDatabase,
   hostId: string,
   params: {
     registryParticipationEnabled?: boolean;
     origins?: string[];
     includedTrustedOrigins?: number;
   },
-): KhoraHost {
+): Promise<KhoraHost> {
   if (params.includedTrustedOrigins !== undefined) {
-    setHostIncludedTrustedOrigins(db, hostId, params.includedTrustedOrigins);
+    await setHostIncludedTrustedOrigins(db, hostId, params.includedTrustedOrigins);
   }
   if (params.origins !== undefined) {
-    replaceHostTrustedOrigins(db, hostId, params.origins);
+    await replaceHostTrustedOrigins(db, hostId, params.origins);
   }
   if (params.registryParticipationEnabled !== undefined) {
     return setHostRegistryParticipation(db, hostId, params.registryParticipationEnabled);
   }
-  const host = findHostById(db, hostId);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
@@ -638,25 +667,28 @@ export function updateHostRegistrySettings(
 }
 
 /** Origins from active participating hosts with at least one trusted origin row. */
-export function listRegistryTrustedOrigins(db: Database): string[] {
+export async function listRegistryTrustedOrigins(db: RegistryDatabase): Promise<string[]> {
   const origins: string[] = [];
-  for (const host of listActiveHosts(db)) {
+  for (const host of await listActiveHosts(db)) {
     if (!host.registryParticipationEnabled) {
       continue;
     }
-    origins.push(...listHostTrustedOriginStrings(db, host.id));
+    origins.push(...(await listHostTrustedOriginStrings(db, host.id)));
   }
   return [...new Set(origins)];
 }
 
-export function readHostRegistryState(db: Database, hostId: string): HostRegistryState | null {
-  const host = findHostById(db, hostId);
+export async function readHostRegistryState(
+  db: RegistryDatabase,
+  hostId: string,
+): Promise<HostRegistryState | null> {
+  const host = await findHostById(db, hostId);
   if (host === null) {
     return null;
   }
-  const origins = listHostTrustedOriginStrings(db, hostId);
-  const pendingOriginRequests = listHostTrustedOriginRequests(db, hostId, "pending");
-  const pendingQuotaRequest = findPendingHostTrustedOriginQuotaRequest(db, hostId);
+  const origins = await listHostTrustedOriginStrings(db, hostId);
+  const pendingOriginRequests = await listHostTrustedOriginRequests(db, hostId, "pending");
+  const pendingQuotaRequest = await findPendingHostTrustedOriginQuotaRequest(db, hostId);
   return {
     participationEnabled: host.registryParticipationEnabled,
     origins,

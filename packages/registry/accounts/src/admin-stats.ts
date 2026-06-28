@@ -1,8 +1,8 @@
-import type { Database } from "bun:sqlite";
 import type {
   RegistryAccountLookup,
   RegistryEmailLookup,
 } from "@khoralabs/registry-accounts-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts";
 import {
   listMarketingConsentsForAccount,
@@ -18,28 +18,31 @@ export type {
   RegistryEmailLookupResponse,
 } from "@khoralabs/registry-accounts-contracts";
 
-export function lookupRegistryByEmail(db: Database, email: string): RegistryEmailLookup {
+export async function lookupRegistryByEmail(
+  db: RegistryDatabase,
+  email: string,
+): Promise<RegistryEmailLookup> {
   const normalized = normalizeEmail(email);
-  const account = findAccountByEmail(db, normalized);
+  const account = await findAccountByEmail(db, normalized);
   return {
     email: normalized,
     account,
-    accountEmails: account === null ? [] : listAccountEmails(db, account.id),
-    marketingConsents: listMarketingConsentsForEmail(db, normalized),
-    membershipsCount: account === null ? 0 : countMembershipsForAccount(db, account.id),
+    accountEmails: account === null ? [] : await listAccountEmails(db, account.id),
+    marketingConsents: await listMarketingConsentsForEmail(db, normalized),
+    membershipsCount: account === null ? 0 : await countMembershipsForAccount(db, account.id),
   };
 }
 
-export function lookupRegistryByAccountId(
-  db: Database,
+export async function lookupRegistryByAccountId(
+  db: RegistryDatabase,
   accountId: string,
-): RegistryAccountLookup | null {
-  const account = findAccountById(db, accountId);
+): Promise<RegistryAccountLookup | null> {
+  const account = await findAccountById(db, accountId);
   if (account === null) return null;
   return {
     account,
-    accountEmails: listAccountEmails(db, account.id),
-    marketingConsents: listMarketingConsentsForAccount(db, account.id),
-    membershipsCount: countMembershipsForAccount(db, account.id),
+    accountEmails: await listAccountEmails(db, account.id),
+    marketingConsents: await listMarketingConsentsForAccount(db, account.id),
+    membershipsCount: await countMembershipsForAccount(db, account.id),
   };
 }

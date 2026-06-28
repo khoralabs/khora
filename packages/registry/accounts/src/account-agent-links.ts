@@ -1,8 +1,8 @@
-import type { Database } from "bun:sqlite";
 import type {
   AccountAgentLink,
   HostLinkPropagationResult,
 } from "@khoralabs/registry-accounts-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { bindAgentToAccount, findBindingByAgentDid } from "./agent-account-bindings";
 import { deleteMembershipIfEmpty, findMembershipById, upsertMembership } from "./memberships";
 import type { AccountAgentLinkRow } from "./types-internal";
@@ -18,68 +18,67 @@ function mapLink(row: AccountAgentLinkRow): AccountAgentLink {
   };
 }
 
-export function findAgentLinkOnHost(
-  db: Database,
+export async function findAgentLinkOnHost(
+  db: RegistryDatabase,
   hostId: string,
   agentDid: string,
-): AccountAgentLink | null {
-  const row = db
-    .prepare(
-      `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
-       FROM account_agent_links WHERE host_id = ? AND agent_did = ? LIMIT 1`,
-    )
-    .get(hostId, agentDid) as AccountAgentLinkRow | null;
-  return row === null ? null : mapLink(row);
+): Promise<AccountAgentLink | null> {
+  const row = await db.queryOne<AccountAgentLinkRow>(
+    `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
+     FROM account_agent_links WHERE host_id = ? AND agent_did = ? LIMIT 1`,
+    [hostId, agentDid],
+  );
+  return row === undefined ? null : mapLink(row);
 }
 
-export function listAgentLinksForMembership(
-  db: Database,
+export async function listAgentLinksForMembership(
+  db: RegistryDatabase,
   membershipId: string,
-): AccountAgentLink[] {
-  const rows = db
-    .prepare(
-      `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
-       FROM account_agent_links WHERE membership_id = ? ORDER BY linked_at_ms ASC`,
-    )
-    .all(membershipId) as AccountAgentLinkRow[];
+): Promise<AccountAgentLink[]> {
+  const rows = await db.queryAll<AccountAgentLinkRow>(
+    `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
+     FROM account_agent_links WHERE membership_id = ? ORDER BY linked_at_ms ASC`,
+    [membershipId],
+  );
   return rows.map(mapLink);
 }
 
-export function listAgentLinksForAccount(db: Database, accountId: string): AccountAgentLink[] {
-  const rows = db
-    .prepare(
-      `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
-       FROM account_agent_links WHERE account_id = ? ORDER BY linked_at_ms ASC`,
-    )
-    .all(accountId) as AccountAgentLinkRow[];
+export async function listAgentLinksForAccount(
+  db: RegistryDatabase,
+  accountId: string,
+): Promise<AccountAgentLink[]> {
+  const rows = await db.queryAll<AccountAgentLinkRow>(
+    `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
+     FROM account_agent_links WHERE account_id = ? ORDER BY linked_at_ms ASC`,
+    [accountId],
+  );
   return rows.map(mapLink);
 }
 
-export function linkAgentToMembership(
-  db: Database,
+export async function linkAgentToMembership(
+  db: RegistryDatabase,
   params: { membershipId: string; agentDid: string; linkedAtMs?: number },
-): AccountAgentLink {
-  const membership = findMembershipById(db, params.membershipId);
+): Promise<AccountAgentLink> {
+  const membership = await findMembershipById(db, params.membershipId);
   if (membership === null) {
     throw new Error("membership not found");
   }
 
-  const binding = findBindingByAgentDid(db, params.agentDid);
+  const binding = await findBindingByAgentDid(db, params.agentDid);
   if (binding !== null && binding.accountId !== membership.accountId) {
     throw new Error("agent already bound to another account");
   }
 
-  const existingOnMembership = db
-    .prepare(
-      `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
-       FROM account_agent_links WHERE membership_id = ? AND agent_did = ? LIMIT 1`,
-    )
-    .get(params.membershipId, params.agentDid) as AccountAgentLinkRow | null;
-  if (existingOnMembership !== null) {
+  const existingOnMembership = await db.queryOne<AccountAgentLinkRow>(
+    `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
+     FROM account_agent_links WHERE membership_id = ? AND agent_did = ? LIMIT 1`,
+    [params.membershipId, params.agentDid],
+  );
+  if (existingOnMembership !== undefined) {
     return mapLink(existingOnMembership);
   }
 
-  const existingOnHost = findAgentLinkOnHost(db, membership.hostId, params.agentDid);
+  const existingOnHost = await findAgentLinkOnHost(db, membership.hostId, params.agentDid);
   if (existingOnHost !== null && existingOnHost.accountId !== membership.accountId) {
     throw new Error("agent already linked to another account on this host");
   }
@@ -87,11 +86,12 @@ export function linkAgentToMembership(
   const now = params.linkedAtMs ?? Date.now();
   const id = crypto.randomUUID();
   try {
-    db.prepare(
+    await db.exec(
       `INSERT INTO account_agent_links (
          id, membership_id, account_id, host_id, agent_did, linked_at_ms
        ) VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(id, membership.id, membership.accountId, membership.hostId, params.agentDid, now);
+      [id, membership.id, membership.accountId, membership.hostId, params.agentDid, now],
+    );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("UNIQUE constraint failed") && msg.includes("host_id")) {
@@ -100,47 +100,58 @@ export function linkAgentToMembership(
     throw err;
   }
 
-  const created = db
-    .prepare(
-      `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
-       FROM account_agent_links WHERE id = ? LIMIT 1`,
-    )
-    .get(id) as AccountAgentLinkRow | null;
-  if (created === null) {
+  const created = await db.queryOne<AccountAgentLinkRow>(
+    `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
+     FROM account_agent_links WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  if (created === undefined) {
     throw new Error("account agent link insert failed");
   }
   return mapLink(created);
 }
 
-export function unlinkAgentFromMembership(
-  db: Database,
+export async function unlinkAgentFromMembership(
+  db: RegistryDatabase,
   membershipId: string,
   agentDid: string,
-): boolean {
-  const result = db
-    .prepare(`DELETE FROM account_agent_links WHERE membership_id = ? AND agent_did = ?`)
-    .run(membershipId, agentDid);
-  if (result.changes > 0) {
-    deleteMembershipIfEmpty(db, membershipId);
+): Promise<boolean> {
+  const existing = await db.queryOne<{ id: string }>(
+    `SELECT id FROM account_agent_links WHERE membership_id = ? AND agent_did = ? LIMIT 1`,
+    [membershipId, agentDid],
+  );
+  if (existing === undefined) {
+    return false;
   }
-  return result.changes > 0;
+  await db.exec(`DELETE FROM account_agent_links WHERE membership_id = ? AND agent_did = ?`, [
+    membershipId,
+    agentDid,
+  ]);
+  await deleteMembershipIfEmpty(db, membershipId);
+  return true;
 }
 
-export function unlinkAllAgentsFromMembership(db: Database, membershipId: string): number {
-  const result = db
-    .prepare(`DELETE FROM account_agent_links WHERE membership_id = ?`)
-    .run(membershipId);
-  if (result.changes > 0) {
-    deleteMembershipIfEmpty(db, membershipId);
+export async function unlinkAllAgentsFromMembership(
+  db: RegistryDatabase,
+  membershipId: string,
+): Promise<number> {
+  const rows = await db.queryAll<{ id: string }>(
+    `SELECT id FROM account_agent_links WHERE membership_id = ?`,
+    [membershipId],
+  );
+  if (rows.length === 0) {
+    return 0;
   }
-  return result.changes;
+  await db.exec(`DELETE FROM account_agent_links WHERE membership_id = ?`, [membershipId]);
+  await deleteMembershipIfEmpty(db, membershipId);
+  return rows.length;
 }
 
-export function ensureAgentLinkedOnHost(
-  db: Database,
+export async function ensureAgentLinkedOnHost(
+  db: RegistryDatabase,
   params: { accountId: string; agentDid: string; hostId: string },
-): AccountAgentLink {
-  const binding = findBindingByAgentDid(db, params.agentDid);
+): Promise<AccountAgentLink> {
+  const binding = await findBindingByAgentDid(db, params.agentDid);
   if (binding === null) {
     throw new Error("no agent account binding");
   }
@@ -148,7 +159,7 @@ export function ensureAgentLinkedOnHost(
     throw new Error("agent already bound to another account");
   }
 
-  const membership = upsertMembership(db, {
+  const membership = await upsertMembership(db, {
     accountId: params.accountId,
     hostId: params.hostId,
   });
@@ -158,16 +169,16 @@ export function ensureAgentLinkedOnHost(
   });
 }
 
-export function linkAgentToAccountOnHost(
-  db: Database,
+export async function linkAgentToAccountOnHost(
+  db: RegistryDatabase,
   params: {
     accountId: string;
     agentDid: string;
     hostId: string;
     boundViaHostId?: string;
   },
-): AccountAgentLink {
-  bindAgentToAccount(db, {
+): Promise<AccountAgentLink> {
+  await bindAgentToAccount(db, {
     agentDid: params.agentDid,
     accountId: params.accountId,
     ...(params.boundViaHostId !== undefined ? { boundViaHostId: params.boundViaHostId } : {}),
@@ -179,14 +190,14 @@ export function linkAgentToAccountOnHost(
   });
 }
 
-export function propagateAgentLinksToHosts(
-  db: Database,
+export async function propagateAgentLinksToHosts(
+  db: RegistryDatabase,
   params: { accountId: string; agentDid: string; hostIds: string[] },
-): HostLinkPropagationResult[] {
+): Promise<HostLinkPropagationResult[]> {
   const results: HostLinkPropagationResult[] = [];
   for (const hostId of params.hostIds) {
     try {
-      const link = ensureAgentLinkedOnHost(db, {
+      const link = await ensureAgentLinkedOnHost(db, {
         accountId: params.accountId,
         agentDid: params.agentDid,
         hostId,

@@ -5,19 +5,36 @@ import type { RegistryHostDeps } from "./registry-host-deps";
 import { initRegistryHostRuntime, type RegistryHostRuntime } from "./runtime";
 
 export function createRegistryHost(deps: RegistryHostDeps): RegistryHostContext {
+  let trustedOriginsCache: string[] = [];
+
+  const refreshTrustedOrigins = (): Promise<void> =>
+    Promise.resolve(deps.resolveTrustedOrigins()).then((origins) => {
+      trustedOriginsCache = origins;
+    });
+
+  void refreshTrustedOrigins();
+
+  const identity = {
+    ...deps.identity,
+    reloadTrustedOrigins() {
+      deps.identity.reloadTrustedOrigins?.();
+      void refreshTrustedOrigins();
+    },
+  };
+
   const runtime: RegistryHostRuntime = {
     db: deps.db,
-    identity: deps.identity,
+    identity,
     consoleAuth: deps.consoleAuth,
     publicUrl: deps.publicUrl,
-    trustedOrigins: deps.resolveTrustedOrigins,
+    trustedOrigins: () => trustedOriginsCache,
   };
   initRegistryHostRuntime(runtime);
   startHostHealthPoller(deps.db);
 
   return {
     db: deps.db,
-    identity: deps.identity,
+    identity,
     fetch: (req) => dispatchRegistryHostFetch(runtime, req),
     stop() {
       /* health poller uses setInterval; no handle stored today */

@@ -4,15 +4,16 @@ import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
 } from "@khoralabs/registry-accounts";
-import {
-  ensureRegistrySchema,
-  getRegistryDatabase,
-  resetRegistryDatabase,
-} from "@khoralabs/registry-auth";
+import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import { seedDefaultHost } from "@khoralabs/registry-catalog";
+import {
+  type createRegistrySqliteDatabase,
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/registry-sqlite";
 import { type DeviceRouteDeps, handleDeviceAuthorize, handleDeviceToken } from "./device";
 
-function deviceRouteDeps(db: ReturnType<typeof getRegistryDatabase>): DeviceRouteDeps {
+function deviceRouteDeps(db: ReturnType<typeof createRegistrySqliteDatabase>): DeviceRouteDeps {
   return {
     db,
     identity: {
@@ -27,21 +28,21 @@ function deviceRouteDeps(db: ReturnType<typeof getRegistryDatabase>): DeviceRout
 
 describe("registry device flow", () => {
   beforeEach(async () => {
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    const db = getRegistryDatabase();
-    seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    const db = getRegistrySqliteBundle().registry;
+    await seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
   });
 
   test("authorize then token after approve", async () => {
-    const db = getRegistryDatabase();
+    const db = getRegistrySqliteBundle().registry;
     const deps = deviceRouteDeps(db);
     const authRes = await handleDeviceAuthorize(
       new Request("http://localhost/v1/device/authorize", {
@@ -61,7 +62,7 @@ describe("registry device flow", () => {
     expect(authJson.verification_url).toContain("user_code=");
     expect(authJson.expires_in).toBeGreaterThan(0);
 
-    approveDeviceAuthorization(db, {
+    await approveDeviceAuthorization(db, {
       userCode: authJson.user_code,
       sessionToken: "test-session-token-abc",
     });
@@ -101,7 +102,7 @@ describe("registry device flow", () => {
   });
 
   test("consume marks device consumed", async () => {
-    const db = getRegistryDatabase();
+    const db = getRegistrySqliteBundle().registry;
     const deps = deviceRouteDeps(db);
     const authRes = await handleDeviceAuthorize(
       new Request("http://localhost/v1/device/authorize", {
@@ -112,11 +113,11 @@ describe("registry device flow", () => {
       deps,
     );
     const authJson = (await authRes.json()) as { device_code: string; user_code: string };
-    approveDeviceAuthorization(db, {
+    await approveDeviceAuthorization(db, {
       userCode: authJson.user_code,
       sessionToken: "sess-1",
     });
-    const consumed = consumeDeviceAuthorization(db, authJson.device_code);
+    const consumed = await consumeDeviceAuthorization(db, authJson.device_code);
     expect(consumed?.status).toBe("consumed");
   });
 });

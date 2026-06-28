@@ -1,11 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import {
-  ensureRegistrySchema,
-  getRegistryDatabase,
-  resetRegistryDatabase,
-} from "@khoralabs/registry-auth";
+import { ensureRegistrySchema } from "@khoralabs/registry-auth";
+import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import { initTestRegistryHostRuntime } from "../test-helpers";
 import {
   handleAdminHostActivate,
@@ -32,16 +29,16 @@ async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>):
 
 describe("host registry API", () => {
   beforeEach(async () => {
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    initTestRegistryHostRuntime(getRegistryDatabase());
+    initTestRegistryHostRuntime(getRegistrySqliteBundle().registry);
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
   });
 
   test("register pending then activate appears in public list", async () => {
@@ -60,7 +57,7 @@ describe("host registry API", () => {
     const regJson = (await reg.json()) as { host: { id: string; status: string } };
     expect(regJson.host.status).toBe("pending");
 
-    const listBefore = handleHostsList();
+    const listBefore = await handleHostsList();
     expect((await listBefore.json()) as { hosts: unknown[] }).toMatchObject({ hosts: [] });
 
     const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
@@ -75,12 +72,12 @@ describe("host registry API", () => {
     );
     expect(activate.status).toBe(200);
 
-    const listAfter = handleHostsList();
+    const listAfter = await handleHostsList();
     const hosts = (await listAfter.json()) as { hosts: { slug: string }[] };
     expect(hosts.hosts).toHaveLength(1);
     expect(hosts.hosts[0]?.slug).toBe("test-host");
 
-    const get = handleHostGet("test-host");
+    const get = await handleHostGet("test-host");
     expect(get.status).toBe(200);
   });
 
@@ -116,9 +113,9 @@ describe("host registry API", () => {
       hostId,
     );
     expect(suspend.status).toBe(200);
-    const listSuspended = (await handleHostsList().json()) as { hosts: unknown[] };
+    const listSuspended = (await (await handleHostsList()).json()) as { hosts: unknown[] };
     expect(listSuspended.hosts).toHaveLength(0);
-    expect((await handleHostGet("lifecycle")).status).toBe(404);
+    expect((await await handleHostGet("lifecycle")).status).toBe(404);
 
     const reactivate = await handleAdminHostReactivate(
       new Request(`http://localhost/admin/api/hosts/${hostId}/reactivate`, {
@@ -129,7 +126,7 @@ describe("host registry API", () => {
       hostId,
     );
     expect(reactivate.status).toBe(200);
-    const listActive = (await handleHostsList().json()) as { hosts: unknown[] };
+    const listActive = (await (await handleHostsList()).json()) as { hosts: unknown[] };
     expect(listActive.hosts).toHaveLength(1);
 
     const del = await handleAdminHostDelete(
@@ -143,7 +140,7 @@ describe("host registry API", () => {
     expect(del.status).toBe(200);
     const delJson = (await del.json()) as { ok: boolean; slug: string };
     expect(delJson).toMatchObject({ ok: true, slug: "lifecycle" });
-    const listAfterDelete = (await handleHostsList().json()) as { hosts: unknown[] };
+    const listAfterDelete = (await (await handleHostsList()).json()) as { hosts: unknown[] };
     expect(listAfterDelete.hosts).toHaveLength(0);
   });
 
@@ -156,7 +153,7 @@ describe("host registry API", () => {
       }),
     );
     expect(reg.status).toBe(201);
-    const get = handleHostGet("pending-only");
+    const get = await handleHostGet("pending-only");
     expect(get.status).toBe(404);
   });
 });

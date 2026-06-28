@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import { createLogger } from "@khoralabs/observability/logger";
 import { withSpan } from "@khoralabs/observability/spans";
 import {
@@ -9,6 +8,7 @@ import {
   listHostsForHealthPoll,
   probeHostHealth,
 } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { trace } from "@opentelemetry/api";
 
 export type { HostHealthProbeResult };
@@ -30,13 +30,13 @@ function envProbeTimeoutMs(): number {
 }
 
 export async function runHostHealthPoll(
-  db: Database,
+  db: RegistryDatabase,
   options?: { timeoutMs?: number; fetchImpl?: typeof fetch },
 ): Promise<void> {
   return withSpan(tracer, "registry.host_health_poll", {}, async () => {
     const timeoutMs = options?.timeoutMs ?? envProbeTimeoutMs();
     const fetchImpl = options?.fetchImpl ?? fetch;
-    const hosts = listHostsForHealthPoll(db);
+    const hosts = await listHostsForHealthPoll(db);
     const checkedAtMs = Date.now();
 
     for (const host of hosts) {
@@ -46,11 +46,11 @@ export async function runHostHealthPoll(
 }
 
 export async function probeHostHealthById(
-  db: Database,
+  db: RegistryDatabase,
   hostId: string,
   options?: { timeoutMs?: number; fetchImpl?: typeof fetch },
 ): Promise<KhoraHost | null> {
-  const host = findHostById(db, hostId);
+  const host = await findHostById(db, hostId);
   if (host === null || (host.status !== "active" && host.status !== "pending")) {
     return host;
   }
@@ -58,7 +58,7 @@ export async function probeHostHealthById(
   return applyHostHealthProbe(db, host, { timeoutMs, fetchImpl: options?.fetchImpl });
 }
 
-export function startHostHealthPoller(db: Database): void {
+export function startHostHealthPoller(db: RegistryDatabase): void {
   if (process.env.REGISTRY_HOST_HEALTH_POLL_DISABLED?.trim() === "1") {
     logger.info("Host health polling disabled");
     return;

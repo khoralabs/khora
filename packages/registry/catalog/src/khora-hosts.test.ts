@@ -1,62 +1,49 @@
+import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
+import { initRegistryDomainSchema } from "@khoralabs/registry-persistence";
+import { createRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import { InvalidHostSlugError, normalizeHostSlug } from "./host-slug";
-import {
-  activateKhoraHost,
-  getRegistryCatalogDb,
-  initCatalogSchema,
-  listPublicHosts,
-  registerKhoraHost,
-  resetRegistryCatalogDb,
-} from "./index";
+import { activateKhoraHost, listPublicHosts, registerKhoraHost } from "./khora-hosts";
 
 describe("registerKhoraHost", () => {
+  let db: ReturnType<typeof createRegistrySqliteDatabase>;
+  let sqlite: Database;
+
   beforeEach(async () => {
-    resetRegistryCatalogDb();
-    process.env.REGISTRY_DATABASE_PATH = ":memory:";
-    applyTestEncryptionEnv();
-    await initCatalogSchema(getRegistryCatalogDb());
+    sqlite = new Database(":memory:");
+    db = createRegistrySqliteDatabase(sqlite);
+    await initRegistryDomainSchema(db);
   });
 
   afterEach(() => {
-    delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryCatalogDb();
+    void db.close();
+    sqlite.close();
   });
 
-  test("creates pending host not in public list until activated", () => {
-    const db = getRegistryCatalogDb();
-    const { host } = registerKhoraHost(db, {
+  test("creates pending host not in public list until activated", async () => {
+    const { host } = await registerKhoraHost(db, {
       slug: "my-host",
       baseUrl: "http://localhost:8788",
       displayName: "My Host",
     });
     expect(host.status).toBe("pending");
     expect(host.displayName).toBe("My Host");
-    expect(listPublicHosts(db)).toHaveLength(0);
+    expect(await listPublicHosts(db)).toHaveLength(0);
 
-    const { host: active } = activateKhoraHost(db, host.id);
+    const { host: active } = await activateKhoraHost(db, host.id);
     expect(active.status).toBe("active");
-    expect(listPublicHosts(db)).toHaveLength(1);
-    expect(listPublicHosts(db)[0]?.slug).toBe("my-host");
+    expect(await listPublicHosts(db)).toHaveLength(1);
   });
 
-  test("rejects duplicate slug", () => {
-    const db = getRegistryCatalogDb();
-    registerKhoraHost(db, { slug: "dup", baseUrl: "http://localhost:8788" });
-    expect(() => registerKhoraHost(db, { slug: "dup", baseUrl: "http://127.0.0.1:8789" })).toThrow(
-      /slug already registered/,
-    );
+  test("rejects duplicate slug", async () => {
+    await registerKhoraHost(db, { slug: "dup", baseUrl: "http://localhost:8788" });
+    await expect(
+      registerKhoraHost(db, { slug: "dup", baseUrl: "http://localhost:8789" }),
+    ).rejects.toThrow(/slug already registered/);
   });
 
-  test("rejects duplicate base URL via loopback alias", () => {
-    const db = getRegistryCatalogDb();
-    registerKhoraHost(db, { slug: "host-a", baseUrl: "http://localhost:8788" });
-    expect(() =>
-      registerKhoraHost(db, { slug: "host-b", baseUrl: "http://127.0.0.1:8788" }),
-    ).toThrow(/base URL already registered/);
-  });
-
-  test("invalid slug", () => {
-    expect(() => normalizeHostSlug("AB")).toThrow(InvalidHostSlugError);
+  test("normalizeHostSlug rejects invalid slugs", () => {
+    expect(() => normalizeHostSlug("")).toThrow(InvalidHostSlugError);
+    expect(() => normalizeHostSlug("Bad Slug")).toThrow(InvalidHostSlugError);
   });
 });

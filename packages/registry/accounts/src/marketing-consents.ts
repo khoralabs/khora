@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import type { MarketingConsent } from "@khoralabs/registry-accounts-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { normalizeEmail } from "./normalize";
 import type { MarketingConsentRow } from "./types-internal";
 
@@ -15,35 +15,35 @@ function mapConsent(row: MarketingConsentRow): MarketingConsent {
   };
 }
 
-export function findMarketingConsent(
-  db: Database,
+export async function findMarketingConsent(
+  db: RegistryDatabase,
   email: string,
   listSlug: string,
-): MarketingConsent | null {
-  const row = db
-    .prepare(
-      `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
-       FROM marketing_consents WHERE email = ? AND list_slug = ? LIMIT 1`,
-    )
-    .get(normalizeEmail(email), listSlug) as MarketingConsentRow | null;
-  return row === null ? null : mapConsent(row);
+): Promise<MarketingConsent | null> {
+  const row = await db.queryOne<MarketingConsentRow>(
+    `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
+     FROM marketing_consents WHERE email = ? AND list_slug = ? LIMIT 1`,
+    [normalizeEmail(email), listSlug],
+  );
+  return row === undefined ? null : mapConsent(row);
 }
 
-export function subscribeMarketing(
-  db: Database,
+export async function subscribeMarketing(
+  db: RegistryDatabase,
   params: { email: string; listSlug: string; sourceApp?: string; accountId?: string },
-): MarketingConsent {
+): Promise<MarketingConsent> {
   const email = normalizeEmail(params.email);
-  const existing = findMarketingConsent(db, email, params.listSlug);
+  const existing = await findMarketingConsent(db, email, params.listSlug);
   const now = Date.now();
   if (existing !== null) {
-    db.prepare(
+    await db.exec(
       `UPDATE marketing_consents
        SET opted_in_at_ms = ?, opted_out_at_ms = NULL, source_app = COALESCE(?, source_app),
            account_id = COALESCE(?, account_id)
        WHERE id = ?`,
-    ).run(now, params.sourceApp ?? null, params.accountId ?? null, existing.id);
-    const consent = findMarketingConsent(db, email, params.listSlug);
+      [now, params.sourceApp ?? null, params.accountId ?? null, existing.id],
+    );
+    const consent = await findMarketingConsent(db, email, params.listSlug);
     if (consent === null) {
       throw new Error("marketing consent update failed");
     }
@@ -51,67 +51,68 @@ export function subscribeMarketing(
   }
 
   const id = crypto.randomUUID();
-  db.prepare(
+  await db.exec(
     `INSERT INTO marketing_consents
        (id, email, account_id, list_slug, opted_in_at_ms, source_app)
      VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(id, email, params.accountId ?? null, params.listSlug, now, params.sourceApp ?? null);
-  const consent = findMarketingConsent(db, email, params.listSlug);
+    [id, email, params.accountId ?? null, params.listSlug, now, params.sourceApp ?? null],
+  );
+  const consent = await findMarketingConsent(db, email, params.listSlug);
   if (consent === null) {
     throw new Error("marketing consent insert failed");
   }
   return consent;
 }
 
-export function unsubscribeMarketing(
-  db: Database,
+export async function unsubscribeMarketing(
+  db: RegistryDatabase,
   params: { email: string; listSlug: string },
-): MarketingConsent | null {
+): Promise<MarketingConsent | null> {
   const email = normalizeEmail(params.email);
-  const existing = findMarketingConsent(db, email, params.listSlug);
+  const existing = await findMarketingConsent(db, email, params.listSlug);
   if (existing === null) return null;
   const now = Date.now();
-  db.prepare(`UPDATE marketing_consents SET opted_out_at_ms = ? WHERE id = ?`).run(
+  await db.exec(`UPDATE marketing_consents SET opted_out_at_ms = ? WHERE id = ?`, [
     now,
     existing.id,
-  );
+  ]);
   return findMarketingConsent(db, email, params.listSlug);
 }
 
-export function listMarketingConsentsForAccount(
-  db: Database,
+export async function listMarketingConsentsForAccount(
+  db: RegistryDatabase,
   accountId: string,
-): MarketingConsent[] {
-  const rows = db
-    .prepare(
-      `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
-       FROM marketing_consents WHERE account_id = ? ORDER BY opted_in_at_ms DESC`,
-    )
-    .all(accountId) as MarketingConsentRow[];
+): Promise<MarketingConsent[]> {
+  const rows = await db.queryAll<MarketingConsentRow>(
+    `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
+     FROM marketing_consents WHERE account_id = ? ORDER BY opted_in_at_ms DESC`,
+    [accountId],
+  );
   return rows.map(mapConsent);
 }
 
-export function listMarketingConsentsForEmail(db: Database, email: string): MarketingConsent[] {
-  const rows = db
-    .prepare(
-      `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
-       FROM marketing_consents WHERE email = ? ORDER BY opted_in_at_ms DESC`,
-    )
-    .all(normalizeEmail(email)) as MarketingConsentRow[];
-  return rows.map(mapConsent);
-}
-
-export function listActiveMarketingConsentsForEmail(
-  db: Database,
+export async function listMarketingConsentsForEmail(
+  db: RegistryDatabase,
   email: string,
-): MarketingConsent[] {
-  const rows = db
-    .prepare(
-      `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
-       FROM marketing_consents
-       WHERE email = ? AND opted_out_at_ms IS NULL
-       ORDER BY opted_in_at_ms DESC`,
-    )
-    .all(normalizeEmail(email)) as MarketingConsentRow[];
+): Promise<MarketingConsent[]> {
+  const rows = await db.queryAll<MarketingConsentRow>(
+    `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
+     FROM marketing_consents WHERE email = ? ORDER BY opted_in_at_ms DESC`,
+    [normalizeEmail(email)],
+  );
+  return rows.map(mapConsent);
+}
+
+export async function listActiveMarketingConsentsForEmail(
+  db: RegistryDatabase,
+  email: string,
+): Promise<MarketingConsent[]> {
+  const rows = await db.queryAll<MarketingConsentRow>(
+    `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
+     FROM marketing_consents
+     WHERE email = ? AND opted_out_at_ms IS NULL
+     ORDER BY opted_in_at_ms DESC`,
+    [normalizeEmail(email)],
+  );
   return rows.map(mapConsent);
 }

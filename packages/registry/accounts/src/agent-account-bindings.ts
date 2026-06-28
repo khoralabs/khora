@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import type { AgentAccountBinding } from "@khoralabs/registry-accounts-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { AgentAccountBindingRow } from "./types-internal";
 
 function mapBinding(row: AgentAccountBindingRow): AgentAccountBinding {
@@ -11,21 +11,23 @@ function mapBinding(row: AgentAccountBindingRow): AgentAccountBinding {
   };
 }
 
-export function findBindingByAgentDid(db: Database, agentDid: string): AgentAccountBinding | null {
-  const row = db
-    .prepare(
-      `SELECT agent_did, account_id, bound_at_ms, bound_via_host_id
-       FROM agent_account_bindings WHERE agent_did = ? LIMIT 1`,
-    )
-    .get(agentDid) as AgentAccountBindingRow | null;
-  return row === null ? null : mapBinding(row);
+export async function findBindingByAgentDid(
+  db: RegistryDatabase,
+  agentDid: string,
+): Promise<AgentAccountBinding | null> {
+  const row = await db.queryOne<AgentAccountBindingRow>(
+    `SELECT agent_did, account_id, bound_at_ms, bound_via_host_id
+     FROM agent_account_bindings WHERE agent_did = ? LIMIT 1`,
+    [agentDid],
+  );
+  return row === undefined ? null : mapBinding(row);
 }
 
-export function bindAgentToAccount(
-  db: Database,
+export async function bindAgentToAccount(
+  db: RegistryDatabase,
   params: { agentDid: string; accountId: string; boundViaHostId?: string; boundAtMs?: number },
-): AgentAccountBinding {
-  const existing = findBindingByAgentDid(db, params.agentDid);
+): Promise<AgentAccountBinding> {
+  const existing = await findBindingByAgentDid(db, params.agentDid);
   if (existing !== null) {
     if (existing.accountId !== params.accountId) {
       throw new Error("agent already bound to another account");
@@ -34,29 +36,44 @@ export function bindAgentToAccount(
   }
 
   const now = params.boundAtMs ?? Date.now();
-  db.prepare(
+  await db.exec(
     `INSERT INTO agent_account_bindings (agent_did, account_id, bound_at_ms, bound_via_host_id)
      VALUES (?, ?, ?, ?)`,
-  ).run(params.agentDid, params.accountId, now, params.boundViaHostId ?? null);
+    [params.agentDid, params.accountId, now, params.boundViaHostId ?? null],
+  );
 
-  const created = findBindingByAgentDid(db, params.agentDid);
+  const created = await findBindingByAgentDid(db, params.agentDid);
   if (created === null) {
     throw new Error("agent account binding insert failed");
   }
   return created;
 }
 
-export function countAgentLinksForAgentDid(db: Database, agentDid: string): number {
-  const row = db
-    .prepare(`SELECT COUNT(*) AS n FROM account_agent_links WHERE agent_did = ?`)
-    .get(agentDid) as { n: number };
-  return row.n;
+export async function countAgentLinksForAgentDid(
+  db: RegistryDatabase,
+  agentDid: string,
+): Promise<number> {
+  const row = await db.queryOne<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM account_agent_links WHERE agent_did = ?`,
+    [agentDid],
+  );
+  return row?.n ?? 0;
 }
 
-export function clearBindingIfNoHostLinks(db: Database, agentDid: string): boolean {
-  if (countAgentLinksForAgentDid(db, agentDid) > 0) {
+export async function clearBindingIfNoHostLinks(
+  db: RegistryDatabase,
+  agentDid: string,
+): Promise<boolean> {
+  if ((await countAgentLinksForAgentDid(db, agentDid)) > 0) {
     return false;
   }
-  const result = db.prepare(`DELETE FROM agent_account_bindings WHERE agent_did = ?`).run(agentDid);
-  return result.changes > 0;
+  const existing = await db.queryOne<{ agent_did: string }>(
+    `SELECT agent_did FROM agent_account_bindings WHERE agent_did = ? LIMIT 1`,
+    [agentDid],
+  );
+  if (existing === undefined) {
+    return false;
+  }
+  await db.exec(`DELETE FROM agent_account_bindings WHERE agent_did = ?`, [agentDid]);
+  return true;
 }

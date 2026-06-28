@@ -1,5 +1,5 @@
 import { subscribeMarketing, unsubscribeMarketing } from "@khoralabs/registry-accounts";
-import { getRegistryDatabase } from "@khoralabs/registry-auth";
+import { getRegistryDomainDatabase } from "@khoralabs/registry-auth";
 
 export async function handleMarketingSubscribe(req: Request): Promise<Response> {
   let body: unknown;
@@ -35,7 +35,11 @@ export async function handleMarketingSubscribe(req: Request): Promise<Response> 
     return Response.json({ error: "email and listSlug are required" }, { status: 400 });
   }
 
-  const consent = subscribeMarketing(getRegistryDatabase(), { email, listSlug, sourceApp });
+  const consent = await subscribeMarketing(getRegistryDomainDatabase(), {
+    email,
+    listSlug,
+    sourceApp,
+  });
   return Response.json({ ok: true, consent });
 }
 
@@ -66,6 +70,6 @@ export async function handleMarketingUnsubscribe(req: Request): Promise<Response
     return Response.json({ error: "email and listSlug are required" }, { status: 400 });
   }
 
-  const consent = unsubscribeMarketing(getRegistryDatabase(), { email, listSlug });
+  const consent = await unsubscribeMarketing(getRegistryDomainDatabase(), { email, listSlug });
   return Response.json({ ok: true, consent });
 }

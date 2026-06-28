@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
   consumeClaimToken,
   createAgentAuthRegistration,
@@ -10,6 +9,7 @@ import {
   normalizeEmail,
   verifyAgentAuthOtp,
 } from "@khoralabs/registry-accounts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 
 const AGENT_AUTH_SCOPES = ["registry.session", "link.agent"] as const;
 
@@ -18,7 +18,7 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 8;
 
 export type AgentAuthRouteDeps = {
-  db: Database;
+  db: RegistryDatabase;
   publicUrl: () => string;
   authMdUrl: string;
   resourceName: string;
@@ -60,7 +60,9 @@ function sessionCookieFromAuthResponse(res: Response): string | null {
   return null;
 }
 
-export function handleOAuthProtectedResourceMetadata(deps: AgentAuthRouteDeps): Response {
+export async function handleOAuthProtectedResourceMetadata(
+  deps: AgentAuthRouteDeps,
+): Promise<Response> {
   const base = deps.publicUrl();
   return Response.json({
     resource: `${base}/`,
@@ -71,7 +73,9 @@ export function handleOAuthProtectedResourceMetadata(deps: AgentAuthRouteDeps): 
   });
 }
 
-export function handleOAuthAuthorizationServerMetadata(deps: AgentAuthRouteDeps): Response {
+export async function handleOAuthAuthorizationServerMetadata(
+  deps: AgentAuthRouteDeps,
+): Promise<Response> {
   const base = deps.publicUrl();
   return Response.json({
     resource: `${base}/`,
@@ -129,11 +133,11 @@ export async function handleAgentAuthRegister(
     return Response.json({ error: "rate limit exceeded" }, { status: 429 });
   }
 
-  if (findBlockedEmail(deps.db, email) !== null) {
+  if ((await findBlockedEmail(deps.db, email)) !== null) {
     return Response.json({ error: "email blocked" }, { status: 403 });
   }
 
-  const { registration, claimToken } = createAgentAuthRegistration(deps.db, { email });
+  const { registration, claimToken } = await createAgentAuthRegistration(deps.db, { email });
 
   const sendRes = await deps.callAuthEndpoint("/email-otp/send-verification-otp", {
     email,
@@ -173,15 +177,16 @@ export async function handleAgentAuthClaimComplete(
     return Response.json({ error: "rate limit exceeded" }, { status: 429 });
   }
 
-  let registration = claimToken.length > 0 ? findAgentAuthByClaimToken(deps.db, claimToken) : null;
+  let registration =
+    claimToken.length > 0 ? await findAgentAuthByClaimToken(deps.db, claimToken) : null;
   if (registration === null && emailRaw.length > 0) {
-    registration = findPendingAgentAuthByEmail(deps.db, emailRaw);
+    registration = await findPendingAgentAuthByEmail(deps.db, emailRaw);
   }
   if (registration === null) {
     return Response.json({ error: "registration not found" }, { status: 404 });
   }
 
-  registration = expireAgentAuthIfNeeded(deps.db, registration);
+  registration = await expireAgentAuthIfNeeded(deps.db, registration);
   if (registration.status === "expired") {
     return Response.json({ error: "registration expired" }, { status: 400 });
   }
@@ -212,7 +217,7 @@ export async function handleAgentAuthClaimComplete(
     return Response.json({ error: "session cookie unavailable" }, { status: 500 });
   }
 
-  const consumed = consumeClaimToken(deps.db, registration.id);
+  const consumed = await consumeClaimToken(deps.db, registration.id);
   if (consumed === null) {
     return Response.json({ error: "claim failed" }, { status: 500 });
   }

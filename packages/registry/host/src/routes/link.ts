@@ -17,6 +17,7 @@ import {
   unlinkAgentFromMembership,
 } from "@khoralabs/registry-accounts";
 import { findActiveHostBySlug, findHostById } from "@khoralabs/registry-catalog";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { registryHostRuntime } from "../runtime";
 import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host";
 
@@ -51,16 +52,16 @@ type LinkAgentBody = {
   propagateHostSlugs?: string[];
 };
 
-function resolvePropagateHostIds(
-  db: import("bun:sqlite").Database,
+async function resolvePropagateHostIds(
+  db: RegistryDatabase,
   slugs: string[],
   excludeHostId: string,
-): string[] {
+): Promise<string[]> {
   const ids: string[] = [];
   for (const slug of slugs) {
     const trimmed = slug.trim();
     if (trimmed.length === 0) continue;
-    const host = findActiveHostBySlug(db, trimmed);
+    const host = await findActiveHostBySlug(db, trimmed);
     if (host !== null && host.id !== excludeHostId) {
       ids.push(host.id);
     }
@@ -68,18 +69,20 @@ function resolvePropagateHostIds(
   return ids;
 }
 
-function formatPropagated(
-  db: import("bun:sqlite").Database,
-  raw: ReturnType<typeof propagateAgentLinksToHosts>,
-): { hostSlug: string | null; ok: boolean; error?: string }[] {
-  return raw.map((r) => {
-    const host = findHostById(db, r.hostId);
-    return {
-      hostSlug: host?.slug ?? null,
-      ok: r.ok,
-      ...(r.error !== undefined ? { error: r.error } : {}),
-    };
-  });
+async function formatPropagated(
+  db: RegistryDatabase,
+  raw: Awaited<ReturnType<typeof propagateAgentLinksToHosts>>,
+): Promise<{ hostSlug: string | null; ok: boolean; error?: string }[]> {
+  return Promise.all(
+    raw.map(async (r) => {
+      const host = await findHostById(db, r.hostId);
+      return {
+        hostSlug: host?.slug ?? null,
+        ok: r.ok,
+        ...(r.error !== undefined ? { error: r.error } : {}),
+      };
+    }),
+  );
 }
 
 export async function handleLinkChallenge(_req: Request, url: URL): Promise<Response> {
@@ -89,7 +92,7 @@ export async function handleLinkChallenge(_req: Request, url: URL): Promise<Resp
   }
 
   const db = registryHostRuntime().db;
-  const challenge = createCliLinkChallenge(db, did);
+  const challenge = await createCliLinkChallenge(db, did);
   return Response.json({
     challengeId: challenge.id,
     expiresAtMs: challenge.expiresAtMs,
@@ -116,7 +119,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
   }
 
   const db = registryHostRuntime().db;
-  const account = findAccountByAuthSubject(db, session.user.id);
+  const account = await findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ error: "Account not found" }, { status: 404 });
   }
@@ -128,7 +131,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
   const envelopeDid = envelope.did;
 
   try {
-    consumeCliLinkChallenge(db, { challengeId, agentDid: envelopeDid });
+    await consumeCliLinkChallenge(db, { challengeId, agentDid: envelopeDid });
     await verifyAgentLinkSignature(req, bodyText, envelopeDid, "/v1/link/agent");
   } catch (err: unknown) {
     if (err instanceof AuthStrategyError) {
@@ -139,7 +142,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
     return Response.json({ error: msg }, { status });
   }
 
-  const host = resolveRegistryHost(db, {
+  const host = await resolveRegistryHost(db, {
     hostBaseUrl: body.hostBaseUrl,
     hostSlug: body.hostSlug,
   });
@@ -148,19 +151,19 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
   }
 
   try {
-    const link = linkAgentToAccountOnHost(db, {
+    const link = await linkAgentToAccountOnHost(db, {
       accountId: account.id,
       agentDid: envelopeDid,
       hostId: host.id,
       boundViaHostId: host.id,
     });
 
-    const propagateIds = resolvePropagateHostIds(db, body.propagateHostSlugs ?? [], host.id);
+    const propagateIds = await resolvePropagateHostIds(db, body.propagateHostSlugs ?? [], host.id);
     const propagated =
       propagateIds.length > 0
-        ? formatPropagated(
+        ? await formatPropagated(
             db,
-            propagateAgentLinksToHosts(db, {
+            await propagateAgentLinksToHosts(db, {
               accountId: account.id,
               agentDid: envelopeDid,
               hostIds: propagateIds,
@@ -214,7 +217,7 @@ export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
   }
 
   const db = registryHostRuntime().db;
-  const host = resolveRegistryHost(db, {
+  const host = await resolveRegistryHost(db, {
     hostBaseUrl: body.hostBaseUrl,
     hostSlug: body.hostSlug,
   });
@@ -222,7 +225,7 @@ export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
     return Response.json({ error: HOST_NOT_FOUND_HINT }, { status: 404 });
   }
 
-  const binding = findBindingByAgentDid(db, envelopeDid);
+  const binding = await findBindingByAgentDid(db, envelopeDid);
   if (binding === null) {
     return Response.json(
       { error: "no agent account binding; run khora link first" },
@@ -231,7 +234,7 @@ export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
   }
 
   try {
-    const link = ensureAgentLinkedOnHost(db, {
+    const link = await ensureAgentLinkedOnHost(db, {
       accountId: binding.accountId,
       agentDid: envelopeDid,
       hostId: host.id,
@@ -262,24 +265,26 @@ export async function handleLinkStatus(req: Request): Promise<Response> {
   }
 
   const db = registryHostRuntime().db;
-  const account = findAccountByAuthSubject(db, session.user.id);
+  const account = await findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ links: [] });
   }
 
-  const agentLinks = listAgentLinksForAccount(db, account.id);
-  const links = agentLinks.map((link) => {
-    const host = findHostById(db, link.hostId);
-    return {
-      linkId: link.id,
-      membershipId: link.membershipId,
-      agentDid: link.agentDid,
-      hostId: link.hostId,
-      hostSlug: host?.slug ?? null,
-      hostBaseUrl: host?.baseUrl ?? null,
-      linkedAtMs: link.linkedAtMs,
-    };
-  });
+  const agentLinks = await listAgentLinksForAccount(db, account.id);
+  const links = await Promise.all(
+    agentLinks.map(async (link) => {
+      const host = await findHostById(db, link.hostId);
+      return {
+        linkId: link.id,
+        membershipId: link.membershipId,
+        agentDid: link.agentDid,
+        hostId: link.hostId,
+        hostSlug: host?.slug ?? null,
+        hostBaseUrl: host?.baseUrl ?? null,
+        linkedAtMs: link.linkedAtMs,
+      };
+    }),
+  );
 
   return Response.json({ links });
 }
@@ -301,12 +306,12 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
   }
 
   const db = registryHostRuntime().db;
-  const account = findAccountByAuthSubject(db, session.user.id);
+  const account = await findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ error: "Account not found" }, { status: 404 });
   }
 
-  const host = resolveRegistryHost(db, {
+  const host = await resolveRegistryHost(db, {
     hostBaseUrl: body.hostBaseUrl,
     hostSlug: body.hostSlug,
   });
@@ -314,7 +319,7 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
     return Response.json({ error: "host not found" }, { status: 404 });
   }
 
-  const membership = findMembershipByAccountAndHost(db, account.id, host.id);
+  const membership = await findMembershipByAccountAndHost(db, account.id, host.id);
   if (membership === null) {
     return Response.json({ ok: true, unlinked: false });
   }
@@ -328,9 +333,9 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
     );
   }
 
-  const unlinked = unlinkAgentFromMembership(db, membership.id, agentDid);
+  const unlinked = await unlinkAgentFromMembership(db, membership.id, agentDid);
   if (unlinked) {
-    clearBindingIfNoHostLinks(db, agentDid);
+    await clearBindingIfNoHostLinks(db, agentDid);
   }
   return Response.json({ ok: true, unlinked });
 }

@@ -1,9 +1,9 @@
-import type { Database } from "bun:sqlite";
 import type {
   HostHealthProbedEndpoint,
   HostHealthStatus,
   KhoraHost,
 } from "@khoralabs/registry-catalog-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { updateRegistrationRequirement } from "./host-registration-requirements";
 import {
   findHostById,
@@ -76,21 +76,21 @@ function healthCheckRequirementDetail(result: HostHealthProbeResult): string {
 /**
  * Single write path for probe results: health columns and health_check requirement stay in sync.
  */
-export function recordHostHealthProbe(
-  db: Database,
+export async function recordHostHealthProbe(
+  db: RegistryDatabase,
   hostId: string,
   result: HostHealthProbeResult,
   options?: { checkedAtMs?: number; errorDetail?: string },
-): KhoraHost {
+): Promise<KhoraHost> {
   const checkedAtMs = options?.checkedAtMs ?? Date.now();
-  updateHostHealthCheck(db, hostId, {
+  await updateHostHealthCheck(db, hostId, {
     status: result.status,
     checkedAtMs,
     latencyMs: result.latencyMs,
     probedEndpoint: result.probedEndpoint,
   });
 
-  const host = findHostById(db, hostId);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
@@ -111,7 +111,7 @@ export function recordHostHealthProbe(
 }
 
 export async function applyHostHealthProbe(
-  db: Database,
+  db: RegistryDatabase,
   host: KhoraHost,
   options?: { timeoutMs?: number; fetchImpl?: typeof fetch; checkedAtMs?: number },
 ): Promise<KhoraHost> {

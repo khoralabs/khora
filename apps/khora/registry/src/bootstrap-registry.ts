@@ -3,11 +3,17 @@ import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import {
   createBetterAuthRegistryIdentity,
   createBetterAuthRegistryRoutes,
-  ensureRegistrySchema,
-  getRegistryDatabase,
+  initRegistrySchema,
+  reloadRegistryAuth,
 } from "@khoralabs/registry-auth";
 import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/registry-host";
 import { createRegistryHost, readRegistryTrustedOrigins } from "@khoralabs/registry-host";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
+import { openRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
+import {
+  openRegistryTursoDatabase,
+  registryTursoCredentialsFromEnv,
+} from "@khoralabs/registry-turso-serverless";
 
 function registryPublicUrl(): string {
   const port = process.env.PORT?.trim() ?? "4000";
@@ -17,19 +23,41 @@ function registryPublicUrl(): string {
   return configured ?? `http://localhost:${port}`;
 }
 
+function isTursoBackend(): boolean {
+  return process.env.REGISTRY_BACKEND?.trim().toLowerCase() === "turso";
+}
+
+async function openRegistryStore(): Promise<{
+  registry: RegistryDatabase;
+  authDatabase: import("@khoralabs/registry-auth").RegistryAuthDatabase;
+}> {
+  if (isTursoBackend()) {
+    const bundle = await openRegistryTursoDatabase(registryTursoCredentialsFromEnv());
+    return { registry: bundle.registry, authDatabase: bundle.authDatabase };
+  }
+  const bundle = await openRegistrySqliteDatabase();
+  return { registry: bundle.registry, authDatabase: bundle.db };
+}
+
 export async function bootstrapRegistryHost(): Promise<{
   host: RegistryHostContext;
   identityRoutes: RegistryIdentityRoutes;
 }> {
-  await assertEncryptionKeys(new EnvKeyProvider(), "registry");
-  await ensureRegistrySchema();
-  const db = getRegistryDatabase();
-  const resolveTrustedOrigins = () => readRegistryTrustedOrigins(db);
+  if (!isTursoBackend()) {
+    await assertEncryptionKeys(new EnvKeyProvider(), "registry");
+  }
+
+  const store = await openRegistryStore();
+  await initRegistrySchema(store.registry, store.authDatabase);
+  reloadRegistryAuth({ database: store.authDatabase, domainDatabase: store.registry });
+
+  const { registry } = store;
+  const resolveTrustedOrigins = () => readRegistryTrustedOrigins(registry);
   const publicUrl = registryPublicUrl;
 
   const identity = createBetterAuthRegistryIdentity({ resolveTrustedOrigins });
   const identityRoutes = createBetterAuthRegistryRoutes({
-    db,
+    db: registry,
     identity,
     publicUrl,
     authMdUrl: process.env.KHORA_AUTH_MD_URL?.trim() || "https://khoralabs.com/auth.md",
@@ -39,7 +67,7 @@ export async function bootstrapRegistryHost(): Promise<{
   });
 
   const host = createRegistryHost({
-    db,
+    db: registry,
     identity,
     consoleAuth: createConsoleAuthFromEnv(),
     publicUrl,

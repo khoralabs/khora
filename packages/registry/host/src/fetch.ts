@@ -239,7 +239,7 @@ export async function dispatchRegistryHostFetch(
       if (subPath.startsWith("/origin-requests/") && req.method === "DELETE") {
         const requestId = subPath.slice("/origin-requests/".length);
         if (requestId.length > 0) {
-          return withCors(req, handleHostRegistryOriginRequestDelete(req, slug, requestId));
+          return withCors(req, await handleHostRegistryOriginRequestDelete(req, slug, requestId));
         }
       }
       if (subPath === "/quota-requests" && req.method === "POST") {
@@ -248,7 +248,7 @@ export async function dispatchRegistryHostFetch(
       if (subPath.startsWith("/quota-requests/") && req.method === "DELETE") {
         const requestId = subPath.slice("/quota-requests/".length);
         if (requestId.length > 0) {
-          return withCors(req, handleHostRegistryQuotaRequestDelete(req, slug, requestId));
+          return withCors(req, await handleHostRegistryQuotaRequestDelete(req, slug, requestId));
         }
       }
       if (subPath === "/origins" && req.method === "DELETE") {
@@ -260,7 +260,7 @@ export async function dispatchRegistryHostFetch(
   if (path.startsWith("/v1/hosts/") && path.endsWith("/registry")) {
     const slug = path.slice("/v1/hosts/".length, -"/registry".length);
     if (slug.length > 0 && req.method === "GET") {
-      return withCors(req, handleHostRegistryGet(req, slug));
+      return withCors(req, await handleHostRegistryGet(req, slug));
     }
   }
 
@@ -274,12 +274,12 @@ export async function dispatchRegistryHostFetch(
   if (path.startsWith("/v1/hosts/") && path.endsWith("/registration")) {
     const slug = path.slice("/v1/hosts/".length, -"/registration".length);
     if (slug.length > 0 && req.method === "GET") {
-      return withCors(req, handleHostRegistrationGet(req, slug));
+      return withCors(req, await handleHostRegistrationGet(req, slug));
     }
   }
 
   if (path === "/v1/hosts" && req.method === "GET") {
-    return withCors(req, handleHostsList());
+    return withCors(req, await handleHostsList());
   }
 
   if (path === "/v1/hosts/register" && req.method === "POST") {
@@ -289,7 +289,7 @@ export async function dispatchRegistryHostFetch(
   if (path.startsWith("/v1/hosts/") && req.method === "GET") {
     const slug = path.slice("/v1/hosts/".length);
     if (slug.length > 0 && slug !== "register") {
-      return withCors(req, handleHostGet(slug));
+      return withCors(req, await handleHostGet(slug));
     }
   }
 

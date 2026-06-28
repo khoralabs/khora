@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import type { RegistryIdentityPort } from "@khoralabs/registry-host";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { getRegistryAuth } from "./auth";
 import {
   handleAgentAuthClaimComplete,
@@ -10,7 +10,7 @@ import {
 import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./routes/device";
 
 export type BetterAuthRegistryRoutesDeps = {
-  db: Database;
+  db: RegistryDatabase;
   identity: RegistryIdentityPort;
   publicUrl: () => string;
   authMdUrl?: string;

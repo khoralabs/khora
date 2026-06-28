@@ -1,6 +1,12 @@
 export type { RegistrySession } from "@khoralabs/registry-host";
 export { getRegistryAuth, registryAuth, reloadRegistryAuth } from "./auth";
-export { createRegistryAuth, type RegistryAuth, type RegistryAuthOptions } from "./auth-config";
+export {
+  createRegistryAuth,
+  type RegistryAuth,
+  type RegistryAuthDatabase,
+  type RegistryAuthOptions,
+} from "./auth-config";
+export type { RegistryAuthDatabaseSchema, RegistryAuthKysely } from "./auth-database-schema";
 export { createBetterAuthRegistryIdentity } from "./better-auth-identity";
 export {
   type BetterAuthRegistryRoutesDeps,
@@ -8,7 +14,12 @@ export {
 } from "./better-auth-routes";
 export { bootstrapStaffEmails, isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
 export { createUsersAuthClient } from "./client";
-export { getRegistryDatabase, registryDatabasePath, resetRegistryDatabase } from "./db";
+export {
+  getRegistryDatabase,
+  getRegistryDomainDatabase,
+  registryDatabasePath,
+  resetRegistryDatabase,
+} from "./db";
 export { ensureRegistrySchema } from "./ensure-schema";
 export { initAuthSchema, initRegistrySchema } from "./schema";
 export { getRegistrySession } from "./session";

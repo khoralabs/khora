@@ -26,15 +26,15 @@ export function handleAdminAccountSuspend(
   consoleAuth: ConsoleAuth | null,
   accountId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = accountId.trim();
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
     try {
-      const account = suspendAccount(db, id);
-      const blockedEmailsCount = listAccountEmails(db, account.id).length;
+      const account = await suspendAccount(db, id);
+      const blockedEmailsCount = (await listAccountEmails(db, account.id)).length;
       return Response.json({ account, blockedEmailsCount });
     } catch (err: unknown) {
       const mapped = mapAccountLifecycleError(err, "suspend failed");
@@ -48,14 +48,14 @@ export function handleAdminAccountDelete(
   consoleAuth: ConsoleAuth | null,
   accountId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = accountId.trim();
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
     try {
-      const deleted = deleteAccount(db, id);
+      const deleted = await deleteAccount(db, id);
       return Response.json({ ok: true, ...deleted });
     } catch (err: unknown) {
       const mapped = mapAccountLifecycleError(err, "delete failed");
@@ -69,14 +69,14 @@ export function handleAdminAccountReactivate(
   consoleAuth: ConsoleAuth | null,
   accountId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, () => {
+  return withConsoleAuth(req, consoleAuth, async () => {
     const id = accountId.trim();
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
     }
     const db = registryHostRuntime().db;
     try {
-      const account = reactivateAccount(db, id);
+      const account = await reactivateAccount(db, id);
       return Response.json({ account });
     } catch (err: unknown) {
       const mapped = mapAccountLifecycleError(err, "reactivate failed");
@@ -104,14 +104,15 @@ export function handleAdminAccountReactivateByEmail(
     }
     const db = registryHostRuntime().db;
     const normalized = normalizeEmail(email);
-    const authUser = db.prepare(`SELECT id FROM user WHERE email = ? LIMIT 1`).get(normalized) as {
-      id: string;
-    } | null;
-    if (authUser === null) {
+    const authUser = await db.queryOne<{ id: string }>(
+      `SELECT id FROM user WHERE email = ? LIMIT 1`,
+      [normalized],
+    );
+    if (authUser === undefined) {
       return Response.json({ error: "auth user not found for email" }, { status: 404 });
     }
     try {
-      const account = reactivateAccountByEmail(db, {
+      const account = await reactivateAccountByEmail(db, {
         email: normalized,
         providerSubject: authUser.id,
       });

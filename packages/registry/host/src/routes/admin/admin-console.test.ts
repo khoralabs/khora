@@ -2,13 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { linkBetterAuthUser } from "@khoralabs/registry-accounts";
-import {
-  ensureRegistrySchema,
-  getRegistryDatabase,
-  resetRegistryDatabase,
-} from "@khoralabs/registry-auth";
+import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import type { RegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { registerKhoraHost, seedDefaultHost } from "@khoralabs/registry-catalog";
+import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleAdminAccountDelete,
@@ -36,13 +33,13 @@ async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>):
 
 describe("registry admin console", () => {
   beforeEach(async () => {
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    const db = getRegistryDatabase();
+    const db = getRegistrySqliteBundle().registry;
     initTestRegistryHostRuntime(db);
-    seedDefaultHost(db, {
+    await seedDefaultHost(db, {
       slug: "khora-local",
       baseUrl: "http://localhost:8788",
     });
@@ -50,7 +47,7 @@ describe("registry admin console", () => {
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
   });
 
   test("login rejects invalid token", async () => {
@@ -122,11 +119,13 @@ describe("registry admin console", () => {
   });
 
   test("admin activate pending host", async () => {
-    const db = getRegistryDatabase();
-    const pending = registerKhoraHost(db, {
-      slug: "pending-ops",
-      baseUrl: "http://localhost:9999",
-    }).host;
+    const db = getRegistrySqliteBundle().registry;
+    const pending = (
+      await registerKhoraHost(db, {
+        slug: "pending-ops",
+        baseUrl: "http://localhost:9999",
+      })
+    ).host;
     expect(pending.status).toBe("pending");
 
     const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
@@ -162,8 +161,8 @@ describe("registry admin console", () => {
   });
 
   test("admin account suspend/reactivate/delete lifecycle", async () => {
-    const db = getRegistryDatabase();
-    const account = linkBetterAuthUser(db, {
+    const db = getRegistrySqliteBundle().registry;
+    const account = await linkBetterAuthUser(db, {
       providerSubject: "ba-admin-lifecycle-1",
       email: "lifecycle@example.com",
     });

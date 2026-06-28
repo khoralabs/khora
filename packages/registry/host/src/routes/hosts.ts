@@ -57,15 +57,15 @@ type RegisterBody = {
   healthPath?: string;
 };
 
-export function handleHostsList(): Response {
+export async function handleHostsList(): Promise<Response> {
   const db = registryHostRuntime().db;
-  const hosts = listPublicHosts(db).map(hostToPublicJson);
+  const hosts = (await listPublicHosts(db)).map(hostToPublicJson);
   return Response.json({ hosts });
 }
 
-export function handleHostGet(slug: string): Response {
+export async function handleHostGet(slug: string): Promise<Response> {
   const db = registryHostRuntime().db;
-  const host = findPublicHostBySlug(db, slug);
+  const host = await findPublicHostBySlug(db, slug);
   if (host === null) {
     return Response.json({ error: "Host not found" }, { status: 404 });
   }
@@ -93,7 +93,7 @@ export async function handleHostRegister(req: Request): Promise<Response> {
   const db = registryHostRuntime().db;
   const policy = readHostRegistrationPolicy();
   try {
-    const { host, registrationSecret } = registerKhoraHost(db, {
+    const { host, registrationSecret } = await registerKhoraHost(db, {
       slug,
       baseUrl,
       registrationRequirements: initializeRegistrationRequirements(policy),
@@ -119,7 +119,7 @@ export async function handleHostRegister(req: Request): Promise<Response> {
     return Response.json(
       {
         ...registrationStatusJson(activation.host, policy),
-        host: hostToFullJson(activation.host, db),
+        host: await hostToFullJson(activation.host, db),
         registrationSecret,
         activated: activation.activated,
         ...(activation.managementToken !== null

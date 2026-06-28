@@ -1,17 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import {
-  ensureRegistrySchema,
-  getRegistryDatabase,
-  resetRegistryDatabase,
-} from "@khoralabs/registry-auth";
+import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
   findHostById,
   registerKhoraHost,
   requestHostTrustedOriginQuota,
 } from "@khoralabs/registry-catalog";
+import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleHostRegistryQuotaRequestDelete,
@@ -42,25 +39,26 @@ describe("operator quota requests", () => {
   const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(async () => {
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    initTestRegistryHostRuntime(getRegistryDatabase());
+    initTestRegistryHostRuntime(getRegistrySqliteBundle().registry);
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryDatabase();
+    resetRegistrySqliteDatabase();
   });
 
   test("approve and reject quota requests", async () => {
-    const db = getRegistryDatabase();
-    const { host } = activateKhoraHost(
+    const db = getRegistrySqliteBundle().registry;
+    const { host } = await activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "quota-host", baseUrl: "https://host.example.com" }).host.id,
+      (await registerKhoraHost(db, { slug: "quota-host", baseUrl: "https://host.example.com" }))
+        .host.id,
     );
-    const pending = requestHostTrustedOriginQuota(db, host.id, 5);
+    const pending = await requestHostTrustedOriginQuota(db, host.id, 5);
     const cookie = await loginCookie(auth);
 
     const listRes = await handleAdminHostQuotaRequests(
@@ -82,9 +80,9 @@ describe("operator quota requests", () => {
       pending.id,
     );
     expect(rejectRes.status).toBe(200);
-    expect(findHostById(db, host.id)?.includedTrustedOrigins).toBe(2);
+    expect((await findHostById(db, host.id))?.includedTrustedOrigins).toBe(2);
 
-    const second = requestHostTrustedOriginQuota(db, host.id, 7);
+    const second = await requestHostTrustedOriginQuota(db, host.id, 7);
     const approveRes = await handleAdminHostQuotaRequestApprove(
       new Request("http://localhost/admin/api/hosts/x/quota-requests/y/approve", {
         method: "POST",
@@ -95,14 +93,15 @@ describe("operator quota requests", () => {
       second.id,
     );
     expect(approveRes.status).toBe(200);
-    expect(findHostById(db, host.id)?.includedTrustedOrigins).toBe(7);
+    expect((await findHostById(db, host.id))?.includedTrustedOrigins).toBe(7);
   });
 
   test("host POST and DELETE quota requests", async () => {
-    const db = getRegistryDatabase();
-    const { host, managementToken } = activateKhoraHost(
+    const db = getRegistrySqliteBundle().registry;
+    const { host, managementToken } = await activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "quota-api", baseUrl: "https://host.example.com" }).host.id,
+      (await registerKhoraHost(db, { slug: "quota-api", baseUrl: "https://host.example.com" })).host
+        .id,
     );
     expect(managementToken).not.toBeNull();
 
@@ -123,7 +122,7 @@ describe("operator quota requests", () => {
     };
     expect(postJson.request.requestedIncluded).toBe(6);
 
-    const deleteRes = handleHostRegistryQuotaRequestDelete(
+    const deleteRes = await handleHostRegistryQuotaRequestDelete(
       new Request("http://localhost/v1/hosts/quota-api/registry/quota-requests/x", {
         headers: { Authorization: `Bearer ${managementToken}` },
       }),
@@ -133,6 +132,6 @@ describe("operator quota requests", () => {
     expect(deleteRes.status).toBe(200);
     const deleteJson = (await deleteRes.json()) as { pendingQuotaRequest: null };
     expect(deleteJson.pendingQuotaRequest).toBeNull();
-    expect(findHostById(db, host.id)?.includedTrustedOrigins).toBe(2);
+    expect((await findHostById(db, host.id))?.includedTrustedOrigins).toBe(2);
   });
 });

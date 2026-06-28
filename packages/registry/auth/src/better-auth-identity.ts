@@ -4,7 +4,7 @@ import { getRegistrySession } from "./session";
 import { getRegistrySessionCookieHeader } from "./session-token";
 
 export function createBetterAuthRegistryIdentity(
-  opts: { resolveTrustedOrigins?: () => string[] } = {},
+  opts: { resolveTrustedOrigins?: () => string[] | Promise<string[]> } = {},
 ): RegistryIdentityPort {
   if (opts.resolveTrustedOrigins !== undefined) {
     reloadRegistryAuth({ resolveTrustedOrigins: opts.resolveTrustedOrigins });

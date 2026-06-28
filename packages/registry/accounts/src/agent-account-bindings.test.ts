@@ -1,11 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
-import {
-  getRegistryCatalogDb,
-  initCatalogSchema,
-  resetRegistryCatalogDb,
-  seedDefaultHost,
-} from "@khoralabs/registry-catalog";
+import { seedDefaultHost } from "@khoralabs/registry-catalog";
+import { initRegistryDomainSchema } from "@khoralabs/registry-persistence";
+import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
 import { linkAgentToMembership, unlinkAgentFromMembership } from "./account-agent-links";
 import { linkBetterAuthUser } from "./accounts";
 import {
@@ -17,58 +14,63 @@ import { upsertMembership } from "./memberships";
 
 describe("agent account bindings", () => {
   beforeEach(async () => {
-    resetRegistryCatalogDb();
+    resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
-    const db = getRegistryCatalogDb();
-    await initCatalogSchema(db);
-    seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    await initRegistryDomainSchema(getRegistrySqliteBundle().registry);
+    await seedDefaultHost(getRegistrySqliteBundle().registry, {
+      slug: "khora-local",
+      baseUrl: "http://localhost:8788",
+    });
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetRegistryCatalogDb();
+    resetRegistrySqliteDatabase();
   });
 
-  test("bindAgentToAccount is idempotent for same account", () => {
-    const db = getRegistryCatalogDb();
-    const account = linkBetterAuthUser(db, {
+  test("bindAgentToAccount is idempotent for same account", async () => {
+    const db = getRegistrySqliteBundle().registry;
+    const account = await linkBetterAuthUser(db, {
       providerSubject: "user-1",
       email: "a@test.com",
     });
     const did = "did:key:z6MkBindTest";
 
-    const first = bindAgentToAccount(db, { agentDid: did, accountId: account.id });
-    const second = bindAgentToAccount(db, { agentDid: did, accountId: account.id });
+    const first = await bindAgentToAccount(db, { agentDid: did, accountId: account.id });
+    const second = await bindAgentToAccount(db, { agentDid: did, accountId: account.id });
     expect(second.accountId).toBe(first.accountId);
   });
 
-  test("bindAgentToAccount rejects second account", () => {
-    const db = getRegistryCatalogDb();
-    const a1 = linkBetterAuthUser(db, { providerSubject: "u1", email: "a@test.com" });
-    const a2 = linkBetterAuthUser(db, { providerSubject: "u2", email: "b@test.com" });
+  test("bindAgentToAccount rejects second account", async () => {
+    const db = getRegistrySqliteBundle().registry;
+    const a1 = await linkBetterAuthUser(db, { providerSubject: "u1", email: "a@test.com" });
+    const a2 = await linkBetterAuthUser(db, { providerSubject: "u2", email: "b@test.com" });
     const did = "did:key:z6MkBindConflict";
 
-    bindAgentToAccount(db, { agentDid: did, accountId: a1.id });
-    expect(() => bindAgentToAccount(db, { agentDid: did, accountId: a2.id })).toThrow(
+    await bindAgentToAccount(db, { agentDid: did, accountId: a1.id });
+    await expect(bindAgentToAccount(db, { agentDid: did, accountId: a2.id })).rejects.toThrow(
       /another account/,
     );
   });
 
-  test("clearBindingIfNoHostLinks removes binding when no host links", () => {
-    const db = getRegistryCatalogDb();
-    const account = linkBetterAuthUser(db, {
+  test("clearBindingIfNoHostLinks removes binding when no host links", async () => {
+    const db = getRegistrySqliteBundle().registry;
+    const account = await linkBetterAuthUser(db, {
       providerSubject: "user-1",
       email: "a@test.com",
     });
-    const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    const host = await seedDefaultHost(db, {
+      slug: "khora-local",
+      baseUrl: "http://localhost:8788",
+    });
     const did = "did:key:z6MkClearBind";
-    bindAgentToAccount(db, { agentDid: did, accountId: account.id });
-    const membership = upsertMembership(db, { accountId: account.id, hostId: host.id });
-    linkAgentToMembership(db, { membershipId: membership.id, agentDid: did });
+    await bindAgentToAccount(db, { agentDid: did, accountId: account.id });
+    const membership = await upsertMembership(db, { accountId: account.id, hostId: host.id });
+    await linkAgentToMembership(db, { membershipId: membership.id, agentDid: did });
 
-    unlinkAgentFromMembership(db, membership.id, did);
-    expect(clearBindingIfNoHostLinks(db, did)).toBe(true);
-    expect(findBindingByAgentDid(db, did)).toBeNull();
+    await unlinkAgentFromMembership(db, membership.id, did);
+    expect(await clearBindingIfNoHostLinks(db, did)).toBe(true);
+    expect(await findBindingByAgentDid(db, did)).toBeNull();
   });
 });

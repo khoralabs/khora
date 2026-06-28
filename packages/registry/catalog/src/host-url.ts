@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import type { KhoraHost } from "@khoralabs/registry-catalog-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { listActiveHosts } from "./khora-hosts";
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
@@ -52,8 +52,11 @@ function hostsMatchNormalized(stored: string, input: string): boolean {
 }
 
 /** Find an active host whose base_url matches after normalization (primary CLI lookup). */
-export function findHostByBaseUrl(db: Database, baseUrl: string): KhoraHost | null {
-  const hosts = listActiveHosts(db);
+export async function findHostByBaseUrl(
+  db: RegistryDatabase,
+  baseUrl: string,
+): Promise<KhoraHost | null> {
+  const hosts = await listActiveHosts(db);
   for (const host of hosts) {
     if (hostsMatchNormalized(host.baseUrl, baseUrl)) {
       return host;

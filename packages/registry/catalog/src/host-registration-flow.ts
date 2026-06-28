@@ -1,9 +1,9 @@
-import type { Database } from "bun:sqlite";
 import type {
   HostHealthProbedEndpoint,
   HostHealthStatus,
   KhoraHost,
 } from "@khoralabs/registry-catalog-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { type HostHealthProbeResult, recordHostHealthProbe } from "./host-health-probe";
 import {
   allAutoActivateRequirementsMet,
@@ -26,11 +26,11 @@ export function readHostRegistrationPolicy(
 }
 
 export async function evaluateHostHealthRequirement(
-  db: Database,
+  db: RegistryDatabase,
   hostId: string,
   probe: HostHealthProbeFn,
 ): Promise<{ host: KhoraHost; requirements: RegistrationRequirementState[] }> {
-  const host = findHostById(db, hostId);
+  const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host not found");
   }
@@ -42,10 +42,10 @@ export async function evaluateHostHealthRequirement(
 
   try {
     const result = await probe(host);
-    const updated = recordHostHealthProbe(db, hostId, result);
+    const updated = await recordHostHealthProbe(db, hostId, result);
     return { host: updated, requirements: updated.registrationRequirements };
   } catch (err: unknown) {
-    const updated = recordHostHealthProbe(
+    const updated = await recordHostHealthProbe(
       db,
       hostId,
       { status: "down", latencyMs: null, probedEndpoint: null } satisfies HostHealthProbeResult,
@@ -56,7 +56,7 @@ export async function evaluateHostHealthRequirement(
 }
 
 export async function tryAutoActivateHost(
-  db: Database,
+  db: RegistryDatabase,
   hostId: string,
   policy: RegistrationPolicy,
   probe: HostHealthProbeFn,
@@ -69,9 +69,9 @@ export async function tryAutoActivateHost(
   const evaluated = await evaluateHostHealthRequirement(db, hostId, probe);
   if (evaluated.host.status !== "pending") {
     const token =
-      evaluated.host.status === "active" ? deliverPendingManagementToken(db, hostId) : null;
+      evaluated.host.status === "active" ? await deliverPendingManagementToken(db, hostId) : null;
     return {
-      host: findHostById(db, hostId) ?? evaluated.host,
+      host: (await findHostById(db, hostId)) ?? evaluated.host,
       requirements: evaluated.requirements,
       managementToken: token,
       activated: false,
@@ -87,8 +87,8 @@ export async function tryAutoActivateHost(
     };
   }
 
-  const { host, managementToken } = activateKhoraHost(db, hostId);
-  const refreshed = findHostById(db, hostId);
+  const { host, managementToken } = await activateKhoraHost(db, hostId);
+  const refreshed = await findHostById(db, hostId);
   return {
     host: refreshed ?? host,
     requirements: refreshed?.registrationRequirements ?? [],

@@ -4,7 +4,7 @@ import type { SnakeCaseKey } from "./sql-row";
 type Expect<T extends true> = T;
 
 describe("SnakeCaseKey", () => {
-  test("maps common domain keys", () => {
+  test("maps common domain keys", async () => {
     type _id = Expect<SnakeCaseKey<"id"> extends "id" ? true : false>;
     type _baseUrl = Expect<SnakeCaseKey<"baseUrl"> extends "base_url" ? true : false>;
     type _healthReadyPath = Expect<

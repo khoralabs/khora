@@ -27,7 +27,7 @@ export {
   type RegistryEmailLookup,
   type RegistryEmailLookupResponse,
 } from "./admin-stats";
-export { getRegistryCatalogDb, registryDatabasePath, resetRegistryCatalogDb } from "./db";
+export { registryDatabasePath } from "./db";
 export {
   InvalidHostHealthPathError,
   normalizeHostHealthPath,

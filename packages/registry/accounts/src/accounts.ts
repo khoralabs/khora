@@ -1,5 +1,5 @@
-import type { Database } from "bun:sqlite";
 import type { Account } from "@khoralabs/registry-accounts-contracts";
+import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { normalizeEmail } from "./normalize";
 import type { AccountRow } from "./types-internal";
 
@@ -37,46 +37,49 @@ function mapBlockedEmail(row: {
   };
 }
 
-export function findBlockedEmail(db: Database, email: string): BlockedEmail | null {
+export async function findBlockedEmail(
+  db: RegistryDatabase,
+  email: string,
+): Promise<BlockedEmail | null> {
   const normalized = normalizeEmail(email);
-  const row = db
-    .prepare(
-      `SELECT email, reason, account_id, blocked_at_ms, updated_at_ms
-       FROM blocked_emails
-       WHERE email = ?
-       LIMIT 1`,
-    )
-    .get(normalized) as {
+  const row = await db.queryOne<{
     email: string;
     reason: string;
     account_id: string | null;
     blocked_at_ms: number;
     updated_at_ms: number;
-  } | null;
-  return row === null ? null : mapBlockedEmail(row);
+  }>(
+    `SELECT email, reason, account_id, blocked_at_ms, updated_at_ms
+     FROM blocked_emails
+     WHERE email = ?
+     LIMIT 1`,
+    [normalized],
+  );
+  return row === undefined ? null : mapBlockedEmail(row);
 }
 
-function blockEmail(
-  db: Database,
+async function blockEmail(
+  db: RegistryDatabase,
   input: { email: string; reason: BlockedEmailReason; accountId: string | null; nowMs: number },
-): void {
-  db.prepare(
+): Promise<void> {
+  await db.exec(
     `INSERT INTO blocked_emails (email, reason, account_id, blocked_at_ms, updated_at_ms)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(email) DO UPDATE SET
        reason = excluded.reason,
        account_id = excluded.account_id,
        updated_at_ms = excluded.updated_at_ms`,
-  ).run(input.email, input.reason, input.accountId, input.nowMs, input.nowMs);
+    [input.email, input.reason, input.accountId, input.nowMs, input.nowMs],
+  );
 }
 
-function blockAccountEmails(
-  db: Database,
+async function blockAccountEmails(
+  db: RegistryDatabase,
   input: { accountId: string; reason: BlockedEmailReason; nowMs: number },
-): number {
-  const emails = listAccountEmails(db, input.accountId);
+): Promise<number> {
+  const emails = await listAccountEmails(db, input.accountId);
   for (const email of emails) {
-    blockEmail(db, {
+    await blockEmail(db, {
       email,
       reason: input.reason,
       accountId: input.accountId,
@@ -86,57 +89,65 @@ function blockAccountEmails(
   return emails.length;
 }
 
-export function findAccountByAuthSubject(db: Database, providerSubject: string): Account | null {
-  const row = db
-    .prepare(
-      `SELECT a.id, a.status, a.created_at_ms, a.updated_at_ms
-       FROM accounts a
-       JOIN auth_links l ON l.account_id = a.id
-       WHERE l.provider = 'better_auth' AND l.provider_subject = ?
-       LIMIT 1`,
-    )
-    .get(providerSubject) as AccountRow | null;
-  return row === null ? null : mapAccount(row);
+export async function findAccountByAuthSubject(
+  db: RegistryDatabase,
+  providerSubject: string,
+): Promise<Account | null> {
+  const row = await db.queryOne<AccountRow>(
+    `SELECT a.id, a.status, a.created_at_ms, a.updated_at_ms
+     FROM accounts a
+     JOIN auth_links l ON l.account_id = a.id
+     WHERE l.provider = 'better_auth' AND l.provider_subject = ?
+     LIMIT 1`,
+    [providerSubject],
+  );
+  return row === undefined ? null : mapAccount(row);
 }
 
-export function findAccountById(db: Database, accountId: string): Account | null {
-  const row = db
-    .prepare(`SELECT id, status, created_at_ms, updated_at_ms FROM accounts WHERE id = ? LIMIT 1`)
-    .get(accountId) as AccountRow | null;
-  return row === null ? null : mapAccount(row);
+export async function findAccountById(
+  db: RegistryDatabase,
+  accountId: string,
+): Promise<Account | null> {
+  const row = await db.queryOne<AccountRow>(
+    `SELECT id, status, created_at_ms, updated_at_ms FROM accounts WHERE id = ? LIMIT 1`,
+    [accountId],
+  );
+  return row === undefined ? null : mapAccount(row);
 }
 
-export function findAccountByEmail(db: Database, email: string): Account | null {
+export async function findAccountByEmail(
+  db: RegistryDatabase,
+  email: string,
+): Promise<Account | null> {
   const normalized = normalizeEmail(email);
-  const row = db
-    .prepare(
-      `SELECT a.id, a.status, a.created_at_ms, a.updated_at_ms
-       FROM accounts a
-       JOIN account_emails e ON e.account_id = a.id
-       WHERE e.email = ?
-       LIMIT 1`,
-    )
-    .get(normalized) as AccountRow | null;
-  return row === null ? null : mapAccount(row);
+  const row = await db.queryOne<AccountRow>(
+    `SELECT a.id, a.status, a.created_at_ms, a.updated_at_ms
+     FROM accounts a
+     JOIN account_emails e ON e.account_id = a.id
+     WHERE e.email = ?
+     LIMIT 1`,
+    [normalized],
+  );
+  return row === undefined ? null : mapAccount(row);
 }
 
-export function linkBetterAuthUser(
-  db: Database,
+export async function linkBetterAuthUser(
+  db: RegistryDatabase,
   params: {
     providerSubject: string;
     email: string;
     verifiedAtMs?: number;
     allowBlockedEmail?: boolean;
   },
-): Account {
+): Promise<Account> {
   const now = Date.now();
   const email = normalizeEmail(params.email);
-  const existing = findAccountByAuthSubject(db, params.providerSubject);
+  const existing = await findAccountByAuthSubject(db, params.providerSubject);
   if (existing !== null) {
     if (existing.status !== "active") {
       throw new Error(`account ${existing.status}`);
     }
-    mergeEmailOntoAccount(db, {
+    await mergeEmailOntoAccount(db, {
       accountId: existing.id,
       email,
       verifiedAtMs: params.verifiedAtMs ?? now,
@@ -144,20 +155,21 @@ export function linkBetterAuthUser(
     return existing;
   }
 
-  const byEmail = findAccountByEmail(db, email);
+  const byEmail = await findAccountByEmail(db, email);
   if (byEmail !== null) {
     if (byEmail.status !== "active") {
       throw new Error(`account ${byEmail.status}`);
     }
-    const blocked = findBlockedEmail(db, email);
+    const blocked = await findBlockedEmail(db, email);
     if (blocked !== null && blocked.accountId !== byEmail.id && !params.allowBlockedEmail) {
       throw new Error("email blocked");
     }
-    db.prepare(
+    await db.exec(
       `INSERT OR IGNORE INTO auth_links (account_id, provider, provider_subject, created_at_ms)
        VALUES (?, 'better_auth', ?, ?)`,
-    ).run(byEmail.id, params.providerSubject, now);
-    mergeEmailOntoAccount(db, {
+      [byEmail.id, params.providerSubject, now],
+    );
+    await mergeEmailOntoAccount(db, {
       accountId: byEmail.id,
       email,
       verifiedAtMs: params.verifiedAtMs ?? now,
@@ -165,114 +177,126 @@ export function linkBetterAuthUser(
     return byEmail;
   }
 
-  const blocked = findBlockedEmail(db, email);
+  const blocked = await findBlockedEmail(db, email);
   if (blocked !== null && !params.allowBlockedEmail) {
     throw new Error("email blocked");
   }
 
   const accountId = crypto.randomUUID();
-  db.prepare(
+  await db.exec(
     `INSERT INTO accounts (id, status, created_at_ms, updated_at_ms) VALUES (?, 'active', ?, ?)`,
-  ).run(accountId, now, now);
-  db.prepare(
+    [accountId, now, now],
+  );
+  await db.exec(
     `INSERT INTO account_emails (account_id, email, is_primary, verified_at_ms)
      VALUES (?, ?, 1, ?)`,
-  ).run(accountId, email, params.verifiedAtMs ?? now);
-  db.prepare(
+    [accountId, email, params.verifiedAtMs ?? now],
+  );
+  await db.exec(
     `INSERT INTO auth_links (account_id, provider, provider_subject, created_at_ms)
      VALUES (?, 'better_auth', ?, ?)`,
-  ).run(accountId, params.providerSubject, now);
-  mergePreAccountRecords(db, accountId, email);
-  const account = findAccountByAuthSubject(db, params.providerSubject);
+    [accountId, params.providerSubject, now],
+  );
+  await mergePreAccountRecords(db, accountId, email);
+  const account = await findAccountByAuthSubject(db, params.providerSubject);
   if (account === null) {
     throw new Error("account insert failed");
   }
   return account;
 }
 
-export function mergeEmailOntoAccount(
-  db: Database,
+export async function mergeEmailOntoAccount(
+  db: RegistryDatabase,
   params: { accountId: string; email: string; verifiedAtMs?: number },
-): void {
+): Promise<void> {
   const now = Date.now();
   const email = normalizeEmail(params.email);
-  const blocked = findBlockedEmail(db, email);
+  const blocked = await findBlockedEmail(db, email);
   if (blocked !== null && blocked.accountId !== params.accountId) {
     throw new Error("email blocked");
   }
-  db.prepare(
+  await db.exec(
     `INSERT OR IGNORE INTO account_emails (account_id, email, is_primary, verified_at_ms)
      VALUES (?, ?, 0, ?)`,
-  ).run(params.accountId, email, params.verifiedAtMs ?? now);
-  mergePreAccountRecords(db, params.accountId, email);
-  db.prepare(`UPDATE accounts SET updated_at_ms = ? WHERE id = ?`).run(now, params.accountId);
+    [params.accountId, email, params.verifiedAtMs ?? now],
+  );
+  await mergePreAccountRecords(db, params.accountId, email);
+  await db.exec(`UPDATE accounts SET updated_at_ms = ? WHERE id = ?`, [now, params.accountId]);
 }
 
-function mergePreAccountRecords(db: Database, accountId: string, email: string): void {
-  db.prepare(
+async function mergePreAccountRecords(
+  db: RegistryDatabase,
+  accountId: string,
+  email: string,
+): Promise<void> {
+  await db.exec(
     `UPDATE marketing_consents SET account_id = ? WHERE email = ? AND account_id IS NULL`,
-  ).run(accountId, email);
+    [accountId, email],
+  );
 }
 
-export function listAccountEmails(db: Database, accountId: string): string[] {
-  const rows = db
-    .prepare(
-      `SELECT email FROM account_emails WHERE account_id = ? ORDER BY is_primary DESC, email ASC`,
-    )
-    .all(accountId) as { email: string }[];
+export async function listAccountEmails(
+  db: RegistryDatabase,
+  accountId: string,
+): Promise<string[]> {
+  const rows = await db.queryAll<{ email: string }>(
+    `SELECT email FROM account_emails WHERE account_id = ? ORDER BY is_primary DESC, email ASC`,
+    [accountId],
+  );
   return rows.map((r) => r.email);
 }
 
-export function suspendAccount(db: Database, accountId: string): Account {
-  const account = findAccountById(db, accountId);
+export async function suspendAccount(db: RegistryDatabase, accountId: string): Promise<Account> {
+  const account = await findAccountById(db, accountId);
   if (account === null) throw new Error("account not found");
   const now = Date.now();
-  blockAccountEmails(db, { accountId, reason: "suspended", nowMs: now });
-  db.prepare(`UPDATE accounts SET status = 'suspended', updated_at_ms = ? WHERE id = ?`).run(
+  await blockAccountEmails(db, { accountId, reason: "suspended", nowMs: now });
+  await db.exec(`UPDATE accounts SET status = 'suspended', updated_at_ms = ? WHERE id = ?`, [
     now,
     accountId,
-  );
-  const out = findAccountById(db, accountId);
+  ]);
+  const out = await findAccountById(db, accountId);
   if (out === null) throw new Error("account not found");
   return out;
 }
 
-export function reactivateAccount(db: Database, accountId: string): Account {
-  const account = findAccountById(db, accountId);
+export async function reactivateAccount(db: RegistryDatabase, accountId: string): Promise<Account> {
+  const account = await findAccountById(db, accountId);
   if (account === null) throw new Error("account not found");
   const now = Date.now();
-  db.prepare(`UPDATE accounts SET status = 'active', updated_at_ms = ? WHERE id = ?`).run(
+  await db.exec(`UPDATE accounts SET status = 'active', updated_at_ms = ? WHERE id = ?`, [
     now,
     accountId,
-  );
-  const out = findAccountById(db, accountId);
+  ]);
+  const out = await findAccountById(db, accountId);
   if (out === null) throw new Error("account not found");
   return out;
 }
 
-export function reactivateAccountByEmail(
-  db: Database,
+export async function reactivateAccountByEmail(
+  db: RegistryDatabase,
   params: { email: string; providerSubject?: string; verifiedAtMs?: number },
-): Account {
+): Promise<Account> {
   const normalized = normalizeEmail(params.email);
-  const blocked = findBlockedEmail(db, normalized);
+  const blocked = await findBlockedEmail(db, normalized);
   if (blocked === null) throw new Error("email not blocked");
   const now = Date.now();
-  const existing = findAccountByEmail(db, normalized);
+  const existing = await findAccountByEmail(db, normalized);
   if (existing !== null) {
     if (existing.status !== "active") {
-      db.prepare(`UPDATE accounts SET status = 'active', updated_at_ms = ? WHERE id = ?`).run(
+      await db.exec(`UPDATE accounts SET status = 'active', updated_at_ms = ? WHERE id = ?`, [
         now,
         existing.id,
-      );
+      ]);
     }
     if (params.providerSubject !== undefined && params.providerSubject.length > 0) {
-      db.prepare(
+      await db.exec(
         `INSERT OR IGNORE INTO auth_links (account_id, provider, provider_subject, created_at_ms)
          VALUES (?, 'better_auth', ?, ?)`,
-      ).run(existing.id, params.providerSubject, now);
+        [existing.id, params.providerSubject, now],
+      );
     }
-    const out = findAccountById(db, existing.id);
+    const out = await findAccountById(db, existing.id);
     if (out === null) throw new Error("account not found");
     return out;
   }
@@ -288,14 +312,18 @@ export function reactivateAccountByEmail(
   });
 }
 
-export function deleteAccount(
-  db: Database,
+export async function deleteAccount(
+  db: RegistryDatabase,
   accountId: string,
-): { accountId: string; blockedEmailsCount: number } {
-  const account = findAccountById(db, accountId);
+): Promise<{ accountId: string; blockedEmailsCount: number }> {
+  const account = await findAccountById(db, accountId);
   if (account === null) throw new Error("account not found");
   const now = Date.now();
-  const blockedEmailsCount = blockAccountEmails(db, { accountId, reason: "deleted", nowMs: now });
-  db.prepare(`DELETE FROM accounts WHERE id = ?`).run(accountId);
+  const blockedEmailsCount = await blockAccountEmails(db, {
+    accountId,
+    reason: "deleted",
+    nowMs: now,
+  });
+  await db.exec(`DELETE FROM accounts WHERE id = ?`, [accountId]);
   return { accountId, blockedEmailsCount };
 }
