@@ -1,8 +1,6 @@
 import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
-import {
-  ColonnadePublicationClient,
-  createSqliteColonnadeCluster,
-} from "@khoralabs/colonnade-persistence";
+import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {

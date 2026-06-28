@@ -1,5 +1,11 @@
 import type { Database } from "bun:sqlite";
-import { inboxStagingToBlob, writeOpToBlob } from "./staging-binary";
+import {
+  CELL_INBOX_DDL,
+  CELL_OUTBOX_META_DDL,
+  CELL_WRITE_LOG_DDL,
+  inboxStagingToBlob,
+  writeOpToBlob,
+} from "@khoralabs/colonnade-persistence";
 import { inboxStagingFromJson, writeOpFromJson } from "./staging-json";
 
 type TableInfoRow = {
@@ -103,33 +109,10 @@ function migrateWriteLogOpToBlob(db: Database): void {
 }
 
 export function ensureCellSchema(db: Database): void {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS outbox (
-      record_key TEXT PRIMARY KEY NOT NULL,
-      principal_id TEXT NOT NULL,
-      tenant_key TEXT NOT NULL,
-      payload BLOB NOT NULL,
-      metadata TEXT NOT NULL,
-      content_hash TEXT NOT NULL,
-      committed_at_ms INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS cell_meta (
-      key TEXT PRIMARY KEY NOT NULL,
-      value TEXT NOT NULL
-    );
-  `);
+  db.run(CELL_OUTBOX_META_DDL);
 
   if (!tableExists(db, "inbox")) {
-    db.run(`
-      CREATE TABLE inbox (
-        inbox_entry_id TEXT PRIMARY KEY NOT NULL,
-        tenant_key TEXT NOT NULL,
-        recipient_principal_id TEXT NOT NULL,
-        staging BLOB NOT NULL,
-        enqueued_at_ms INTEGER NOT NULL,
-        correlation_id TEXT NOT NULL
-      );
-    `);
+    db.run(CELL_INBOX_DDL);
   } else {
     const stTy = columnType(db, "inbox", "staging")?.toUpperCase() ?? "";
     if (stTy === "TEXT") {
@@ -138,13 +121,7 @@ export function ensureCellSchema(db: Database): void {
   }
 
   if (!tableExists(db, "write_log")) {
-    db.run(`
-      CREATE TABLE write_log (
-        log_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
-        correlation_id TEXT NOT NULL,
-        op BLOB NOT NULL
-      );
-    `);
+    db.run(CELL_WRITE_LOG_DDL);
   } else {
     const opTy = columnType(db, "write_log", "op")?.toUpperCase() ?? "";
     if (opTy === "TEXT") {

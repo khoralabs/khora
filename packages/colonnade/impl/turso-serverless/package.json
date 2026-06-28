@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/colonnade-persistence",
+  "name": "@khoralabs/colonnade-persistence-turso-serverless",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -11,17 +11,15 @@
     }
   },
   "scripts": {
-    "bench": "bun run src/bench/run.ts",
-    "bench:sweep-json": "bun run src/bench/sweep-json.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@khoralabs/colonnade-crypto": "workspace:*",
-    "@khoralabs/sourcemaps": "^0.1.0"
+    "@khoralabs/colonnade-persistence": "workspace:*",
+    "@tursodatabase/serverless": "^1.2.3"
   },
   "devDependencies": {
-    "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   },

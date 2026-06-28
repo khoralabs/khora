@@ -5,7 +5,7 @@ import {
   TEST_POST_AUTHOR_SIGNATURE,
 } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import {
   createHostPersistenceClient,

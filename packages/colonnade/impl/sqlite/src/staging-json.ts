@@ -1,6 +1,10 @@
 import { Buffer } from "node:buffer";
 
-import type { InboxStagingPayload, WriteOp } from "../colonnade-types";
+import type {
+  InboxStagingPayload,
+  PointerPayload,
+  WriteOp,
+} from "@khoralabs/colonnade-persistence";
 
 export function bytesToB64(u: Uint8Array): string {
   return Buffer.from(u).toString("base64");
@@ -68,7 +72,7 @@ export function inboxStagingFromJson(text: string): InboxStagingPayload {
     v.pointer.pointer.content_hash !== undefined &&
     typeof v.pointer.pointer.cell_pool_count === "number"
   ) {
-    const payload: import("../colonnade-types.ts").PointerPayload = {
+    const payload: PointerPayload = {
       pointer: {
         source_cell_id: v.pointer.pointer.source_cell_id,
         source_record_key: v.pointer.pointer.source_record_key,

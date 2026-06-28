@@ -2,10 +2,12 @@ export { CatalogPersistenceClient } from "./catalog-persistence-client";
 export type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy";
 export { CellPersistenceClient } from "./cell-persistence-client";
 export type {
+  CellBatchCapable,
   CellPersistenceStrategy,
   DiscardInboxEntriesInput,
   ResolveCellStrategy,
 } from "./cell-persistence-strategy";
+export { supportsCellBatch } from "./cell-persistence-strategy";
 export { ColonnadePublicationClient } from "./colonnade-publication-client";
 export { ColonnadeRouter } from "./colonnade-router";
 export type * from "./colonnade-types";
@@ -44,34 +46,32 @@ export {
 export {
   encodeCatalogPointerId,
   parseCatalogPointerShardIndex,
-} from "./sqlite/catalog-pointer-id";
-export {
-  type CellPoolManifest,
-  cellPoolManifestPath,
-  ensureCellPoolManifest,
-} from "./sqlite/cell-pool-manifest";
-export {
-  createSqliteColonnadeCluster,
-  type SqliteColonnadeCluster,
-  type SqliteColonnadeClusterMode,
-  type SqliteColonnadeClusterOptions,
-} from "./sqlite/cluster";
+} from "./routing/catalog-pointer-id";
 export {
   cellDbFilenameStem,
   derivePoolHomeCell,
   perPrincipalCellId,
   poolShardCellId,
   stablePrincipalShardIndex,
-} from "./sqlite/principal-cell-id";
-export { ensureCatalogSchema } from "./sqlite/schema-catalog";
-export { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy";
-export { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy";
+} from "./routing/principal-cell-id";
+export { catalogShardIndexForTenant } from "./routing/tenant-catalog-shard";
+export { ShardingCatalogPersistenceStrategy } from "./sharding-catalog-strategy";
 export {
-  SqliteCellPersistenceStrategy,
-  supportsSqliteCellBatch,
-} from "./sqlite/sqlite-cell-strategy";
-export { catalogShardIndexForTenant } from "./sqlite/tenant-catalog-shard";
+  inboxStagingFromBlob,
+  inboxStagingToBlob,
+  writeOpFromBlob,
+  writeOpToBlob,
+} from "./staging-binary";
+
+export type ColonnadeClusterMode =
+  | { readonly kind: "pool"; readonly cellCount: number }
+  | { readonly kind: "per_principal" };
 export {
-  LazyWorkerBackedCellStrategy,
-  WorkerBackedCellStrategy,
-} from "./sqlite/worker-backed-cell-strategy";
+  CATALOG_TABLES_DDL,
+  CELL_BASE_TABLES_DDL,
+  CELL_INBOX_DDL,
+  CELL_OUTBOX_META_DDL,
+  CELL_WRITE_LOG_DDL,
+  SCHEMA_VERSION_TABLE_DDL,
+  TURSO_PRAGMAS_DDL,
+} from "./schema";

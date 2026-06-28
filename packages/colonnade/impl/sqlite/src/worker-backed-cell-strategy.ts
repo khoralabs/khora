@@ -1,25 +1,26 @@
 import type {
-  CellPersistenceStrategy,
-  DiscardInboxEntriesInput,
-} from "../cell-persistence-strategy";
-import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
   AppendOutboxRecordInput,
   AppendOutboxRecordOutput,
   AppendWriteLogEntryInput,
   AppendWriteLogEntryOutput,
+  CellPersistenceStrategy,
+  DeleteOutboxRecordInput,
+  DiscardInboxEntriesInput,
   EnqueueInboxDeliveryInput,
   EnqueueInboxDeliveryOutput,
   FetchOutboxPayloadInput,
   FetchOutboxPayloadOutput,
   FetchWriteLogBatchInput,
   FetchWriteLogBatchOutput,
+  ListOutboxRecordsForPrincipalInput,
   ListPendingInboxEntriesInput,
   ListPendingInboxEntriesOutput,
+  OutboxListedRecord,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
-} from "../colonnade-types";
+} from "@khoralabs/colonnade-persistence";
 import type { SqliteCellBatchCapable } from "./sqlite-cell-strategy";
 
 type RpcReq = {
@@ -128,15 +129,13 @@ export class WorkerBackedCellStrategy implements CellPersistenceStrategy, Sqlite
     return this.call("fetchOutboxPayload", [input]);
   }
 
-  deleteOutboxRecord(
-    input: import("../colonnade-types.ts").DeleteOutboxRecordInput,
-  ): Promise<void> {
+  deleteOutboxRecord(input: DeleteOutboxRecordInput): Promise<void> {
     return this.call("deleteOutboxRecord", [input]);
   }
 
   listOutboxRecordsForPrincipal(
-    input: import("../colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
-  ): Promise<readonly import("../colonnade-types.ts").OutboxListedRecord[]> {
+    input: ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly OutboxListedRecord[]> {
     return this.call("listOutboxRecordsForPrincipal", [input]);
   }
 
@@ -225,15 +224,13 @@ export class LazyWorkerBackedCellStrategy
     return this.s().then((x) => x.fetchOutboxPayload(input));
   }
 
-  async deleteOutboxRecord(
-    input: import("../colonnade-types.ts").DeleteOutboxRecordInput,
-  ): Promise<void> {
+  async deleteOutboxRecord(input: DeleteOutboxRecordInput): Promise<void> {
     return this.s().then((x) => x.deleteOutboxRecord(input));
   }
 
   async listOutboxRecordsForPrincipal(
-    input: import("../colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
-  ): Promise<readonly import("../colonnade-types.ts").OutboxListedRecord[]> {
+    input: ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly OutboxListedRecord[]> {
     return this.s().then((x) => x.listOutboxRecordsForPrincipal(input));
   }
 

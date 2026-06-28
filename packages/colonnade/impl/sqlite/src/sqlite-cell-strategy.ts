@@ -1,10 +1,5 @@
 import type { Database, Statement } from "bun:sqlite";
 import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
-
-import type {
-  CellPersistenceStrategy,
-  DiscardInboxEntriesInput,
-} from "../cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -12,7 +7,10 @@ import type {
   AppendOutboxRecordOutput,
   AppendWriteLogEntryInput,
   AppendWriteLogEntryOutput,
+  CellBatchCapable,
+  CellPersistenceStrategy,
   DeleteOutboxRecordInput,
+  DiscardInboxEntriesInput,
   EnqueueInboxDeliveryInput,
   EnqueueInboxDeliveryOutput,
   FetchOutboxPayloadInput,
@@ -29,40 +27,29 @@ import type {
   VerifyAndDrainInboxBatchOutput,
   WriteLogRecord,
   WriteOp,
-} from "../colonnade-types";
-import { assertContentHash, randomId, sha256HexLower } from "../hash";
+} from "@khoralabs/colonnade-persistence";
+import {
+  assertContentHash,
+  inboxStagingFromBlob,
+  inboxStagingToBlob,
+  randomId,
+  sha256HexLower,
+  supportsCellBatch,
+  writeOpFromBlob,
+  writeOpToBlob,
+} from "@khoralabs/colonnade-persistence";
 import { ensureCellSchema } from "./schema-cell";
 import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn";
 import { applySqlitePerfPragmas } from "./sqlite-pragmas";
-import {
-  inboxStagingFromBlob,
-  inboxStagingToBlob,
-  writeOpFromBlob,
-  writeOpToBlob,
-} from "./staging-binary";
 
 export type SqliteCellStrategyOptions = {
   readonly outboxPayloadCodec: OutboxPayloadCodec;
 };
 
-export type SqliteCellBatchCapable = {
-  enqueueInboxDeliveriesBatch(
-    inputs: readonly EnqueueInboxDeliveryInput[],
-  ): Promise<readonly EnqueueInboxDeliveryOutput[]>;
-  appendWriteLogEntriesBatch(
-    inputs: readonly AppendWriteLogEntryInput[],
-  ): Promise<readonly AppendWriteLogEntryOutput[]>;
-};
+export type SqliteCellBatchCapable = CellBatchCapable;
 
 export function supportsSqliteCellBatch(cell: unknown): cell is SqliteCellBatchCapable {
-  return (
-    typeof cell === "object" &&
-    cell !== null &&
-    "enqueueInboxDeliveriesBatch" in cell &&
-    "appendWriteLogEntriesBatch" in cell &&
-    typeof (cell as SqliteCellBatchCapable).enqueueInboxDeliveriesBatch === "function" &&
-    typeof (cell as SqliteCellBatchCapable).appendWriteLogEntriesBatch === "function"
-  );
+  return supportsCellBatch(cell);
 }
 
 export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {

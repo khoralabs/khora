@@ -1,10 +1,10 @@
 import type { ResolveCellStrategy } from "./cell-persistence-strategy";
+import { supportsCellBatch } from "./cell-persistence-strategy";
 import type {
   RoutedWrite,
   SubmitRoutedWritesInput,
   SubmitRoutedWritesOutput,
 } from "./colonnade-types";
-import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy";
 
 /**
  * Enqueues **`RoutedWrite`** units onto each target cell's durable write log via
@@ -33,7 +33,7 @@ export class ColonnadeRouter {
           op: w.op,
         }));
 
-        if (supportsSqliteCellBatch(cell) && ops.length > 1) {
+        if (supportsCellBatch(cell) && ops.length > 1) {
           await cell.appendWriteLogEntriesBatch(ops);
           return;
         }

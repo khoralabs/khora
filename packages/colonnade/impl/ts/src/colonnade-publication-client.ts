@@ -1,5 +1,6 @@
 import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy";
 import type { ResolveCellStrategy } from "./cell-persistence-strategy";
+import { supportsCellBatch } from "./cell-persistence-strategy";
 import type {
   FanOutTarget,
   GeneratedInboxRef,
@@ -9,7 +10,6 @@ import type {
 } from "./colonnade-types";
 import { randomId } from "./hash";
 import { defaultNoopCatalogPersistenceStrategy } from "./noop-catalog-strategy";
-import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy";
 
 function isResolveCellStrategy(
   value: CatalogPersistenceStrategy | ResolveCellStrategy,
@@ -139,7 +139,7 @@ export class ColonnadePublicationClient {
           correlation_id: randomId("fan"),
         }));
 
-        if (supportsSqliteCellBatch(cell) && deliveries.length > 1) {
+        if (supportsCellBatch(cell) && deliveries.length > 1) {
           const outs = await cell.enqueueInboxDeliveriesBatch(deliveries);
           inboxIdsByCell.set(
             recipientCellId,

@@ -1,17 +1,19 @@
 /// <reference lib="WebWorker" />
 import { createOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
-import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
-import type { DiscardInboxEntriesInput } from "../cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AppendOutboxRecordInput,
   AppendWriteLogEntryInput,
+  DeleteOutboxRecordInput,
+  DiscardInboxEntriesInput,
   EnqueueInboxDeliveryInput,
   FetchOutboxPayloadInput,
   FetchWriteLogBatchInput,
+  ListOutboxRecordsForPrincipalInput,
   ListPendingInboxEntriesInput,
   VerifyAndDrainInboxBatchInput,
-} from "../colonnade-types";
+} from "@khoralabs/colonnade-persistence";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy";
 
 type InitMsg = {
@@ -52,13 +54,9 @@ async function dispatch(method: string, args: readonly unknown[]): Promise<unkno
     case "fetchOutboxPayload":
       return s.fetchOutboxPayload(args[0] as FetchOutboxPayloadInput);
     case "deleteOutboxRecord":
-      return s.deleteOutboxRecord(
-        args[0] as import("../colonnade-types.ts").DeleteOutboxRecordInput,
-      );
+      return s.deleteOutboxRecord(args[0] as DeleteOutboxRecordInput);
     case "listOutboxRecordsForPrincipal":
-      return s.listOutboxRecordsForPrincipal(
-        args[0] as import("../colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
-      );
+      return s.listOutboxRecordsForPrincipal(args[0] as ListOutboxRecordsForPrincipalInput);
     case "verifyAndDrainInboxBatch":
       return s.verifyAndDrainInboxBatch(args[0] as VerifyAndDrainInboxBatchInput);
     case "appendWriteLogEntry":

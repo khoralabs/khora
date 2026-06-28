@@ -61,5 +61,25 @@ export interface CellPersistenceStrategy {
   purgePrincipal(principalId: PrincipalId): Promise<void>;
 }
 
+export type CellBatchCapable = {
+  enqueueInboxDeliveriesBatch(
+    inputs: readonly EnqueueInboxDeliveryInput[],
+  ): Promise<readonly EnqueueInboxDeliveryOutput[]>;
+  appendWriteLogEntriesBatch(
+    inputs: readonly AppendWriteLogEntryInput[],
+  ): Promise<readonly AppendWriteLogEntryOutput[]>;
+};
+
+export function supportsCellBatch(cell: unknown): cell is CellBatchCapable {
+  return (
+    typeof cell === "object" &&
+    cell !== null &&
+    "enqueueInboxDeliveriesBatch" in cell &&
+    "appendWriteLogEntriesBatch" in cell &&
+    typeof (cell as CellBatchCapable).enqueueInboxDeliveriesBatch === "function" &&
+    typeof (cell as CellBatchCapable).appendWriteLogEntriesBatch === "function"
+  );
+}
+
 /** Resolve the persistence strategy for a logical cell id. */
 export type ResolveCellStrategy = (cellId: string) => CellPersistenceStrategy;

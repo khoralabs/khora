@@ -3,12 +3,16 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
-import { cellDbFilenameStem } from "../sqlite/principal-cell-id";
-import { SqliteCatalogPersistenceStrategy } from "../sqlite/sqlite-catalog-strategy";
-import { SqliteCellPersistenceStrategy } from "../sqlite/sqlite-cell-strategy";
-import { LazyWorkerBackedCellStrategy } from "../sqlite/worker-backed-cell-strategy";
+import { createTestOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
+import type {
+  CatalogPersistenceStrategy,
+  CellPersistenceStrategy,
+  ResolveCellStrategy,
+} from "@khoralabs/colonnade-persistence";
+import { cellDbFilenameStem } from "@khoralabs/colonnade-persistence";
+import { SqliteCatalogPersistenceStrategy } from "../sqlite-catalog-strategy";
+import { SqliteCellPersistenceStrategy } from "../sqlite-cell-strategy";
+import { LazyWorkerBackedCellStrategy } from "../worker-backed-cell-strategy";
 
 export type SqliteBenchmarkStrategiesOptions = {
   /** Bun **`Worker`** per cell (SQLite off main thread); meaningful with **`--concurrency`** > 1. */
@@ -50,6 +54,11 @@ function closeSqliteBenchBundle(b: SqliteBenchBundle): void {
  */
 export function createSqliteBenchmarkStrategies(opts: SqliteBenchmarkStrategiesOptions = {}) {
   const useCellWorkers = opts.useCellWorkers === true;
+  const outboxPayloadCodec = createTestOutboxPayloadCodec();
+  const benchWorkerInit = {
+    sqlCipherKey: "bench-test-key-not-for-production-use!!",
+    outboxKeyHex: "00".repeat(32),
+  };
   let bundle: SqliteBenchBundle | undefined;
 
   function ensureBundle(): SqliteBenchBundle {
@@ -67,13 +76,13 @@ export function createSqliteBenchmarkStrategies(opts: SqliteBenchmarkStrategiesO
       for (const id of cellIds) {
         const path = join(b.cellsDir, `${cellDbFilenameStem(id)}.sqlite`);
         if (useCellWorkers) {
-          const w = new LazyWorkerBackedCellStrategy(id, path);
+          const w = new LazyWorkerBackedCellStrategy(id, path, benchWorkerInit);
           b.lazyWorkers.push(w);
           map.set(id, w);
         } else {
           const db = new Database(path, { create: true });
           b.cellDatabases.push(db);
-          map.set(id, new SqliteCellPersistenceStrategy(db, id));
+          map.set(id, new SqliteCellPersistenceStrategy(db, id, { outboxPayloadCodec }));
         }
       }
       return ((cellId: string) => {

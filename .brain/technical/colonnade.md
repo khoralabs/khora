@@ -84,6 +84,16 @@ Later boots compare the env var to this manifest and **exit on mismatch**. Chang
 3. To change pool size: use a **new** cells directory; do not edit the manifest in place.
 4. Catalog SQLite can remain; post bodies live in cell outbox files only.
 
+### Turso deployment (remote cells)
+
+For serverless / multi-region hosts, use **`@khoralabs/colonnade-persistence-turso-serverless`**:
+
+- One **Turso database per cell shard** (mirrors `colonnade-shard-{N}.sqlite` files)
+- URL template placeholders: `{cellId}`, `{shardIndex}`, `{shard}`
+- Pool count immutability: stored in **`cell_meta.cell_pool_count`** on each remote cell DB (not `.colonnade-pool.json`)
+- Catalog shards: pass pre-opened `TursoCatalogPersistenceStrategy` instances or use **`catalogShards`** on `createTursoColonnadeCluster`
+- Khora host bootstrap wiring (`KHORA_CELL_BACKEND=turso`) is not yet implemented — import the Turso package directly for now
+
 ---
 
 ## Catalog projection namespace index

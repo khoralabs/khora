@@ -5,13 +5,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
-import { ColonnadePublicationClient } from "./colonnade-publication-client";
-import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id";
-import { createSqliteColonnadeCluster } from "./sqlite/cluster";
-import { derivePoolHomeCell, perPrincipalCellId } from "./sqlite/principal-cell-id";
-import { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy";
-import { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy";
-import { catalogShardIndexForTenant } from "./sqlite/tenant-catalog-shard";
+import {
+  ColonnadePublicationClient,
+  catalogShardIndexForTenant,
+  derivePoolHomeCell,
+  parseCatalogPointerShardIndex,
+  perPrincipalCellId,
+  ShardingCatalogPersistenceStrategy,
+} from "@khoralabs/colonnade-persistence";
+import { createSqliteColonnadeCluster, SqliteCatalogPersistenceStrategy } from "./index";
 
 describe("SQLite Colonnade cluster", () => {
   const root = mkdtempSync(join(tmpdir(), "colonnade-sqlite-test-"));

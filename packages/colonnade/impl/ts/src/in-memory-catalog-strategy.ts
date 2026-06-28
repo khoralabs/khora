@@ -21,7 +21,7 @@ import type {
   UpsertSourceMapPointerRowOutput,
 } from "./colonnade-types";
 import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash";
-import { encodeCatalogPointerId } from "./sqlite/catalog-pointer-id";
+import { encodeCatalogPointerId } from "./routing/catalog-pointer-id";
 
 const ZERO_HASH = "0".repeat(64);
 

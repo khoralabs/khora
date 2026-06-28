@@ -4,7 +4,7 @@ import {
   createTestEncryptionMaterial,
   TEST_POST_AUTHOR_SIGNATURE,
 } from "@khoralabs/colonnade-crypto";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { MemoriesClient, search } from "@khoralabs/memories-core";

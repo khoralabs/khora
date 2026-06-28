@@ -2,19 +2,24 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
+import type {
+  CatalogPersistenceStrategy,
+  CellPersistenceStrategy,
+  ColonnadeClusterMode,
+  ResolveCellStrategy,
+} from "@khoralabs/colonnade-persistence";
+import {
+  cellDbFilenameStem,
+  defaultNoopCatalogPersistenceStrategy,
+  derivePoolHomeCell,
+  perPrincipalCellId,
+} from "@khoralabs/colonnade-persistence";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
-
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
-import { defaultNoopCatalogPersistenceStrategy } from "../noop-catalog-strategy";
 import { ensureCellPoolManifest } from "./cell-pool-manifest";
-import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "./principal-cell-id";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy";
 import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy";
 
-export type SqliteColonnadeClusterMode =
-  | { readonly kind: "pool"; readonly cellCount: number }
-  | { readonly kind: "per_principal" };
+export type SqliteColonnadeClusterMode = ColonnadeClusterMode;
 
 export type SqliteColonnadeClusterEncryptionOptions = {
   readonly sqlCipherKey: string;

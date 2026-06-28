@@ -1,10 +1,10 @@
 import type { Database, Statement } from "bun:sqlite";
 import { randomBytes } from "node:crypto";
 
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
 import type {
   BatchLookupSourceMapPointersInput,
   BatchLookupSourceMapPointersOutput,
+  CatalogPersistenceStrategy,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
   IssueConnectionTokenInput,
@@ -20,9 +20,12 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "../colonnade-types";
-import { canonicalSourceMapRowBytes, sha256HexLower } from "../hash";
-import { encodeCatalogPointerId } from "./catalog-pointer-id";
+} from "@khoralabs/colonnade-persistence";
+import {
+  canonicalSourceMapRowBytes,
+  encodeCatalogPointerId,
+  sha256HexLower,
+} from "@khoralabs/colonnade-persistence";
 import { ensureCatalogSchema } from "./schema-catalog";
 import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn";
 import { applySqlitePerfPragmas } from "./sqlite-pragmas";

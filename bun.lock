@@ -97,6 +97,7 @@
         "@khoralabs/agent-capabilities": "^0.1.1",
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-console": "workspace:*",
@@ -439,13 +440,45 @@
         "typescript": "^5",
       },
     },
+    "packages/colonnade/impl/sqlite": {
+      "name": "@khoralabs/colonnade-persistence-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/colonnade/impl/ts": {
       "name": "@khoralabs/colonnade-persistence",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
+      },
+      "devDependencies": {
+        "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/colonnade/impl/turso-serverless": {
+      "name": "@khoralabs/colonnade-persistence-turso-serverless",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/colonnade-persistence": "workspace:*",
+        "@tursodatabase/serverless": "^1.2.3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -536,6 +569,7 @@
       },
       "devDependencies": {
         "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
@@ -596,6 +630,15 @@
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/percolator/turso-serverless": {
+      "name": "@khoralabs/percolator-turso-serverless",
+      "devDependencies": {
+        "@types/bun": "latest",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -2176,6 +2219,10 @@
 
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
+    "@khoralabs/colonnade-persistence-sqlite": ["@khoralabs/colonnade-persistence-sqlite@workspace:packages/colonnade/impl/sqlite"],
+
+    "@khoralabs/colonnade-persistence-turso-serverless": ["@khoralabs/colonnade-persistence-turso-serverless@workspace:packages/colonnade/impl/turso-serverless"],
+
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
 
     "@khoralabs/exedra-authz": ["@khoralabs/exedra-authz@workspace:apps/khoralabs/exedra/authz"],
@@ -2323,6 +2370,8 @@
     "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator/runtime"],
 
     "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/khora/percolator/sqlite"],
+
+    "@khoralabs/percolator-turso-serverless": ["@khoralabs/percolator-turso-serverless@workspace:packages/khora/percolator/turso-serverless"],
 
     "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/registry/accounts"],
 

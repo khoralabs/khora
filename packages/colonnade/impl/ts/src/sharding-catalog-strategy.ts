@@ -1,4 +1,4 @@
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
+import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy";
 import type {
   BatchLookupSourceMapPointersInput,
   BatchLookupSourceMapPointersOutput,
@@ -16,9 +16,9 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "../colonnade-types";
-import { parseCatalogPointerShardIndex } from "./catalog-pointer-id";
-import { catalogShardIndexForTenant } from "./tenant-catalog-shard";
+} from "./colonnade-types";
+import { parseCatalogPointerShardIndex } from "./routing/catalog-pointer-id";
+import { catalogShardIndexForTenant } from "./routing/tenant-catalog-shard";
 
 /**
  * Tenant-key **routing façade** over catalog SQLite shards (**`catalogShardCount`** files).

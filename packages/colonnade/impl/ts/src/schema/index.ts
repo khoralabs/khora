@@ -1,0 +1,9 @@
+export { CATALOG_TABLES_DDL } from "./catalog-ddl";
+export {
+  CELL_BASE_TABLES_DDL,
+  CELL_INBOX_DDL,
+  CELL_OUTBOX_META_DDL,
+  CELL_WRITE_LOG_DDL,
+  SCHEMA_VERSION_TABLE_DDL,
+  TURSO_PRAGMAS_DDL,
+} from "./cell-ddl";

@@ -1,12 +1,12 @@
 import { createTestOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
+import {
+  createSqliteBenchmarkStrategies,
+  type SqliteBenchmarkStrategiesOptions,
+} from "@khoralabs/colonnade-persistence-sqlite";
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
 import { InMemoryCatalogPersistenceStrategy } from "../in-memory-catalog-strategy";
 import { InMemoryCellPersistenceStrategy } from "../in-memory-cell-strategy";
-import {
-  createSqliteBenchmarkStrategies,
-  type SqliteBenchmarkStrategiesOptions,
-} from "./sqlite-strategies";
 
 /**
  * Factories for comparing persistence backends under the same workloads.

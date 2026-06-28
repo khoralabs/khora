@@ -1,5 +1,5 @@
-import type { InboxStagingPayload, WriteOp } from "../colonnade-types";
-import { assertContentHash, contentHashBytesToHex, contentHashHexToBytes } from "../hash";
+import type { InboxStagingPayload, PointerPayload, WriteOp } from "./colonnade-types";
+import { assertContentHash, contentHashBytesToHex, contentHashHexToBytes } from "./hash";
 import { writeOpFromJson } from "./staging-json";
 
 const MAGIC_STAGING = 0xc1;
@@ -124,7 +124,7 @@ export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
     if (!Number.isInteger(cell_pool_count) || cell_pool_count < 1) {
       throw new Error("SqliteColonnade: pointer staging missing valid cell_pool_count");
     }
-    const pointerPayload: import("../colonnade-types.ts").PointerPayload = {
+    const pointerPayload: PointerPayload = {
       pointer: { source_cell_id, source_record_key, content_hash, cell_pool_count },
       ...(metadata !== undefined ? { metadata } : {}),
     };

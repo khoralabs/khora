@@ -2,18 +2,32 @@
 
 **Colonnade** specifies a federated persistence architecture: a **central catalog** for discovery and selective indexing, **cells** (sharded stores) each with an authoritative **outbox** and a **drainable inbox**, plus a **router** that feeds **per-cell write logs** for serialized writers.
 
-This package holds the **Smithy model** (`spec/model/`) and a **TypeScript persistence facade** (`impl/ts/`) with strategy-pattern adapters. It is **storage-agnostic** at the spec level (no SQLite DDL in Smithy). SQLite (or other) backends can implement the TS strategies later.
+This package holds the **Smithy model** (`spec/model/`) and TypeScript persistence packages under `impl/`:
+
+| Package | Path | Role |
+|---------|------|------|
+| `@khoralabs/colonnade-persistence` | [`impl/ts`](impl/ts) | Core strategies, clients, routing, shared DDL |
+| `@khoralabs/colonnade-persistence-sqlite` | [`impl/sqlite`](impl/sqlite) | Local SQLCipher cell files + catalog SQLite |
+| `@khoralabs/colonnade-persistence-turso-serverless` | [`impl/turso-serverless`](impl/turso-serverless) | Turso Cloud (one DB per cell shard) |
 
 ## TypeScript implementation
 
 [`impl/ts`](impl/ts) defines **`@khoralabs/colonnade-persistence`**: `CatalogPersistenceStrategy`, `CellPersistenceStrategy`, `ColonnadeRouter`, `ColonnadePublicationClient`, plus in-memory strategies for tests.
 
+[`impl/sqlite`](impl/sqlite) defines **`@khoralabs/colonnade-persistence-sqlite`**: `createSqliteColonnadeCluster`, `SqliteCellPersistenceStrategy`, optional Bun Workers per cell.
+
+[`impl/turso-serverless`](impl/turso-serverless) defines **`@khoralabs/colonnade-persistence-turso-serverless`**: `createTursoColonnadeCluster`, `TursoCellPersistenceStrategy`, URL-template shard routing.
+
 **Durable roles:** the **catalog** holds indexing / read-model rows (pointers, discovery metadata keyed per tenant, source-map projections). Each **cell** owns the authoritative **outbox** (payload bytes) and **inbox** staging. Fan-out recipient lists are **not** stored as catalog manifests—**`PublicationRouting.fan_out_targets`** is filled by application code; proof of delivery is **inbox rows** across cells.
 
-**SQLite topology:** `createSqliteColonnadeCluster` opens **`catalogShardCount`** catalog shard files (when **`catalogShardCount > 1`**, **`catalogPath`** is a directory containing **`catalog-shard-{i}.sqlite`**). Pool routing uses **`derivePoolHomeCell(principal_id, cellCount)`** (deterministic hash; no catalog assignment rows). Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`** (`LazyWorkerBackedCellStrategy`).
+**SQLite topology:** `createSqliteColonnadeCluster` (from `@khoralabs/colonnade-persistence-sqlite`) opens lazy cell DBs at `{cellsDirectory}/{stem}.sqlite`. Pool routing uses **`derivePoolHomeCell(principal_id, cellCount)`** (deterministic hash; no catalog assignment rows). Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`**.
+
+**Turso topology:** `createTursoColonnadeCluster` (from `@khoralabs/colonnade-persistence-turso-serverless`) opens one Turso database per cell shard via **`cells.urlTemplate`** placeholders `{cellId}`, `{shardIndex}`, or `{shard}`.
 
 ```bash
 cd packages/colonnade/impl/ts && bun test && bun run typecheck
+cd packages/colonnade/impl/sqlite && bun test
+cd packages/colonnade/impl/turso-serverless && bun test
 ```
 
 ### Benchmarks
