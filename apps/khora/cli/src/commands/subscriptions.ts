@@ -5,7 +5,7 @@ import type { KhoraPostVisibility, SubscriptionPredicate } from "@khoralabs/khor
 import { buildSubscriptionSearch } from "@khoralabs/khora-contracts";
 
 import type { KhoraCliContext } from "../flows/context";
-import { withKhoraClient } from "../flows/context";
+import { assertInteractiveAllowed, withKhoraClient } from "../flows/context";
 import { runSubscriptionCreateFlow } from "../flows/subscription-flows";
 import { exitOnClientError } from "../lib/client-error";
 import { minScoreFromFlags, namespaceRootFromFlags, queryFromFlags } from "../lib/flags";
@@ -134,6 +134,9 @@ export async function handleSubscriptionsCreate(
       "Provide --topic, --author, and/or --query together, or omit predicate flags for interactive mode.",
     );
   } else {
+    assertInteractiveAllowed(
+      "Pass at least one of --topic, --author, or --query to create a subscription non-interactively.",
+    );
     const flow = await runSubscriptionCreateFlow(ctx);
     params = flow;
   }

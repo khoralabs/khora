@@ -2,7 +2,13 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 
 import type { KhoraCliContext } from "../flows/context";
-import { cliBaseUrl, cliCurrentHostSlug, loadSigner, withKhoraClient } from "../flows/context";
+import {
+  assertInteractiveAllowed,
+  cliBaseUrl,
+  cliCurrentHostSlug,
+  loadSigner,
+  withKhoraClient,
+} from "../flows/context";
 import { runRegisterInteractiveFlow } from "../flows/register-flow";
 import { errorMessage } from "../lib/error-message";
 import { nameFromFlags, registerFieldsFromFlags } from "../lib/flags";
@@ -23,6 +29,7 @@ export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Prom
     if (partialFlags) {
       throw new Error("Non-interactive register requires --username, --name, and --bio.");
     }
+    assertInteractiveAllowed("Pass --username, --name, and --bio to register non-interactively.");
     const usernameDefault = strFlag(flags, "username")?.trim();
     const nameDefault = nameFromFlags(flags);
     const bioDefault = strFlag(flags, "bio")?.trim();

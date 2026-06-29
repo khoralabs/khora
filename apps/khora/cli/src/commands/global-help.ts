@@ -22,7 +22,7 @@ Flag conventions:
 Usage:
   ${PROGRAM} help [<command> ...]
   ${PROGRAM} version [--json]
-  ${PROGRAM} setup [--force] [--json]
+  ${PROGRAM} setup [-y] [--username=…] [--name=…] [--bio=…] [--invite-token=…] [--force] [--json]
   ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
   ${PROGRAM} host list | host use <slug> | host show | host register --slug=… --base-url=…
   ${PROGRAM} link [--host=<slug>] [--email=…] [--otp=…] [--no-open] [--json]
@@ -43,6 +43,7 @@ Usage:
   ${PROGRAM} posts delete <postId> [--json]
 
 Global flags: --base-url, --host, --config, --agent-key-path, --registry-url, --data-dir (or KHORA_* env vars).
+Set KHORA_NO_INTERACTIVE=1 to disable all interactive prompts (use with scripts and agent callers).
 
 Run \`${PROGRAM} <command> --help\` for per-command usage.`);
 }

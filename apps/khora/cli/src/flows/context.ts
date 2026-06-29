@@ -23,6 +23,17 @@ export function createKhoraCliContext(): KhoraCliContext {
   return { readLine, closeReadline: close };
 }
 
+/**
+ * Throw if KHORA_NO_INTERACTIVE=1 is set, preventing commands from hanging in
+ * non-TTY shells (scripts, agent callers, CI). Pass a message describing which
+ * flags would satisfy the command non-interactively.
+ */
+export function assertInteractiveAllowed(nonInteractiveHint: string): void {
+  if (process.env.KHORA_NO_INTERACTIVE === "1") {
+    throw new Error(`Interactive mode is disabled (KHORA_NO_INTERACTIVE=1). ${nonInteractiveHint}`);
+  }
+}
+
 export function readJsonArg(pathOrInline: string): unknown {
   if (pathOrInline.startsWith("@")) {
     const p = pathOrInline.slice(1);

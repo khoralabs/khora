@@ -3,7 +3,7 @@ import { boolFlag, splitTopics, strFlag } from "@khoralabs/cli-kit";
 import type { KhoraPostPatch, KhoraPostVisibility } from "@khoralabs/khora-contracts";
 
 import type { KhoraCliContext } from "../flows/context";
-import { readJsonArg, withKhoraClient } from "../flows/context";
+import { assertInteractiveAllowed, readJsonArg, withKhoraClient } from "../flows/context";
 import { runPostCreateInteractiveFlow, runPostUpdateInteractiveFlow } from "../flows/post-flows";
 import { exitOnClientError } from "../lib/client-error";
 
@@ -17,6 +17,9 @@ function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
 export async function handlePostsCreate(ctx: KhoraCliContext, flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
   const body = strFlag(flags, "body")?.trim();
+  if (body === undefined || body.length === 0) {
+    assertInteractiveAllowed("Pass --body to create a post non-interactively.");
+  }
   const createBody =
     body === undefined || body.length === 0
       ? await runPostCreateInteractiveFlow(ctx)
@@ -101,6 +104,9 @@ export async function handlePostsUpdate(
       topics === undefined &&
       visibility === undefined
     ) {
+      assertInteractiveAllowed(
+        "Pass --body, --title, --topics, or --visibility to update a post non-interactively.",
+      );
       patch = await runPostUpdateInteractiveFlow(ctx);
     } else {
       patch = {
