@@ -7,7 +7,6 @@ import type { AppEvent } from "./lib/log-event";
 import { logger } from "./lib/logger";
 import { serveAssets } from "./lib/serve-assets";
 import { serveDownloads } from "./lib/serve-downloads";
-import { serveSkills } from "./lib/serve-skills";
 import { siteDiscoveryResponse, wantsSiteDiscoveryJson } from "./lib/site-discovery";
 import { BlogPage } from "./routes/blog/client";
 import blog from "./routes/blog/index.html";
@@ -106,7 +105,6 @@ const server = serve({
     "/assets/*": { GET: serveAssets },
     "/blog/media/*": { GET: serveBlogMedia },
     "/downloads/*": { GET: serveDownloads },
-    "/skills/*": { GET: serveSkills },
     "/.well-known/khoralabs.json": {
       GET(req) {
         return siteDiscoveryResponse(new URL(req.url).origin);

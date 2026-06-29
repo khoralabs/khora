@@ -4,8 +4,8 @@ import { DOWNLOADS_DIR, resolveDownloadPath } from "./serve-downloads";
 
 describe("resolveDownloadPath", () => {
   test("resolves nested file under downloads dir", () => {
-    const resolved = resolveDownloadPath("/downloads/skills/khora-cli/SKILL.md");
-    expect(resolved).toBe(path.join(DOWNLOADS_DIR, "skills", "khora-cli", "SKILL.md"));
+    const resolved = resolveDownloadPath("/downloads/docs/guide.md");
+    expect(resolved).toBe(path.join(DOWNLOADS_DIR, "docs", "guide.md"));
   });
 
   test("rejects path traversal", () => {
@@ -13,6 +13,6 @@ describe("resolveDownloadPath", () => {
   });
 
   test("rejects unsupported extension", () => {
-    expect(resolveDownloadPath("/downloads/skills/khora-cli/archive.zip")).toBeNull();
+    expect(resolveDownloadPath("/downloads/docs/archive.zip")).toBeNull();
   });
 });

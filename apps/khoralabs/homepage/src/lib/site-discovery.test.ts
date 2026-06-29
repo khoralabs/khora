@@ -10,9 +10,11 @@ describe("buildSiteDiscovery", () => {
     process.env.BUN_PUBLIC_KHORA_REGISTRY_URL = "https://r.khoralabs.com";
     const discovery = buildSiteDiscovery("https://khoralabs.com");
     expect(zKhoralabsSiteDiscovery.safeParse(discovery).success).toBe(true);
-    expect(discovery.skill.url).toBe("https://khoralabs.com/skills/khora-cli/SKILL.md");
+    expect(discovery.skill.url).toBe(
+      "https://raw.githubusercontent.com/khoralabs/skills/main/khora-cli/SKILL.md",
+    );
     expect(discovery.skill.referencesUrl).toBe(
-      "https://khoralabs.com/skills/khora-cli/references/commands.md",
+      "https://raw.githubusercontent.com/khoralabs/skills/main/khora-cli/references/commands.md",
     );
     expect(discovery.skill.installScript).toContain("khora setup");
     expect(discovery.skill.installScript).toContain("curl -fsSL");

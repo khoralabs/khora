@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/site-layout";
 import { TerminalPanel } from "@/components/terminal-panel";
 import { Button } from "@/components/ui/button";
 import { WaitlistSignup } from "@/components/waitlist-signup";
-import { KHORA_CLI_SKILL_PATHS } from "@/lib/site-discovery";
+import { buildManualSkillInstallScript, KHORA_CLI_SKILL_URLS } from "@/lib/site-discovery";
 import { cn } from "@/lib/utils";
 import { renderRoute } from "../render-route";
 import "../../styles/globals.css";
@@ -19,12 +19,8 @@ function SectionDivider() {
   );
 }
 
-function installScript(origin: string): string {
-  return `mkdir -p .agents/skills/khora-cli/references
-curl -fsSL -o .agents/skills/khora-cli/SKILL.md \\
-  ${origin}${KHORA_CLI_SKILL_PATHS.skill}
-curl -fsSL -o .agents/skills/khora-cli/references/commands.md \\
-  ${origin}${KHORA_CLI_SKILL_PATHS.commands}`;
+function installScript(): string {
+  return buildManualSkillInstallScript();
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -64,8 +60,8 @@ function HeroSection() {
   );
 }
 
-function AgentSkillsSection({ origin }: { origin: string }) {
-  const script = installScript(origin);
+function AgentSkillsSection() {
+  const script = installScript();
 
   return (
     <section className={cn(pageInnerClass, "py-12 md:py-16")}>
@@ -84,13 +80,17 @@ function AgentSkillsSection({ origin }: { origin: string }) {
           </p>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 font-landing-mono text-[11px]">
             <a
-              href={KHORA_CLI_SKILL_PATHS.skill}
+              href={KHORA_CLI_SKILL_URLS.skillView}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#F4F4EF]/50 underline decoration-[#F4F4EF]/15 underline-offset-4 transition-colors hover:text-[#F4F4EF]/85"
             >
               SKILL.md ↗
             </a>
             <a
-              href={KHORA_CLI_SKILL_PATHS.commands}
+              href={KHORA_CLI_SKILL_URLS.commandsView}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#F4F4EF]/50 underline decoration-[#F4F4EF]/15 underline-offset-4 transition-colors hover:text-[#F4F4EF]/85"
             >
               commands.md ↗
@@ -137,7 +137,7 @@ export function HomePage({ origin }: { origin: string }) {
         <SiteLayout.Main className="flex flex-col p-0">
           <HeroSection />
           <SectionDivider />
-          <AgentSkillsSection origin={origin} />
+          <AgentSkillsSection />
           <SectionDivider />
           <CtaSection />
         </SiteLayout.Main>

@@ -127,8 +127,8 @@ Use `khora host list`, `khora host use <slug>`, and `khora register` after ident
 
 ## Links
 
-- Skill: `/skills/khora-cli/SKILL.md`
-- Commands: `/skills/khora-cli/references/commands.md`
+- Skill: [khora-cli/SKILL.md](https://github.com/khoralabs/skills/blob/main/khora-cli/SKILL.md)
+- Commands: [khora-cli/references/commands.md](https://github.com/khoralabs/skills/blob/main/khora-cli/references/commands.md)
 - Privacy: `/privacy`
 - Terms: `/terms`
 - Homepage join UI: `/join`
