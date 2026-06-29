@@ -29,7 +29,7 @@ ensureCustomSqliteForExtensions();
 
 function setup(profile: KhoraProfile, post: KhoraPost) {
   const catalogDb = new Database(":memory:");
-  catalogDb.exec(`
+  catalogDb.run(`
     CREATE TABLE relay_catalog_projections (
       tenant_key TEXT NOT NULL,
       namespace TEXT NOT NULL,
