@@ -55,7 +55,7 @@ const htmlRoutes = {
   },
   "/consumer": homePage,
   "/*": homePage,
-  "/join": ssrRoute<{ origin: string }>(`${SSR_SHELL}/index`, HomePage, { props: homeSsrProps }),
+  "/join": ssrRoute(`${SSR_SHELL}/index`, HomePage),
   "/blog": ssrRoute(`${SSR_SHELL}/blog`, BlogPage, {
     props: (req) => ({
       initialTag: new URL(req.url).searchParams.get("tag") ?? undefined,

@@ -128,7 +128,7 @@ function CtaSection() {
   );
 }
 
-export function HomePage({ origin }: { origin: string }) {
+export function HomePage() {
   return (
     <SiteLayout.Root>
       <SiteLayout.Noise />
@@ -148,5 +148,5 @@ export function HomePage({ origin }: { origin: string }) {
 }
 
 if (typeof document !== "undefined") {
-  renderRoute(HomePage, { origin: window.location.origin });
+  renderRoute(HomePage);
 }

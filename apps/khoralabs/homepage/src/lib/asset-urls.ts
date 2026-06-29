@@ -6,4 +6,5 @@ export const ASSETS = {
   sky: "/assets/khora_landing_sky.jpg",
   logoWhite: "/assets/khora_logo_text_w.svg",
   logoBlack: "/assets/khora_logo_text_b.svg",
+  discord: "/assets/discord.svg",
 } as const;
