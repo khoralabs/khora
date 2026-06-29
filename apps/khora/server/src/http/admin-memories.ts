@@ -8,19 +8,14 @@ import {
   resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
 } from "@khoralabs/khora-host";
-import {
-  MemoriesClient,
-  type SearchHit,
-  searchAsync,
-  wrapSyncMemoriesPersistenceAsAsync,
-} from "@khoralabs/memories-core";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
+import { MemoriesClient, type SearchHit, searchAsync } from "@khoralabs/memories-core";
 import {
   createMemoriesEmbeddingModel,
   type EmbeddingModel,
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import { qualifyMemoryKey } from "@khoralabs/memories-projections";
@@ -30,7 +25,10 @@ import {
   loadEdgePreview,
   loadSourceMapTextPreview,
 } from "@khoralabs/memories-projections-sqlite";
-import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
+import {
+  getMemoriesSyncPersistenceFromAsync,
+  listMemoryNamespaces,
+} from "@khoralabs/memories-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envCatalogPath } from "../env";
@@ -55,7 +53,8 @@ export type AdminMemoriesProfileEntry = {
 type GraphScope = "exact" | "subtree";
 
 type MemoriesAccess = {
-  persistence: MemoriesPersistence;
+  persistence: MemoriesPersistenceAsync;
+  syncPersistence: ReturnType<typeof getMemoriesSyncPersistenceFromAsync>;
   db: Database;
   namespaceRoot: string;
   embeddingModel?: EmbeddingModel;
@@ -86,15 +85,20 @@ function resolveMemoriesAccess(deps: HostRouteDeps): MemoriesAccess | Response {
     return memoriesUnavailableResponse();
   }
   const memories = deps.ctx.memories;
-  if (memories === undefined) {
+  if (memories === undefined || deps.memoriesSqliteDb === undefined) {
     return memoriesUnavailableResponse();
   }
-  return {
-    persistence: memories.persistence,
-    db: getMemoriesSqliteDatabase(memories.persistence),
-    namespaceRoot: memories.namespaceRoot,
-    embeddingModel: memories.embeddingModel,
-  };
+  try {
+    return {
+      persistence: memories.persistence,
+      syncPersistence: getMemoriesSyncPersistenceFromAsync(memories.persistence),
+      db: deps.memoriesSqliteDb,
+      namespaceRoot: memories.namespaceRoot,
+      embeddingModel: memories.embeddingModel,
+    };
+  } catch {
+    return memoriesUnavailableResponse();
+  }
 }
 
 function parseGraphScope(raw: string | null | undefined): GraphScope {
@@ -171,7 +175,7 @@ function providerOptionsForSearchPreset(preset: EmbeddingResolutionPreset) {
 }
 
 function resolveSearchEmbeddingPreset(
-  persistence: MemoriesPersistence,
+  persistence: MemoriesPersistenceAsync,
   bodyResolution: string | undefined,
 ): EmbeddingResolutionPreset {
   const fromBody = parseExplicitEmbeddingPreset(bodyResolution);
@@ -182,7 +186,8 @@ function resolveSearchEmbeddingPreset(
   );
   if (fromEnv) return fromEnv;
 
-  const dims = persistence.listVectorEmbeddingIndexDimensions();
+  const dims =
+    getMemoriesSyncPersistenceFromAsync(persistence).listVectorEmbeddingIndexDimensions();
   if (dims.length === 1) {
     const dim = dims[0];
     const preset = dim !== undefined ? dimToEmbeddingPreset(dim) : null;
@@ -216,7 +221,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
   const access = resolveMemoriesAccess(deps);
   if (access instanceof Response) return access;
 
-  const { persistence, db, namespaceRoot, embeddingModel } = access;
+  const { persistence, syncPersistence, db, namespaceRoot, embeddingModel } = access;
   const subpath = memoriesSubpath(url);
 
   if (req.method === "GET" && subpath === "/namespaces") {
@@ -253,8 +258,8 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
     try {
       const layout =
         scope === "subtree"
-          ? buildNamespaceSubtreeGraphLayout(db, persistence, namespace)
-          : buildNamespaceGraphLayout(db, persistence, namespace);
+          ? buildNamespaceSubtreeGraphLayout(db, syncPersistence, namespace)
+          : buildNamespaceGraphLayout(db, syncPersistence, namespace);
       return jsonResponse(layout);
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
@@ -297,7 +302,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
       return jsonResponse({ error: "missing required query namespace and edgeId" }, 400);
     }
     try {
-      const detail = loadEdgePreview(persistence, namespace, edgeId);
+      const detail = loadEdgePreview(syncPersistence, namespace, edgeId);
       if (!detail) {
         return jsonResponse({ error: "edge not found in namespace" }, 404);
       }
@@ -380,7 +385,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
       }
 
       const hits = await searchAsync(
-        { persistence: wrapSyncMemoriesPersistenceAsAsync(persistence) },
+        { persistence },
         {
           namespace,
           content,
@@ -488,12 +493,12 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
       });
       const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
       const model = google.languageModel(modelId);
-      const client = new MemoriesClient(persistence, canonicalOntology);
+      const investigatorClient = new MemoriesClient(syncPersistence, canonicalOntology);
       const investigator = new MemoryInvestigatorClient({
         registry: getInvestigatorRegistry(),
         namespace,
         model,
-        client,
+        client: investigatorClient,
         embeddingModel,
       });
       const { answer } = await investigator.investigate({ question, maxSteps });

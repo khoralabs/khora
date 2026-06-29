@@ -5,7 +5,7 @@ import type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
-import type { MemoriesClient, SearchParams } from "@khoralabs/memories-core";
+import type { MemoriesClientAsync, SearchParams } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import { authorPrincipalIdFromPostId } from "../post-address-id";
@@ -20,7 +20,7 @@ export type {
 } from "@khoralabs/khora-contracts";
 
 export async function executeKhoraMemoriesSearch(deps: {
-  client: MemoriesClient<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
+  client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
   store: KhoraCanonicalStore;
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
@@ -62,7 +62,7 @@ export async function executeKhoraMemoriesSearch(deps: {
     content,
   } satisfies SearchParams;
 
-  const hits = client.search(searchParams as Parameters<typeof client.search>[0]);
+  const hits = await client.search(searchParams as Parameters<typeof client.search>[0]);
   const enriched: KhoraSearchResponse["hits"] = [];
   for (const hit of hits) {
     const hydrated = await hydrateMemoryLabels(store, hit.labels, hit.memory._id, hit.source_key);
@@ -75,7 +75,6 @@ export async function executeKhoraMemoriesSearch(deps: {
       continue;
     }
 
-    // Derive author DID from the address-encoded post ID — not stored on the node.
     let original: KhoraSearchResponse["hits"][number]["original"];
     if (hydrated !== undefined) {
       if (hydrated.kind === "post" || hydrated.kind === "subscription") {

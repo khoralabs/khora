@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
-import { upsertMemorySearchMetaVector } from "@khoralabs/memories-core/persistence";
+import { upsertMemorySearchMetaVectorAsync } from "@khoralabs/memories-core/persistence";
 
 const DEFAULT_INTERVAL_MS = 30_000;
 const DEFAULT_BATCH_SIZE = 25;
@@ -142,7 +142,7 @@ export function readPendingEmbeddingQueueSummary(
 
 export async function runPendingEmbeddingRetryBatch(opts: {
   db: Database;
-  persistence: MemoriesPersistence;
+  persistence: MemoriesPersistenceAsync;
   embeddingModel?: EmbeddingModel;
   batchSize?: number;
   maxAttempts?: number;
@@ -195,7 +195,7 @@ export async function runPendingEmbeddingRetryBatch(opts: {
     const waitMs = backoffBaseMs * 2 ** row.attempts;
     if (!ignoreBackoff && lastAttemptMs !== undefined && nowMs - lastAttemptMs < waitMs) continue;
 
-    const memoryId = opts.persistence.findMemoryIdByKey(row.namespace, row.memory_key);
+    const memoryId = await opts.persistence.findMemoryIdByKey(row.namespace, row.memory_key);
     if (memoryId === undefined) {
       opts.db.query("DELETE FROM pending_embeddings WHERE id = ?").run(row.id);
       result.removedMissing += 1;
@@ -209,8 +209,8 @@ export async function runPendingEmbeddingRetryBatch(opts: {
       if (!vector || vector.length === 0) {
         throw new Error("empty vector");
       }
-      opts.persistence.withTransaction(() => {
-        upsertMemorySearchMetaVector(
+      await opts.persistence.withTransaction(async () => {
+        await upsertMemorySearchMetaVectorAsync(
           opts.persistence,
           { now: Date.now() },
           {
@@ -243,7 +243,7 @@ export async function runPendingEmbeddingRetryBatch(opts: {
 
 export function startEmbeddingRetryWorker(opts: {
   db: Database;
-  persistence: MemoriesPersistence;
+  persistence: MemoriesPersistenceAsync;
   embeddingModel?: EmbeddingModel;
   intervalMs?: number;
   batchSize?: number;

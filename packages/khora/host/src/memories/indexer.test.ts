@@ -7,12 +7,8 @@ import {
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
-import { MemoriesClient, search } from "@khoralabs/memories-core";
-import {
-  createMemoriesPersistence,
-  ensureCustomSqliteForExtensions,
-  openMemoriesDatabase,
-} from "@khoralabs/memories-sqlite";
+import { MemoriesClientAsync } from "@khoralabs/memories-core";
+import { createMemoriesPersistenceAsync, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { encodePostId } from "../post-address-id";
 import { createColonnadePostResolver } from "../resolve-post";
 import { createKhoraMemoriesIndexer } from "./indexer";
@@ -25,8 +21,11 @@ import {
 } from "./khora-namespace";
 import { khoraOntology } from "./khora-ontology";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
+import { memoriesSqliteVecAvailable } from "./test-sqlite";
 
-ensureCustomSqliteForExtensions();
+function memoriesTest(name: string, fn: () => Promise<void>): void {
+  test.skipIf(!memoriesSqliteVecAvailable())(name, fn);
+}
 
 function createTestRelayPersistence(profile: KhoraProfile) {
   const catalogDb = new Database(":memory:");
@@ -108,7 +107,7 @@ function createTestRelayPersistence(profile: KhoraProfile) {
 }
 
 describe("khora memories indexer", () => {
-  test("indexes profile and topic-scoped post; scopeDag finds post by topic", async () => {
+  memoriesTest("indexes profile and topic-scoped post; scopeDag finds post by topic", async () => {
     const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-index-1",
@@ -129,10 +128,10 @@ describe("khora memories indexer", () => {
       },
     });
     const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
-    const persistence = createMemoriesPersistence(memoriesDb);
+    const persistence = createMemoriesPersistenceAsync(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
     const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
-    const client = new MemoriesClient(persistence, khoraOntology, { store });
+    const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
     const indexer = createKhoraMemoriesIndexer({
       client,
       persistence,
@@ -172,53 +171,41 @@ describe("khora memories indexer", () => {
 
     await indexer.indexPost(post);
 
-    const globalHits = search(
-      { persistence },
-      {
-        namespace: root,
-        content: { text: "developer tools" },
-        options: { topK: 5 },
-      },
-    );
+    const globalHits = await client.search({
+      namespace: root,
+      content: { text: "developer tools" },
+      options: { topK: 5 },
+    });
     expect(globalHits.some((h) => h.memory.key === post.id)).toBe(true);
 
-    const topicHits = search(
-      { persistence },
-      {
-        namespace: topicScope(root, profile.id, "design"),
-        content: { text: "developer tools" },
-        searchScopeMode: "scopeDag",
-        options: { topK: 5 },
-      },
-    );
+    const topicHits = await client.search({
+      namespace: topicScope(root, profile.id, "design"),
+      content: { text: "developer tools" },
+      searchScopeMode: "scopeDag",
+      options: { topK: 5 },
+    });
     expect(topicHits.some((h) => h.memory.key === post.id)).toBe(true);
 
-    const profHits = search(
-      { persistence },
-      {
-        namespace: agentScope(root, profile.id),
-        content: { text: "Alice" },
-        options: { topK: 5 },
-      },
-    );
+    const profHits = await client.search({
+      namespace: agentScope(root, profile.id),
+      content: { text: "Alice" },
+      options: { topK: 5 },
+    });
     expect(profHits.some((h) => h.memory.key === PROFILE_MEMORY_KEY)).toBe(true);
 
     await indexer.deletePost(post);
-    const afterDelete = search(
-      { persistence },
-      {
-        namespace: postsMemoryNamespace(root, profile.id),
-        content: { text: "developer" },
-        options: { topK: 5 },
-      },
-    );
+    const afterDelete = await client.search({
+      namespace: postsMemoryNamespace(root, profile.id),
+      content: { text: "developer" },
+      options: { topK: 5 },
+    });
     expect(afterDelete.some((h) => h.memory.key === post.id)).toBe(false);
 
     memoriesDb.close();
     cluster.close();
   });
 
-  test("indexes subscription with search; label filter finds subscription", async () => {
+  memoriesTest("indexes subscription with search; label filter finds subscription", async () => {
     const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-probe-1",
@@ -238,10 +225,10 @@ describe("khora memories indexer", () => {
       },
     });
     const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
-    const persistence = createMemoriesPersistence(memoriesDb);
+    const persistence = createMemoriesPersistenceAsync(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
     const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
-    const client = new MemoriesClient(persistence, khoraOntology, { store });
+    const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
     const indexer = createKhoraMemoriesIndexer({
       client,
       persistence,
@@ -284,27 +271,21 @@ describe("khora memories indexer", () => {
 
     await indexer.indexPost(subscription);
 
-    const subscriptionHits = search(
-      { persistence },
-      {
-        namespace: root,
-        content: { text: "platform" },
-        options: { topK: 5, labels: { some: ["khora_subscription"] } },
-      },
-    );
+    const subscriptionHits = await client.search({
+      namespace: root,
+      content: { text: "platform" },
+      options: { topK: 5, labels: { some: ["khora_subscription"] } },
+    });
     expect(subscriptionHits.some((h) => h.memory.key === subscription.id)).toBe(true);
     expect(
       subscriptionHits.every((h) => h.labels.some((l) => l.kind === "khora_subscription")),
     ).toBe(true);
 
-    const postOnlyHits = search(
-      { persistence },
-      {
-        namespace: root,
-        content: { text: "platform" },
-        options: { topK: 5, labels: { some: ["khora_post"] } },
-      },
-    );
+    const postOnlyHits = await client.search({
+      namespace: root,
+      content: { text: "platform" },
+      options: { topK: 5, labels: { some: ["khora_post"] } },
+    });
     expect(postOnlyHits.some((h) => h.memory.key === subscription.id)).toBe(false);
 
     memoriesDb.close();

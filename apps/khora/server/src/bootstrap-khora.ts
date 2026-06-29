@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import { EnvKeyProvider, outboxKeyBytesToHex } from "@khoralabs/colonnade-crypto";
 import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
@@ -22,7 +23,7 @@ import {
   validateInviteEnvConfig,
 } from "@khoralabs/khora-invites";
 import {
-  createMemoriesPersistence,
+  createMemoriesPersistenceAsync,
   ensureCustomSqliteForExtensions,
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
@@ -46,7 +47,15 @@ export type BootstrapKhoraHostOpts = {
   startPrincipalTeardownWorker?: boolean;
 };
 
-export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<KhoraHostContext> {
+export type KhoraHostBootstrap = {
+  ctx: KhoraHostContext;
+  /** SQLite memories DB for server admin routes and embedding retry (sqlite backend only). */
+  memoriesSqliteDb?: Database;
+};
+
+export async function bootstrapKhoraHost(
+  opts: BootstrapKhoraHostOpts,
+): Promise<KhoraHostBootstrap> {
   const cellPoolCount = opts.cellPoolCount;
   const useCellWorkers = opts.useCellWorkers;
   const encryption = opts.encryption;
@@ -82,9 +91,9 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       const cellId = cluster.assignPrincipalToCell(principalId);
       await cluster.resolveCell(cellId).purgePrincipal(principalId);
     },
-    onPrincipalTeardown(principalId) {
-      for (const query of percolator.percolator.listQueriesByOwner(principalId)) {
-        percolator.percolator.deactivateQuery(query.id);
+    async onPrincipalTeardown(principalId) {
+      for (const query of await percolator.percolator.listQueriesByOwner(principalId)) {
+        await percolator.percolator.deactivateQuery(query.id);
       }
     },
     onPhase1Teardown(principalId) {
@@ -120,33 +129,36 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     invitesRepoValue = repo;
   }
 
+  let memoriesSqliteDb: Database | undefined;
   let memories: ReturnType<typeof bootstrapKhoraMemories> | undefined;
   if (opts.memories !== undefined) {
     ensureCustomSqliteForExtensions();
-    const memoriesDb = openMemoriesDatabase(opts.memories.dbPath, {
+    memoriesSqliteDb = openMemoriesDatabase(opts.memories.dbPath, {
       sqlCipherKey: encryption.sqlCipherKey,
     });
-    const memoriesPersistence = createMemoriesPersistence(memoriesDb);
-    ensurePendingEmbeddingsTable(memoriesDb);
+    const memoriesPersistence = createMemoriesPersistenceAsync(memoriesSqliteDb);
+    ensurePendingEmbeddingsTable(memoriesSqliteDb);
+
     memories = bootstrapKhoraMemories({
       persistence: memoriesPersistence,
-      close: () => memoriesDb.close(),
+      close: () => memoriesSqliteDb?.close(),
       persistenceClient,
       postResolver,
       embeddingModel: opts.memories.embeddingModel,
       namespaceRoot: opts.memories.namespaceRoot,
       onEmbeddingFailure: ({ namespace, memoryKey, text }) => {
-        enqueuePendingEmbedding(memoriesDb, { namespace, memoryKey, text });
+        if (!memoriesSqliteDb) return;
+        enqueuePendingEmbedding(memoriesSqliteDb, { namespace, memoryKey, text });
       },
     });
     startEmbeddingRetryWorker({
-      db: memoriesDb,
+      db: memoriesSqliteDb,
       persistence: memoriesPersistence,
       embeddingModel: opts.memories.embeddingModel,
     });
   }
 
-  return createKhoraHost({
+  const ctx = createKhoraHost({
     persistence,
     tenantKey,
     cluster,
@@ -166,4 +178,5 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
   });
+  return { ctx, ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}) };
 }

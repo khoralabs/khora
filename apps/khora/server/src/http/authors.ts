@@ -17,8 +17,8 @@ export async function handleListAuthorSubscriptions(
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
 
-  const queries = ctx.percolator.percolator
-    .listQueriesByOwner(did)
+  const owned = await ctx.percolator.percolator.listQueriesByOwner(did);
+  const queries = owned
     .filter((query) => query.active)
     .map((query) => ({ id: query.id, search: query.search }));
 

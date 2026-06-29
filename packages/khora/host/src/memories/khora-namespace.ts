@@ -1,5 +1,5 @@
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import { type NamespacePath, namespaceFromSegments, namespacePath } from "@khoralabs/memories-core";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 
 export const PROFILE_MEMORY_KEY = "self";
 
@@ -23,32 +23,32 @@ export function topicScope(
   return namespaceFromSegments([namespaceRoot, "agents", profileId, "topics", topicSlug]);
 }
 
-export function ensureAgentScope(
-  persistence: MemoriesPersistence,
+export async function ensureAgentScope(
+  persistence: MemoriesPersistenceAsync,
   namespaceRoot: string,
   profileId: string,
   now = Date.now(),
-): void {
+): Promise<void> {
   const op = { now };
   const root = namespacePath(namespaceRoot);
   const agent = agentScope(namespaceRoot, profileId);
-  persistence.withTransaction(() => {
-    persistence.linkScopes(op, { parentScopeId: root, childScopeId: agent });
+  await persistence.withTransaction(async () => {
+    await persistence.linkScopes(op, { parentScopeId: root, childScopeId: agent });
   });
 }
 
-export function ensureTopicScope(
-  persistence: MemoriesPersistence,
+export async function ensureTopicScope(
+  persistence: MemoriesPersistenceAsync,
   namespaceRoot: string,
   profileId: string,
   topicSlug: string,
   now = Date.now(),
-): void {
+): Promise<void> {
   const op = { now };
   const agent = agentScope(namespaceRoot, profileId);
   const topic = topicScope(namespaceRoot, profileId, topicSlug);
-  persistence.withTransaction(() => {
-    persistence.linkScopes(op, { parentScopeId: agent, childScopeId: topic });
+  await persistence.withTransaction(async () => {
+    await persistence.linkScopes(op, { parentScopeId: agent, childScopeId: topic });
   });
 }
 

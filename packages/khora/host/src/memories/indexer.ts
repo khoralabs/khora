@@ -6,10 +6,10 @@ import {
   khoraPostIndexableFeatures,
   khoraProfileLexicalText,
 } from "@khoralabs/khora-contracts";
-import { ids, type MemoriesClient } from "@khoralabs/memories-core";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
+import { ids, type MemoriesClientAsync } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { decodePostId } from "../post-address-id";
 import {
   ensureAgentScope,
@@ -28,8 +28,8 @@ export type KhoraMemoriesIndexer = {
 };
 
 export function createKhoraMemoriesIndexer(deps: {
-  client: MemoriesClient<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
-  persistence: MemoriesPersistence;
+  client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
+  persistence: MemoriesPersistenceAsync;
   persistenceClient: HostPersistenceClient;
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
@@ -70,7 +70,7 @@ export function createKhoraMemoriesIndexer(deps: {
 
   async function ensureProfileIndexed(profileId: string): Promise<void> {
     const ns = profileMemoryNamespace(namespaceRoot, profileId);
-    const existing = persistence.findMemoryIdByKey(ns, PROFILE_MEMORY_KEY);
+    const existing = await persistence.findMemoryIdByKey(ns, PROFILE_MEMORY_KEY);
     if (existing !== undefined) return;
     const projection = persistenceClient.getProfileById(profileId);
     if (!projection?.bodyJson) return;
@@ -86,7 +86,7 @@ export function createKhoraMemoriesIndexer(deps: {
   const indexer: KhoraMemoriesIndexer = {
     async indexProfile(profile: KhoraProfile): Promise<string | undefined> {
       try {
-        ensureAgentScope(persistence, namespaceRoot, profile.id);
+        await ensureAgentScope(persistence, namespaceRoot, profile.id);
         const ns = profileMemoryNamespace(namespaceRoot, profile.id);
         const text = khoraProfileLexicalText(profile);
         const vector = await embedLexical({
@@ -95,7 +95,7 @@ export function createKhoraMemoriesIndexer(deps: {
           memoryKey: PROFILE_MEMORY_KEY,
         });
         const memoryId = ids.memory(ns, PROFILE_MEMORY_KEY);
-        client.mergeMemory({
+        await client.mergeMemory({
           key: PROFILE_MEMORY_KEY,
           namespace: ns,
           content: [{ key: "body", text, ...(vector !== undefined ? { vector } : {}) }],
@@ -130,15 +130,15 @@ export function createKhoraMemoriesIndexer(deps: {
           return;
         }
         await ensureProfileIndexed(authorProfileId);
-        ensureAgentScope(persistence, namespaceRoot, authorProfileId);
+        await ensureAgentScope(persistence, namespaceRoot, authorProfileId);
         if (post.topics !== undefined) {
           for (const slug of post.topics) {
-            ensureTopicScope(persistence, namespaceRoot, authorProfileId, slug);
+            await ensureTopicScope(persistence, namespaceRoot, authorProfileId, slug);
           }
         }
         if (previousPostId !== undefined && previousPostId !== post.id) {
           const prevNs = postsMemoryNamespace(namespaceRoot, authorProfileId);
-          client.deleteMemory({ namespace: prevNs, key: previousPostId });
+          await client.deleteMemory({ namespace: prevNs, key: previousPostId });
         }
         const ns = postsMemoryNamespace(namespaceRoot, authorProfileId);
         const features = khoraPostIndexableFeatures(post);
@@ -190,7 +190,7 @@ export function createKhoraMemoriesIndexer(deps: {
                   },
                 },
               ];
-        client.mergeMemory({
+        await client.mergeMemory({
           key: post.id,
           namespace: ns,
           content,
@@ -214,7 +214,7 @@ export function createKhoraMemoriesIndexer(deps: {
         const authorProfileId = resolveAuthorProfileId(post);
         if (authorProfileId === undefined) return;
         const ns = postsMemoryNamespace(namespaceRoot, authorProfileId);
-        client.deleteMemory({ namespace: ns, key: post.id });
+        await client.deleteMemory({ namespace: ns, key: post.id });
       } catch (err) {
         logError("[khora-memories] deletePost failed", err);
       }

@@ -41,7 +41,7 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
   mkdirSync(opts.dataDir, { recursive: true });
   mkdirSync(cellsDir, { recursive: true });
 
-  const ctx = await bootstrapKhoraHost({
+  const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
     catalogPath,
     cellsDir,
     cellPoolCount: opts.cellPoolCount ?? 2,
@@ -55,6 +55,7 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
 
   const deps: HostRouteDeps = {
     ctx,
+    ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
     rateLimiters: createV2HostRateLimiters(),
     consoleAuth: null,
   };

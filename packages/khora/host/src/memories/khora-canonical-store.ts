@@ -6,26 +6,25 @@ import {
   zKhoraPost,
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
-import type { SourceMap, Store } from "@khoralabs/memories-core";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
+import type { MemoriesPersistenceAsync, SourceMap, Store } from "@khoralabs/memories-core";
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
 import type { PostResolver } from "../ports";
 
 export class KhoraCanonicalStore implements Store {
   constructor(
     private readonly deps: {
-      persistence: MemoriesPersistence;
+      persistence: MemoriesPersistenceAsync;
       postResolver: PostResolver;
       getProfileById: (profileId: string) => KhoraProfile | undefined;
     },
   ) {}
 
   async resolve(ref: SourceMap): Promise<ResolvedSource> {
-    const nk = this.deps.persistence.loadMemoryNamespaceKey(ref.memory_id);
+    const nk = await this.deps.persistence.loadMemoryNamespaceKey(ref.memory_id);
     if (nk === undefined) {
       throw new Error(`KhoraCanonicalStore: unknown memory_id ${ref.memory_id}`);
     }
-    const labels = this.deps.persistence.loadNodeLabelsForMemory(nk.namespace, nk.key);
+    const labels = await this.deps.persistence.loadNodeLabelsForMemory(nk.namespace, nk.key);
     const subscriptionLabel = labels.find((l) => l.kind === "khora_subscription");
     const postLabel = labels.find((l) => l.kind === "khora_post");
     const contentLabel = subscriptionLabel ?? postLabel;
@@ -69,7 +68,7 @@ export class KhoraCanonicalStore implements Store {
 }
 
 export function createKhoraCanonicalStore(deps: {
-  persistence: MemoriesPersistence;
+  persistence: MemoriesPersistenceAsync;
   postResolver: PostResolver;
   persistenceClient: HostPersistenceClient;
 }): KhoraCanonicalStore {

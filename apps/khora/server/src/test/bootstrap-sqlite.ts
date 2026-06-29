@@ -60,9 +60,9 @@ export async function createTestKhoraHost(
       const cellId = cluster.assignPrincipalToCell(principalId);
       await cluster.resolveCell(cellId).purgePrincipal(principalId);
     },
-    onPrincipalTeardown(principalId) {
-      for (const query of percolator.percolator.listQueriesByOwner(principalId)) {
-        percolator.percolator.deactivateQuery(query.id);
+    async onPrincipalTeardown(principalId) {
+      for (const query of await percolator.percolator.listQueriesByOwner(principalId)) {
+        await percolator.percolator.deactivateQuery(query.id);
       }
     },
   });

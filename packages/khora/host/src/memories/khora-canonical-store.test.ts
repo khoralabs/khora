@@ -7,12 +7,8 @@ import {
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
-import { ids, MemoriesClient } from "@khoralabs/memories-core";
-import {
-  createMemoriesPersistence,
-  ensureCustomSqliteForExtensions,
-  openMemoriesDatabase,
-} from "@khoralabs/memories-sqlite";
+import { ids, MemoriesClientAsync } from "@khoralabs/memories-core";
+import { createMemoriesPersistenceAsync, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { encodePostId } from "../post-address-id";
 import { createColonnadePostResolver } from "../resolve-post";
 import { createKhoraMemoriesIndexer } from "./indexer";
@@ -24,8 +20,11 @@ import {
 } from "./khora-namespace";
 import { khoraOntology } from "./khora-ontology";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
+import { memoriesSqliteVecAvailable } from "./test-sqlite";
 
-ensureCustomSqliteForExtensions();
+function memoriesTest(name: string, fn: () => Promise<void>): void {
+  test.skipIf(!memoriesSqliteVecAvailable())(name, fn);
+}
 
 function setup(profile: KhoraProfile, post: KhoraPost) {
   const catalogDb = new Database(":memory:");
@@ -116,10 +115,10 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
     },
   });
   const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
-  const persistence = createMemoriesPersistence(memoriesDb);
+  const persistence = createMemoriesPersistenceAsync(memoriesDb);
   const postResolver = createColonnadePostResolver(cluster);
   const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
-  const client = new MemoriesClient(persistence, khoraOntology, { store });
+  const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
   const indexer = createKhoraMemoriesIndexer({
     client,
     persistence,
@@ -130,7 +129,7 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
 }
 
 describe("KhoraCanonicalStore", () => {
-  test("resolves profile and post from indexed memories", async () => {
+  memoriesTest("resolves profile and post from indexed memories", async () => {
     const profile: KhoraProfile = {
       id: "prof-canonical-1",
       username: "bob",
@@ -167,9 +166,9 @@ describe("KhoraCanonicalStore", () => {
       postsMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       post.id,
     );
-    const postNk = persistence.loadMemoryNamespaceKey(postMemoryId);
+    const postNk = await persistence.loadMemoryNamespaceKey(postMemoryId);
     expect(postNk).toBeDefined();
-    const postLabels = persistence.loadNodeLabelsForMemory(
+    const postLabels = await persistence.loadNodeLabelsForMemory(
       postNk?.namespace ?? "",
       postNk?.key ?? "",
     );
@@ -183,7 +182,7 @@ describe("KhoraCanonicalStore", () => {
       profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
-    const profileLabels = persistence.loadNodeLabelsForMemory(
+    const profileLabels = await persistence.loadNodeLabelsForMemory(
       profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
@@ -194,7 +193,7 @@ describe("KhoraCanonicalStore", () => {
     cluster.close();
   });
 
-  test("hydrates subscription from indexed memories", async () => {
+  memoriesTest("hydrates subscription from indexed memories", async () => {
     const profile: KhoraProfile = {
       id: "prof-canonical-sub",
       username: "carol",
@@ -231,9 +230,12 @@ describe("KhoraCanonicalStore", () => {
       postsMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       subscription.id,
     );
-    const subNk = persistence.loadMemoryNamespaceKey(subMemoryId);
+    const subNk = await persistence.loadMemoryNamespaceKey(subMemoryId);
     expect(subNk).toBeDefined();
-    const subLabels = persistence.loadNodeLabelsForMemory(subNk?.namespace ?? "", subNk?.key ?? "");
+    const subLabels = await persistence.loadNodeLabelsForMemory(
+      subNk?.namespace ?? "",
+      subNk?.key ?? "",
+    );
     const subHydrated = await hydrateMemoryLabels(store, subLabels, subMemoryId);
     expect(subHydrated?.kind).toBe("subscription");
     if (subHydrated?.kind === "subscription") {

@@ -1,7 +1,7 @@
 import type { HostPersistenceClient } from "@khoralabs/host-runtime";
-import { MemoriesClient } from "@khoralabs/memories-core";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
+import { MemoriesClientAsync } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
-import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import type { PostResolver } from "../ports";
 import { createKhoraMemoriesIndexer, type KhoraMemoriesIndexer } from "./indexer";
 import { createKhoraCanonicalStore, type KhoraCanonicalStore } from "./khora-canonical-store";
@@ -9,18 +9,18 @@ import { khoraOntology } from "./khora-ontology";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
 
 export type KhoraMemoriesHost = {
-  client: MemoriesClient<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
+  client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
   store: KhoraCanonicalStore;
-  persistence: MemoriesPersistence;
+  persistence: MemoriesPersistenceAsync;
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
   indexer: KhoraMemoriesIndexer;
-  close(): void;
+  close(): void | Promise<void>;
 };
 
 export type BootstrapKhoraMemoriesOpts = {
-  persistence: MemoriesPersistence;
-  close: () => void;
+  persistence: MemoriesPersistenceAsync;
+  close: () => void | Promise<void>;
   persistenceClient: HostPersistenceClient;
   postResolver: PostResolver;
   embeddingModel?: EmbeddingModel;
@@ -35,7 +35,7 @@ export function bootstrapKhoraMemories(opts: BootstrapKhoraMemoriesOpts): KhoraM
     postResolver: opts.postResolver,
     persistenceClient: opts.persistenceClient,
   });
-  const client = new MemoriesClient(opts.persistence, khoraOntology, { store });
+  const client = new MemoriesClientAsync(opts.persistence, khoraOntology, { store });
   const indexer = createKhoraMemoriesIndexer({
     client,
     persistence: opts.persistence,

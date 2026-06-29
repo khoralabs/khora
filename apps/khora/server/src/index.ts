@@ -6,7 +6,6 @@ import path from "node:path";
 const { dirname } = path;
 
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
-import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
@@ -53,7 +52,7 @@ if (memoriesConfig !== undefined) {
 
 const tenantKey = envTenantKey();
 const encryption = await bootstrapKhoraEncryption();
-const ctx: KhoraHostContext = await bootstrapKhoraHost({
+const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
   catalogPath,
   cellsDir,
   cellPoolCount,
@@ -72,6 +71,7 @@ if (consoleAuth === null) {
 
 const deps: HostRouteDeps = {
   ctx,
+  ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
   rateLimiters: createV2HostRateLimiters(),
   consoleAuth,
 };
