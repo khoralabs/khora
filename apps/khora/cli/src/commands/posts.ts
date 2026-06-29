@@ -6,6 +6,7 @@ import type { KhoraCliContext } from "../flows/context";
 import { assertInteractiveAllowed, readJsonArg, withKhoraClient } from "../flows/context";
 import { runPostCreateInteractiveFlow, runPostUpdateInteractiveFlow } from "../flows/post-flows";
 import { exitOnClientError } from "../lib/client-error";
+import { mergeTopicLists, parseTopicsFromBody } from "../lib/post-topics";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();
@@ -23,14 +24,18 @@ export async function handlePostsCreate(ctx: KhoraCliContext, flags: FlagMap): P
   const createBody =
     body === undefined || body.length === 0
       ? await runPostCreateInteractiveFlow(ctx)
-      : {
-          body,
-          ...(strFlag(flags, "title")?.trim() ? { title: strFlag(flags, "title")?.trim() } : {}),
-          ...(splitTopics(strFlag(flags, "topics")) !== undefined
-            ? { topics: splitTopics(strFlag(flags, "topics")) }
-            : {}),
-          visibility: visibilityFromFlags(flags) ?? "public",
-        };
+      : (() => {
+          const topics = mergeTopicLists(
+            parseTopicsFromBody(body),
+            splitTopics(strFlag(flags, "topics")),
+          );
+          return {
+            body,
+            ...(strFlag(flags, "title")?.trim() ? { title: strFlag(flags, "title")?.trim() } : {}),
+            ...(topics !== undefined ? { topics } : {}),
+            visibility: visibilityFromFlags(flags) ?? "public",
+          };
+        })();
 
   try {
     await withKhoraClient(flags, async (client) => {
@@ -96,7 +101,12 @@ export async function handlePostsUpdate(
   } else {
     const body = strFlag(flags, "body");
     const title = strFlag(flags, "title");
-    const topics = splitTopics(strFlag(flags, "topics"));
+    const bodyTopics =
+      body !== undefined && body.trim().length > 0 ? parseTopicsFromBody(body) : [];
+    const topics = mergeTopicLists(
+      bodyTopics.length > 0 ? bodyTopics : undefined,
+      splitTopics(strFlag(flags, "topics")),
+    );
     const visibility = visibilityFromFlags(flags);
     if (
       body === undefined &&
