@@ -6,6 +6,7 @@ import { maybeBootstrapKhoraHome } from "./commands/setup";
 import { handleVersion } from "./commands/version";
 import { createKhoraCliContext } from "./flows/context";
 import { errorMessage } from "./lib/error-message";
+import { style } from "./lib/style";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -75,7 +76,7 @@ async function main(): Promise<void> {
       process.exit(1);
       return;
     }
-    console.error(msg);
+    console.log(style.brand(msg));
     process.exit(1);
   } finally {
     ctx.closeReadline();

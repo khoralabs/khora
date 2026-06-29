@@ -1,10 +1,10 @@
 import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, style } from "@khoralabs/cli-kit";
+import { boolFlag } from "@khoralabs/cli-kit";
 import { KhoraClientError } from "@khoralabs/khora-client";
-
 import { agentIdentityPath, cliBaseUrl, loadSigner, withKhoraClient } from "../flows/context";
 import { errorMessage } from "../lib/error-message";
+import { style } from "../lib/style";
 
 export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
@@ -16,8 +16,8 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
   } catch (e) {
     const idPath = agentIdentityPath(flags);
     const msg = errorMessage(e);
-    console.error(style.error(msg));
-    console.error(style.error(`No agent identity at ${idPath}. Run 'khora keygen' first.`));
+    console.log(style.error(msg));
+    console.log(style.error(`No agent identity at ${idPath}. Run 'khora keygen' first.`));
     process.exit(1);
   }
 
@@ -36,7 +36,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     await withKhoraClient(flags, async (client) => {
       const result = await client.lookupProfileByDid(signer.did);
       if (result === null) {
-        console.error(style.error("Not registered on this host. Run 'khora register'."));
+        console.log(style.error("Not registered on this host. Run 'khora register'."));
         process.exit(3);
         return;
       }
@@ -57,9 +57,9 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     });
   } catch (e) {
     if (e instanceof KhoraClientError) {
-      console.error(style.error(`Host request failed: ${e.message}`));
-      console.error(style.muted(`base-url: ${baseUrl}`));
-      console.error(
+      console.log(style.error(`Host request failed: ${e.message}`));
+      console.log(style.muted(`base-url: ${baseUrl}`));
+      console.log(
         style.muted("Use --no-fetch to print your local DID without contacting the host."),
       );
       process.exit(1);

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, style, symbols } from "@khoralabs/cli-kit";
+import { boolFlag } from "@khoralabs/cli-kit";
 import {
   type AgentSkillInstallResult,
   runAgentSkillSetup,
@@ -11,6 +11,7 @@ import {
   POSTINSTALL_SCHEMA_FILE,
   runKhoraConfigSetup,
 } from "../../scripts/postinstall";
+import { style, symbols } from "../lib/style";
 
 const ASSETS_DIR_ENV = "KHORA_CLI_ASSETS_DIR";
 
@@ -129,7 +130,7 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
 
 export function maybeBootstrapKhoraHome(
   env: NodeJS.ProcessEnv = process.env,
-  err: (line: string) => void = (line) => console.error(line),
+  err: (line: string) => void = (line) => console.log(line),
 ): void {
   const fromEnv = env[ASSETS_DIR_ENV]?.trim();
   if (fromEnv === undefined || fromEnv.length === 0) return;

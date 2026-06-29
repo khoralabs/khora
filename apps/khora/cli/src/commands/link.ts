@@ -1,9 +1,10 @@
 import { stdin as input, stdout as output } from "node:process";
 import * as readline from "node:readline/promises";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, strFlag, style } from "@khoralabs/cli-kit";
+import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 import { cliBaseUrl, cliCurrentHostSlug, loadSigner } from "../flows/context";
 import { khoraCliResolvedConfig } from "../khora-app-config";
+import { style } from "../lib/style";
 import {
   clearAgentAuthPending,
   readAgentAuthPending,

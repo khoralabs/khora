@@ -1,4 +1,6 @@
-import { buildCommandHelpTextMap, style } from "@khoralabs/cli-kit";
+import { buildCommandHelpTextMap } from "@khoralabs/cli-kit";
+
+import { style } from "../lib/style";
 
 import { allCommandHelp } from "./help/index";
 
@@ -7,7 +9,7 @@ const PROGRAM = "khora";
 export const commandHelpTextMap = buildCommandHelpTextMap(allCommandHelp, PROGRAM);
 
 export function printHelp(): void {
-  console.error(`${style.bold(`${PROGRAM} — KHORA host CLI`)}
+  console.log(`${style.brand(style.bold(`${PROGRAM} — KHORA host CLI`))}
 
 Register on a host, manage your profile, search, posts, and subscriptions.
 

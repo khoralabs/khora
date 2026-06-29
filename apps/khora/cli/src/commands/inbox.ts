@@ -1,5 +1,5 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, style } from "@khoralabs/cli-kit";
+import { boolFlag } from "@khoralabs/cli-kit";
 import {
   isProcessAlive,
   readKhoraDaemonControlFile,
@@ -21,6 +21,7 @@ import {
 } from "../daemon-spawn";
 import { cliBaseUrl, loadSigner } from "../flows/context";
 import { khoraCliResolvedConfig } from "../khora-app-config";
+import { style } from "../lib/style";
 
 export async function handleInboxListen(flags: FlagMap): Promise<void> {
   const background = boolFlag(flags, "b") || boolFlag(flags, "background");
@@ -29,7 +30,7 @@ export async function handleInboxListen(flags: FlagMap): Promise<void> {
     const dataDir = resolveCliDataDir(flags);
     const existing = readKhoraDaemonControlFile(dataDir);
     if (existing !== undefined && isProcessAlive(existing.pid)) {
-      console.error(
+      console.log(
         style.error(
           `Inbox daemon already running (pid ${existing.pid}). Run 'khora inbox stop' first.`,
         ),
