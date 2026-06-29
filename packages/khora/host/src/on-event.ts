@@ -21,6 +21,7 @@ import {
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import type { StandingQuery } from "@khoralabs/percolator";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import { toPercolatorSearch } from "./percolator/adapter";
@@ -158,8 +159,8 @@ function registerSubscriptionQuery(
   percolator: KhoraPercolatorHost,
   post: KhoraPost,
   ownerPrincipalId: string,
-): Promise<void> {
-  if (post.kind !== "subscription" || post.search === undefined) return Promise.resolve();
+): Promise<StandingQuery | undefined> {
+  if (post.kind !== "subscription" || post.search === undefined) return Promise.resolve(undefined);
   return percolator.percolator.registerQuery({
     id: post.id,
     ownerId: ownerPrincipalId,
