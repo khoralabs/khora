@@ -34,7 +34,11 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "apps/khora/*/**",
+    "apps/khora/cli",
+    "apps/khora/daemon",
+    "apps/khora/plugins/*",
+    "apps/khora/registry",
+    "apps/khora/server",
     "apps/khoralabs/*/**",
     "apps/vellum/*/**",
     "packages/*",
