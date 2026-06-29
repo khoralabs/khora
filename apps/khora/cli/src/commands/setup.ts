@@ -145,7 +145,20 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
   if (existsSync(assets.skillAssetsDir)) {
     skill = runAgentSkillSetup({ skillAssetsDir: assets.skillAssetsDir, home });
   }
-  if (!asJson) printSetupSummary(result, skill);
+  if (asJson) {
+    // JSON mode: emit the file-install result now; onboarding below may overwrite with richer output
+  } else {
+    printSetupSummary(result, skill);
+  }
+
+  // Onboarding (keygen → host → register) only runs when -y is passed or the shell is
+  // interactive (process.stdin is a TTY). Tests and piped/non-interactive callers that
+  // omit -y get only the file-install step above.
+  const isTTY = Boolean(process.stdin.isTTY);
+  if (!yes && !isTTY) {
+    if (asJson) console.log(JSON.stringify({ ...result, skill }));
+    return;
+  }
 
   // Step 2: keygen (skip if identity already exists)
   const keyPath = agentIdentityPath(flags);
