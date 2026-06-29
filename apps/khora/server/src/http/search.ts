@@ -43,6 +43,7 @@ export async function handleSearchPost(req: Request, deps: HostRouteDeps): Promi
   try {
     const result = await executeKhoraMemoriesSearch({
       client: memories.client,
+      persistence: memories.persistence,
       store: memories.store,
       embeddingModel: memories.embeddingModel,
       namespaceRoot: memories.namespaceRoot,
@@ -88,6 +89,7 @@ export async function handleSearchGet(
     const readerPrincipalId = await optionalReaderDid(req, url, deps);
     const result = await executeKhoraMemoriesSearch({
       client: memories.client,
+      persistence: memories.persistence,
       store: memories.store,
       embeddingModel: memories.embeddingModel,
       namespaceRoot: memories.namespaceRoot,

@@ -17,6 +17,7 @@ import {
   agentScope,
   PROFILE_MEMORY_KEY,
   postsMemoryNamespace,
+  profileMemoryNamespace,
   topicScope,
 } from "./khora-namespace";
 import { khoraOntology } from "./khora-ontology";
@@ -200,6 +201,84 @@ describe("khora memories indexer", () => {
       options: { topK: 5 },
     });
     expect(afterDelete.some((h) => h.memory.key === post.id)).toBe(false);
+
+    memoriesDb.close();
+    cluster.close();
+  });
+
+  memoriesTest("deleteProfile removes profile and indexed post memories", async () => {
+    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
+    const profile: KhoraProfile = {
+      id: "prof-delete-1",
+      username: "dana",
+      displayName: "Dana",
+      bio: "platform engineer",
+    };
+    const persistenceClient = createTestRelayPersistence(profile);
+    const encryption = createTestEncryptionMaterial();
+    const cluster = createSqliteColonnadeCluster({
+      cellsDirectory: `/tmp/khora-mem-delete-${crypto.randomUUID()}`,
+      mode: { kind: "pool", cellCount: 2 },
+      useCellWorkers: false,
+      encryption: {
+        sqlCipherKey: encryption.sqlCipherKey,
+        outboxPayloadCodec: encryption.outboxPayloadCodec,
+        outboxKeyHex: encryption.outboxKeyHex,
+      },
+    });
+    const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
+    const persistence = createMemoriesPersistenceAsync(memoriesDb);
+    const postResolver = createColonnadePostResolver(cluster);
+    const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
+    const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
+    const indexer = createKhoraMemoriesIndexer({
+      client,
+      persistence,
+      persistenceClient,
+      namespaceRoot: root,
+    });
+
+    await indexer.indexProfile(profile);
+    const authorPrincipalId = "did:test:author";
+    const recordKey = "ob_delete123456789012345678901";
+    const post: KhoraPost = {
+      id: encodePostId({
+        authorPrincipalId,
+        recordKey,
+        cellPoolCount: 2,
+      }),
+      authorProfileId: profile.id,
+      kind: "post",
+      body: "delete me from search",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public" as const,
+    };
+    const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
+    await cluster.resolveCell(authorCellId).appendOutboxRecord({
+      cell_id: authorCellId,
+      tenant_key: "relay",
+      principal_id: authorPrincipalId,
+      record_key: recordKey,
+      payload_bytes: new TextEncoder().encode(JSON.stringify(post)),
+      metadata: { postId: post.id, postKind: post.kind },
+    });
+    await indexer.indexPost(post);
+
+    await indexer.deleteProfile(profile.id);
+
+    const profileHits = await client.search({
+      namespace: profileMemoryNamespace(root, profile.id),
+      content: { text: "Dana" },
+      options: { topK: 5 },
+    });
+    expect(profileHits.some((h) => h.memory.key === PROFILE_MEMORY_KEY)).toBe(false);
+
+    const postHits = await client.search({
+      namespace: postsMemoryNamespace(root, profile.id),
+      content: { text: "delete" },
+      options: { topK: 5 },
+    });
+    expect(postHits.some((h) => h.memory.key === post.id)).toBe(false);
 
     memoriesDb.close();
     cluster.close();

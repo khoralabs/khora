@@ -6,9 +6,15 @@ import {
   zKhoraPost,
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
-import type { MemoriesPersistenceAsync, SourceMap, Store } from "@khoralabs/memories-core";
+import type {
+  MemoriesClientAsync,
+  MemoriesPersistenceAsync,
+  SourceMap,
+  Store,
+} from "@khoralabs/memories-core";
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
 import type { PostResolver } from "../ports";
+import type { khoraOntology } from "./khora-ontology";
 
 export class KhoraCanonicalStore implements Store {
   constructor(
@@ -56,7 +62,7 @@ export class KhoraCanonicalStore implements Store {
       }
       const profile = this.deps.getProfileById(profileId);
       if (profile === undefined) {
-        throw new Error(`KhoraCanonicalStore: profile not found (${profileId})`);
+        return { kind: "json", body: JSON.stringify({ ghost: true, profileId }) };
       }
       zKhoraProfile.parse(profile);
       return { kind: "json", body: JSON.stringify(profile satisfies KhoraProfile) };
@@ -91,7 +97,24 @@ export type KhoraHydratedEntity =
   | { kind: "post"; entity: KhoraPost }
   | { kind: "subscription"; entity: KhoraPost }
   | { kind: "profile"; entity: KhoraProfile }
-  | { kind: "ghost"; postId: string };
+  | { kind: "ghost"; postId?: string; profileId?: string }
+  | { kind: "orphan" };
+
+export async function purgeOrphanMemory(
+  client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>,
+  persistence: MemoriesPersistenceAsync,
+  memoryId: string,
+): Promise<void> {
+  try {
+    const nk = await persistence.loadMemoryNamespaceKey(memoryId);
+    if (nk === undefined) {
+      return;
+    }
+    await client.deleteMemory({ namespace: nk.namespace, key: nk.key });
+  } catch {
+    // best-effort purge of stale index rows
+  }
+}
 
 export async function hydrateMemoryLabels(
   store: KhoraCanonicalStore,
@@ -105,21 +128,30 @@ export async function hydrateMemoryLabels(
   if (postLabel === undefined && subscriptionLabel === undefined && profileLabel === undefined) {
     return undefined;
   }
-  const resolved = await store.resolve({ memory_id: memoryId, source_key: sourceKey });
+  let resolved: ResolvedSource;
+  try {
+    resolved = await store.resolve({ memory_id: memoryId, source_key: sourceKey });
+  } catch {
+    return { kind: "orphan" };
+  }
   if (resolved.kind !== "json") return undefined;
   const bodyText = typeof resolved.body === "string" ? resolved.body : await resolved.body.text();
   let json: unknown;
   try {
     json = JSON.parse(bodyText);
   } catch {
-    return undefined;
+    return { kind: "orphan" };
   }
   if (json !== null && typeof json === "object" && "ghost" in json && json.ghost === true) {
-    const postId =
-      typeof (json as { postId?: unknown }).postId === "string"
-        ? ((json as { postId?: string }).postId ?? "")
-        : "";
-    return { kind: "ghost", postId };
+    const row = json as { postId?: unknown; profileId?: unknown };
+    const postId = typeof row.postId === "string" && row.postId.length > 0 ? row.postId : undefined;
+    const profileId =
+      typeof row.profileId === "string" && row.profileId.length > 0 ? row.profileId : undefined;
+    return {
+      kind: "ghost",
+      ...(postId !== undefined ? { postId } : {}),
+      ...(profileId !== undefined ? { profileId } : {}),
+    };
   }
   if (postLabel !== undefined || subscriptionLabel !== undefined) {
     const entity = zKhoraPost.parse(json);

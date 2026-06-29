@@ -85,19 +85,22 @@ export async function bootstrapKhoraHost(
       ? { embeddingModel: opts.memories.embeddingModel }
       : {}),
   });
+  let memories: ReturnType<typeof bootstrapKhoraMemories> | undefined;
   const principalLifecycle = createPrincipalLifecycle({
     persistence,
     purgePrincipalCells: async (principalId) => {
       const cellId = cluster.assignPrincipalToCell(principalId);
       await cluster.resolveCell(cellId).purgePrincipal(principalId);
     },
-    async onPrincipalTeardown(principalId) {
+    async onPrincipalTeardown(principalId, profileId) {
       for (const query of await percolator.percolator.listQueriesByOwner(principalId)) {
         await percolator.percolator.deactivateQuery(query.id);
       }
+      await memories?.indexer.deleteProfile(profileId);
     },
-    onPhase1Teardown(principalId) {
+    onPhase1Teardown(principalId, profileId) {
       invitesRepoValue?.deleteTokensForPrincipal(principalId);
+      void memories?.indexer.deleteProfile(profileId);
     },
   });
   const catalog = createKhoraCatalogApi({ persistence, principalLifecycle });
@@ -130,7 +133,6 @@ export async function bootstrapKhoraHost(
   }
 
   let memoriesSqliteDb: Database | undefined;
-  let memories: ReturnType<typeof bootstrapKhoraMemories> | undefined;
   if (opts.memories !== undefined) {
     ensureCustomSqliteForExtensions();
     memoriesSqliteDb = openMemoriesDatabase(opts.memories.dbPath, {

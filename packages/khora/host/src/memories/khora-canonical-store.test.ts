@@ -80,7 +80,13 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
           updatedAtMs: typeof o.updatedAtMs === "number" ? o.updatedAtMs : 0,
         };
       },
-      deleteById: () => {},
+      deleteById: (id) => {
+        catalogDb
+          .prepare(
+            `DELETE FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+          )
+          .run("relay", "relay:entity:profile", id);
+      },
     },
     registrations: {
       upsert: () => {},
@@ -125,7 +131,23 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
     persistenceClient,
     namespaceRoot: DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
   });
-  return { cluster, store, indexer, persistence, memoriesDb, post, profile };
+  return {
+    cluster,
+    store,
+    indexer,
+    persistence,
+    memoriesDb,
+    post,
+    profile,
+    persistenceClient,
+    removeProfile: () => {
+      catalogDb
+        .prepare(
+          `DELETE FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+        )
+        .run("relay", "relay:entity:profile", profile.id);
+    },
+  };
 }
 
 describe("KhoraCanonicalStore", () => {
@@ -240,6 +262,41 @@ describe("KhoraCanonicalStore", () => {
     expect(subHydrated?.kind).toBe("subscription");
     if (subHydrated?.kind === "subscription") {
       expect(subHydrated.entity.search?.content.text).toBe("fintech payments");
+    }
+
+    memoriesDb.close();
+    cluster.close();
+  });
+
+  memoriesTest("resolves ghost when profile was removed from catalog", async () => {
+    const profile: KhoraProfile = {
+      id: "prof-canonical-ghost",
+      username: "ghost",
+      bio: "was here",
+    };
+    const { cluster, store, indexer, persistence, memoriesDb, removeProfile } = setup(profile, {
+      id: "unused",
+      kind: "post",
+      body: "x",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public",
+    } as KhoraPost);
+
+    await indexer.indexProfile(profile);
+    removeProfile();
+
+    const profileMemoryId = ids.memory(
+      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      PROFILE_MEMORY_KEY,
+    );
+    const profileLabels = await persistence.loadNodeLabelsForMemory(
+      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      PROFILE_MEMORY_KEY,
+    );
+    const hydrated = await hydrateMemoryLabels(store, profileLabels, profileMemoryId);
+    expect(hydrated?.kind).toBe("ghost");
+    if (hydrated?.kind === "ghost") {
+      expect(hydrated.profileId).toBe(profile.id);
     }
 
     memoriesDb.close();

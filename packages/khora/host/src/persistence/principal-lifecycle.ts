@@ -6,12 +6,15 @@ export type PrincipalLifecycleDeps = {
   /** Purge all colonnade cell data for the given principal (async; called during phase 2). */
   readonly purgePrincipalCells: (principalId: PrincipalId) => Promise<void>;
   /** Called at the start of principal teardown cascade (e.g. deactivate percolator queries). */
-  readonly onPrincipalTeardown?: (principalId: PrincipalId) => void | Promise<void>;
+  readonly onPrincipalTeardown?: (
+    principalId: PrincipalId,
+    profileId: string,
+  ) => void | Promise<void>;
   /**
    * Called synchronously during phase 1 (enqueue) and at the start of cascade teardown.
    * Use for side-effects that must happen immediately (e.g. invalidate invite tokens).
    */
-  readonly onPhase1Teardown?: (principalId: PrincipalId) => void;
+  readonly onPhase1Teardown?: (principalId: PrincipalId, profileId: string) => void;
 };
 
 async function cascadeCleanup(
@@ -19,8 +22,8 @@ async function cascadeCleanup(
   principalId: PrincipalId,
   profileId: string,
 ): Promise<void> {
-  await deps.onPrincipalTeardown?.(principalId);
-  deps.onPhase1Teardown?.(principalId);
+  await deps.onPrincipalTeardown?.(principalId, profileId);
+  deps.onPhase1Teardown?.(principalId, profileId);
 
   const rels = deps.persistence.social.listRelationshipsForPrincipal(principalId);
   for (const r of rels) {
@@ -40,7 +43,7 @@ export function createPrincipalLifecycle(deps: PrincipalLifecycleDeps): Principa
         return false;
       }
       deps.persistence.phase1Unregister(principalId, profileId, Date.now());
-      deps.onPhase1Teardown?.(principalId);
+      deps.onPhase1Teardown?.(principalId, profileId);
       return true;
     },
 

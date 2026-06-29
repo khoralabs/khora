@@ -5,12 +5,20 @@ import type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
-import type { MemoriesClientAsync, SearchParams } from "@khoralabs/memories-core";
+import type {
+  MemoriesClientAsync,
+  MemoriesPersistenceAsync,
+  SearchParams,
+} from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import { authorPrincipalIdFromPostId } from "../post-address-id";
 import { canReadPost } from "../post-visibility";
-import { hydrateMemoryLabels, type KhoraCanonicalStore } from "./khora-canonical-store";
+import {
+  hydrateMemoryLabels,
+  type KhoraCanonicalStore,
+  purgeOrphanMemory,
+} from "./khora-canonical-store";
 import type { khoraOntology } from "./khora-ontology";
 
 export type {
@@ -21,6 +29,7 @@ export type {
 
 export async function executeKhoraMemoriesSearch(deps: {
   client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
+  persistence: MemoriesPersistenceAsync;
   store: KhoraCanonicalStore;
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
@@ -28,7 +37,16 @@ export async function executeKhoraMemoriesSearch(deps: {
   readerPrincipalId?: PrincipalId;
   social?: SocialRelationshipPersistence;
 }): Promise<KhoraSearchResponse> {
-  const { client, store, embeddingModel, namespaceRoot, params, readerPrincipalId, social } = deps;
+  const {
+    client,
+    persistence,
+    store,
+    embeddingModel,
+    namespaceRoot,
+    params,
+    readerPrincipalId,
+    social,
+  } = deps;
   let content: SearchParams["content"];
   if (params.content.vector !== undefined && params.content.vector.length > 0) {
     content =
@@ -66,6 +84,10 @@ export async function executeKhoraMemoriesSearch(deps: {
   const enriched: KhoraSearchResponse["hits"] = [];
   for (const hit of hits) {
     const hydrated = await hydrateMemoryLabels(store, hit.labels, hit.memory._id, hit.source_key);
+    if (hydrated?.kind === "ghost" || hydrated?.kind === "orphan") {
+      await purgeOrphanMemory(client, persistence, hit.memory._id);
+      continue;
+    }
     if (
       social !== undefined &&
       hydrated !== undefined &&
@@ -82,8 +104,6 @@ export async function executeKhoraMemoriesSearch(deps: {
         original = { kind: hydrated.kind, post: hydrated.entity, authorDid };
       } else if (hydrated.kind === "profile") {
         original = { kind: "profile", entity: hydrated.entity };
-      } else {
-        original = { kind: "ghost", postId: hydrated.postId };
       }
     }
 
@@ -92,6 +112,10 @@ export async function executeKhoraMemoriesSearch(deps: {
           await Promise.all(
             hit.neighbors.map(async (n) => {
               const neighborHydrated = await hydrateMemoryLabels(store, n.labels, n._id, undefined);
+              if (neighborHydrated?.kind === "ghost" || neighborHydrated?.kind === "orphan") {
+                await purgeOrphanMemory(client, persistence, n._id);
+                return undefined;
+              }
               if (
                 social !== undefined &&
                 neighborHydrated !== undefined &&
@@ -111,8 +135,6 @@ export async function executeKhoraMemoriesSearch(deps: {
                   };
                 } else if (neighborHydrated.kind === "profile") {
                   neighborOriginal = { kind: "profile", entity: neighborHydrated.entity };
-                } else {
-                  neighborOriginal = { kind: "ghost", postId: neighborHydrated.postId };
                 }
               }
               return { ...n, original: neighborOriginal };

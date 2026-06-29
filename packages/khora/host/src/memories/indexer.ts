@@ -25,6 +25,7 @@ export type KhoraMemoriesIndexer = {
   indexProfile(profile: KhoraProfile): Promise<string | undefined>;
   indexPost(post: KhoraPost, previousPostId?: string): Promise<void>;
   deletePost(post: KhoraPost): Promise<void>;
+  deleteProfile(profileId: string): Promise<void>;
 };
 
 export function createKhoraMemoriesIndexer(deps: {
@@ -217,6 +218,20 @@ export function createKhoraMemoriesIndexer(deps: {
         await client.deleteMemory({ namespace: ns, key: post.id });
       } catch (err) {
         logError("[khora-memories] deletePost failed", err);
+      }
+    },
+
+    async deleteProfile(profileId: string): Promise<void> {
+      try {
+        const postsNs = postsMemoryNamespace(namespaceRoot, profileId);
+        const labelsByKey = await persistence.loadNodeLabelsForNamespace(postsNs);
+        for (const key of labelsByKey.keys()) {
+          await client.deleteMemory({ namespace: postsNs, key });
+        }
+        const profileNs = profileMemoryNamespace(namespaceRoot, profileId);
+        await client.deleteMemory({ namespace: profileNs, key: PROFILE_MEMORY_KEY });
+      } catch (err) {
+        logError("[khora-memories] deleteProfile failed", err);
       }
     },
   };
