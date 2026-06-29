@@ -53,10 +53,9 @@ jobs:
       - name: verify submodules
         run: |
           set -euo pipefail
-          test -f packages/memories/package.json
-          test -f packages/obp/package.json
-          test -f packages/obp/packages/model/impl/ts/package.json
-          test -f packages/relay/package.json
+          test -f vendor/memories/package.json
+          test -f vendor/obp/package.json
+          test -f vendor/relay/package.json
 
       - uses: oven-sh/setup-bun@v2
         with:
