@@ -10,6 +10,7 @@ import { createLogger } from "@khoralabs/observability/logger";
 
 import { defineHarnessAgent } from "./agents/index.ts";
 import { meter, tracer } from "./otel.ts";
+import type { HarnessToolkitEnv } from "./tools/types.ts";
 import type { AgentWorkflowParams } from "./types.ts";
 
 type CaptureEnvelope = Awaited<ReturnType<typeof captureAgentSnapshotEnvelope>>;
@@ -52,6 +53,7 @@ export async function registerHarnessAgent(
 
 export async function captureHarnessCapabilities(input: {
   agent: RegisteredAgent;
+  env: HarnessToolkitEnv;
   params: AgentWorkflowParams;
 }): Promise<{
   capture: CaptureEnvelope;
@@ -67,7 +69,7 @@ export async function captureHarnessCapabilities(input: {
   const capture = await captureAgentSnapshotEnvelope({
     agent: input.agent,
     ctx: {
-      env: {},
+      env: input.env,
       agentId: input.agent.agentId,
       agentName: input.agent.name,
     },
@@ -79,7 +81,7 @@ export async function captureHarnessCapabilities(input: {
   });
 
   const aiTools = toolMapToAiTools(capture.evaluatedTools, {
-    env: {},
+    env: input.env,
     resolvedPolicies: new Map(),
   }) as Record<string, unknown>;
 

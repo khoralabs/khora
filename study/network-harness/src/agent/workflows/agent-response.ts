@@ -1,5 +1,10 @@
 import { getAgentChatService } from "../chat-service.ts";
+import { resolveHarnessEmbeddingModel } from "../embedding-model.ts";
 import { runAgentWorkflow } from "../run-agent-workflow.ts";
+import {
+  createHarnessMemoriesClientForAgent,
+  resolveMemoriesServiceBaseUrl,
+} from "../toolkit-env.ts";
 import type { AgentWorkflowParams, AgentWorkflowResult } from "../types.ts";
 import { configureTursoWorldEnv } from "../world.ts";
 
@@ -13,5 +18,19 @@ async function executeAgentResponse(params: AgentWorkflowParams): Promise<AgentW
   "use step";
 
   configureTursoWorldEnv();
-  return runAgentWorkflow(params, { chatService: getAgentChatService() });
+
+  const memoriesBaseUrl = resolveMemoriesServiceBaseUrl();
+  const memoriesClient =
+    memoriesBaseUrl === undefined
+      ? undefined
+      : await createHarnessMemoriesClientForAgent({
+          baseUrl: memoriesBaseUrl,
+          agentDid: params.agent.actingFor.id,
+        });
+
+  return runAgentWorkflow(params, {
+    chatService: getAgentChatService(),
+    memoriesClient,
+    embeddingModel: resolveHarnessEmbeddingModel(),
+  });
 }

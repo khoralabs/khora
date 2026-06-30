@@ -1,4 +1,6 @@
 import type { ChatService, PostModelMetadata, PostUsage } from "@khoralabs/chat-core";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 import {
   convertToModelMessages,
   type ModelMessage,
@@ -14,11 +16,15 @@ import {
   resolveGatewayModel,
 } from "./agent-runtime.ts";
 import { createAgentChatWriter } from "./chat-writer.ts";
+import { formatSkillCatalog } from "./skills.ts";
+import { createHarnessToolkitEnv } from "./toolkit-env.ts";
 import type { AgentWorkflowParams, AgentWorkflowResult } from "./types.ts";
 
 export type RunAgentWorkflowDependencies = {
   chatService?: ChatService;
   streamTextFn?: typeof streamText;
+  memoriesClient?: RemoteMemoriesClientAsync;
+  embeddingModel?: EmbeddingModel;
 };
 
 function assistantMessage(id: string, text: string): UIMessage {
@@ -112,7 +118,15 @@ export async function runAgentWorkflow(
   const context = await normalizeContext(params);
   const registry = getAgentRegistry();
   const { agent } = await registerHarnessAgent(registry);
-  const { capture, aiTools, capabilities } = await captureHarnessCapabilities({ agent, params });
+  const env = await createHarnessToolkitEnv({
+    memoriesClient: deps.memoriesClient,
+    embeddingModel: deps.embeddingModel,
+  });
+  const { capture, aiTools, capabilities } = await captureHarnessCapabilities({
+    agent,
+    env,
+    params,
+  });
 
   if (deps.chatService === undefined) {
     throw new Error("chatService is required");
@@ -131,7 +145,7 @@ export async function runAgentWorkflow(
     const maxSteps = params.model.maxSteps ?? 8;
     const result = runStreamText({
       model: modelId,
-      system: [capture.instructions, ...context.instructions]
+      system: [capture.instructions, formatSkillCatalog(env.skills), ...context.instructions]
         .filter((part) => part.length > 0)
         .join("\n\n"),
       messages: context.modelMessages,
