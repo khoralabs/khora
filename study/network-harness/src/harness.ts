@@ -1,6 +1,7 @@
 import path from "node:path";
 
-import { type AgentHandle, ManagedAgentPool } from "@khoralabs/khora-managed-agents";
+import { loadIdentity } from "@khoralabs/agent-persisted-signer";
+import { type AgentHandle, AgentStore, ManagedAgentPool } from "@khoralabs/khora-managed-agents";
 import { startKhoraServer } from "@khoralabs/khora-server/start-server";
 import { createNoAuthProvider, MemoriesServiceClient } from "@khoralabs/memories-service-client";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service-storage-core";
@@ -106,7 +107,9 @@ export async function startNetworkHarness(
     baseUrl: server.baseUrl,
   });
 
-  const chat = createHarnessChat(opts.dataDir);
+  const chat = createHarnessChat(opts.dataDir, {
+    resolveSigner: (did) => loadIdentity(AgentStore.keyPath(agentsDataDir, did)),
+  });
 
   return {
     serverBaseUrl: server.baseUrl,

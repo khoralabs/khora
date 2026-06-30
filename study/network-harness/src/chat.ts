@@ -15,7 +15,13 @@ import {
   createSqliteChatPersistence,
   ensureChatSqliteSchema,
 } from "@khoralabs/chat-persistence-sqlite";
+import type { RelaySigner } from "@khoralabs/relay-crypto";
 import type { UIMessage } from "ai";
+import {
+  prepareSignedAppendPost,
+  signPreparedAppendPost,
+  withSignedAppendGate,
+} from "./chat-signing";
 
 export const HARNESS_CHAT_CHANNEL_ID = "harness-network";
 
@@ -41,6 +47,10 @@ export type AgentChatClient = {
   listThreads(input?: { limit?: number; cursor?: string }): Promise<ThreadPage>;
   getThread(threadId: string): Promise<Thread>;
   listParticipants(threadId: string): Promise<ScopeRef[]>;
+};
+
+export type HarnessChatOptions = {
+  resolveSigner: (did: string) => Promise<RelaySigner | undefined>;
 };
 
 export type HarnessChat = {
@@ -93,6 +103,7 @@ function createAgentChatClient(
   service: ChatService,
   db: Database,
   did: string,
+  resolveSigner: (did: string) => Promise<RelaySigner | undefined>,
   ready: Promise<void>,
 ): AgentChatClient {
   const scope = agentScope(did);
@@ -153,14 +164,26 @@ function createAgentChatClient(
     sendMessage(threadId, input) {
       return whenReady(async () => {
         await requireParticipant(threadId);
+        const signer = await resolveSigner(did);
+        if (!signer) {
+          throw new Error(`no signing key for agent ${did}`);
+        }
+
+        const message = textMessage(
+          input.messageId ?? crypto.randomUUID(),
+          input.role ?? "user",
+          input.text,
+        );
+        const appendInput = { threadId, author: scope, message };
+        const prepared = prepareSignedAppendPost(db, appendInput);
+        const signature = await signPreparedAppendPost(signer, scope, prepared);
+
         const { post } = await service.appendPost({
-          threadId,
-          author: scope,
-          message: textMessage(
-            input.messageId ?? crypto.randomUUID(),
-            input.role ?? "user",
-            input.text,
-          ),
+          ...appendInput,
+          message: prepared.message,
+          versionId: prepared.versionId,
+          createdAtMs: prepared.createdAtMs,
+          signature,
         });
         return post;
       });
@@ -197,14 +220,14 @@ function createAgentChatClient(
   };
 }
 
-export function createHarnessChat(dataDir: string): HarnessChat {
+export function createHarnessChat(dataDir: string, options: HarnessChatOptions): HarnessChat {
   const db = openHarnessChatDatabase(dataDir);
-  const service = createChatService(createSqliteChatPersistence(db));
+  const service = createChatService(withSignedAppendGate(createSqliteChatPersistence(db), db));
   const ready = ensureHarnessChannel(service);
 
   return {
     forAgent(did: string) {
-      return createAgentChatClient(service, db, did, ready);
+      return createAgentChatClient(service, db, did, options.resolveSigner, ready);
     },
   };
 }
