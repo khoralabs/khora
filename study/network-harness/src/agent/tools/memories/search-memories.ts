@@ -1,8 +1,11 @@
 import { tool } from "@khoralabs/agent-capabilities";
-import { type MemorySearchHit, runHybridMemorySearch } from "@khoralabs/memories-core/helpers";
+import {
+  type MemorySearchHit,
+  runHybridMemorySearch,
+} from "@khoralabs/memories-core/helpers";
 import { z } from "zod";
-import { hasMemoriesClient } from "./policies";
-import type { HarnessToolkitEnv } from "./types";
+import { hasMemoriesClient } from "../policies";
+import type { HarnessToolkitEnv } from "../types";
 
 export const searchMemoriesTool = tool<
   "searchMemories",
@@ -14,13 +17,17 @@ export const searchMemoriesTool = tool<
   description:
     "Search the agent's memory database within a namespace subtree. Provide the namespace path and a natural-language query.",
   inputSchema: z.object({
-    namespace: z.string().min(1).describe("Memory namespace subtree to search."),
+    namespace: z
+      .string()
+      .min(1)
+      .describe("Memory namespace subtree to search."),
     query: z.string().min(1).describe("Natural language search query."),
   }),
   policies: [hasMemoriesClient],
   handler: async (ctx, input) => {
     const client = ctx.env.memoriesClient;
-    if (client === undefined) throw new Error("memories client is not configured");
+    if (client === undefined)
+      throw new Error("memories client is not configured");
 
     const hits = await runHybridMemorySearch(
       client,

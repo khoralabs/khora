@@ -1,6 +1,9 @@
-import { createRegisteredAgent, type RegisteredAgent } from "@khoralabs/agent-capabilities";
+import {
+  createRegisteredAgent,
+  type RegisteredAgent,
+} from "@khoralabs/agent-capabilities";
 
-import { harnessMemoryToolkit } from "../tools/index.ts";
+import { harnessToolkit } from "../tools/index.ts";
 
 export const HARNESS_AGENT_ID = "network-harness-agent";
 
@@ -21,7 +24,7 @@ export async function defineHarnessAgent(): Promise<HarnessAgentDefinition> {
       "Use activateSkill to load specialized instructions from skills stored in the skills namespace.",
     ],
     context: { role: "network-harness-agent" },
-    rootComposable: harnessMemoryToolkit,
+    rootComposable: harnessToolkit,
   });
   return { staticHash, agent };
 }
