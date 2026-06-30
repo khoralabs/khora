@@ -1,6 +1,17 @@
+import type { SearchHit } from "@khoralabs/memories-core";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 
 export const SKILLS_NAMESPACE = "skills";
+
+const SKILL_SEARCH_OPTIONS = {
+  topK: 100,
+  neighbors: false as const,
+  arms: { lexical: 1, vector: 0 },
+};
+
+function sourceMapIdFromHit(hit: SearchHit): string {
+  return hit._id;
+}
 
 export type SkillRecord = {
   name: string;
@@ -28,8 +39,11 @@ function parseFrontmatter(
 ): Omit<SkillRecord, "namespace" | "key"> {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) throw new Error(`skill is missing frontmatter: ${location}`);
+  const frontmatter = match[1];
+  const body = match[2] ?? "";
+  if (frontmatter === undefined) throw new Error(`skill is missing frontmatter: ${location}`);
   const metadata: Record<string, string> = {};
-  for (const line of match[1].split(/\r?\n/)) {
+  for (const line of frontmatter.split(/\r?\n/)) {
     const index = line.indexOf(":");
     if (index === -1) continue;
     const key = line.slice(0, index).trim();
@@ -40,7 +54,7 @@ function parseFrontmatter(
   const description = metadata.description?.trim();
   if (!name) throw new Error(`skill is missing name: ${location}`);
   if (!description) throw new Error(`skill is missing description: ${location}`);
-  return { name, description, body: match[2].trim() };
+  return { name, description, body: body.trim() };
 }
 
 export function skillRecordFromText(namespace: string, key: string, text: string): SkillRecord {
@@ -78,11 +92,11 @@ export async function loadSkillByKey(
   const hits = await client.search({
     namespace: SKILLS_NAMESPACE,
     content: { text: key },
-    options: { topK: 8, neighbors: "off", arms: { lexical: 1, vector: 0 } },
+    options: { topK: 8, neighbors: false, arms: { lexical: 1, vector: 0 } },
   });
   const hit = hits.find((candidate) => candidate.memory.key === key);
   if (hit === undefined) return undefined;
-  const text = await client.persistence.getSourceMapTextPreview(hit.id, 100_000);
+  const text = await client.persistence.getSourceMapTextPreview(sourceMapIdFromHit(hit), 100_000);
   if (text === null || text.length === 0) return undefined;
   return skillRecordFromText(SKILLS_NAMESPACE, key, text);
 }
@@ -93,14 +107,14 @@ export async function discoverSkillsFromMemories(
   const hits = await client.search({
     namespace: SKILLS_NAMESPACE,
     content: { text: "skill" },
-    options: { topK: 100, neighbors: "off", arms: { lexical: 1, vector: 0 } },
+    options: SKILL_SEARCH_OPTIONS,
   });
 
   const byKey = new Map<string, SkillRecord>();
   for (const hit of hits) {
     const key = hit.memory.key;
     if (byKey.has(key)) continue;
-    const text = await client.persistence.getSourceMapTextPreview(hit.id, 100_000);
+    const text = await client.persistence.getSourceMapTextPreview(sourceMapIdFromHit(hit), 100_000);
     if (text === null || text.length === 0) continue;
     try {
       byKey.set(key, skillRecordFromText(SKILLS_NAMESPACE, key, text));
