@@ -4,6 +4,7 @@ import { type AgentHandle, ManagedAgentPool } from "@khoralabs/khora-managed-age
 import { startKhoraServer } from "@khoralabs/khora-server/start-server";
 import { createNoAuthProvider, MemoriesServiceClient } from "@khoralabs/memories-service-client";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service-storage-core";
+import { type AgentChatClient, createHarnessChat, type HarnessChat } from "./chat";
 import { startMemoriesService } from "./memories";
 import { startRelayServer } from "./relay";
 
@@ -36,6 +37,8 @@ export type NetworkHarnessHandle = {
   readonly memoriesClient: MemoriesServiceClient;
   /** The underlying managed agent pool — use for `focus`, `spawn`, `remove`. */
   readonly pool: ManagedAgentPool;
+  /** Shared chat interface — each agent gets a scoped client via `forAgent(did)`. */
+  readonly chat: HarnessChat;
   /** Tear down the server and memories service. Does not unregister agents. */
   stop(): void;
 };
@@ -53,11 +56,12 @@ export type AgentMemoriesClient = {
   readonly serviceClient: MemoriesServiceClient;
 };
 
-/** An `AgentHandle` paired with a pre-bound memories client for that agent's database. */
+/** An `AgentHandle` paired with pre-bound memories and chat clients. */
 export type AgentWithMemories = {
   readonly did: string;
   readonly agentHandle: AgentHandle;
   readonly memories: AgentMemoriesClient;
+  readonly chat: AgentChatClient;
 };
 
 export async function startNetworkHarness(
@@ -102,6 +106,8 @@ export async function startNetworkHarness(
     baseUrl: server.baseUrl,
   });
 
+  const chat = createHarnessChat(opts.dataDir);
+
   return {
     serverBaseUrl: server.baseUrl,
     relayBaseUrl: relay.baseUrl,
@@ -111,6 +117,7 @@ export async function startNetworkHarness(
     },
     memoriesClient,
     pool,
+    chat,
     stop() {
       memories.stop();
       relay.stop();
@@ -143,6 +150,7 @@ export async function spawnWithMemories(harness: NetworkHarnessHandle): Promise<
   return {
     did,
     agentHandle,
+    chat: harness.chat.forAgent(did),
     memories: {
       database,
       open: () => memoriesClient.openDatabase(database),

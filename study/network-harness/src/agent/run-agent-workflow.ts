@@ -1,0 +1,199 @@
+import type { ChatService, PostModelMetadata, PostUsage } from "@khoralabs/chat-core";
+import {
+  convertToModelMessages,
+  type ModelMessage,
+  stepCountIs,
+  streamText,
+  type UIMessage,
+} from "ai";
+
+import {
+  captureHarnessCapabilities,
+  getAgentRegistry,
+  registerHarnessAgent,
+  resolveGatewayModel,
+} from "./agent-runtime.ts";
+import { createAgentChatWriter } from "./chat-writer.ts";
+import type { AgentWorkflowParams, AgentWorkflowResult } from "./types.ts";
+
+export type RunAgentWorkflowDependencies = {
+  chatService?: ChatService;
+  streamTextFn?: typeof streamText;
+};
+
+function assistantMessage(id: string, text: string): UIMessage {
+  return {
+    id,
+    role: "assistant",
+    parts: text.length > 0 ? [{ type: "text", text }] : [],
+  };
+}
+
+function errorMessage(error: unknown): string {
+  if (!error || typeof error !== "object") return String(error);
+  const record = error as Record<string, unknown>;
+  const direct = typeof record.message === "string" ? record.message : undefined;
+  if (direct !== undefined && direct !== "[object Object]") return direct;
+  return direct ?? String(error);
+}
+
+function userFacingGenerationError(): string {
+  return "I couldn't generate a response. Please try again.";
+}
+
+function usageFromAiSdk(usage: unknown): PostUsage | undefined {
+  if (!usage || typeof usage !== "object") return undefined;
+  const value = usage as Record<string, unknown>;
+  return {
+    inputTokens: numberOrUndefined(value.inputTokens ?? value.promptTokens),
+    outputTokens: numberOrUndefined(value.outputTokens ?? value.completionTokens),
+    totalTokens: numberOrUndefined(value.totalTokens),
+    reasoningTokens: numberOrUndefined(value.reasoningTokens),
+    cachedInputTokens: numberOrUndefined(value.cachedInputTokens),
+  };
+}
+
+function numberOrUndefined(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+function modelMetadata(input: {
+  requestedModel: string;
+  finishReason?: unknown;
+  response?: unknown;
+}): PostModelMetadata {
+  const response = input.response && typeof input.response === "object" ? input.response : {};
+  const record = response as Record<string, unknown>;
+  return {
+    provider: typeof record.provider === "string" ? record.provider : undefined,
+    model: typeof record.modelId === "string" ? record.modelId : undefined,
+    gatewayModel: input.requestedModel,
+    finishReason: typeof input.finishReason === "string" ? input.finishReason : undefined,
+  };
+}
+
+async function normalizeContext(params: AgentWorkflowParams): Promise<{
+  messages: UIMessage[];
+  modelMessages: ModelMessage[];
+  instructions: string[];
+}> {
+  if (params.runId.trim().length === 0) throw new Error("runId is required");
+  if (params.agent.id.trim().length === 0) throw new Error("agent.id is required");
+  if (params.model.id.trim().length === 0) throw new Error("model.id is required");
+  if (params.output.chat.threadId.trim().length === 0) {
+    throw new Error("output.chat.threadId is required");
+  }
+
+  const messages = params.context.messages as UIMessage[];
+  let modelMessages: ModelMessage[];
+  try {
+    modelMessages = await convertToModelMessages(messages);
+  } catch {
+    modelMessages = messages.map((message) => ({
+      role: message.role,
+      content: (message.parts as Array<{ type: string; text?: string }>)
+        .filter((part) => part.type === "text")
+        .map((part) => part.text ?? "")
+        .join(""),
+    })) as ModelMessage[];
+  }
+
+  return {
+    messages,
+    modelMessages,
+    instructions: params.context.instructions ?? [],
+  };
+}
+
+export async function runAgentWorkflow(
+  params: AgentWorkflowParams,
+  deps: RunAgentWorkflowDependencies = {},
+): Promise<AgentWorkflowResult> {
+  const context = await normalizeContext(params);
+  const registry = getAgentRegistry();
+  const { agent } = await registerHarnessAgent(registry);
+  const { capture, aiTools, capabilities } = await captureHarnessCapabilities({ agent, params });
+
+  if (deps.chatService === undefined) {
+    throw new Error("chatService is required");
+  }
+  const writer = createAgentChatWriter(deps.chatService, params);
+  let text = "";
+  let streamStarted = false;
+  const modelId = resolveGatewayModel(params.model.id);
+  const runStreamText = deps.streamTextFn ?? streamText;
+  let generationError: unknown;
+
+  try {
+    await writer.start(assistantMessage(writer.postId, ""));
+    streamStarted = true;
+
+    const maxSteps = params.model.maxSteps ?? 8;
+    const result = runStreamText({
+      model: modelId,
+      system: [capture.instructions, ...context.instructions]
+        .filter((part) => part.length > 0)
+        .join("\n\n"),
+      messages: context.modelMessages,
+      tools: aiTools,
+      stopWhen: stepCountIs(maxSteps),
+      onError: ({ error }) => {
+        generationError = error;
+      },
+    } as Parameters<typeof streamText>[0]);
+    const finishReasonPromise = Promise.resolve(result.finishReason).catch(() => undefined);
+    const usagePromise = Promise.resolve(result.usage).catch(() => undefined);
+    const responsePromise = Promise.resolve(result.response).catch(() => undefined);
+    const textPromise = Promise.resolve(result.text).catch(() => "");
+
+    try {
+      for await (const delta of result.textStream) {
+        text += delta;
+        if (params.output.chat.streamDeltas) {
+          await writer.apply(assistantMessage(writer.postId, text));
+        }
+      }
+    } catch (error) {
+      generationError = error;
+    }
+
+    text = text.length > 0 ? text : await textPromise;
+    if (text.length === 0) {
+      const detail = generationError === undefined ? "" : `: ${errorMessage(generationError)}`;
+      throw new Error(`agent workflow produced no text output${detail}`);
+    }
+
+    const [finishReason, usage, response] = await Promise.all([
+      finishReasonPromise,
+      usagePromise,
+      responsePromise,
+    ]);
+    const metadata = {
+      model: modelMetadata({ requestedModel: modelId, finishReason, response }),
+      usage: usageFromAiSdk(usage),
+    };
+    await writer.apply(assistantMessage(writer.postId, text), metadata);
+    const message = await writer.complete();
+
+    return {
+      runId: params.runId,
+      chat: {
+        threadId: params.output.chat.threadId,
+        postId: writer.postId,
+        status: "complete",
+      },
+      message,
+      capabilities,
+    };
+  } catch (error) {
+    if (streamStarted && text.length === 0) {
+      await writer
+        .apply(assistantMessage(writer.postId, userFacingGenerationError()))
+        .then(() => writer.complete())
+        .catch(() => undefined);
+    } else if (streamStarted) {
+      await writer.abort().catch(() => undefined);
+    }
+    throw error;
+  }
+}
