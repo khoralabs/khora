@@ -6,7 +6,6 @@ import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-clie
 
 import type { AgentChatClient } from "../chat.ts";
 import type { AgentWithMemories, NetworkHarnessHandle } from "../harness.ts";
-import type { InboxBuffer } from "./inbox-buffer.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
 export type SwarmRuntimeSession = {
@@ -14,13 +13,12 @@ export type SwarmRuntimeSession = {
   harness: NetworkHarnessHandle;
   agents: AgentWithMemories[];
   loopStates: AgentLoopState[];
-  inboxBuffer: InboxBuffer;
   chatService: ChatService;
   chatDb: Database;
-  lastInboxEntryByDid: Map<string, string | undefined>;
   inboxConnections: InboxConnection[];
 };
 
+/** Live process handles (harness, WS connections) — not serializable; keyed by sessionId for the active run. */
 const sessions = new Map<string, SwarmRuntimeSession>();
 
 export function putSwarmSession(sessionId: string, session: SwarmRuntimeSession): void {
@@ -52,6 +50,7 @@ export type SwarmAgentWorkflowDeps = {
   memoriesClient?: RemoteMemoriesClientAsync;
   khoraClient?: KhoraClient;
   sessionId: string;
+  swarmDataDir: string;
   chatDb: Database;
 };
 
@@ -87,6 +86,7 @@ export async function resolveSwarmAgentWorkflowDeps(
     memoriesClient,
     khoraClient,
     sessionId,
+    swarmDataDir: session.config.dataDir,
     chatDb: session.chatDb,
   };
 }

@@ -1,8 +1,16 @@
 import { mkdirSync } from "node:fs";
+import type { KhoraClientEvent } from "@khoralabs/khora-client";
 import { type Client, createClient } from "@libsql/client";
 
 import { workflowDbPath } from "../workflow/paths.ts";
 import type { AgentLoopState, SwarmConfig, SwarmState, TurnTelemetry } from "./types.ts";
+
+export type InboxEntry = {
+  id: string;
+  did: string;
+  event: KhoraClientEvent;
+  receivedAtMs: number;
+};
 
 let schemaReadyByDataDir = new Map<string, Promise<void>>();
 const clients = new Map<string, Client>();
@@ -42,6 +50,23 @@ async function ensureSchema(dataDir: string): Promise<void> {
         created_at_ms INTEGER NOT NULL
       )
     `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS swarm_inbox_entries (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        agent_did TEXT NOT NULL,
+        event_json TEXT NOT NULL,
+        received_at_ms INTEGER NOT NULL
+      )
+    `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS swarm_inbox_cursors (
+        session_id TEXT NOT NULL,
+        agent_did TEXT NOT NULL,
+        last_entry_id TEXT,
+        PRIMARY KEY (session_id, agent_did)
+      )
+    `);
   })();
   schemaReadyByDataDir.set(dataDir, ready);
   return ready;
@@ -68,6 +93,107 @@ export async function createSwarmState(
     ],
   });
   return { id, sessionId: config.sessionId, config, tokensUsed: 0, agents };
+}
+
+export async function loadSwarmStateBySessionId(
+  dataDir: string,
+  sessionId: string,
+): Promise<SwarmState | null> {
+  await ensureSchema(dataDir);
+  const db = getClient(dataDir);
+  const row = await db.execute({
+    sql: `SELECT id, session_id, config_json, tokens_used, agents_json FROM swarm_sessions WHERE session_id = ?`,
+    args: [sessionId],
+  });
+  const record = row.rows[0];
+  if (!record) return null;
+  return {
+    id: String(record.id),
+    sessionId: String(record.session_id),
+    config: JSON.parse(String(record.config_json)) as SwarmConfig,
+    tokensUsed: Number(record.tokens_used),
+    agents: JSON.parse(String(record.agents_json)) as AgentLoopState[],
+  };
+}
+
+export async function appendInboxEntry(
+  dataDir: string,
+  sessionId: string,
+  did: string,
+  event: KhoraClientEvent,
+): Promise<InboxEntry> {
+  await ensureSchema(dataDir);
+  const entry: InboxEntry = {
+    id: crypto.randomUUID(),
+    did,
+    event,
+    receivedAtMs: Date.now(),
+  };
+  const db = getClient(dataDir);
+  await db.execute({
+    sql: `INSERT INTO swarm_inbox_entries (id, session_id, agent_did, event_json, received_at_ms)
+          VALUES (?, ?, ?, ?, ?)`,
+    args: [entry.id, sessionId, did, JSON.stringify(event), entry.receivedAtMs],
+  });
+  return entry;
+}
+
+export async function listInboxEntriesSince(
+  dataDir: string,
+  sessionId: string,
+  did: string,
+  afterEntryId?: string,
+): Promise<InboxEntry[]> {
+  await ensureSchema(dataDir);
+  const db = getClient(dataDir);
+  const result = await db.execute({
+    sql: `SELECT id, agent_did, event_json, received_at_ms
+          FROM swarm_inbox_entries
+          WHERE session_id = ? AND agent_did = ?
+          ORDER BY received_at_ms ASC`,
+    args: [sessionId, did],
+  });
+  const entries = result.rows.map((row) => ({
+    id: String(row.id),
+    did: String(row.agent_did),
+    event: JSON.parse(String(row.event_json)) as KhoraClientEvent,
+    receivedAtMs: Number(row.received_at_ms),
+  }));
+  if (afterEntryId === undefined) return entries;
+  const index = entries.findIndex((entry) => entry.id === afterEntryId);
+  if (index === -1) return entries;
+  return entries.slice(index + 1);
+}
+
+export async function getInboxCursor(
+  dataDir: string,
+  sessionId: string,
+  did: string,
+): Promise<string | undefined> {
+  await ensureSchema(dataDir);
+  const db = getClient(dataDir);
+  const row = await db.execute({
+    sql: `SELECT last_entry_id FROM swarm_inbox_cursors WHERE session_id = ? AND agent_did = ?`,
+    args: [sessionId, did],
+  });
+  const value = row.rows[0]?.last_entry_id;
+  return value === null || value === undefined ? undefined : String(value);
+}
+
+export async function setInboxCursor(
+  dataDir: string,
+  sessionId: string,
+  did: string,
+  entryId: string | undefined,
+): Promise<void> {
+  await ensureSchema(dataDir);
+  const db = getClient(dataDir);
+  await db.execute({
+    sql: `INSERT INTO swarm_inbox_cursors (session_id, agent_did, last_entry_id)
+          VALUES (?, ?, ?)
+          ON CONFLICT(session_id, agent_did) DO UPDATE SET last_entry_id = excluded.last_entry_id`,
+    args: [sessionId, did, entryId ?? null],
+  });
 }
 
 export async function loadSwarmState(dataDir: string, swarmStateId: string): Promise<SwarmState> {

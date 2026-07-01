@@ -82,6 +82,7 @@ export async function runAgentResponseStep(
     chatService: swarmDeps.chatService,
     agentChat: swarmDeps.agentChat,
     sessionId: swarmDeps.sessionId,
+    swarmDataDir: swarmDeps.swarmDataDir,
     chatDb: swarmDeps.chatDb,
     memoriesClient: swarmDeps.memoriesClient,
     khoraClient: swarmDeps.khoraClient,

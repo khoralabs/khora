@@ -27,6 +27,7 @@ export type RunAgentWorkflowDependencies = {
   chatService?: ChatService;
   agentChat?: AgentChatClient;
   sessionId?: string;
+  swarmDataDir?: string;
   chatDb?: import("bun:sqlite").Database;
   streamTextFn?: typeof streamText;
   memoriesClient?: RemoteMemoriesClientAsync;
@@ -124,7 +125,10 @@ export async function runAgentWorkflow(
 ): Promise<AgentWorkflowResult> {
   const context = await normalizeContext(params);
   const registry = getAgentRegistry();
-  const { agent } = await resolveWorkflowAgent(registry, params.agent.id);
+  const { agent } = await resolveWorkflowAgent(registry, params.agent.id, {
+    sessionId: deps.sessionId ?? params.context.sessionId,
+    swarmDataDir: deps.swarmDataDir,
+  });
   const env = await createHarnessToolkitEnv({
     memoriesClient: deps.memoriesClient,
     khoraClient: deps.khoraClient,

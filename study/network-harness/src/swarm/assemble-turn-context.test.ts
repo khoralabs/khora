@@ -4,7 +4,7 @@ import { generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
 
 import { createSignedChatService } from "../chat.ts";
 import { assembleTurnContext } from "./assemble-turn-context.ts";
-import { InboxBuffer } from "./inbox-buffer.ts";
+import { appendInboxEntry } from "./swarm-state.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
 async function createChatFixture() {
@@ -20,13 +20,13 @@ async function createChatFixture() {
     metadata: { kind: "self" },
   });
   await client.sendMessage(thread.id, { text: "prior self note", role: "user" });
-  return { client, signer, threadId: thread.id };
+  return { client, signer, threadId: thread.id, dataDir };
 }
 
 test("assembleTurnContext builds self-thread messages and instruction blocks", async () => {
-  const { client, signer, threadId } = await createChatFixture();
-  const inboxBuffer = new InboxBuffer();
-  inboxBuffer.push(signer.did, {
+  const { client, signer, threadId, dataDir } = await createChatFixture();
+  const sessionId = "session-1";
+  await appendInboxEntry(dataDir, sessionId, signer.did, {
     type: "inbox:notification",
     id: 1,
     did: signer.did,
@@ -41,8 +41,8 @@ test("assembleTurnContext builds self-thread messages and instruction blocks", a
   });
 
   const config: SwarmConfig = {
-    sessionId: "session-1",
-    dataDir: "/tmp/unused",
+    sessionId,
+    dataDir,
     goal: "Coordinate",
     agentCount: 1,
     maxTokenBudget: 1000,
@@ -60,11 +60,32 @@ test("assembleTurnContext builds self-thread messages and instruction blocks", a
     turnCount: 0,
   };
 
+  const inboxEntries = [
+    {
+      id: "entry-1",
+      did: signer.did,
+      event: {
+        type: "inbox:notification" as const,
+        id: 1,
+        did: signer.did,
+        notification: {
+          kind: "inbox_post" as const,
+          payload: {
+            postId: "atp0:test-post",
+            postKind: "post" as const,
+            subscriptionMatches: [{ subscriptionId: "sub-1", score: 1 }],
+          },
+        },
+      },
+      receivedAtMs: Date.now(),
+    },
+  ];
+
   const { params, inboxEntryIds } = await assembleTurnContext({
     config,
     agent,
     agentChat: client,
-    inboxBuffer,
+    inboxEntries,
   });
 
   expect(params.output.chat.threadId).toBe(threadId);

@@ -71,6 +71,7 @@ export type HarnessAgentWorkflowDeps = Pick<
   | "chatService"
   | "agentChat"
   | "sessionId"
+  | "swarmDataDir"
   | "chatDb"
 >;
 

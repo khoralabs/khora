@@ -29,7 +29,7 @@ export {
   startMemoriesService,
 } from "./memories";
 export { type RelayServerHandle, type RelayServerOptions, startRelayServer } from "./relay";
-export { listTurnTelemetry } from "./swarm/swarm-state";
+export { type InboxEntry, listTurnTelemetry } from "./swarm/swarm-state";
 export type {
   AgentLoopState,
   SwarmConfig,

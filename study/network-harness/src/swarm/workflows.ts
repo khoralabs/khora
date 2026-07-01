@@ -7,8 +7,11 @@ import { getSwarmSession } from "./session-store.ts";
 import { setupSwarm, teardownSwarm } from "./setup.ts";
 import {
   checkTokenBudgetRemainingStep,
+  getInboxCursor,
   incrementTokensUsedStep,
+  listInboxEntriesSince,
   recordTurnTelemetryStep,
+  setInboxCursor,
   summarizeSwarmState,
 } from "./swarm-state.ts";
 import type { AgentLoopResult, AgentLoopState, SwarmConfig, SwarmResult } from "./types.ts";
@@ -24,16 +27,25 @@ export async function assembleTurnParamsStep(
   "use step";
 
   const session = getSwarmSession(config.sessionId);
-  const lastInboxEntryId = session.lastInboxEntryByDid.get(agent.did);
+  const agentChat = session.agents.find((entry) => entry.did === agent.did)?.chat;
+  if (agentChat === undefined) {
+    throw new Error(`agent chat client not found for ${agent.did}`);
+  }
+  const lastInboxEntryId = await getInboxCursor(config.dataDir, config.sessionId, agent.did);
+  const inboxEntries = await listInboxEntriesSince(
+    config.dataDir,
+    config.sessionId,
+    agent.did,
+    lastInboxEntryId,
+  );
   const { params, inboxEntryIds } = await assembleTurnContext({
     config,
     agent,
-    agentChat: session.agents.find((entry) => entry.did === agent.did)?.chat,
-    inboxBuffer: session.inboxBuffer,
-    lastInboxEntryId,
+    agentChat,
+    inboxEntries,
   });
   if (inboxEntryIds.length > 0) {
-    session.lastInboxEntryByDid.set(agent.did, inboxEntryIds.at(-1));
+    await setInboxCursor(config.dataDir, config.sessionId, agent.did, inboxEntryIds.at(-1));
   }
   return { params, inboxEntryIds };
 }

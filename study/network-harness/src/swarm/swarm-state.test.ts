@@ -3,12 +3,16 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  appendInboxEntry,
   checkTokenBudgetRemainingStep,
   createSwarmState,
+  getInboxCursor,
   incrementTokensUsedStep,
+  listInboxEntriesSince,
   listTurnTelemetry,
   recordTurnTelemetryStep,
   resetSwarmStateClientForTests,
+  setInboxCursor,
 } from "./swarm-state.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
@@ -72,4 +76,44 @@ test("swarm state tracks shared token budget and telemetry", async () => {
   const telemetry = await listTurnTelemetry(dataDir, config.sessionId);
   expect(telemetry).toHaveLength(1);
   expect(telemetry[0]?.runId).toBe("run-1");
+});
+
+test("inbox entries and cursors persist in workflow db", async () => {
+  resetSwarmStateClientForTests();
+  const dataDir = path.join(os.tmpdir(), `swarm-inbox-${process.pid}-${crypto.randomUUID()}`);
+  const sessionId = "session-inbox";
+  const did = "did:key:agent";
+
+  const first = await appendInboxEntry(dataDir, sessionId, did, {
+    type: "inbox:notification",
+    id: 1,
+    did,
+    notification: {
+      kind: "inbox_post",
+      payload: {
+        postId: "atp0:1",
+        postKind: "post",
+        subscriptionMatches: [],
+      },
+    },
+  });
+  await appendInboxEntry(dataDir, sessionId, did, {
+    type: "inbox:notification",
+    id: 2,
+    did,
+    notification: {
+      kind: "inbox_post",
+      payload: {
+        postId: "atp0:2",
+        postKind: "post",
+        subscriptionMatches: [],
+      },
+    },
+  });
+
+  await setInboxCursor(dataDir, sessionId, did, first.id);
+  const sinceCursor = await listInboxEntriesSince(dataDir, sessionId, did, first.id);
+  expect(sinceCursor).toHaveLength(1);
+  expect(sinceCursor[0]?.id).not.toBe(first.id);
+  expect(await getInboxCursor(dataDir, sessionId, did)).toBe(first.id);
 });

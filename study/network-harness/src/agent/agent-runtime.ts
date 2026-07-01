@@ -54,12 +54,31 @@ export async function registerHarnessAgent(
 export async function resolveWorkflowAgent(
   registry: AgentRegistry,
   agentId: string,
+  opts?: { sessionId?: string; swarmDataDir?: string },
 ): Promise<{ staticHash: string; agent: RegisteredAgent }> {
   if (registry.has(agentId)) {
     const entry = registry.get(agentId);
     if (entry === undefined) throw new Error(`registry inconsistency for ${agentId}`);
     return { staticHash: entry.agent.staticHash, agent: entry.agent };
   }
+
+  const sessionId = opts?.sessionId?.trim();
+  const swarmDataDir = opts?.swarmDataDir?.trim();
+  if (
+    sessionId !== undefined &&
+    sessionId.length > 0 &&
+    swarmDataDir !== undefined &&
+    swarmDataDir.length > 0
+  ) {
+    const { ensureSwarmAgentRegistered } = await import("../swarm/agent-registry.ts");
+    await ensureSwarmAgentRegistered(registry, swarmDataDir, sessionId, agentId);
+    if (registry.has(agentId)) {
+      const entry = registry.get(agentId);
+      if (entry === undefined) throw new Error(`registry inconsistency for ${agentId}`);
+      return { staticHash: entry.agent.staticHash, agent: entry.agent };
+    }
+  }
+
   return registerHarnessAgent(registry);
 }
 

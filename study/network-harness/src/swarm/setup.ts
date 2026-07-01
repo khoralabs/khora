@@ -3,9 +3,8 @@ import { createRegisteredAgent } from "@khoralabs/agent-capabilities";
 import { getAgentRegistry } from "../agent/agent-runtime.ts";
 import { harnessToolkit } from "../agent/tools/index.ts";
 import { spawnWithMemories, startNetworkHarness } from "../harness.ts";
-import { InboxBuffer } from "./inbox-buffer.ts";
 import { putSwarmSession, removeSwarmSession, type SwarmRuntimeSession } from "./session-store.ts";
-import { createSwarmState } from "./swarm-state.ts";
+import { appendInboxEntry, createSwarmState } from "./swarm-state.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
 function selfThreadId(did: string): string {
@@ -34,7 +33,6 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
     spawned.push(await spawnWithMemories(harness));
   }
 
-  const inboxBuffer = new InboxBuffer();
   const inboxConnections = [];
   const registry = getAgentRegistry();
   const loopStates: AgentLoopState[] = [];
@@ -73,7 +71,7 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
     inboxConnections.push(
       agent.agentHandle.connectInbox({
         onEvent: (event) => {
-          inboxBuffer.push(agent.did, event);
+          void appendInboxEntry(config.dataDir, config.sessionId, agent.did, event);
         },
       }),
     );
@@ -84,10 +82,8 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
     harness,
     agents: spawned,
     loopStates,
-    inboxBuffer,
     chatService: harness.signedChat.service,
     chatDb: harness.signedChat.db,
-    lastInboxEntryByDid: new Map(spawned.map((agent) => [agent.did, undefined])),
     inboxConnections,
   };
 

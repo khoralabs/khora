@@ -3,7 +3,7 @@ import type { UIMessage } from "ai";
 import type { AgentUIMessage, AgentWorkflowParams } from "../agent/types.ts";
 import type { AgentChatClient } from "../chat.ts";
 import { readPreviousPostVersion } from "../chat-signing.ts";
-import type { InboxBuffer } from "./inbox-buffer.ts";
+import type { InboxEntry } from "./swarm-state.ts";
 import type { AgentLoopState, SwarmConfig, ThreadHashSnapshot } from "./types.ts";
 
 function postToUiMessage(post: {
@@ -18,7 +18,7 @@ function postToUiMessage(post: {
   };
 }
 
-function formatInboxBlock(entries: ReturnType<InboxBuffer["forAgent"]>): string {
+function formatInboxBlock(entries: InboxEntry[]): string {
   if (entries.length === 0) return "<inbox_entries></inbox_entries>";
   const lines = entries.map(
     (entry) => `<entry id="${entry.id}">${JSON.stringify(entry.event)}</entry>`,
@@ -60,14 +60,12 @@ export async function assembleTurnContext(input: {
   config: SwarmConfig;
   agent: AgentLoopState;
   agentChat: AgentChatClient;
-  inboxBuffer: InboxBuffer;
-  lastInboxEntryId?: string;
+  inboxEntries: InboxEntry[];
 }): Promise<{
   params: AgentWorkflowParams;
   inboxEntryIds: string[];
 }> {
-  const { config, agent, agentChat, inboxBuffer } = input;
-  const inboxEntries = inboxBuffer.sinceLastTurn(agent.did, input.lastInboxEntryId);
+  const { config, agent, agentChat, inboxEntries } = input;
   const inboxEntryIds = inboxEntries.map((entry) => entry.id);
 
   const selfPosts = await agentChat.listPosts(agent.selfThreadId, {
