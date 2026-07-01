@@ -10,11 +10,13 @@ import {
   type UIMessage,
 } from "ai";
 
+import type { AgentChatClient } from "../chat.ts";
+import { collectThreadHashSnapshots } from "../swarm/assemble-turn-context.ts";
 import {
   captureHarnessCapabilities,
   getAgentRegistry,
-  registerHarnessAgent,
   resolveGatewayModel,
+  resolveWorkflowAgent,
 } from "./agent-runtime.ts";
 import { createAgentChatWriter } from "./chat-writer.ts";
 import { createHarnessToolkitEnv } from "./tools/_helpers/toolkit-env.ts";
@@ -23,6 +25,9 @@ import type { AgentWorkflowParams, AgentWorkflowResult } from "./types.ts";
 
 export type RunAgentWorkflowDependencies = {
   chatService?: ChatService;
+  agentChat?: AgentChatClient;
+  sessionId?: string;
+  chatDb?: import("bun:sqlite").Database;
   streamTextFn?: typeof streamText;
   memoriesClient?: RemoteMemoriesClientAsync;
   khoraClient?: KhoraClient;
@@ -119,11 +124,13 @@ export async function runAgentWorkflow(
 ): Promise<AgentWorkflowResult> {
   const context = await normalizeContext(params);
   const registry = getAgentRegistry();
-  const { agent } = await registerHarnessAgent(registry);
+  const { agent } = await resolveWorkflowAgent(registry, params.agent.id);
   const env = await createHarnessToolkitEnv({
     memoriesClient: deps.memoriesClient,
     khoraClient: deps.khoraClient,
     embeddingModel: deps.embeddingModel,
+    agentChat: deps.agentChat,
+    sessionId: deps.sessionId ?? params.context.sessionId,
   });
   const { capture, aiTools, capabilities } = await captureHarnessCapabilities({
     agent,
@@ -192,6 +199,11 @@ export async function runAgentWorkflow(
     await writer.apply(assistantMessage(writer.postId, text), metadata);
     const message = await writer.complete();
 
+    const threadHashes =
+      deps.agentChat !== undefined && deps.chatDb !== undefined
+        ? await collectThreadHashSnapshots(deps.chatDb, deps.agentChat)
+        : undefined;
+
     return {
       runId: params.runId,
       chat: {
@@ -200,6 +212,9 @@ export async function runAgentWorkflow(
         status: "complete",
       },
       message,
+      usage: metadata.usage,
+      memoriesProvenanceRootHex: env.memoriesSnapshotRootHex,
+      threadHashes,
       capabilities,
     };
   } catch (error) {

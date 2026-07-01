@@ -5,7 +5,12 @@ import { type AgentHandle, AgentStore, ManagedAgentPool } from "@khoralabs/khora
 import { startKhoraServer } from "@khoralabs/khora-server/start-server";
 import { createNoAuthProvider, MemoriesServiceClient } from "@khoralabs/memories-service-client";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service-storage-core";
-import { type AgentChatClient, createHarnessChat, type HarnessChat } from "./chat";
+import {
+  type AgentChatClient,
+  createSignedChatService,
+  type HarnessChat,
+  type SignedChatBackend,
+} from "./chat";
 import { startMemoriesService } from "./memories";
 import { startRelayServer } from "./relay";
 
@@ -40,6 +45,8 @@ export type NetworkHarnessHandle = {
   readonly pool: ManagedAgentPool;
   /** Shared chat interface — each agent gets a scoped client via `forAgent(did)`. */
   readonly chat: HarnessChat;
+  /** Underlying signed chat backend (service + db). */
+  readonly signedChat: SignedChatBackend;
   /** Tear down the server and memories service. Does not unregister agents. */
   stop(): void;
 };
@@ -107,9 +114,14 @@ export async function startNetworkHarness(
     baseUrl: server.baseUrl,
   });
 
-  const chat = createHarnessChat(opts.dataDir, {
+  const signedChat = createSignedChatService(opts.dataDir, {
     resolveSigner: (did) => loadIdentity(AgentStore.keyPath(agentsDataDir, did)),
   });
+  const chat: HarnessChat = {
+    forAgent(did: string) {
+      return signedChat.forAgent(did);
+    },
+  };
 
   return {
     serverBaseUrl: server.baseUrl,
@@ -121,6 +133,7 @@ export async function startNetworkHarness(
     memoriesClient,
     pool,
     chat,
+    signedChat,
     stop() {
       memories.stop();
       relay.stop();

@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "agent:dev": "nitro dev",
     "agent:setup": "workflow-turso-setup",
-    "agent:test": "bun test src/agent"
+    "agent:test": "bun test src/agent",
+    "swarm": "bun run src/swarm/run.ts",
+    "swarm:setup": "workflow-turso-setup",
+    "swarm:test": "bun test src/swarm src/agent/tools/chat"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.3",

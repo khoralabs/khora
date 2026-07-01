@@ -51,6 +51,18 @@ export async function registerHarnessAgent(
   return defined;
 }
 
+export async function resolveWorkflowAgent(
+  registry: AgentRegistry,
+  agentId: string,
+): Promise<{ staticHash: string; agent: RegisteredAgent }> {
+  if (registry.has(agentId)) {
+    const entry = registry.get(agentId);
+    if (entry === undefined) throw new Error(`registry inconsistency for ${agentId}`);
+    return { staticHash: entry.agent.staticHash, agent: entry.agent };
+  }
+  return registerHarnessAgent(registry);
+}
+
 export async function captureHarnessCapabilities(input: {
   agent: RegisteredAgent;
   env: HarnessToolkitEnv;

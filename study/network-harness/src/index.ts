@@ -29,3 +29,12 @@ export {
   startMemoriesService,
 } from "./memories";
 export { type RelayServerHandle, type RelayServerOptions, startRelayServer } from "./relay";
+export { listTurnTelemetry } from "./swarm/swarm-state";
+export type {
+  AgentLoopState,
+  SwarmConfig,
+  SwarmResult,
+  TurnTelemetry,
+} from "./swarm/types";
+export { agentLoop, swarmOrchestrator } from "./swarm/workflows";
+export { configureTursoWorldEnv, startTursoWorldWorker } from "./workflow/world";

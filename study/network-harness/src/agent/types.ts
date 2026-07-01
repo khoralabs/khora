@@ -32,6 +32,12 @@ export type AgentWorkflowParams = {
   };
 };
 
+export type ThreadHashSnapshot = {
+  threadId: string;
+  headLineageHash: string;
+  lastPostContentHash?: string;
+};
+
 export type AgentWorkflowResult = {
   runId: string;
   chat: {
@@ -40,6 +46,15 @@ export type AgentWorkflowResult = {
     status: "complete" | "aborted";
   };
   message?: AgentUIMessage;
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    reasoningTokens?: number;
+    cachedInputTokens?: number;
+  };
+  memoriesProvenanceRootHex?: string;
+  threadHashes?: ThreadHashSnapshot[];
   capabilities: {
     staticHash: string;
     runtimeHash: string;

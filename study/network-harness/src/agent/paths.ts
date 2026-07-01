@@ -1,7 +1,5 @@
-import path from "node:path";
+import { resolveHarnessDataDir } from "../workflow/paths.ts";
 
 export function resolveAgentDataDir(): string {
-  const configured = process.env.HARNESS_AGENT_DATA_DIR?.trim();
-  if (configured !== undefined && configured.length > 0) return configured;
-  return path.join(process.cwd(), ".harness-agent-data");
+  return resolveHarnessDataDir(process.env.HARNESS_AGENT_DATA_DIR);
 }
