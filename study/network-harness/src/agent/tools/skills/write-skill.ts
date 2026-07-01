@@ -7,7 +7,7 @@ import {
   formatSkillDocument,
   SKILLS_NAMESPACE,
   skillRecordFromText,
-} from "../../skills.ts";
+} from "./_helpers/skills.ts";
 import { hasMemoriesClient } from "../policies.ts";
 import type { HarnessToolkitEnv } from "../types.ts";
 

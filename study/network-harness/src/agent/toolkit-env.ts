@@ -6,7 +6,7 @@ import {
   agentMemoriesDatabase,
   createHarnessMemoriesClient,
 } from "./tools/memories/_helpers/memories-client.ts";
-import { discoverSkillsFromMemories } from "./skills.ts";
+import { discoverSkillsFromMemories } from "./tools/skills/_helpers/skills.ts";
 import type { HarnessToolkitEnv } from "./tools/types.ts";
 
 async function getMemoriesProvenanceHeadRootHex(

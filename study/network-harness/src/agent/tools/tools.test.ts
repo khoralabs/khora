@@ -16,7 +16,7 @@ import {
   formatSkillDocument,
   SKILLS_NAMESPACE,
   skillRecordFromText,
-} from "../skills.ts";
+} from "./skills/_helpers/skills.ts";
 import { harnessToolkit } from "./_toolkit.ts";
 import { activateSkillByName } from "./skills/activate-skill.ts";
 import type { HarnessToolkitEnv } from "./types.ts";

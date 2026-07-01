@@ -3,7 +3,7 @@ import { resolveHarnessEmbeddingModel } from "../tools/memories/_helpers/embeddi
 import {
   createHarnessKhoraClientForAgent,
   resolveKhoraServerBaseUrl,
-} from "../khora-client-factory.ts";
+} from "../tools/khora/_helpers/khora-client-factory.ts";
 import { runAgentWorkflow } from "../run-agent-workflow.ts";
 import {
   createHarnessMemoriesClientForAgent,
