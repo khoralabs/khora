@@ -9,9 +9,11 @@ export {
   type AgentChatClient,
   type CreateAgentThreadInput,
   createHarnessChat,
+  createSignedChatService,
   HARNESS_CHAT_CHANNEL_ID,
   type HarnessChat,
   type SendAgentMessageInput,
+  type SignedChatBackend,
 } from "./chat";
 export {
   type AgentMemoriesClient,

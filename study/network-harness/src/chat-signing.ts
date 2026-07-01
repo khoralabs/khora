@@ -3,6 +3,9 @@ import type {
   AppendPostInput,
   AppendPostResult,
   ChatPersistence,
+  CommittedPost,
+  CompleteStreamedPostInput,
+  CompleteStreamedPostResult,
   PreparedAppendPost,
   ScopeRef,
   SignedEnvelope,
@@ -131,4 +134,112 @@ export function withSignedAppendGate(persistence: ChatPersistence, db: Database)
       return baseAppendPost(input);
     },
   });
+}
+
+type PostVersionRow = {
+  id: string;
+  post_id: string;
+  thread_id: string;
+  author_scope_type: ScopeRef["type"];
+  author_scope_id: string;
+  message: string;
+  mentions: string | null;
+  model: string | null;
+  usage: string | null;
+  content_hash: string;
+  lineage_hash: string;
+  previous_post_version_id: string | null;
+  signature: string | null;
+  created_at_ms: number;
+};
+
+function readPostVersionRow(db: Database, versionId: string): PostVersionRow | null {
+  return db
+    .prepare(
+      `SELECT id, post_id, thread_id, author_scope_type, author_scope_id, message, mentions, model, usage,
+              content_hash, lineage_hash, previous_post_version_id, signature, created_at_ms
+       FROM chat_post_versions WHERE id = ?`,
+    )
+    .get(versionId) as PostVersionRow | null;
+}
+
+function preparedFromVersionRow(db: Database, row: PostVersionRow): PreparedAppendPost {
+  const previousLineageHash = row.previous_post_version_id
+    ? ((
+        db
+          .prepare("SELECT lineage_hash FROM chat_post_versions WHERE id = ?")
+          .get(row.previous_post_version_id) as { lineage_hash: string } | null
+      )?.lineage_hash ?? null)
+    : null;
+
+  return {
+    versionId: row.id,
+    postId: row.post_id,
+    threadId: row.thread_id,
+    author: { type: row.author_scope_type, id: row.author_scope_id },
+    message: JSON.parse(row.message),
+    mentions: row.mentions ? JSON.parse(row.mentions) : undefined,
+    model: row.model ? JSON.parse(row.model) : undefined,
+    usage: row.usage ? JSON.parse(row.usage) : undefined,
+    parentVersionId: null,
+    previousPostVersionId: row.previous_post_version_id,
+    previousLineageHash,
+    contentHash: row.content_hash,
+    lineageHash: row.lineage_hash,
+    createdAtMs: row.created_at_ms,
+  };
+}
+
+async function signPostVersion(
+  db: Database,
+  versionId: string,
+  resolveSigner: (did: string) => Promise<RelaySigner | undefined>,
+): Promise<SignedEnvelope> {
+  const row = readPostVersionRow(db, versionId);
+  if (!row) throw new Error(`post version ${versionId} not found`);
+  if (row.signature) return JSON.parse(row.signature) as SignedEnvelope;
+
+  const author = { type: row.author_scope_type, id: row.author_scope_id } as ScopeRef;
+  if (author.type !== "agent") {
+    throw new Error("only agent-authored posts can be signed");
+  }
+
+  const signer = await resolveSigner(author.id);
+  if (!signer) throw new Error(`no signing key for agent ${author.id}`);
+
+  const prepared = preparedFromVersionRow(db, row);
+  const envelope = await signPreparedAppendPost(signer, author, prepared);
+  db.prepare("UPDATE chat_post_versions SET signature = ? WHERE id = ?").run(
+    JSON.stringify(envelope),
+    versionId,
+  );
+  return envelope;
+}
+
+export function withSignedStreamingComplete(
+  persistence: ChatPersistence,
+  db: Database,
+  resolveSigner: (did: string) => Promise<RelaySigner | undefined>,
+): ChatPersistence {
+  const baseComplete = persistence.completeStreamedPost.bind(persistence);
+  return Object.assign(persistence, {
+    async completeStreamedPost(
+      input: CompleteStreamedPostInput,
+    ): Promise<CompleteStreamedPostResult> {
+      const result = await baseComplete(input);
+      if (!result.ok) return result;
+
+      const envelope = await signPostVersion(db, result.post.versionId, resolveSigner);
+      const post: CommittedPost = { ...result.post, signature: envelope };
+      return { ok: true, post, head: result.head };
+    },
+  });
+}
+
+export function createSignedChatPersistence(
+  persistence: ChatPersistence,
+  db: Database,
+  resolveSigner: (did: string) => Promise<RelaySigner | undefined>,
+): ChatPersistence {
+  return withSignedStreamingComplete(withSignedAppendGate(persistence, db), db, resolveSigner);
 }

@@ -1,6 +1,6 @@
 import { start } from "workflow/api";
 import { HARNESS_AGENT_ID } from "./agents/index.ts";
-import { ensureAgentChatThread, getAgentChatService } from "./chat-service.ts";
+import { ensureAgentChatThread, getAgentChatService, getDevAgentDid } from "./chat-service.ts";
 import "./otel.ts";
 import type { AgentUIMessage, AgentWorkflowParams } from "./types.ts";
 import { agentResponse } from "./workflows/agent-response.ts";
@@ -48,6 +48,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     const { threadId } = await ensureAgentChatThread();
+    const agentDid = await getDevAgentDid();
     const runId = body.runId?.trim() || crypto.randomUUID();
     const message: AgentUIMessage = {
       id: crypto.randomUUID(),
@@ -60,7 +61,7 @@ export default async function handler(req: Request): Promise<Response> {
       agent: {
         id: HARNESS_AGENT_ID,
         name: "Network Harness Agent",
-        actingFor: { type: "agent", id: HARNESS_AGENT_ID },
+        actingFor: { type: "agent", id: agentDid },
       },
       model: {
         id:

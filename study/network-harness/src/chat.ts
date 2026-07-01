@@ -18,9 +18,9 @@ import {
 import type { RelaySigner } from "@khoralabs/relay-crypto";
 import type { UIMessage } from "ai";
 import {
+  createSignedChatPersistence,
   prepareSignedAppendPost,
   signPreparedAppendPost,
-  withSignedAppendGate,
 } from "./chat-signing";
 
 export const HARNESS_CHAT_CHANNEL_ID = "harness-network";
@@ -53,6 +53,13 @@ export type HarnessChatOptions = {
   resolveSigner: (did: string) => Promise<RelaySigner | undefined>;
 };
 
+export type SignedChatBackend = {
+  readonly service: ChatService;
+  readonly db: Database;
+  readonly ready: Promise<void>;
+  forAgent(did: string): AgentChatClient;
+};
+
 export type HarnessChat = {
   forAgent(did: string): AgentChatClient;
 };
@@ -71,6 +78,29 @@ function openHarnessChatDatabase(dataDir: string): Database {
   const db = new Database(path.join(chatDir, "chat.sqlite"));
   ensureChatSqliteSchema(db);
   return db;
+}
+
+export function createSignedChatService(
+  dataDir: string,
+  options: HarnessChatOptions,
+): SignedChatBackend {
+  const db = openHarnessChatDatabase(dataDir);
+  const persistence = createSignedChatPersistence(
+    createSqliteChatPersistence(db),
+    db,
+    options.resolveSigner,
+  );
+  const service = createChatService(persistence);
+  const ready = ensureHarnessChannel(service);
+
+  return {
+    service,
+    db,
+    ready,
+    forAgent(did: string) {
+      return createAgentChatClient(service, db, did, options.resolveSigner, ready);
+    },
+  };
 }
 
 async function ensureHarnessChannel(service: ChatService): Promise<void> {
@@ -221,13 +251,10 @@ function createAgentChatClient(
 }
 
 export function createHarnessChat(dataDir: string, options: HarnessChatOptions): HarnessChat {
-  const db = openHarnessChatDatabase(dataDir);
-  const service = createChatService(withSignedAppendGate(createSqliteChatPersistence(db), db));
-  const ready = ensureHarnessChannel(service);
-
+  const backend = createSignedChatService(dataDir, options);
   return {
     forAgent(did: string) {
-      return createAgentChatClient(service, db, did, options.resolveSigner, ready);
+      return backend.forAgent(did);
     },
   };
 }

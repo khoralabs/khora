@@ -1,4 +1,4 @@
-import { getAgentChatService } from "../chat-service.ts";
+import { ensureDevAgentIdentity, getAgentChatService } from "../chat-service.ts";
 import { runAgentWorkflow } from "../run-agent-workflow.ts";
 import {
   createHarnessMemoriesClientForAgent,
@@ -40,6 +40,8 @@ async function executeAgentResponse(params: AgentWorkflowParams): Promise<AgentW
           baseUrl: khoraBaseUrl,
           agentDid: params.agent.actingFor.id,
         });
+
+  await ensureDevAgentIdentity();
 
   return runAgentWorkflow(params, {
     chatService: getAgentChatService(),

@@ -1,58 +1,72 @@
-import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
 import path from "node:path";
+
+import { loadIdentity, loadOrCreateIdentity } from "@khoralabs/agent-persisted-signer";
 import type { ChatService } from "@khoralabs/chat-core";
-import { ChatNotFoundError, createChatService } from "@khoralabs/chat-core";
+import { AgentStore } from "@khoralabs/khora-managed-agents";
+import type { RelaySigner } from "@khoralabs/relay-crypto";
+
 import {
-  createSqliteChatPersistence,
-  ensureChatSqliteSchema,
-} from "@khoralabs/chat-persistence-sqlite";
-
+  type AgentChatClient,
+  createSignedChatService,
+  HARNESS_CHAT_CHANNEL_ID,
+  type SignedChatBackend,
+} from "../chat.ts";
 import { resolveAgentDataDir } from "./paths.ts";
+import { resolveAgentsDataDir } from "./tools/khora/_helpers/khora-client-factory.ts";
 
-export const HARNESS_AGENT_CHANNEL_ID = "harness-agent";
-export const HARNESS_AGENT_THREAD_ID = "harness-agent-self";
+export const HARNESS_AGENT_DEV_THREAD_ID = "harness-agent-self";
 
-let chatService: ChatService | undefined;
+let backend: SignedChatBackend | undefined;
+let devAgentDid: string | undefined;
 
-function openChatDatabase(): Database {
-  const dataDir = resolveAgentDataDir();
-  mkdirSync(dataDir, { recursive: true });
-  const dbPath = path.join(dataDir, "chat.sqlite");
-  const db = new Database(dbPath);
-  ensureChatSqliteSchema(db);
-  return db;
+function devAgentKeyPath(): string {
+  return path.join(resolveAgentsDataDir(), "dev-agent", "identity.json");
+}
+
+export async function ensureDevAgentIdentity(): Promise<RelaySigner> {
+  const signer = await loadOrCreateIdentity(devAgentKeyPath());
+  devAgentDid = signer.did;
+  return signer;
+}
+
+export async function getDevAgentDid(): Promise<string> {
+  return (await ensureDevAgentIdentity()).did;
+}
+
+async function resolveHarnessSigner(did: string): Promise<RelaySigner | undefined> {
+  const devDid = devAgentDid ?? (await ensureDevAgentIdentity()).did;
+  if (did === devDid) {
+    return loadOrCreateIdentity(devAgentKeyPath());
+  }
+  return loadIdentity(AgentStore.keyPath(resolveAgentsDataDir(), did));
+}
+
+function getSignedChatBackend(): SignedChatBackend {
+  if (backend !== undefined) return backend;
+  backend = createSignedChatService(resolveAgentDataDir(), {
+    resolveSigner: resolveHarnessSigner,
+  });
+  return backend;
 }
 
 export function getAgentChatService(): ChatService {
-  if (chatService !== undefined) return chatService;
-  chatService = createChatService(createSqliteChatPersistence(openChatDatabase()));
-  return chatService;
+  return getSignedChatBackend().service;
+}
+
+export async function getAgentChatClient(): Promise<AgentChatClient> {
+  const did = await getDevAgentDid();
+  return getSignedChatBackend().forAgent(did);
 }
 
 export async function ensureAgentChatThread(): Promise<{ channelId: string; threadId: string }> {
-  const service = getAgentChatService();
-
+  const client = await getAgentChatClient();
   try {
-    await service.getChannel(HARNESS_AGENT_CHANNEL_ID);
-  } catch (error) {
-    if (!(error instanceof ChatNotFoundError)) throw error;
-    await service.createChannel({
-      id: HARNESS_AGENT_CHANNEL_ID,
-      metadata: { title: "Network Harness Agent", kind: "self-chat" },
-    });
-  }
-
-  try {
-    await service.getThread(HARNESS_AGENT_THREAD_ID);
-  } catch (error) {
-    if (!(error instanceof ChatNotFoundError)) throw error;
-    await service.createThread({
-      id: HARNESS_AGENT_THREAD_ID,
-      root: { type: "channel", channelId: HARNESS_AGENT_CHANNEL_ID },
+    await client.getThread(HARNESS_AGENT_DEV_THREAD_ID);
+  } catch {
+    await client.createThread({
+      id: HARNESS_AGENT_DEV_THREAD_ID,
       metadata: { title: "Agent self-thread", kind: "agent-monologue" },
     });
   }
-
-  return { channelId: HARNESS_AGENT_CHANNEL_ID, threadId: HARNESS_AGENT_THREAD_ID };
+  return { channelId: HARNESS_CHAT_CHANNEL_ID, threadId: HARNESS_AGENT_DEV_THREAD_ID };
 }
