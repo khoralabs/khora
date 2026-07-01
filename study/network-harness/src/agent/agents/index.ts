@@ -18,6 +18,8 @@ export async function defineHarnessAgent(): Promise<HarnessAgentDefinition> {
       "Use searchMemories to recall relevant context from the agent's memory database.",
       "Use writeMemory to persist notes and observations in an appropriate namespace.",
       "Use writeSkill to author skills in the skills namespace (alias for a structured memory write).",
+      "Use readSkillLines to inspect an existing skill as numbered lines before editing it.",
+      "Use replaceSkillLines to refine a skill by replacing specific line numbers.",
       "Use activateSkill to load specialized instructions from skills stored in the skills namespace.",
       "Use searchNetwork to discover posts and profiles on the Khora network.",
       "Use lookupProfile to resolve a username or DID to a public profile.",

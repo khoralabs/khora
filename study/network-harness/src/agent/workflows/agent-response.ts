@@ -1,28 +1,24 @@
 import { getAgentChatService } from "../chat-service.ts";
-import { resolveHarnessEmbeddingModel } from "../tools/memories/_helpers/embedding-model.ts";
-import {
-  createHarnessKhoraClientForAgent,
-  resolveKhoraServerBaseUrl,
-} from "../tools/khora/_helpers/khora-client-factory.ts";
 import { runAgentWorkflow } from "../run-agent-workflow.ts";
 import {
   createHarnessMemoriesClientForAgent,
   resolveMemoriesServiceBaseUrl,
-} from "../toolkit-env.ts";
+} from "../tools/_helpers/toolkit-env.ts";
+import {
+  createHarnessKhoraClientForAgent,
+  resolveKhoraServerBaseUrl,
+} from "../tools/khora/_helpers/khora-client-factory.ts";
+import { resolveHarnessEmbeddingModel } from "../tools/memories/_helpers/embedding-model.ts";
 import type { AgentWorkflowParams, AgentWorkflowResult } from "../types.ts";
 import { configureTursoWorldEnv } from "../world.ts";
 
-export async function agentResponse(
-  params: AgentWorkflowParams,
-): Promise<AgentWorkflowResult> {
+export async function agentResponse(params: AgentWorkflowParams): Promise<AgentWorkflowResult> {
   "use workflow";
 
   return await executeAgentResponse(params);
 }
 
-async function executeAgentResponse(
-  params: AgentWorkflowParams,
-): Promise<AgentWorkflowResult> {
+async function executeAgentResponse(params: AgentWorkflowParams): Promise<AgentWorkflowResult> {
   "use step";
 
   configureTursoWorldEnv();

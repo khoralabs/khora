@@ -1,13 +1,12 @@
 import { tool } from "@khoralabs/agent-capabilities";
 import { z } from "zod";
-
+import { hasMemoriesClient } from "../policies.ts";
+import type { HarnessToolkitEnv } from "../types.ts";
 import {
   formatActivatedSkillContent,
   loadSkillByKey,
   type SkillRecord,
 } from "./_helpers/skills.ts";
-import { hasMemoriesClient } from "../policies.ts";
-import type { HarnessToolkitEnv } from "../types.ts";
 
 export type ActivatedSkillContent = {
   name: string;
@@ -26,9 +25,7 @@ export async function activateSkillByName(
     return { name: skillName, alreadyActive: true };
   }
 
-  let skill = env.skills.find(
-    (item) => item.name === skillName || item.key === skillName,
-  );
+  let skill = env.skills.find((item) => item.name === skillName || item.key === skillName);
   if (skill === undefined && env.memoriesClient !== undefined) {
     skill = await loadSkillByKey(env.memoriesClient, skillName);
     if (skill !== undefined) {

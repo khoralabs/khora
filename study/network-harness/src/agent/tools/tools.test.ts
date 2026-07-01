@@ -1,23 +1,15 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type {
-  ToolRuntimeContext,
-  ToolSpec,
-} from "@khoralabs/agent-capabilities";
+import type { ToolRuntimeContext, ToolSpec } from "@khoralabs/agent-capabilities";
 import { evaluateComposable } from "@khoralabs/agent-capabilities";
-import type {
-  MergeMemoryParamsNode,
-  SearchHit,
-  SearchParams,
-} from "@khoralabs/memories-core";
+import type { MergeMemoryParamsNode, SearchHit, SearchParams } from "@khoralabs/memories-core";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
-
+import { harnessToolkit } from "./_toolkit.ts";
 import {
   defaultSkillKey,
   formatSkillDocument,
   SKILLS_NAMESPACE,
   skillRecordFromText,
 } from "./skills/_helpers/skills.ts";
-import { harnessToolkit } from "./_toolkit.ts";
 import { activateSkillByName } from "./skills/activate-skill.ts";
 import type { HarnessToolkitEnv } from "./types.ts";
 
@@ -39,20 +31,12 @@ type MockHarnessMemoriesClient = {
   mergeMemory: (params: MergeMemoryParamsNode) => Promise<string[]>;
   search: (params: SearchParams) => Promise<SearchHit[]>;
   persistence: {
-    findMemoryIdByKey: (
-      namespace: string,
-      key: string,
-    ) => Promise<string | undefined>;
-    getSourceMapTextPreview: (
-      sourceMapId: string,
-      maxChars?: number,
-    ) => Promise<string | null>;
+    findMemoryIdByKey: (namespace: string, key: string) => Promise<string | undefined>;
+    getSourceMapTextPreview: (sourceMapId: string, maxChars?: number) => Promise<string | null>;
   };
 };
 
-function createEnv(
-  overrides: Partial<HarnessToolkitEnv> = {},
-): HarnessToolkitEnv {
+function createEnv(overrides: Partial<HarnessToolkitEnv> = {}): HarnessToolkitEnv {
   return {
     skills: [],
     activatedSkillNames: new Set(),
@@ -61,13 +45,10 @@ function createEnv(
   };
 }
 
-function createMockMemoriesClient(
-  merged: MergedMemory[],
-): MockHarnessMemoriesClient {
+function createMockMemoriesClient(merged: MergedMemory[]): MockHarnessMemoriesClient {
   return {
     mergeMemory: async (params) => {
-      const text =
-        params.content.find((item) => item.key === "text")?.text ?? "";
+      const text = params.content.find((item) => item.key === "text")?.text ?? "";
       merged.push({
         namespace: params.namespace,
         key: params.key,
@@ -128,9 +109,7 @@ describe("harness memory tools", () => {
   beforeEach(() => {
     merged = [];
     env = createEnv({
-      memoriesClient: createMockMemoriesClient(
-        merged,
-      ) as unknown as RemoteMemoriesClientAsync,
+      memoriesClient: createMockMemoriesClient(merged) as unknown as RemoteMemoriesClientAsync,
     });
   });
 
@@ -247,9 +226,7 @@ name: summarize-thread
 description: Summarize a chat thread
 ---
 Summarize the thread clearly.`;
-    env.skills = [
-      skillRecordFromText(SKILLS_NAMESPACE, "summarize-thread", skillBody),
-    ];
+    env.skills = [skillRecordFromText(SKILLS_NAMESPACE, "summarize-thread", skillBody)];
 
     const result = await activateSkillByName(env, "summarize-thread");
     expect(result.alreadyActive).toBe(false);

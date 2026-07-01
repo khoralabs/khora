@@ -1,8 +1,4 @@
-import type {
-  ChatService,
-  PostModelMetadata,
-  PostUsage,
-} from "@khoralabs/chat-core";
+import type { ChatService, PostModelMetadata, PostUsage } from "@khoralabs/chat-core";
 import type { KhoraClient } from "@khoralabs/khora-client";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
@@ -21,8 +17,8 @@ import {
   resolveGatewayModel,
 } from "./agent-runtime.ts";
 import { createAgentChatWriter } from "./chat-writer.ts";
+import { createHarnessToolkitEnv } from "./tools/_helpers/toolkit-env.ts";
 import { formatSkillCatalog } from "./tools/skills/_helpers/skills.ts";
-import { createHarnessToolkitEnv } from "./toolkit-env.ts";
 import type { AgentWorkflowParams, AgentWorkflowResult } from "./types.ts";
 
 export type RunAgentWorkflowDependencies = {
@@ -44,8 +40,7 @@ function assistantMessage(id: string, text: string): UIMessage {
 function errorMessage(error: unknown): string {
   if (!error || typeof error !== "object") return String(error);
   const record = error as Record<string, unknown>;
-  const direct =
-    typeof record.message === "string" ? record.message : undefined;
+  const direct = typeof record.message === "string" ? record.message : undefined;
   if (direct !== undefined && direct !== "[object Object]") return direct;
   return direct ?? String(error);
 }
@@ -59,9 +54,7 @@ function usageFromAiSdk(usage: unknown): PostUsage | undefined {
   const value = usage as Record<string, unknown>;
   return {
     inputTokens: numberOrUndefined(value.inputTokens ?? value.promptTokens),
-    outputTokens: numberOrUndefined(
-      value.outputTokens ?? value.completionTokens,
-    ),
+    outputTokens: numberOrUndefined(value.outputTokens ?? value.completionTokens),
     totalTokens: numberOrUndefined(value.totalTokens),
     reasoningTokens: numberOrUndefined(value.reasoningTokens),
     cachedInputTokens: numberOrUndefined(value.cachedInputTokens),
@@ -77,15 +70,13 @@ function modelMetadata(input: {
   finishReason?: unknown;
   response?: unknown;
 }): PostModelMetadata {
-  const response =
-    input.response && typeof input.response === "object" ? input.response : {};
+  const response = input.response && typeof input.response === "object" ? input.response : {};
   const record = response as Record<string, unknown>;
   return {
     provider: typeof record.provider === "string" ? record.provider : undefined,
     model: typeof record.modelId === "string" ? record.modelId : undefined,
     gatewayModel: input.requestedModel,
-    finishReason:
-      typeof input.finishReason === "string" ? input.finishReason : undefined,
+    finishReason: typeof input.finishReason === "string" ? input.finishReason : undefined,
   };
 }
 
@@ -95,10 +86,8 @@ async function normalizeContext(params: AgentWorkflowParams): Promise<{
   instructions: string[];
 }> {
   if (params.runId.trim().length === 0) throw new Error("runId is required");
-  if (params.agent.id.trim().length === 0)
-    throw new Error("agent.id is required");
-  if (params.model.id.trim().length === 0)
-    throw new Error("model.id is required");
+  if (params.agent.id.trim().length === 0) throw new Error("agent.id is required");
+  if (params.model.id.trim().length === 0) throw new Error("model.id is required");
   if (params.output.chat.threadId.trim().length === 0) {
     throw new Error("output.chat.threadId is required");
   }
@@ -159,11 +148,7 @@ export async function runAgentWorkflow(
     const maxSteps = params.model.maxSteps ?? 8;
     const result = runStreamText({
       model: modelId,
-      system: [
-        capture.instructions,
-        formatSkillCatalog(env.skills),
-        ...context.instructions,
-      ]
+      system: [capture.instructions, formatSkillCatalog(env.skills), ...context.instructions]
         .filter((part) => part.length > 0)
         .join("\n\n"),
       messages: context.modelMessages,
@@ -173,13 +158,9 @@ export async function runAgentWorkflow(
         generationError = error;
       },
     } as Parameters<typeof streamText>[0]);
-    const finishReasonPromise = Promise.resolve(result.finishReason).catch(
-      () => undefined,
-    );
+    const finishReasonPromise = Promise.resolve(result.finishReason).catch(() => undefined);
     const usagePromise = Promise.resolve(result.usage).catch(() => undefined);
-    const responsePromise = Promise.resolve(result.response).catch(
-      () => undefined,
-    );
+    const responsePromise = Promise.resolve(result.response).catch(() => undefined);
     const textPromise = Promise.resolve(result.text).catch(() => "");
 
     try {
@@ -195,10 +176,7 @@ export async function runAgentWorkflow(
 
     text = text.length > 0 ? text : await textPromise;
     if (text.length === 0) {
-      const detail =
-        generationError === undefined
-          ? ""
-          : `: ${errorMessage(generationError)}`;
+      const detail = generationError === undefined ? "" : `: ${errorMessage(generationError)}`;
       throw new Error(`agent workflow produced no text output${detail}`);
     }
 

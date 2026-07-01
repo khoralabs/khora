@@ -1,9 +1,8 @@
 import { tool } from "@khoralabs/agent-capabilities";
 import { z } from "zod";
-
-import { writeMemoryNode } from "./_helpers/memory-write.ts";
 import { hasMemoriesClient } from "../policies.ts";
 import type { HarnessToolkitEnv } from "../types.ts";
+import { writeMemoryNode } from "./_helpers/memory-write.ts";
 
 const zMemoryLink = z.object({
   namespace: z.string().min(1).describe("Peer memory namespace."),
@@ -12,11 +11,7 @@ const zMemoryLink = z.object({
     .enum(["in", "out"])
     .optional()
     .describe("Edge direction from this memory to the peer. Defaults to out."),
-  label: z
-    .string()
-    .min(1)
-    .optional()
-    .describe("Edge label kind. Defaults to references."),
+  label: z.string().min(1).optional().describe("Edge label kind. Defaults to references."),
 });
 
 export const writeMemoryTool = tool<
@@ -45,8 +40,7 @@ export const writeMemoryTool = tool<
   policies: [hasMemoriesClient],
   handler: async (ctx, input) => {
     const client = ctx.env.memoriesClient;
-    if (client === undefined)
-      throw new Error("memories client is not configured");
+    if (client === undefined) throw new Error("memories client is not configured");
 
     const memoryIds = await writeMemoryNode(client, input);
     return { memoryIds };

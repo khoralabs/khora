@@ -1,28 +1,17 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type {
-  ToolRuntimeContext,
-  ToolSpec,
-} from "@khoralabs/agent-capabilities";
+import type { ToolRuntimeContext, ToolSpec } from "@khoralabs/agent-capabilities";
 import { evaluateComposable } from "@khoralabs/agent-capabilities";
 import type {
   AuthorSubscriptionsSnapshot,
   KhoraClient,
   PublicProfileResult,
 } from "@khoralabs/khora-client";
-import type {
-  KhoraPost,
-  KhoraProfile,
-  KhoraSearchResponse,
-} from "@khoralabs/khora-contracts";
+import type { KhoraPost, KhoraProfile, KhoraSearchResponse } from "@khoralabs/khora-contracts";
 
 import { harnessToolkit } from "../_toolkit.ts";
 import type { HarnessToolkitEnv } from "../types.ts";
 
-type KhoraToolName =
-  | "searchNetwork"
-  | "createPost"
-  | "lookupProfile"
-  | "updateProfile";
+type KhoraToolName = "searchNetwork" | "createPost" | "lookupProfile" | "updateProfile";
 
 type MockKhoraClient = {
   search: (params: {
@@ -34,9 +23,7 @@ type MockKhoraClient = {
   }) => Promise<KhoraSearchResponse>;
   createPost: (body: unknown) => Promise<KhoraPost>;
   updateProfile: (patch: unknown) => Promise<KhoraProfile>;
-  lookupProfileByUsername: (
-    username: string,
-  ) => Promise<PublicProfileResult | null>;
+  lookupProfileByUsername: (username: string) => Promise<PublicProfileResult | null>;
   lookupProfileByDid: (did: string) => Promise<PublicProfileResult | null>;
   getPost: (id: string) => Promise<KhoraPost>;
   updatePost: (id: string, patch: unknown) => Promise<KhoraPost>;
@@ -45,9 +32,7 @@ type MockKhoraClient = {
   listAuthorSubscriptions: () => Promise<AuthorSubscriptionsSnapshot>;
 };
 
-function createEnv(
-  overrides: Partial<HarnessToolkitEnv> = {},
-): HarnessToolkitEnv {
+function createEnv(overrides: Partial<HarnessToolkitEnv> = {}): HarnessToolkitEnv {
   return {
     skills: [],
     activatedSkillNames: new Set(),
@@ -56,9 +41,7 @@ function createEnv(
   };
 }
 
-function createMockKhoraClient(
-  overrides: Partial<MockKhoraClient> = {},
-): MockKhoraClient {
+function createMockKhoraClient(overrides: Partial<MockKhoraClient> = {}): MockKhoraClient {
   return {
     search: async () => ({ hits: [] }),
     createPost: async () =>

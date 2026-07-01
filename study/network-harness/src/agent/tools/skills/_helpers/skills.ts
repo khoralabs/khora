@@ -82,10 +82,28 @@ Skill key: ${skill.key}
 </skill_content>`;
 }
 
-export async function loadSkillByKey(
+export function resolveSkillStorageKey(skills: SkillRecord[], nameOrKey: string): string {
+  const value = nameOrKey.trim();
+  if (value.length === 0) throw new Error("skill key is required");
+  const skill = skills.find((item) => item.name === value || item.key === value);
+  return skill?.key ?? value;
+}
+
+export function upsertSkillInEnv(skills: SkillRecord[], skill: SkillRecord): void {
+  const existingIndex = skills.findIndex(
+    (item) => item.key === skill.key || item.name === skill.name,
+  );
+  if (existingIndex >= 0) {
+    skills[existingIndex] = skill;
+  } else {
+    skills.push(skill);
+  }
+}
+
+async function fetchSkillTextByKey(
   client: RemoteMemoriesClientAsync,
   key: string,
-): Promise<SkillRecord | undefined> {
+): Promise<string | undefined> {
   const memoryId = await client.persistence.findMemoryIdByKey(SKILLS_NAMESPACE, key);
   if (memoryId === undefined) return undefined;
 
@@ -98,6 +116,22 @@ export async function loadSkillByKey(
   if (hit === undefined) return undefined;
   const text = await client.persistence.getSourceMapTextPreview(sourceMapIdFromHit(hit), 100_000);
   if (text === null || text.length === 0) return undefined;
+  return text;
+}
+
+export async function loadSkillTextByKey(
+  client: RemoteMemoriesClientAsync,
+  key: string,
+): Promise<string | undefined> {
+  return fetchSkillTextByKey(client, key);
+}
+
+export async function loadSkillByKey(
+  client: RemoteMemoriesClientAsync,
+  key: string,
+): Promise<SkillRecord | undefined> {
+  const text = await fetchSkillTextByKey(client, key);
+  if (text === undefined) return undefined;
   return skillRecordFromText(SKILLS_NAMESPACE, key, text);
 }
 

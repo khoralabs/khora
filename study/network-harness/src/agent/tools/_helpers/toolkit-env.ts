@@ -5,9 +5,9 @@ import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-clie
 import {
   agentMemoriesDatabase,
   createHarnessMemoriesClient,
-} from "./tools/memories/_helpers/memories-client.ts";
-import { discoverSkillsFromMemories } from "./tools/skills/_helpers/skills.ts";
-import type { HarnessToolkitEnv } from "./tools/types.ts";
+} from "../memories/_helpers/memories-client.ts";
+import { discoverSkillsFromMemories } from "../skills/_helpers/skills.ts";
+import type { HarnessToolkitEnv } from "../types.ts";
 
 async function getMemoriesProvenanceHeadRootHex(
   client: RemoteMemoriesClientAsync,
@@ -59,7 +59,7 @@ export function resolveMemoriesServiceBaseUrl(): string | undefined {
 }
 
 export type HarnessAgentWorkflowDeps = Pick<
-  import("./run-agent-workflow.ts").RunAgentWorkflowDependencies,
+  import("../../run-agent-workflow.ts").RunAgentWorkflowDependencies,
   "memoriesClient" | "khoraClient" | "embeddingModel"
 >;
 
