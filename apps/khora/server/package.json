@@ -16,7 +16,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
     "@khoralabs/host-runtime": "workspace:*",
-    "@khoralabs/agent-capabilities": "^0.1.1",
+    "@khoralabs/agent-capabilities": "^0.2.0",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
     "@khoralabs/obp-byte-stream": "workspace:*",

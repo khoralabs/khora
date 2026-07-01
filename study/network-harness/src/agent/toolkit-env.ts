@@ -2,7 +2,10 @@ import type { KhoraClient } from "@khoralabs/khora-client";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 
-import { agentMemoriesDatabase, createHarnessMemoriesClient } from "./memories-client.ts";
+import {
+  agentMemoriesDatabase,
+  createHarnessMemoriesClient,
+} from "./tools/memories/_helpers/memories-client.ts";
 import { discoverSkillsFromMemories } from "./skills.ts";
 import type { HarnessToolkitEnv } from "./tools/types.ts";
 

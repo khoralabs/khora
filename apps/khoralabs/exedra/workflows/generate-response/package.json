@@ -17,9 +17,9 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@khoralabs/agent-capabilities": "^0.1.1",
-    "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
-    "@khoralabs/agent-capabilities-otel": "^0.1.1",
+    "@khoralabs/agent-capabilities": "^0.2.0",
+    "@khoralabs/agent-capabilities-ai-sdk": "^0.2.0",
+    "@khoralabs/agent-capabilities-otel": "^0.2.0",
     "@khoralabs/chat-core": "workspace:*",
     "@khoralabs/exedra-workflows-shared": "workspace:*",
     "@khoralabs/observability": "workspace:*",
