@@ -12,8 +12,8 @@ export const memoriesToolkit = toolkit(
     instructions: [
       "Use searchMemories to recall relevant context from the agent's memory database.",
       "Use writeMemory to persist notes and observations in an appropriate namespace.",
-      "Use readMemoryLines before editing an existing memory's text.",
-      "Use replaceMemoryLines for targeted line updates when refining a memory.",
+      "Use readMemoryLines to inspect an existing memory as numbered lines before editing it.",
+      "Use replaceMemoryLines to refine a memory by replacing specific line numbers.",
       "Prefer line edits over full writeMemory rewrites for small refinements.",
     ],
   },
