@@ -1,5 +1,9 @@
 import { getAgentChatService } from "../chat-service.ts";
 import { resolveHarnessEmbeddingModel } from "../embedding-model.ts";
+import {
+  createHarnessKhoraClientForAgent,
+  resolveKhoraServerBaseUrl,
+} from "../khora-client-factory.ts";
 import { runAgentWorkflow } from "../run-agent-workflow.ts";
 import {
   createHarnessMemoriesClientForAgent,
@@ -28,9 +32,19 @@ async function executeAgentResponse(params: AgentWorkflowParams): Promise<AgentW
           agentDid: params.agent.actingFor.id,
         });
 
+  const khoraBaseUrl = resolveKhoraServerBaseUrl();
+  const khoraClient =
+    khoraBaseUrl === undefined
+      ? undefined
+      : await createHarnessKhoraClientForAgent({
+          baseUrl: khoraBaseUrl,
+          agentDid: params.agent.actingFor.id,
+        });
+
   return runAgentWorkflow(params, {
     chatService: getAgentChatService(),
     memoriesClient,
+    khoraClient,
     embeddingModel: resolveHarnessEmbeddingModel(),
   });
 }

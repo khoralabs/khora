@@ -22,6 +22,7 @@
     "@khoralabs/chat-persistence": "workspace:*",
     "@khoralabs/chat-persistence-sqlite": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
+    "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-managed-agents": "workspace:*",
     "@khoralabs/khora-server": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",

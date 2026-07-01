@@ -28,18 +28,13 @@ export const writeSkillTool = tool<
     "Write or update a skill in the skills namespace. This is an alias for writing a memory with skill frontmatter. Use linksTo to link the skill to other existing skills via graph edges.",
   inputSchema: z.object({
     name: z.string().min(1).describe("Skill display name."),
-    description: z
-      .string()
-      .min(1)
-      .describe("Short skill summary for the catalog."),
+    description: z.string().min(1).describe("Short skill summary for the catalog."),
     body: z.string().min(1).describe("Full skill instructions (markdown)."),
     key: z
       .string()
       .min(1)
       .optional()
-      .describe(
-        "Storage key within the skills namespace. Defaults to a slug of name.",
-      ),
+      .describe("Storage key within the skills namespace. Defaults to a slug of name."),
     linksTo: z
       .array(z.string().min(1))
       .optional()
@@ -48,8 +43,7 @@ export const writeSkillTool = tool<
   policies: [hasMemoriesClient],
   handler: async (ctx, input) => {
     const client = ctx.env.memoriesClient;
-    if (client === undefined)
-      throw new Error("memories client is not configured");
+    if (client === undefined) throw new Error("memories client is not configured");
 
     const name = input.name.trim();
     const key = input.key?.trim() || defaultSkillKey(name);

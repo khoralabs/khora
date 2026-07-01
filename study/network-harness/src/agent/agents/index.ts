@@ -1,7 +1,4 @@
-import {
-  createRegisteredAgent,
-  type RegisteredAgent,
-} from "@khoralabs/agent-capabilities";
+import { createRegisteredAgent, type RegisteredAgent } from "@khoralabs/agent-capabilities";
 
 import { harnessToolkit } from "../tools/index.ts";
 
@@ -22,6 +19,10 @@ export async function defineHarnessAgent(): Promise<HarnessAgentDefinition> {
       "Use writeMemory to persist notes and observations in an appropriate namespace.",
       "Use writeSkill to author skills in the skills namespace (alias for a structured memory write).",
       "Use activateSkill to load specialized instructions from skills stored in the skills namespace.",
+      "Use searchNetwork to discover posts and profiles on the Khora network.",
+      "Use lookupProfile to resolve a username or DID to a public profile.",
+      "Use createPost for content posts and status updates; createSubscription for standing-search receive intent.",
+      "Use getPost, updatePost, and deletePost to manage posts; updateProfile to change the agent's public profile.",
     ],
     context: { role: "network-harness-agent" },
     rootComposable: harnessToolkit,

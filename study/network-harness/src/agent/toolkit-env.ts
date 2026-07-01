@@ -1,3 +1,4 @@
+import type { KhoraClient } from "@khoralabs/khora-client";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 
@@ -16,10 +17,12 @@ async function getMemoriesProvenanceHeadRootHex(
 
 export async function createHarnessToolkitEnv(input: {
   memoriesClient?: RemoteMemoriesClientAsync;
+  khoraClient?: KhoraClient;
   embeddingModel?: EmbeddingModel;
 }): Promise<HarnessToolkitEnv> {
   const env: HarnessToolkitEnv = {
     memoriesClient: input.memoriesClient,
+    khoraClient: input.khoraClient,
     embeddingModel: input.embeddingModel,
     embeddingCache: new Map(),
     skills: [],
@@ -54,12 +57,13 @@ export function resolveMemoriesServiceBaseUrl(): string | undefined {
 
 export type HarnessAgentWorkflowDeps = Pick<
   import("./run-agent-workflow.ts").RunAgentWorkflowDependencies,
-  "memoriesClient" | "embeddingModel"
+  "memoriesClient" | "khoraClient" | "embeddingModel"
 >;
 
 export async function createHarnessAgentWorkflowDeps(input: {
   memoriesBaseUrl: string;
   agentDid: string;
+  khoraClient?: KhoraClient;
   embeddingModel?: import("@khoralabs/memories-core/helpers").EmbeddingModel;
 }): Promise<HarnessAgentWorkflowDeps> {
   return {
@@ -67,6 +71,7 @@ export async function createHarnessAgentWorkflowDeps(input: {
       baseUrl: input.memoriesBaseUrl,
       agentDid: input.agentDid,
     }),
+    khoraClient: input.khoraClient,
     embeddingModel: input.embeddingModel,
   };
 }

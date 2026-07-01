@@ -1,4 +1,5 @@
 import type { ChatService, PostModelMetadata, PostUsage } from "@khoralabs/chat-core";
+import type { KhoraClient } from "@khoralabs/khora-client";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 import {
@@ -24,6 +25,7 @@ export type RunAgentWorkflowDependencies = {
   chatService?: ChatService;
   streamTextFn?: typeof streamText;
   memoriesClient?: RemoteMemoriesClientAsync;
+  khoraClient?: KhoraClient;
   embeddingModel?: EmbeddingModel;
 };
 
@@ -120,6 +122,7 @@ export async function runAgentWorkflow(
   const { agent } = await registerHarnessAgent(registry);
   const env = await createHarnessToolkitEnv({
     memoriesClient: deps.memoriesClient,
+    khoraClient: deps.khoraClient,
     embeddingModel: deps.embeddingModel,
   });
   const { capture, aiTools, capabilities } = await captureHarnessCapabilities({
