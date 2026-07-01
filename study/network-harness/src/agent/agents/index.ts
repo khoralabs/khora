@@ -17,6 +17,8 @@ export async function defineHarnessAgent(): Promise<HarnessAgentDefinition> {
       "Respond helpfully based on the conversation context.",
       "Use searchMemories to recall relevant context from the agent's memory database.",
       "Use writeMemory to persist notes and observations in an appropriate namespace.",
+      "Use readMemoryLines to inspect an existing memory as numbered lines before editing it.",
+      "Use replaceMemoryLines to refine a memory by replacing specific line numbers.",
       "Use writeSkill to author skills in the skills namespace (alias for a structured memory write).",
       "Use readSkillLines to inspect an existing skill as numbered lines before editing it.",
       "Use replaceSkillLines to refine a skill by replacing specific line numbers.",

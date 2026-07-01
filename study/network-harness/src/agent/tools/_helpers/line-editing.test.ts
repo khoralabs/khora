@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { applyLineChanges, readLines } from "../../line-editing.ts";
+import { applyLineChanges, readLines } from "./line-editing.ts";
 
 describe("line-editing", () => {
   test("readLines returns 1-based tuples including blank lines", () => {

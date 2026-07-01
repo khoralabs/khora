@@ -1,5 +1,6 @@
-import type { SearchHit } from "@khoralabs/memories-core";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
+
+import { loadMemoryTextByKey } from "../../memories/_helpers/memory-text.ts";
 
 export const SKILLS_NAMESPACE = "skills";
 
@@ -9,7 +10,7 @@ const SKILL_SEARCH_OPTIONS = {
   arms: { lexical: 1, vector: 0 },
 };
 
-function sourceMapIdFromHit(hit: SearchHit): string {
+function sourceMapIdFromHit(hit: import("@khoralabs/memories-core").SearchHit): string {
   return hit._id;
 }
 
@@ -104,19 +105,7 @@ async function fetchSkillTextByKey(
   client: RemoteMemoriesClientAsync,
   key: string,
 ): Promise<string | undefined> {
-  const memoryId = await client.persistence.findMemoryIdByKey(SKILLS_NAMESPACE, key);
-  if (memoryId === undefined) return undefined;
-
-  const hits = await client.search({
-    namespace: SKILLS_NAMESPACE,
-    content: { text: key },
-    options: { topK: 8, neighbors: false, arms: { lexical: 1, vector: 0 } },
-  });
-  const hit = hits.find((candidate) => candidate.memory.key === key);
-  if (hit === undefined) return undefined;
-  const text = await client.persistence.getSourceMapTextPreview(sourceMapIdFromHit(hit), 100_000);
-  if (text === null || text.length === 0) return undefined;
-  return text;
+  return loadMemoryTextByKey(client, SKILLS_NAMESPACE, key);
 }
 
 export async function loadSkillTextByKey(
