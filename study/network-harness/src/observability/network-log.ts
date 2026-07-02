@@ -9,8 +9,8 @@ import {
   networkEventId,
   persistNetworkEvent,
   queryNetworkEvents,
-} from "../swarm/swarm-state.ts";
-import type { NetworkAttribution, NetworkEvent, NetworkEventSource } from "../swarm/types.ts";
+} from "../network/event-store.ts";
+import type { NetworkAttribution, NetworkEvent, NetworkEventSource } from "../network/types.ts";
 
 export type { ListNetworkEventsOptions };
 

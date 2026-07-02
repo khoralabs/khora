@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { resetNetworkEventStoreForTests } from "../network/event-store.ts";
 import { resetSwarmStateClientForTests } from "../swarm/swarm-state.ts";
 import { buildNetworkAttribution } from "./attribution-digest.ts";
 import {
@@ -17,6 +18,7 @@ const dataDir = path.join(os.tmpdir(), `network-log-${process.pid}-${crypto.rand
 
 test("network events order by seq and dedupe on replay", async () => {
   resetSwarmStateClientForTests();
+  resetNetworkEventStoreForTests();
   resetNetworkLogForTests();
   const sessionId = "session-order";
 
@@ -88,6 +90,7 @@ test("network events order by seq and dedupe on replay", async () => {
 
 test("turn completed events include attribution digest", async () => {
   resetSwarmStateClientForTests();
+  resetNetworkEventStoreForTests();
   resetNetworkLogForTests();
   const sessionId = "session-attribution";
 

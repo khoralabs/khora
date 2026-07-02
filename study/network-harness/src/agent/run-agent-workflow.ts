@@ -11,9 +11,9 @@ import {
 } from "ai";
 
 import type { AgentChatClient } from "../chat.ts";
+import { collectThreadHashSnapshots } from "../network/thread-provenance.ts";
 import { buildNetworkAttribution } from "../observability/attribution-digest.ts";
 import { runWithAttributionAsync } from "../observability/network-log.ts";
-import { collectThreadHashSnapshots } from "../swarm/assemble-turn-context.ts";
 import {
   captureHarnessCapabilities,
   createHarnessAgentTelemetry,
@@ -30,7 +30,7 @@ export type RunAgentWorkflowDependencies = {
   chatService?: ChatService;
   agentChat?: AgentChatClient;
   sessionId?: string;
-  swarmDataDir?: string;
+  networkDataDir?: string;
   chatDb?: import("bun:sqlite").Database;
   streamTextFn?: typeof streamText;
   memoriesClient?: RemoteMemoriesClientAsync;
@@ -130,7 +130,6 @@ export async function runAgentWorkflow(
   const registry = getAgentRegistry();
   const { agent } = await resolveWorkflowAgent(registry, params.agent.id, {
     sessionId: deps.sessionId ?? params.context.sessionId,
-    swarmDataDir: deps.swarmDataDir,
   });
   const env = await createHarnessToolkitEnv({
     memoriesClient: deps.memoriesClient,
@@ -138,7 +137,7 @@ export async function runAgentWorkflow(
     embeddingModel: deps.embeddingModel,
     agentChat: deps.agentChat,
     sessionId: deps.sessionId ?? params.context.sessionId,
-    swarmDataDir: deps.swarmDataDir,
+    networkDataDir: deps.networkDataDir,
   });
   const telemetry = createHarnessAgentTelemetry(params.agent.actingFor.id);
   const { capture, aiTools, capabilities } = await captureHarnessCapabilities({

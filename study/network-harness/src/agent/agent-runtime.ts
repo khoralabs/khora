@@ -9,7 +9,7 @@ import { toolMapToAiTools } from "@khoralabs/agent-capabilities-ai-sdk";
 import { type AgentTelemetry, createAgentTelemetry } from "@khoralabs/agent-capabilities-otel";
 import { createLogger } from "@khoralabs/observability/logger";
 import { metrics, trace } from "@opentelemetry/api";
-
+import { getNetworkSession } from "../network/session-registry.ts";
 import { createNetworkLogger, getNetworkLogContext } from "../observability/network-log.ts";
 import { defineHarnessAgent } from "./agents/index.ts";
 import type { HarnessToolkitEnv } from "./tools/types.ts";
@@ -64,7 +64,7 @@ export async function registerHarnessAgent(
 export async function resolveWorkflowAgent(
   registry: AgentRegistry,
   agentId: string,
-  opts?: { sessionId?: string; swarmDataDir?: string },
+  opts?: { sessionId?: string },
 ): Promise<{ staticHash: string; agent: RegisteredAgent }> {
   if (registry.has(agentId)) {
     const entry = registry.get(agentId);
@@ -73,15 +73,11 @@ export async function resolveWorkflowAgent(
   }
 
   const sessionId = opts?.sessionId?.trim();
-  const swarmDataDir = opts?.swarmDataDir?.trim();
-  if (
-    sessionId !== undefined &&
-    sessionId.length > 0 &&
-    swarmDataDir !== undefined &&
-    swarmDataDir.length > 0
-  ) {
-    const { ensureSwarmAgentRegistered } = await import("../swarm/agent-registry.ts");
-    await ensureSwarmAgentRegistered(registry, swarmDataDir, sessionId, agentId);
+  if (sessionId !== undefined && sessionId.length > 0) {
+    const session = getNetworkSession(sessionId);
+    if (session?.ensureAgentRegistered !== undefined) {
+      await session.ensureAgentRegistered(agentId);
+    }
     if (registry.has(agentId)) {
       const entry = registry.get(agentId);
       if (entry === undefined) throw new Error(`registry inconsistency for ${agentId}`);

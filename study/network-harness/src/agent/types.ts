@@ -1,3 +1,5 @@
+import type { ThreadHashSnapshot } from "../network/types.ts";
+
 export type AgentUIMessage = {
   id: string;
   role: string;
@@ -30,12 +32,6 @@ export type AgentWorkflowParams = {
       streamDeltas: boolean;
     };
   };
-};
-
-export type ThreadHashSnapshot = {
-  threadId: string;
-  headLineageHash: string;
-  lastPostContentHash?: string;
 };
 
 export type AgentWorkflowResult = {

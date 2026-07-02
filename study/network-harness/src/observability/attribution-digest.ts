@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { AgentWorkflowResult } from "../agent/types.ts";
-import type { NetworkAttribution, ThreadHashSnapshot } from "../swarm/types.ts";
+import type { NetworkAttribution, ThreadHashSnapshot } from "../network/types.ts";
 
 export type AttributionInput = {
   staticHash: string;

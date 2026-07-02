@@ -3,8 +3,15 @@ import { createRegisteredAgent } from "@khoralabs/agent-capabilities";
 import { getAgentRegistry } from "../agent/agent-runtime.ts";
 import { harnessToolkit } from "../agent/tools/index.ts";
 import { spawnWithMemories, startNetworkHarness } from "../harness.ts";
+import { registerNetworkSession, removeNetworkSession } from "../network/session-registry.ts";
 import { emitNetworkEvent, networkEventId } from "../observability/network-log.ts";
-import { putSwarmSession, removeSwarmSession, type SwarmRuntimeSession } from "./session-store.ts";
+import { ensureSwarmAgentRegistered } from "./agent-registry.ts";
+import {
+  putSwarmSession,
+  removeSwarmSession,
+  resolveSwarmAgentWorkflowDeps,
+  type SwarmRuntimeSession,
+} from "./session-store.ts";
 import { appendInboxEntry, createSwarmState } from "./swarm-state.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
@@ -104,6 +111,13 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
   };
 
   putSwarmSession(config.sessionId, session);
+  registerNetworkSession({
+    sessionId: config.sessionId,
+    dataDir: config.dataDir,
+    resolveAgentWorkflowDeps: (did) => resolveSwarmAgentWorkflowDeps(config.sessionId, did),
+    ensureAgentRegistered: (did) =>
+      ensureSwarmAgentRegistered(getAgentRegistry(), config.dataDir, config.sessionId, did),
+  });
 
   const swarmState = await createSwarmState(config.dataDir, config, loopStates);
 
@@ -135,6 +149,7 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
 
 export async function teardownSwarm(sessionId: string): Promise<void> {
   const session = removeSwarmSession(sessionId);
+  removeNetworkSession(sessionId);
   if (session === undefined) return;
 
   await emitNetworkEvent({

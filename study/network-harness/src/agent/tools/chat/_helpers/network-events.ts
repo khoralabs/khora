@@ -12,7 +12,7 @@ export async function emitChatNetworkEvent(input: {
   extra: string;
 }): Promise<void> {
   const sessionId = input.env.sessionId?.trim();
-  const dataDir = input.env.swarmDataDir?.trim();
+  const dataDir = input.env.networkDataDir?.trim();
   const agentDid = input.env.agentChat?.did;
   if (
     sessionId === undefined ||

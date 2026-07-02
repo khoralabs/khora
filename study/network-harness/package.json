@@ -5,7 +5,9 @@
   "type": "module",
   "module": "src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./swarm": "./src/swarm/index.ts",
+    "./network": "./src/network/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -15,7 +17,7 @@
     "swarm": "bun run src/swarm/run.ts",
     "swarm:setup": "workflow-turso-setup",
     "swarm:events": "bun run src/swarm/events-cli.ts",
-    "swarm:test": "bun test src/swarm src/agent/tools/chat src/observability"
+    "swarm:test": "bun test src/swarm src/agent/tools/chat src/observability src/network"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.3",

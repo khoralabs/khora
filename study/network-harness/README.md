@@ -227,3 +227,18 @@ dataDir/
 - The memories service uses `createNoneAuthStrategy` — it is intended for local/trusted use only.
 - `useCellWorkers` is always `false` in the harness; Bun worker threads are unnecessary for local experiments.
 - Each agent's memories database uses `{ kind: "account", ownerKey: did }` as its `MemoriesDatabaseId`.
+
+## Manual network vs automated swarm
+
+This package has two layers:
+
+**Core harness** (default export `@khoralabs/khora-network-harness`) — start a local Khora network, spawn agents with handles, connect inboxes, and run signed chat manually. You own lifecycle and orchestration.
+
+**Automated swarm** (`@khoralabs/khora-network-harness/swarm`) — a recipe on top of the same harness: spawns N agents, assembles turn context from inbox + threads, runs agent loops until a shared token budget is exhausted, and records attribution events.
+
+```ts
+import { startNetworkHarness, spawnWithMemories } from "@khoralabs/khora-network-harness";
+import { swarmOrchestrator } from "@khoralabs/khora-network-harness/swarm";
+```
+
+Shared observability and session types live under `@khoralabs/khora-network-harness/network`.

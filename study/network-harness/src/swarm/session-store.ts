@@ -50,7 +50,7 @@ export type SwarmAgentWorkflowDeps = {
   memoriesClient?: RemoteMemoriesClientAsync;
   khoraClient?: KhoraClient;
   sessionId: string;
-  swarmDataDir: string;
+  networkDataDir: string;
   chatDb: Database;
 };
 
@@ -86,7 +86,7 @@ export async function resolveSwarmAgentWorkflowDeps(
     memoriesClient,
     khoraClient,
     sessionId,
-    swarmDataDir: session.config.dataDir,
+    networkDataDir: session.config.dataDir,
     chatDb: session.chatDb,
   };
 }

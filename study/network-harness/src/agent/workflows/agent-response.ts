@@ -1,4 +1,5 @@
 import { start } from "workflow/api";
+import { requireNetworkSession } from "../../network/session-registry.ts";
 import { ensureDevAgentIdentity, getAgentChatService } from "../chat-service.ts";
 import { type RunAgentWorkflowDependencies, runAgentWorkflow } from "../run-agent-workflow.ts";
 import {
@@ -73,19 +74,13 @@ export async function runAgentResponseStep(
     return executeAgentResponse(params);
   }
 
-  const { resolveSwarmAgentWorkflowDeps } = await import("../../swarm/session-store.ts");
+  const session = requireNetworkSession(sessionId);
   const { resolveHarnessEmbeddingModel } = await import(
     "../tools/memories/_helpers/embedding-model.ts"
   );
-  const swarmDeps = await resolveSwarmAgentWorkflowDeps(sessionId, params.agent.actingFor.id);
+  const networkDeps = await session.resolveAgentWorkflowDeps(params.agent.actingFor.id);
   return runAgentWorkflow(params, {
-    chatService: swarmDeps.chatService,
-    agentChat: swarmDeps.agentChat,
-    sessionId: swarmDeps.sessionId,
-    swarmDataDir: swarmDeps.swarmDataDir,
-    chatDb: swarmDeps.chatDb,
-    memoriesClient: swarmDeps.memoriesClient,
-    khoraClient: swarmDeps.khoraClient,
+    ...networkDeps,
     embeddingModel: resolveHarnessEmbeddingModel(),
   });
 }
