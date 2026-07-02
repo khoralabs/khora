@@ -1,6 +1,7 @@
 import { getRun, start } from "workflow/api";
 
 import { runAgentResponseStep } from "../agent/workflows/agent-response.ts";
+import { emitNetworkEvent, networkEventId } from "../observability/network-log.ts";
 import { configureTursoWorldEnv } from "../workflow/world.ts";
 import { assembleTurnContext } from "./assemble-turn-context.ts";
 import { getSwarmSession } from "./session-store.ts";
@@ -108,6 +109,24 @@ export async function agentLoop(
 
   while (await checkTokenBudgetRemainingStep(config.dataDir, swarmStateId)) {
     const { params, inboxEntryIds } = await assembleTurnParamsStep(swarmStateId, agent, config);
+    await emitNetworkEvent({
+      dataDir: config.dataDir,
+      eventId: networkEventId({
+        sessionId: config.sessionId,
+        kind: "agent.turn.start",
+        runId: params.runId,
+        agentDid: agent.did,
+        turnIndex: turnCount,
+      }),
+      sessionId: config.sessionId,
+      tsMs: Date.now(),
+      source: "agent",
+      kind: "agent.turn.start",
+      agentDid: agent.did,
+      agentRole: agent.role,
+      runId: params.runId,
+      payload: { agentTurnIndex: turnCount, inboxEntryIds },
+    });
     const result = await runAgentResponseStep(params);
     await recordTurnTelemetryStep(config.dataDir, swarmStateId, {
       sessionId: config.sessionId,

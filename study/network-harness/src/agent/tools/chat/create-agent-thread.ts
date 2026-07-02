@@ -1,6 +1,7 @@
 import { tool } from "@khoralabs/agent-capabilities";
 import { z } from "zod";
 import type { HarnessToolkitEnv } from "../types.ts";
+import { emitChatNetworkEvent } from "./_helpers/network-events.ts";
 import { hasAgentChat } from "./policies.ts";
 
 export const createAgentThreadTool = tool<
@@ -32,6 +33,16 @@ export const createAgentThreadTool = tool<
         scope: { type: "agent", id: participant.did },
         role: participant.role,
       })),
+    });
+    await emitChatNetworkEvent({
+      env: ctx.env,
+      kind: "chat.thread.created",
+      payload: {
+        threadId: thread.id,
+        title: input.title,
+        participants: input.participants,
+      },
+      extra: thread.id,
     });
     return { threadId: thread.id };
   },

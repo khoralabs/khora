@@ -24,6 +24,7 @@ export async function createHarnessToolkitEnv(input: {
   khoraClient?: KhoraClient;
   agentChat?: AgentChatClient;
   sessionId?: string;
+  swarmDataDir?: string;
   embeddingModel?: EmbeddingModel;
 }): Promise<HarnessToolkitEnv> {
   const env: HarnessToolkitEnv = {
@@ -31,6 +32,7 @@ export async function createHarnessToolkitEnv(input: {
     khoraClient: input.khoraClient,
     agentChat: input.agentChat,
     sessionId: input.sessionId,
+    swarmDataDir: input.swarmDataDir,
     embeddingModel: input.embeddingModel,
     embeddingCache: new Map(),
     skills: [],

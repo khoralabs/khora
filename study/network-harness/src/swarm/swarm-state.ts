@@ -2,8 +2,10 @@ import { mkdirSync } from "node:fs";
 import type { KhoraClientEvent } from "@khoralabs/khora-client";
 import { type Client, createClient } from "@libsql/client";
 
-import { workflowDbPath } from "../workflow/paths.ts";
-import type { AgentLoopState, SwarmConfig, SwarmState, TurnTelemetry } from "./types.ts";
+import { buildNetworkAttribution } from "../observability/attribution-digest";
+import { emitNetworkEvent } from "../observability/network-log";
+import { workflowDbPath } from "../workflow/paths";
+import type { AgentLoopState, NetworkEvent, SwarmConfig, SwarmState, TurnTelemetry } from "./types";
 
 export type InboxEntry = {
   id: string;
@@ -66,6 +68,22 @@ async function ensureSchema(dataDir: string): Promise<void> {
         last_entry_id TEXT,
         PRIMARY KEY (session_id, agent_did)
       )
+    `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS swarm_network_events (
+        event_id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        ts_ms INTEGER NOT NULL,
+        source TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        agent_did TEXT,
+        payload_json TEXT NOT NULL
+      )
+    `);
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_swarm_network_events_session_seq
+        ON swarm_network_events (session_id, seq)
     `);
   })();
   schemaReadyByDataDir.set(dataDir, ready);
@@ -135,6 +153,27 @@ export async function appendInboxEntry(
           VALUES (?, ?, ?, ?, ?)`,
     args: [entry.id, sessionId, did, JSON.stringify(event), entry.receivedAtMs],
   });
+
+  await emitNetworkEvent({
+    dataDir,
+    eventId: networkEventId({
+      sessionId,
+      kind: "inbox.received",
+      agentDid: did,
+      extra: entry.id,
+    }),
+    sessionId,
+    tsMs: entry.receivedAtMs,
+    source: "inbox",
+    kind: "inbox.received",
+    agentDid: did,
+    payload: {
+      inboxEntryId: entry.id,
+      eventType: event.type,
+      event,
+    },
+  });
+
   return entry;
 }
 
@@ -237,37 +276,155 @@ export async function incrementTokensUsedStep(
   return state.tokensUsed;
 }
 
-export async function recordTurnTelemetryStep(
+export async function persistNetworkEvent(
   dataDir: string,
-  swarmStateId: string,
-  telemetry: TurnTelemetry,
-): Promise<void> {
+  event: NetworkEvent,
+): Promise<NetworkEvent | null> {
   await ensureSchema(dataDir);
   const db = getClient(dataDir);
-  await db.execute({
-    sql: `INSERT INTO swarm_turn_telemetry (id, swarm_state_id, session_id, payload_json, created_at_ms)
-          VALUES (?, ?, ?, ?, ?)`,
+  const maxRow = await db.execute({
+    sql: `SELECT COALESCE(MAX(seq), 0) AS max_seq FROM swarm_network_events WHERE session_id = ?`,
+    args: [event.sessionId],
+  });
+  const nextSeq = Number(maxRow.rows[0]?.max_seq ?? 0) + 1;
+  const stored: NetworkEvent = { ...event, seq: nextSeq };
+  const result = await db.execute({
+    sql: `INSERT OR IGNORE INTO swarm_network_events
+          (event_id, session_id, seq, ts_ms, source, kind, agent_did, payload_json)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
-      crypto.randomUUID(),
-      swarmStateId,
-      telemetry.sessionId,
-      JSON.stringify(telemetry),
-      Date.now(),
+      stored.eventId,
+      stored.sessionId,
+      nextSeq,
+      stored.tsMs,
+      stored.source,
+      stored.kind,
+      stored.agentDid ?? null,
+      JSON.stringify(stored),
     ],
   });
+  if (result.rowsAffected === 0) return null;
+  return stored;
+}
+
+export type ListNetworkEventsOptions = {
+  kind?: string;
+  agentDid?: string;
+  sinceSeq?: number;
+};
+
+export async function queryNetworkEvents(
+  dataDir: string,
+  sessionId: string,
+  opts: ListNetworkEventsOptions = {},
+): Promise<NetworkEvent[]> {
+  await ensureSchema(dataDir);
+  const db = getClient(dataDir);
+  const conditions = ["session_id = ?"];
+  const args: Array<string | number> = [sessionId];
+  if (opts.kind !== undefined) {
+    conditions.push("kind = ?");
+    args.push(opts.kind);
+  }
+  if (opts.agentDid !== undefined) {
+    conditions.push("agent_did = ?");
+    args.push(opts.agentDid);
+  }
+  if (opts.sinceSeq !== undefined) {
+    conditions.push("seq > ?");
+    args.push(opts.sinceSeq);
+  }
+  const result = await db.execute({
+    sql: `SELECT payload_json FROM swarm_network_events
+          WHERE ${conditions.join(" AND ")}
+          ORDER BY seq ASC`,
+    args,
+  });
+  return result.rows.map((row) => JSON.parse(String(row.payload_json)) as NetworkEvent);
+}
+
+export async function recordTurnTelemetryStep(
+  dataDir: string,
+  _swarmStateId: string,
+  telemetry: TurnTelemetry,
+): Promise<void> {
+  await emitNetworkEvent({
+    dataDir,
+    eventId: networkEventId({
+      sessionId: telemetry.sessionId,
+      kind: "agent.turn.completed",
+      runId: telemetry.runId,
+      agentDid: telemetry.agentDid,
+      turnIndex: telemetry.agentTurnIndex,
+    }),
+    sessionId: telemetry.sessionId,
+    tsMs: Date.now(),
+    source: "agent",
+    kind: "agent.turn.completed",
+    agentDid: telemetry.agentDid,
+    agentRole: telemetry.agentRole,
+    runId: telemetry.runId,
+    payload: {
+      agentTurnIndex: telemetry.agentTurnIndex,
+      usage: telemetry.usage,
+      inboxEntryIds: telemetry.inboxEntryIds,
+      capabilities: telemetry.capabilities,
+    },
+    attribution: buildNetworkAttribution({
+      capabilities: telemetry.capabilities,
+      memoriesProvenanceRootHex: telemetry.memoriesProvenanceRootHex,
+      threadHashes: telemetry.threadHashes,
+    }),
+  });
+}
+
+export function networkEventId(input: {
+  sessionId: string;
+  kind: string;
+  runId?: string;
+  agentDid?: string;
+  turnIndex?: number;
+  extra?: string;
+}): string {
+  return [
+    input.sessionId,
+    input.kind,
+    input.runId ?? "",
+    input.agentDid ?? "",
+    input.turnIndex !== undefined ? String(input.turnIndex) : "",
+    input.extra ?? "",
+  ].join(":");
 }
 
 export async function listTurnTelemetry(
   dataDir: string,
   sessionId: string,
 ): Promise<TurnTelemetry[]> {
-  await ensureSchema(dataDir);
-  const db = getClient(dataDir);
-  const result = await db.execute({
-    sql: `SELECT payload_json FROM swarm_turn_telemetry WHERE session_id = ? ORDER BY created_at_ms ASC`,
-    args: [sessionId],
+  const events = await queryNetworkEvents(dataDir, sessionId, {
+    kind: "agent.turn.completed",
   });
-  return result.rows.map((row) => JSON.parse(String(row.payload_json)) as TurnTelemetry);
+  return events.map((event) => {
+    const payload = event.payload ?? {};
+    const attribution = event.attribution;
+    const capabilities = (payload.capabilities ?? {
+      staticHash: attribution?.staticHash ?? "",
+      runtimeHash: attribution?.runtimeHash ?? "",
+      invocationHash: attribution?.invocationHash,
+      toolRefs: attribution?.toolRefs ?? [],
+    }) as TurnTelemetry["capabilities"];
+    return {
+      sessionId: event.sessionId,
+      agentTurnIndex: Number(payload.agentTurnIndex ?? 0),
+      agentDid: event.agentDid ?? "",
+      agentRole: event.agentRole ?? "",
+      runId: event.runId ?? "",
+      usage: payload.usage as TurnTelemetry["usage"],
+      capabilities,
+      memoriesProvenanceRootHex: attribution?.memoriesProvenanceRootHex ?? "",
+      threadHashes: attribution?.threadHashes ?? [],
+      inboxEntryIds: (payload.inboxEntryIds as string[]) ?? [],
+    };
+  });
 }
 
 export async function summarizeSwarmState(

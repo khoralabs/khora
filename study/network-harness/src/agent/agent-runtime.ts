@@ -3,13 +3,15 @@ import {
   captureAgentSnapshotEnvelope,
   createAgentRegistry,
   type RegisteredAgent,
+  type ToolPipelineHooks,
 } from "@khoralabs/agent-capabilities";
 import { toolMapToAiTools } from "@khoralabs/agent-capabilities-ai-sdk";
 import { type AgentTelemetry, createAgentTelemetry } from "@khoralabs/agent-capabilities-otel";
 import { createLogger } from "@khoralabs/observability/logger";
+import { metrics, trace } from "@opentelemetry/api";
 
+import { createNetworkLogger, getNetworkLogContext } from "../observability/network-log.ts";
 import { defineHarnessAgent } from "./agents/index.ts";
-import { meter, tracer } from "./otel.ts";
 import type { HarnessToolkitEnv } from "./tools/types.ts";
 import type { AgentWorkflowParams } from "./types.ts";
 
@@ -17,16 +19,24 @@ type CaptureEnvelope = Awaited<ReturnType<typeof captureAgentSnapshotEnvelope>>;
 
 let agentRegistry: AgentRegistry | undefined;
 
-const logger = createLogger({ name: "network-harness-agent" });
-const otelDeps = { tracer, logger, meter };
+function resolveHarnessLogger(name: string, agentDid?: string) {
+  if (getNetworkLogContext() !== undefined) {
+    return createNetworkLogger({ name, source: "agent", agentDid });
+  }
+  return createLogger({ name });
+}
+
+const otelTracer = trace.getTracer("network-harness-agent");
+const otelMeter = metrics.getMeter("network-harness-agent");
 
 export function getAgentRegistry(): AgentRegistry {
   if (agentRegistry === undefined) agentRegistry = createAgentRegistry();
   return agentRegistry;
 }
 
-export function createHarnessAgentTelemetry(): AgentTelemetry {
-  return createAgentTelemetry(otelDeps);
+export function createHarnessAgentTelemetry(agentDid?: string): AgentTelemetry {
+  const logger = resolveHarnessLogger("network-harness-agent", agentDid);
+  return createAgentTelemetry({ tracer: otelTracer, logger, meter: otelMeter });
 }
 
 export function resolveGatewayModel(modelId: string): string {
@@ -86,6 +96,7 @@ export async function captureHarnessCapabilities(input: {
   agent: RegisteredAgent;
   env: HarnessToolkitEnv;
   params: AgentWorkflowParams;
+  pipelineHooks?: ToolPipelineHooks;
 }): Promise<{
   capture: CaptureEnvelope;
   aiTools: Record<string, unknown>;
@@ -103,6 +114,7 @@ export async function captureHarnessCapabilities(input: {
       env: input.env,
       agentId: input.agent.agentId,
       agentName: input.agent.name,
+      pipelineHooks: input.pipelineHooks,
     },
     invocationContext: { runId: input.params.runId },
     sessionContext: {
@@ -114,6 +126,7 @@ export async function captureHarnessCapabilities(input: {
   const aiTools = toolMapToAiTools(capture.evaluatedTools, {
     env: input.env,
     resolvedPolicies: new Map(),
+    pipelineHooks: input.pipelineHooks,
   }) as Record<string, unknown>;
 
   return {

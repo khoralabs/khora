@@ -10,6 +10,7 @@ export type HarnessToolkitEnv = {
   khoraClient?: KhoraClient;
   agentChat?: AgentChatClient;
   sessionId?: string;
+  swarmDataDir?: string;
   embeddingModel?: EmbeddingModel;
   embeddingCache?: Map<string, number[]>;
   memoriesSnapshotRootHex?: string;

@@ -3,6 +3,7 @@ import { createRegisteredAgent } from "@khoralabs/agent-capabilities";
 import { getAgentRegistry } from "../agent/agent-runtime.ts";
 import { harnessToolkit } from "../agent/tools/index.ts";
 import { spawnWithMemories, startNetworkHarness } from "../harness.ts";
+import { emitNetworkEvent, networkEventId } from "../observability/network-log.ts";
 import { putSwarmSession, removeSwarmSession, type SwarmRuntimeSession } from "./session-store.ts";
 import { appendInboxEntry, createSwarmState } from "./swarm-state.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
@@ -26,6 +27,21 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
   agents: AgentLoopState[];
 }> {
   validateSwarmConfig(config);
+
+  await emitNetworkEvent({
+    dataDir: config.dataDir,
+    eventId: networkEventId({ sessionId: config.sessionId, kind: "swarm.setup.started" }),
+    sessionId: config.sessionId,
+    tsMs: Date.now(),
+    source: "swarm",
+    kind: "swarm.setup.started",
+    message: "Starting swarm setup",
+    payload: {
+      agentCount: config.agentCount,
+      roles: config.roles,
+      goal: config.goal,
+    },
+  });
 
   const harness = await startNetworkHarness({ dataDir: config.dataDir });
   const spawned = [];
@@ -90,6 +106,26 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
   putSwarmSession(config.sessionId, session);
 
   const swarmState = await createSwarmState(config.dataDir, config, loopStates);
+
+  await emitNetworkEvent({
+    dataDir: config.dataDir,
+    eventId: networkEventId({ sessionId: config.sessionId, kind: "swarm.setup.completed" }),
+    sessionId: config.sessionId,
+    tsMs: Date.now(),
+    source: "swarm",
+    kind: "swarm.setup.completed",
+    message: "Swarm setup completed",
+    payload: {
+      swarmStateId: swarmState.id,
+      agents: loopStates.map((agent) => ({
+        did: agent.did,
+        role: agent.role,
+        selfThreadId: agent.selfThreadId,
+        registeredStaticHash: agent.registeredStaticHash,
+      })),
+    },
+  });
+
   return {
     swarmStateId: swarmState.id,
     sessionId: config.sessionId,
@@ -100,6 +136,17 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
 export async function teardownSwarm(sessionId: string): Promise<void> {
   const session = removeSwarmSession(sessionId);
   if (session === undefined) return;
+
+  await emitNetworkEvent({
+    dataDir: session.config.dataDir,
+    eventId: networkEventId({ sessionId, kind: "swarm.teardown" }),
+    sessionId,
+    tsMs: Date.now(),
+    source: "swarm",
+    kind: "swarm.teardown",
+    message: "Tearing down swarm session",
+  });
+
   for (const connection of session.inboxConnections ?? []) {
     connection.close();
   }

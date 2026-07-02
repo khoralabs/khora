@@ -2,6 +2,11 @@ import path from "node:path";
 
 import { start } from "workflow/api";
 
+import {
+  closeNetworkLog,
+  createNetworkLogger,
+  initNetworkLog,
+} from "../observability/network-log.ts";
 import { resolveHarnessDataDir } from "../workflow/paths.ts";
 import { configureTursoWorldEnv, startTursoWorldWorker } from "../workflow/world.ts";
 import type { SwarmConfig } from "./types.ts";
@@ -50,22 +55,25 @@ async function main(): Promise<void> {
   configureTursoWorldEnv({ dataDir: config.dataDir });
   await startTursoWorldWorker({ dataDir: config.dataDir });
 
-  console.log(
-    JSON.stringify(
+  initNetworkLog({ dataDir: config.dataDir, sessionId: config.sessionId });
+  const logger = createNetworkLogger({ name: "network-harness-swarm", source: "swarm" });
+
+  try {
+    logger.info(
       {
-        starting: true,
         sessionId: config.sessionId,
         dataDir: path.resolve(config.dataDir),
         agentCount: config.agentCount,
       },
-      null,
-      2,
-    ),
-  );
+      "swarm.starting",
+    );
 
-  const run = await start(swarmOrchestrator, [config]);
-  const result = await run.returnValue;
-  console.log(JSON.stringify(result, null, 2));
+    const run = await start(swarmOrchestrator, [config]);
+    const result = await run.returnValue;
+    logger.info({ result }, "swarm.completed");
+  } finally {
+    closeNetworkLog();
+  }
 }
 
 await main();

@@ -12,6 +12,11 @@ import {
   type SignedChatBackend,
 } from "./chat";
 import { startMemoriesService } from "./memories";
+import {
+  emitNetworkEvent,
+  getNetworkLogContext,
+  networkEventId,
+} from "./observability/network-log.ts";
 import { startRelayServer } from "./relay";
 
 export type NetworkHarnessOptions = {
@@ -123,6 +128,27 @@ export async function startNetworkHarness(
     },
   };
 
+  const logContext = getNetworkLogContext();
+  if (logContext !== undefined && logContext.dataDir === opts.dataDir) {
+    void emitNetworkEvent({
+      dataDir: opts.dataDir,
+      eventId: networkEventId({
+        sessionId: logContext.sessionId,
+        kind: "harness.started",
+      }),
+      sessionId: logContext.sessionId,
+      tsMs: Date.now(),
+      source: "harness",
+      kind: "harness.started",
+      message: "Network harness started",
+      payload: {
+        serverBaseUrl: server.baseUrl,
+        relayBaseUrl: relay.baseUrl,
+        memoriesBaseUrl: memories.baseUrl,
+      },
+    });
+  }
+
   return {
     serverBaseUrl: server.baseUrl,
     relayBaseUrl: relay.baseUrl,
@@ -135,6 +161,21 @@ export async function startNetworkHarness(
     chat,
     signedChat,
     stop() {
+      const ctx = getNetworkLogContext();
+      if (ctx !== undefined && ctx.dataDir === opts.dataDir) {
+        void emitNetworkEvent({
+          dataDir: opts.dataDir,
+          eventId: networkEventId({
+            sessionId: ctx.sessionId,
+            kind: "harness.stopped",
+          }),
+          sessionId: ctx.sessionId,
+          tsMs: Date.now(),
+          source: "harness",
+          kind: "harness.stopped",
+          message: "Network harness stopped",
+        });
+      }
       memories.stop();
       relay.stop();
       server.close();

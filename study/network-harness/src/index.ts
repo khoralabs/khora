@@ -28,10 +28,13 @@ export {
   type MemoriesServiceOptions,
   startMemoriesService,
 } from "./memories";
+export { listNetworkEvents } from "./observability/network-log";
 export { type RelayServerHandle, type RelayServerOptions, startRelayServer } from "./relay";
 export { type InboxEntry, listTurnTelemetry } from "./swarm/swarm-state";
 export type {
   AgentLoopState,
+  NetworkAttribution,
+  NetworkEvent,
   SwarmConfig,
   SwarmResult,
   TurnTelemetry,

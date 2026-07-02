@@ -11,9 +11,12 @@ import {
 } from "ai";
 
 import type { AgentChatClient } from "../chat.ts";
+import { buildNetworkAttribution } from "../observability/attribution-digest.ts";
+import { runWithAttributionAsync } from "../observability/network-log.ts";
 import { collectThreadHashSnapshots } from "../swarm/assemble-turn-context.ts";
 import {
   captureHarnessCapabilities,
+  createHarnessAgentTelemetry,
   getAgentRegistry,
   resolveGatewayModel,
   resolveWorkflowAgent,
@@ -135,11 +138,29 @@ export async function runAgentWorkflow(
     embeddingModel: deps.embeddingModel,
     agentChat: deps.agentChat,
     sessionId: deps.sessionId ?? params.context.sessionId,
+    swarmDataDir: deps.swarmDataDir,
   });
+  const telemetry = createHarnessAgentTelemetry(params.agent.actingFor.id);
   const { capture, aiTools, capabilities } = await captureHarnessCapabilities({
     agent,
     env,
     params,
+    pipelineHooks: telemetry.pipelineHooks,
+  });
+  telemetry.linkCapture({
+    link: capture.link,
+    toolRefs: capture.toolRefs,
+    invocationContext: { runId: params.runId },
+    sessionContext: {
+      sessionId: params.context.sessionId ?? params.runId,
+      threadId: params.output.chat.threadId,
+    },
+  });
+
+  const turnAttribution = buildNetworkAttribution({
+    capabilities,
+    memoriesProvenanceRootHex: env.memoriesSnapshotRootHex ?? "",
+    threadHashes: [],
   });
 
   if (deps.chatService === undefined) {
@@ -152,84 +173,86 @@ export async function runAgentWorkflow(
   const runStreamText = deps.streamTextFn ?? streamText;
   let generationError: unknown;
 
-  try {
-    await writer.start(assistantMessage(writer.postId, ""));
-    streamStarted = true;
-
-    const maxSteps = params.model.maxSteps ?? 8;
-    const result = runStreamText({
-      model: modelId,
-      system: [capture.instructions, formatSkillCatalog(env.skills), ...context.instructions]
-        .filter((part) => part.length > 0)
-        .join("\n\n"),
-      messages: context.modelMessages,
-      tools: aiTools,
-      stopWhen: stepCountIs(maxSteps),
-      onError: ({ error }) => {
-        generationError = error;
-      },
-    } as Parameters<typeof streamText>[0]);
-    const finishReasonPromise = Promise.resolve(result.finishReason).catch(() => undefined);
-    const usagePromise = Promise.resolve(result.usage).catch(() => undefined);
-    const responsePromise = Promise.resolve(result.response).catch(() => undefined);
-    const textPromise = Promise.resolve(result.text).catch(() => "");
-
+  return runWithAttributionAsync(turnAttribution, async () => {
     try {
-      for await (const delta of result.textStream) {
-        text += delta;
-        if (params.output.chat.streamDeltas) {
-          await writer.apply(assistantMessage(writer.postId, text));
+      await writer.start(assistantMessage(writer.postId, ""));
+      streamStarted = true;
+
+      const maxSteps = params.model.maxSteps ?? 8;
+      const result = runStreamText({
+        model: modelId,
+        system: [capture.instructions, formatSkillCatalog(env.skills), ...context.instructions]
+          .filter((part) => part.length > 0)
+          .join("\n\n"),
+        messages: context.modelMessages,
+        tools: aiTools,
+        stopWhen: stepCountIs(maxSteps),
+        onError: ({ error }) => {
+          generationError = error;
+        },
+      } as Parameters<typeof streamText>[0]);
+      const finishReasonPromise = Promise.resolve(result.finishReason).catch(() => undefined);
+      const usagePromise = Promise.resolve(result.usage).catch(() => undefined);
+      const responsePromise = Promise.resolve(result.response).catch(() => undefined);
+      const textPromise = Promise.resolve(result.text).catch(() => "");
+
+      try {
+        for await (const delta of result.textStream) {
+          text += delta;
+          if (params.output.chat.streamDeltas) {
+            await writer.apply(assistantMessage(writer.postId, text));
+          }
         }
+      } catch (error) {
+        generationError = error;
       }
+
+      text = text.length > 0 ? text : await textPromise;
+      if (text.length === 0) {
+        const detail = generationError === undefined ? "" : `: ${errorMessage(generationError)}`;
+        throw new Error(`agent workflow produced no text output${detail}`);
+      }
+
+      const [finishReason, usage, response] = await Promise.all([
+        finishReasonPromise,
+        usagePromise,
+        responsePromise,
+      ]);
+      const metadata = {
+        model: modelMetadata({ requestedModel: modelId, finishReason, response }),
+        usage: usageFromAiSdk(usage),
+      };
+      await writer.apply(assistantMessage(writer.postId, text), metadata);
+      const message = await writer.complete();
+
+      const threadHashes =
+        deps.agentChat !== undefined && deps.chatDb !== undefined
+          ? await collectThreadHashSnapshots(deps.chatDb, deps.agentChat)
+          : undefined;
+
+      return {
+        runId: params.runId,
+        chat: {
+          threadId: params.output.chat.threadId,
+          postId: writer.postId,
+          status: "complete",
+        },
+        message,
+        usage: metadata.usage,
+        memoriesProvenanceRootHex: env.memoriesSnapshotRootHex,
+        threadHashes,
+        capabilities,
+      };
     } catch (error) {
-      generationError = error;
+      if (streamStarted && text.length === 0) {
+        await writer
+          .apply(assistantMessage(writer.postId, userFacingGenerationError()))
+          .then(() => writer.complete())
+          .catch(() => undefined);
+      } else if (streamStarted) {
+        await writer.abort().catch(() => undefined);
+      }
+      throw error;
     }
-
-    text = text.length > 0 ? text : await textPromise;
-    if (text.length === 0) {
-      const detail = generationError === undefined ? "" : `: ${errorMessage(generationError)}`;
-      throw new Error(`agent workflow produced no text output${detail}`);
-    }
-
-    const [finishReason, usage, response] = await Promise.all([
-      finishReasonPromise,
-      usagePromise,
-      responsePromise,
-    ]);
-    const metadata = {
-      model: modelMetadata({ requestedModel: modelId, finishReason, response }),
-      usage: usageFromAiSdk(usage),
-    };
-    await writer.apply(assistantMessage(writer.postId, text), metadata);
-    const message = await writer.complete();
-
-    const threadHashes =
-      deps.agentChat !== undefined && deps.chatDb !== undefined
-        ? await collectThreadHashSnapshots(deps.chatDb, deps.agentChat)
-        : undefined;
-
-    return {
-      runId: params.runId,
-      chat: {
-        threadId: params.output.chat.threadId,
-        postId: writer.postId,
-        status: "complete",
-      },
-      message,
-      usage: metadata.usage,
-      memoriesProvenanceRootHex: env.memoriesSnapshotRootHex,
-      threadHashes,
-      capabilities,
-    };
-  } catch (error) {
-    if (streamStarted && text.length === 0) {
-      await writer
-        .apply(assistantMessage(writer.postId, userFacingGenerationError()))
-        .then(() => writer.complete())
-        .catch(() => undefined);
-    } else if (streamStarted) {
-      await writer.abort().catch(() => undefined);
-    }
-    throw error;
-  }
+  });
 }
