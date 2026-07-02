@@ -35,9 +35,10 @@ const conn = agent.agentHandle.connectInbox({
 });
 
 // Write to the agent's memories database
-await agent.memories.serviceClient.postJson(`/databases/merge`, {
-  database: agent.memories.database,
-  params: { /* ... */ },
+await agent.memories.client.mergeMemory({
+  namespace: "notes",
+  key: "observation-1",
+  content: [{ type: "text", text: "..." }],
 });
 
 conn.close();
@@ -61,7 +62,8 @@ agent.memories.close()      // checkpoint and release the SQLite file
 agent.memories.checkpoint() // flush WAL without closing
 agent.memories.exists()     // boolean — useful after harness restarts
 agent.memories.delete()     // permanently delete the database file
-agent.memories.serviceClient // MemoriesServiceClient for advanced operations
+agent.memories.client       // RemoteMemoriesClientAsync — search, merge, delete (lazy-init)
+agent.memories.serviceClient // MemoriesServiceClient for lifecycle and wire escape hatches
 ```
 
 Spawn multiple agents and work with them concurrently:
@@ -127,21 +129,24 @@ await harness.memoriesClient.deleteDatabase({ kind: "account", ownerKey: did });
 
 ### Per-agent `AgentMemoriesClient`
 
-The `agent.memories` object returned by `spawnWithMemories` is a thin wrapper with `database` pre-bound. Access the underlying `MemoriesServiceClient` via `agent.memories.serviceClient` for anything not covered by the shortcuts:
+The `agent.memories` object returned by `spawnWithMemories` is a thin wrapper with `database` pre-bound. Use `agent.memories.client` for runtime memory operations — same typed API agent tools use, with the harness ontology already applied:
 
 ```ts
 // Search the agent's memories database
-const results = await agent.memories.serviceClient.postJson(
-  "/databases/search",
-  { database: agent.memories.database, params: { query: "...", namespace: "notes" } },
-);
+const results = await agent.memories.client.search({
+  query: "...",
+  namespace: "notes",
+});
 
 // Merge a memory into the agent's database
-await agent.memories.serviceClient.postJson("/databases/merge", {
-  database: agent.memories.database,
-  params: { namespace: "notes", key: "observation-1", content: "..." },
+await agent.memories.client.mergeMemory({
+  namespace: "notes",
+  key: "observation-1",
+  content: [{ type: "text", text: "..." }],
 });
 ```
+
+`agent.memories.client` is lazy-init: the capabilities handshake runs on the first search/merge/delete call, not at spawn time. Use `agent.memories.serviceClient` for lifecycle operations and other wire routes not covered by `MemoriesClientAsync`.
 
 ## Connecting agent inboxes
 

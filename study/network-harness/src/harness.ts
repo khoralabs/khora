@@ -3,8 +3,13 @@ import path from "node:path";
 import { loadIdentity } from "@khoralabs/agent-persisted-signer";
 import { type AgentHandle, AgentStore, ManagedAgentPool } from "@khoralabs/khora-managed-agents";
 import { startKhoraServer } from "@khoralabs/khora-server/start-server";
-import { createNoAuthProvider, MemoriesServiceClient } from "@khoralabs/memories-service-client";
+import {
+  createNoAuthProvider,
+  MemoriesServiceClient,
+  type RemoteMemoriesClientAsync,
+} from "@khoralabs/memories-service-client";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service-storage-core";
+import { createLazyHarnessMemoriesClient } from "./agent/tools/memories/_helpers/memories-client.ts";
 import {
   type AgentChatClient,
   createSignedChatService,
@@ -67,6 +72,8 @@ export type AgentMemoriesClient = {
   delete(): Promise<void>;
   /** The underlying service client, for operations not covered by the shortcuts above. */
   readonly serviceClient: MemoriesServiceClient;
+  /** Typed runtime client for search, merge, and delete — lazy-init on first use. */
+  readonly client: RemoteMemoriesClientAsync;
 };
 
 /** An `AgentHandle` paired with pre-bound memories and chat clients. */
@@ -216,6 +223,10 @@ export async function spawnWithMemories(harness: NetworkHarnessHandle): Promise<
       exists: () => memoriesClient.databaseExists(database),
       delete: () => memoriesClient.deleteDatabase(database),
       serviceClient: memoriesClient,
+      client: createLazyHarnessMemoriesClient({
+        baseUrl: harness.memoriesBaseUrl,
+        database,
+      }),
     },
   };
 }
