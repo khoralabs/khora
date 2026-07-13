@@ -1,12 +1,11 @@
 import fs from "node:fs";
-
-import {
-  defaultIdentityPath,
-  loadIdentity,
-  type PersistableRelaySigner,
-} from "@khoralabs/agent-persisted-signer";
 import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
-import { VELLUM_CANONICAL_KHORA_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
+import { loadIdentity, type PersistableSigner } from "@khoralabs/did-key-identity";
+import {
+  defaultAgentIdentityPath,
+  VELLUM_CANONICAL_KHORA_BASE_URL,
+  VellumClient,
+} from "@khoralabs/vellum-client";
 
 import { vellumCliResolvedConfig } from "../vellum-app-config";
 
@@ -54,9 +53,11 @@ export function cliRelayBaseUrl(flags: FlagMap): string {
 }
 
 export function agentIdentityPath(flags: FlagMap): string {
+  const fromFlag = strFlag(flags, "agent-key-path")?.trim();
+  if (fromFlag !== undefined && fromFlag.length > 0) return fromFlag;
   const cfg = vellumCliResolvedConfig(flags);
   const p = cfg.agentKeyPath?.trim();
-  return p !== undefined && p.length > 0 ? p : defaultIdentityPath();
+  return p !== undefined && p.length > 0 ? p : defaultAgentIdentityPath();
 }
 
 export function dataDirForEnv(flags: FlagMap): string | undefined {
@@ -83,7 +84,7 @@ export function makeVellumClient(flags: FlagMap, channelId: string): VellumClien
   });
 }
 
-export async function loadSigner(flags: FlagMap): Promise<PersistableRelaySigner> {
+export async function loadSigner(flags: FlagMap): Promise<PersistableSigner> {
   const idPath = agentIdentityPath(flags);
   const signer = await loadIdentity(idPath);
   if (signer === undefined) {

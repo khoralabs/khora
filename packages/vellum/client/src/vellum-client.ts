@@ -1,11 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import {
-  defaultIdentityPath,
-  identityPrivFromPersistableAgent,
-  loadIdentity,
-} from "@khoralabs/agent-persisted-signer";
+import { identityPrivFromPersistableSigner, loadIdentity } from "@khoralabs/did-key-identity";
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import { RelayClient } from "@khoralabs/relay-client";
@@ -34,6 +30,7 @@ import {
   createVellumControlTransportFromEnv,
   type VellumControlTransport,
 } from "@khoralabs/vellum-transport";
+import { defaultAgentIdentityPath } from "./default-agent-identity-path";
 import { isPidAlive } from "./list-local-vellum";
 import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence";
 import type { VellumReadModel } from "./persistence/vellum-read-persistence";
@@ -49,7 +46,7 @@ export type VellumClientOptions = {
   readPersistence?: VellumReadModel | undefined;
   /** Defaults to env-selected HTTP (`VELLUM_CONTROL_TRANSPORT`, default `http`). */
   controlTransport?: VellumControlTransport | undefined;
-  /** Override the agent identity key path (overrides env vars and defaultIdentityPath). */
+  /** Override the agent identity key path (overrides env vars and defaultAgentIdentityPath). */
   keyPath?: string | undefined;
 };
 
@@ -127,7 +124,7 @@ export class VellumClient {
       this.opts.keyPath?.trim() ??
       process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
       process.env.KHORA_AGENT_KEY_PATH?.trim() ??
-      defaultIdentityPath()
+      defaultAgentIdentityPath()
     );
   }
 
@@ -234,7 +231,7 @@ export class VellumClient {
     const peerDid = input.counterpartyDid.trim();
     const sessionId = input.sessionId?.trim() ?? randomUUID();
     const genesis = input.genesisHash?.trim() ?? randomGenesisSha256();
-    const ed25519PrivKey = identityPrivFromPersistableAgent(signer);
+    const ed25519PrivKey = identityPrivFromPersistableSigner(signer);
 
     const channelClient = new RelayClient({
       relayBaseUrl: this.opts.relayBaseUrl,

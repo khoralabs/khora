@@ -1,4 +1,4 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import { signAgentRequest } from "@khoralabs/khora-auth";
 import { KhoraClient, KhoraClientError } from "@khoralabs/khora-client";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
@@ -83,7 +83,7 @@ async function registryFetch(
 }
 
 export async function registerDidOnHost(
-  signer: PersistableRelaySigner,
+  signer: PersistableSigner,
   profile: HostRegistrationProfile,
 ): Promise<void> {
   const hostUrl = getKhoraHostUrl();
@@ -119,7 +119,7 @@ async function linkChallenge(registryUrl: string, did: string): Promise<{ challe
 }
 
 export async function linkUserDidToRegistry(
-  signer: PersistableRelaySigner,
+  signer: PersistableSigner,
   registrySessionCookie: string,
   params: { hostBaseUrl: string; hostSlug?: string },
 ): Promise<void> {

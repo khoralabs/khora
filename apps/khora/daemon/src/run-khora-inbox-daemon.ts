@@ -1,4 +1,4 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import {
   isDerivedInboxKindEvent,
   KhoraClient,
@@ -13,7 +13,7 @@ const MAX_BACKOFF_MS = 30_000;
 
 export type RunKhoraInboxDaemonOptions = {
   baseUrl: string;
-  signer: PersistableRelaySigner;
+  signer: PersistableSigner;
   dataDir: string;
   json: boolean;
   plugins?: readonly KhoraPluginInstaller[];

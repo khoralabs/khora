@@ -1,4 +1,4 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import { signAgentRequest } from "@khoralabs/khora-auth";
 import { loadRegistrySessionCookie } from "./session-store";
 
@@ -146,7 +146,7 @@ export type LinkAgentResult = {
 
 export async function linkAgent(
   registryUrl: string,
-  signer: PersistableRelaySigner,
+  signer: PersistableSigner,
   params: {
     challengeId: string;
     hostBaseUrl: string;
@@ -181,7 +181,7 @@ export async function linkAgent(
 
 export async function linkEnsure(
   registryUrl: string,
-  signer: PersistableRelaySigner,
+  signer: PersistableSigner,
   params: { hostBaseUrl: string; hostSlug?: string },
 ): Promise<LinkAgentResult["link"] | null> {
   const body = JSON.stringify({

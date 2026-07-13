@@ -1,9 +1,8 @@
 import type { Database } from "bun:sqlite";
 import os from "node:os";
 import path from "node:path";
-
-import { generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
 import type { ChatService } from "@khoralabs/chat-core";
+import { generateIdentity } from "@khoralabs/did-key-identity";
 import type { RelaySigner } from "@khoralabs/relay-crypto";
 
 import { createSignedChatService, type SignedChatBackend } from "../chat.ts";
@@ -19,7 +18,7 @@ export type SignedTestChat = {
 
 export async function createSignedTestChat(): Promise<SignedTestChat> {
   const dataDir = path.join(os.tmpdir(), `khora-signed-chat-${process.pid}-${crypto.randomUUID()}`);
-  const signer = await generateAgentIdentity();
+  const signer = await generateIdentity();
   const signers = new Map([[signer.did, signer]]);
   const backend = createSignedChatService(dataDir, {
     resolveSigner: (did) => Promise.resolve(signers.get(did)),

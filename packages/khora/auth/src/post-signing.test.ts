@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
+import { generateIdentity } from "@khoralabs/did-key-identity";
 import {
   canonicalKhoraPostSigningPayload,
   khoraPostSigningPayloadFromCreate,
@@ -9,7 +9,7 @@ import {
 
 describe("post-signing", () => {
   test("sign and verify round-trip", async () => {
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const payload = khoraPostSigningPayloadFromCreate(signer.did, {
       body: "hello world",
       title: "Hi",
@@ -23,7 +23,7 @@ describe("post-signing", () => {
   });
 
   test("subscription without body signs with empty string body", async () => {
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const payload = khoraPostSigningPayloadFromCreate(signer.did, {
       kind: "subscription",
       search: { content: {}, options: { labels: { some: ["khora_topic:test"] } } },

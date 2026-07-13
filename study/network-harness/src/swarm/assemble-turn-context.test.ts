@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
+import { generateIdentity } from "@khoralabs/did-key-identity";
 
 import { createSignedChatService } from "../chat.ts";
 import { assembleTurnContext } from "./assemble-turn-context.ts";
@@ -9,7 +9,7 @@ import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
 async function createChatFixture() {
   const dataDir = `/tmp/swarm-assemble-${process.pid}-${crypto.randomUUID()}`;
-  const signer = await generateAgentIdentity();
+  const signer = await generateIdentity();
   const signers = new Map([[signer.did, signer]]);
   const backend = createSignedChatService(dataDir, {
     resolveSigner: (did) => Promise.resolve(signers.get(did)),

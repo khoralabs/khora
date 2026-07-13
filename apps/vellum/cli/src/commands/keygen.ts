@@ -1,10 +1,6 @@
-import {
-  generateAgentIdentity,
-  loadIdentity,
-  saveIdentity,
-} from "@khoralabs/agent-persisted-signer";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
+import { generateIdentity, loadIdentity, saveIdentity } from "@khoralabs/did-key-identity";
 
 import { agentIdentityPath } from "../flows/context";
 
@@ -23,7 +19,7 @@ export async function handleKeygen(flags: FlagMap): Promise<void> {
     }
   }
 
-  const signer = await generateAgentIdentity();
+  const signer = await generateIdentity();
   await saveIdentity(keyPath, signer);
 
   if (json) {

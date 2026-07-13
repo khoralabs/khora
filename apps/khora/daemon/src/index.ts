@@ -1,9 +1,6 @@
 #!/usr/bin/env bun
-import {
-  defaultIdentityPath,
-  loadIdentity,
-  type PersistableRelaySigner,
-} from "@khoralabs/agent-persisted-signer";
+import { loadIdentity, type PersistableSigner } from "@khoralabs/did-key-identity";
+import { defaultIdentityPath } from "@khoralabs/khora-auth";
 
 import {
   DEFAULT_KHORA_BASE_URL,
@@ -15,7 +12,7 @@ import { printDaemonHelp } from "./daemon-help";
 import { pluginsFromDaemonConfig } from "./plugins-from-config";
 import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon";
 
-async function loadSigner(agentKeyPath: string | undefined): Promise<PersistableRelaySigner> {
+async function loadSigner(agentKeyPath: string | undefined): Promise<PersistableSigner> {
   const p =
     process.env.KHORA_AGENT_KEY_PATH?.trim() ?? agentKeyPath?.trim() ?? defaultIdentityPath();
   const signer = await loadIdentity(p);

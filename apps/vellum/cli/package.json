@@ -11,7 +11,7 @@
     "start": "bun run ./src/cli.ts"
   },
   "dependencies": {
-    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/cli-flow-nbc": "workspace:*",
     "@khoralabs/cli-kit": "workspace:*",

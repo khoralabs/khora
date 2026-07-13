@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { loadIdentity } from "@khoralabs/agent-persisted-signer";
+import { loadIdentity } from "@khoralabs/did-key-identity";
 import { type AgentHandle, AgentStore, ManagedAgentPool } from "@khoralabs/khora-managed-agents";
 import { startKhoraServer } from "@khoralabs/khora-server/start-server";
 import {

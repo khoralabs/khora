@@ -1,4 +1,4 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import {
   isDerivedInboxKindEvent,
   KhoraClient,
@@ -12,7 +12,7 @@ import type {
 } from "@khoralabs/vellum-contracts";
 
 export type AgentHandleOptions = {
-  signer: PersistableRelaySigner;
+  signer: PersistableSigner;
   baseUrl: string;
   /** Path to the agent's persisted Ed25519 key file (for vellum operations). */
   keyPath?: string;

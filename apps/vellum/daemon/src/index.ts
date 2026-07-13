@@ -1,12 +1,9 @@
 #!/usr/bin/env bun
 import { existsSync } from "node:fs";
 
+import { loadIdentity, type PersistableSigner } from "@khoralabs/did-key-identity";
 import {
-  defaultIdentityPath,
-  loadIdentity,
-  type PersistableRelaySigner,
-} from "@khoralabs/agent-persisted-signer";
-import {
+  defaultAgentIdentityPath,
   defaultVellumDaemonConfigPath,
   loadVellumAppConfig,
   vellumAppConfigBuiltinDefaults,
@@ -43,12 +40,12 @@ function loadDaemonLayeredConfig() {
   }).config;
 }
 
-async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableRelaySigner> {
+async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableSigner> {
   const p =
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
     process.env.KHORA_AGENT_KEY_PATH?.trim() ??
     vcfg.agentKeyPath?.trim() ??
-    defaultIdentityPath();
+    defaultAgentIdentityPath();
   const signer = await loadIdentity(p);
   if (signer === undefined) {
     console.error(`No agent identity at ${p}. Generate an Ed25519 identity first.`);

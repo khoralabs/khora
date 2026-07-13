@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 
-import { generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
+import { generateIdentity } from "@khoralabs/did-key-identity";
 import type { RelaySigner } from "@khoralabs/relay-crypto";
 
 import { createHarnessChat, type HarnessChat } from "../chat";
@@ -13,7 +13,7 @@ const signers = new Map<string, RelaySigner>();
 let chat: HarnessChat;
 
 async function agentDid(): Promise<string> {
-  const signer = await generateAgentIdentity();
+  const signer = await generateIdentity();
   signers.set(signer.did, signer);
   return signer.did;
 }

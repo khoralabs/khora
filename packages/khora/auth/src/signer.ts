@@ -1,4 +1,4 @@
-import type { RelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { Signer as RelaySigner } from "@khoralabs/did-key-identity";
 import {
   type SignAgentRequestInput as RelaySignAgentRequestInput,
   signAgentRequest as relaySignAgentRequest,

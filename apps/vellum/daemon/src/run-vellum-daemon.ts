@@ -1,11 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
-import {
-  createFrameSignerFromPersistableAgent,
-  identityPrivFromPersistableAgent,
-} from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
+import { createHexSigner, identityPrivFromPersistableSigner } from "@khoralabs/did-key-identity";
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import {
@@ -28,7 +25,7 @@ import { ensureVellumMetaSchema, upsertChainRow, upsertRosterEntry } from "./vel
 
 export type RunVellumDaemonOptions = {
   relayBaseUrl: string;
-  signer: PersistableRelaySigner;
+  signer: PersistableSigner;
   channelId: string;
   webSocketUrl: string;
   lastBlobId?: number;
@@ -72,8 +69,13 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
       handles: new Map(),
     };
 
-    const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
-    const ed25519PrivKey = identityPrivFromPersistableAgent(opts.signer);
+    const hexSigner = await createHexSigner(opts.signer);
+    const frameSigner = {
+      did: hexSigner.did,
+      actor: hexSigner.publicKeyHex,
+      sign: (bytes: Uint8Array) => hexSigner.sign(bytes),
+    };
+    const ed25519PrivKey = identityPrivFromPersistableSigner(opts.signer);
     const channelClient = new RelayClient({
       relayBaseUrl: opts.relayBaseUrl,
       signer: opts.signer,

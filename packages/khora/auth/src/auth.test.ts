@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { generateAgentIdentity, type RelaySigner } from "@khoralabs/agent-persisted-signer";
+import { generateIdentity, type Signer as RelaySigner } from "@khoralabs/did-key-identity";
 import { createKhoraDidAuth } from "./auth";
 import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, signatureBytesToB64Url } from "./wire";
 
@@ -37,7 +37,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "PATCH",
@@ -61,7 +61,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -84,7 +84,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -113,7 +113,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -136,7 +136,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "POST",
@@ -160,7 +160,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const bodyText = JSON.stringify({ did: "did:key:zMismatch" });
     const headers = await buildSignedHeaders({
       signer,
@@ -183,7 +183,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const bodyText = JSON.stringify({ did: signer.did });
     const headers = await buildSignedHeaders({
       signer,
@@ -206,7 +206,7 @@ describe("KhoraDidAuth.requireAuthenticatedRequest", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -232,7 +232,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -254,7 +254,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -274,7 +274,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createKhoraDidAuth({ db, now: () => now });
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",

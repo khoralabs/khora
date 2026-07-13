@@ -1,6 +1,6 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import { KhoraClientError } from "@khoralabs/khora-client";
 import { agentIdentityPath, cliBaseUrl, loadSigner, withKhoraClient } from "../flows/context";
 import { errorMessage } from "../lib/error-message";
@@ -10,7 +10,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
   const noFetch = boolFlag(flags, "no-fetch");
 
-  let signer: PersistableRelaySigner;
+  let signer: PersistableSigner;
   try {
     signer = await loadSigner(flags);
   } catch (e) {

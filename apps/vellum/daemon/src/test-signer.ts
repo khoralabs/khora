@@ -1,7 +1,7 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 
 /** Minimal signer stub for control-server unit tests. */
-export function testControlSigner(did = "did:key:alice"): PersistableRelaySigner {
+export function testControlSigner(did = "did:key:alice"): PersistableSigner {
   return {
     did,
     export: () => "dGVzdA==",

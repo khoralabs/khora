@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import {
   type FrameMultiplexOpenerApi,
   type FrameSessionHandle,
@@ -52,7 +52,7 @@ export function startVellumControlServer(opts: {
   state: VellumControlServerState;
   db: Database;
   persistence: ObpPersistenceClient;
-  signer: PersistableRelaySigner;
+  signer: PersistableSigner;
   myActorPubkeyHex: string;
   /** When set, chain/init requires a prior relay allocation for session_id. */
   isSessionAllocated?: (sessionId: string) => boolean | Promise<boolean>;

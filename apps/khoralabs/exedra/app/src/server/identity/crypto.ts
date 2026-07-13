@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
 
 const ALGO = "aes-256-gcm";
@@ -29,7 +29,7 @@ export function decryptIdentityPayload(payload: Buffer, key: Buffer): string {
 export async function loadSignerFromEncryptedBlob(
   payload: Buffer,
   key: Buffer,
-): Promise<PersistableRelaySigner> {
+): Promise<PersistableSigner> {
   const parsed = JSON.parse(decryptIdentityPayload(payload, key)) as StoredIdentity;
   if (typeof parsed.encoded !== "string" || parsed.encoded.length === 0) {
     throw new Error("identity blob missing encoded key");

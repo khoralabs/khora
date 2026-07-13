@@ -1,9 +1,5 @@
 import { rm } from "node:fs/promises";
-import {
-  generateAgentIdentity,
-  loadIdentity,
-  saveIdentity,
-} from "@khoralabs/agent-persisted-signer";
+import { generateIdentity, loadIdentity, saveIdentity } from "@khoralabs/did-key-identity";
 import { KhoraClient } from "@khoralabs/khora-client";
 
 import { AgentHandle } from "./handle";
@@ -64,7 +60,7 @@ export class ManagedAgentPool {
    * (e.g. initialising a memories database). Returns the new agent's DID.
    */
   async spawn(onSpawned?: AgentCallback): Promise<string> {
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     const keyPath = AgentStore.keyPath(this.#dataDir, signer.did);
     await saveIdentity(keyPath, signer);
 

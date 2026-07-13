@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { generateAgentIdentity } from "@khoralabs/khora-auth";
+import { generateIdentity } from "@khoralabs/khora-auth";
 
 import { getIdentityKey } from "../env";
 import { encryptIdentityPayload } from "./crypto";
@@ -8,7 +8,7 @@ export async function provisionOrgIdentity(): Promise<{
   did: string;
   identityEncrypted: Buffer;
 }> {
-  const identity = await generateAgentIdentity();
+  const identity = await generateIdentity();
   const identityJson = JSON.stringify({ did: identity.did, encoded: identity.export() });
   const identityEncrypted = encryptIdentityPayload(identityJson, getIdentityKey());
   return { did: identity.did, identityEncrypted };

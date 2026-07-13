@@ -1,12 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import {
-  generateAgentIdentity,
-  loadIdentity,
-  saveIdentity,
-} from "@khoralabs/agent-persisted-signer";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
+import { generateIdentity, loadIdentity, saveIdentity } from "@khoralabs/did-key-identity";
 import { KhoraClient } from "@khoralabs/khora-client";
 import {
   type AgentSkillInstallResult,
@@ -168,7 +164,7 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
     did = existingIdentity.did;
     if (!asJson) console.log(`${symbols.info} ${style.muted(`identity already exists: ${did}`)}`);
   } else {
-    const signer = await generateAgentIdentity();
+    const signer = await generateIdentity();
     await saveIdentity(keyPath, signer);
     did = signer.did;
     if (!asJson) console.log(`${symbols.success} generated identity ${style.muted(did)}`);

@@ -5,6 +5,7 @@ export {
   type VellumFetch,
 } from "@khoralabs/vellum-transport";
 export * from "./config/index";
+export { defaultAgentIdentityPath } from "./default-agent-identity-path";
 export { type LocalVellumRow, listLocalVellumRows } from "./list-local-vellum";
 export { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence";
 export type { VellumReadModel } from "./persistence/vellum-read-persistence";

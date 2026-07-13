@@ -24,9 +24,9 @@
         "khora": "./src/cli.ts",
       },
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/cli-flow-nbc": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
@@ -45,13 +45,13 @@
       "name": "@khoralabs/khora-daemon",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
+        "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-plugin-inbox-buffer": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
       },
       "devDependencies": {
-        "@khoralabs/khora-auth": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -157,10 +157,10 @@
         "@khoralabs/agent-capabilities": "^0.2.0",
         "@khoralabs/agent-capabilities-ai-sdk": "^0.2.0",
         "@khoralabs/agent-capabilities-otel": "^0.2.0",
-        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/chat-core": "workspace:*",
         "@khoralabs/chat-persistence-sqlite": "workspace:*",
         "@khoralabs/chat-react": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/exedra-authz": "workspace:*",
         "@khoralabs/exedra-chat": "workspace:*",
         "@khoralabs/exedra-knowledge": "workspace:*",
@@ -383,9 +383,9 @@
         "vellum": "./src/cli.ts",
       },
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/cli-flow-nbc": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/relay-client": "workspace:*",
@@ -405,7 +405,7 @@
       "name": "@khoralabs/vellum-daemon",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-transport": "workspace:*",
         "@khoralabs/nbc-bind-policy": "workspace:*",
         "@khoralabs/obp-frames-impl": "workspace:*",
@@ -494,7 +494,7 @@
       "name": "@khoralabs/khora-auth",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/relay-client": "workspace:*",
@@ -597,7 +597,7 @@
       "name": "@khoralabs/khora-managed-agents",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
@@ -806,23 +806,6 @@
         "typescript": "^5",
       },
     },
-    "packages/libs/persisted-signer": {
-      "name": "@khoralabs/agent-persisted-signer",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/relay-crypto": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-base": "^4.2.1",
-        "iso-signatures": "^0.5.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/registry/accounts": {
       "name": "@khoralabs/registry-accounts",
       "version": "0.0.0",
@@ -1023,7 +1006,7 @@
       "name": "@khoralabs/vellum-client",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/nbc-bind-policy": "workspace:*",
         "@khoralabs/obp-frames-impl": "workspace:*",
@@ -1077,10 +1060,10 @@
         "@khoralabs/agent-capabilities": "^0.2.0",
         "@khoralabs/agent-capabilities-ai-sdk": "^0.2.0",
         "@khoralabs/agent-capabilities-otel": "^0.2.0",
-        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/chat-core": "workspace:*",
         "@khoralabs/chat-persistence": "workspace:*",
         "@khoralabs/chat-persistence-sqlite": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-managed-agents": "workspace:*",
@@ -2351,8 +2334,6 @@
 
     "@khoralabs/agent-capabilities-otel": ["@khoralabs/agent-capabilities-otel@0.2.0", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.1", "@opentelemetry/api": "^1.9.0", "pino": "^9.6.0" }, "peerDependencies": { "typescript": "^5" } }, "sha512-hv1SDJhLel/iR3WEfkkzC9/hDc+hbxFWuwMmiW89kk1G8USeeJuESMYPx5pM7vHoYz90DSJqYfolwxyngiXFGA=="],
 
-    "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/libs/persisted-signer"],
-
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/libs/blog"],
 
     "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
@@ -2380,6 +2361,8 @@
     "@khoralabs/colonnade-persistence-sqlite": ["@khoralabs/colonnade-persistence-sqlite@workspace:packages/colonnade/impl/sqlite"],
 
     "@khoralabs/colonnade-persistence-turso-serverless": ["@khoralabs/colonnade-persistence-turso-serverless@workspace:packages/colonnade/impl/turso-serverless"],
+
+    "@khoralabs/did-key-identity": ["@khoralabs/did-key-identity@0.1.0", "", { "dependencies": { "@noble/ed25519": "^3.1.0", "@noble/hashes": "^2.2.0", "iso-base": "^4.2.1", "iso-signatures": "^0.5.1" }, "peerDependencies": { "typescript": "^5" } }, "sha512-ALGgj7L6iTBuEvQ0hnu1FLArd/69rjUKXBfUx1ZhN8JmOPU7NM+XK9HnbLBeg65/5q+CHaNl+KMdDq0i9uW/oA=="],
 
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
 

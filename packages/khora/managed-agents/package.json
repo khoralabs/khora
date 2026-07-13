@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/vellum-client": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*"

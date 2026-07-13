@@ -1,8 +1,8 @@
-import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableSigner } from "@khoralabs/did-key-identity";
 import { KhoraClient } from "@khoralabs/khora-client";
 
 export async function discoverRegisteredHostSlugs(
-  signer: PersistableRelaySigner,
+  signer: PersistableSigner,
   hosts: Record<string, { baseUrl: string }>,
   excludeSlug?: string,
 ): Promise<string[]> {

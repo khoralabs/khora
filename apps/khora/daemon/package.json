@@ -19,13 +19,13 @@
     "build:all": "bun run scripts/build.ts bun-darwin-arm64 && bun run scripts/build.ts bun-linux-x64 && bun run scripts/build.ts bun-linux-arm64"
   },
   "dependencies": {
-    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/did-key-identity": "^0.1.0",
+    "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-plugin-inbox-buffer": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*"
   },
   "devDependencies": {
-    "@khoralabs/khora-auth": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   }

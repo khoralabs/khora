@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { generateAgentIdentity } from "@khoralabs/khora-auth";
+import { generateIdentity } from "@khoralabs/khora-auth";
 
 import { encryptIdentityPayload, loadSignerFromEncryptedBlob } from "./crypto";
 import {
@@ -34,7 +34,7 @@ describe("usernameForOrg", () => {
 
 describe("loadSignerFromEncryptedBlob", () => {
   test("round-trips encrypted identity", async () => {
-    const identity = await generateAgentIdentity();
+    const identity = await generateIdentity();
     const blob = encryptIdentityPayload(
       JSON.stringify({ did: identity.did, encoded: identity.export() }),
       IDENTITY_KEY,
@@ -50,7 +50,7 @@ describe("registerUserDidOnNetwork", () => {
     process.env.KHORA_HOST_URL = "https://host.example";
     process.env.KHORA_HOST_SLUG = "demo-host";
 
-    const identity = await generateAgentIdentity();
+    const identity = await generateIdentity();
     const identityEncrypted = encryptIdentityPayload(
       JSON.stringify({ did: identity.did, encoded: identity.export() }),
       IDENTITY_KEY,
@@ -104,7 +104,7 @@ describe("registerUserDidOnNetwork", () => {
 
   test("skips when host URL is unset", async () => {
     process.env.EXEDRA_IDENTITY_KEY = IDENTITY_KEY_HEX;
-    const identity = await generateAgentIdentity();
+    const identity = await generateIdentity();
     const identityEncrypted = encryptIdentityPayload(
       JSON.stringify({ did: identity.did, encoded: identity.export() }),
       IDENTITY_KEY,

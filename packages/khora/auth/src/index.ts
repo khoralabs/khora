@@ -1,12 +1,18 @@
+/** @deprecated Prefer {@link PersistableSigner}. */
+/** @deprecated Prefer {@link Signer}. */
+export type {
+  PersistableSigner,
+  PersistableSigner as PersistableRelaySigner,
+  Signer,
+  Signer as RelaySigner,
+} from "@khoralabs/did-key-identity";
 export {
-  type AgentIdentityFile,
-  defaultIdentityPath,
-  generateAgentIdentity,
+  generateIdentity,
+  type IdentityFile,
   loadIdentity,
   loadOrCreateIdentity,
   saveIdentity,
-} from "@khoralabs/agent-persisted-signer";
-export type { PersistableRelaySigner, RelaySigner } from "@khoralabs/relay-crypto";
+} from "@khoralabs/did-key-identity";
 export {
   AuthError,
   type CreateKhoraDidAuthOptions,
@@ -14,6 +20,7 @@ export {
   KhoraDidAuth,
   type KhoraDidAuthOptions,
 } from "./auth";
+export { defaultIdentityPath } from "./identity-path";
 export type { NonceStore } from "./nonce-store";
 export {
   canonicalKhoraPostSigningPayload,

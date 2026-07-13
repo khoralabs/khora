@@ -18,7 +18,7 @@ export const zVellumAppConfigBase = z
       .string()
       .min(1)
       .optional()
-      .describe("Path to Ed25519 identity JSON (see agent-persisted-signer)"),
+      .describe("Path to Ed25519 identity JSON (see did-key-identity)"),
     defaultChannelWebSocketUrl: z
       .string()
       .min(1)

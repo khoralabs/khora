@@ -1,16 +1,12 @@
 import { describe, expect, mock, test } from "bun:test";
-import {
-  generateAgentIdentity,
-  type PersistableRelaySigner,
-  type RelaySigner,
-} from "@khoralabs/khora-auth";
+import { generateIdentity, type PersistableSigner, type RelaySigner } from "@khoralabs/khora-auth";
 import { KhoraClientError, type KhoraClientEvent } from "@khoralabs/khora-transport";
 import { KhoraClient } from "./khora-client";
 
 const TEST_AUTHOR_SIGNATURE = "test-post-author-signature";
 
-async function makeSigner(): Promise<PersistableRelaySigner> {
-  return generateAgentIdentity();
+async function makeSigner(): Promise<PersistableSigner> {
+  return generateIdentity();
 }
 
 /** Predictable mock signer for assertions that don't care about real crypto. */

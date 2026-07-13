@@ -17,7 +17,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/nbc-bind-policy": "workspace:*",
     "@khoralabs/obp-frames-impl": "workspace:*",

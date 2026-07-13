@@ -21,7 +21,7 @@
     "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/relay-crypto": "workspace:*",
     "@khoralabs/relay-mls": "workspace:*",
-    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/obp-frames-impl": "workspace:*",
     "@khoralabs/obp-model": "workspace:*",

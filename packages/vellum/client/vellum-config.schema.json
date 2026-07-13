@@ -21,7 +21,7 @@
       "minLength": 1
     },
     "agentKeyPath": {
-      "description": "Path to Ed25519 identity JSON (see agent-persisted-signer)",
+      "description": "Path to Ed25519 identity JSON (see did-key-identity)",
       "type": "string",
       "minLength": 1
     },
