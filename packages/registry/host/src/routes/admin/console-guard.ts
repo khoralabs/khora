@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/khora-console";
+import type { ConsoleAuth } from "@khoralabs/admin-token";
 
 export async function withConsoleAuth(
   req: Request,

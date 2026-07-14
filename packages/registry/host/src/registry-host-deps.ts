@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/khora-console";
+import type { ConsoleAuth } from "@khoralabs/admin-token";
 import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import type { RegistryIdentityPort } from "./ports/identity";
 

@@ -1,5 +1,5 @@
+import { createConsoleAuthFromEnv } from "@khoralabs/admin-token";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade-crypto";
-import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import {
   createBetterAuthRegistryIdentity,
   createBetterAuthRegistryRoutes,

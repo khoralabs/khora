@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/khora-console";
+import type { ConsoleAuth } from "@khoralabs/admin-token";
 import { getRegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { registryHostRuntime } from "../../runtime";
 import { withConsoleAuth } from "./console-guard";

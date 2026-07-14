@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
+import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";

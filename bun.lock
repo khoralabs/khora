@@ -60,9 +60,9 @@
       "version": "0.1.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
+        "@khoralabs/admin-token": "workspace:*",
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-console": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-accounts-react": "workspace:*",
@@ -95,13 +95,13 @@
       "version": "0.0.0",
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
+        "@khoralabs/admin-token": "workspace:*",
         "@khoralabs/agent-capabilities": "^0.2.0",
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-console": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-host": "workspace:*",
         "@khoralabs/khora-invites": "workspace:*",
@@ -527,14 +527,6 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/console": {
-      "name": "@khoralabs/khora-console",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
     "packages/khora/contracts": {
       "name": "@khoralabs/khora-contracts",
       "version": "0.0.0",
@@ -708,6 +700,14 @@
         "typescript": "^5",
       },
     },
+    "packages/libs/admin-token": {
+      "name": "@khoralabs/admin-token",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "packages/libs/blog": {
       "name": "@khoralabs/blog",
       "version": "0.0.0",
@@ -746,7 +746,7 @@
         "typescript": "^5",
       },
     },
-    "packages/libs/cli": {
+    "packages/libs/cli-kit": {
       "name": "@khoralabs/cli-kit",
       "version": "0.0.0",
       "dependencies": {
@@ -917,8 +917,8 @@
       "name": "@khoralabs/registry-host",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/admin-token": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-console": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-catalog": "workspace:*",
@@ -2308,6 +2308,8 @@
 
     "@keyv/serialize": ["@keyv/serialize@1.1.1", "", {}, "sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA=="],
 
+    "@khoralabs/admin-token": ["@khoralabs/admin-token@workspace:packages/libs/admin-token"],
+
     "@khoralabs/agent-capabilities": ["@khoralabs/agent-capabilities@0.2.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-efO+DCD/YLDS1ZonP5XHJTKxLFaLwJox7K84ubYvNPwRQSEWyB0mZFWTOJBaYdSKzDsZW7jHz9mDSkq3wI6Mxw=="],
 
     "@khoralabs/agent-capabilities-ai-sdk": ["@khoralabs/agent-capabilities-ai-sdk@0.2.0", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.1", "ai": "^7.0.9" }, "peerDependencies": { "typescript": "^5" } }, "sha512-xBlKeXzN3IF8nkntQNNGvP2EW3BQo4ebpo9uvs2AJiAKFpxtiWQjfcHplwTS0SsIc7zsIYEwzZq2PQJZEWQ90Q=="],
@@ -2330,7 +2332,7 @@
 
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:vendor/chat/react"],
 
-    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli"],
+    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli-kit"],
 
     "@khoralabs/colonnade-crypto": ["@khoralabs/colonnade-crypto@workspace:packages/colonnade/crypto"],
 
@@ -2367,8 +2369,6 @@
     "@khoralabs/khora-cli": ["@khoralabs/khora-cli@workspace:apps/khora/cli"],
 
     "@khoralabs/khora-client": ["@khoralabs/khora-client@workspace:packages/khora/client"],
-
-    "@khoralabs/khora-console": ["@khoralabs/khora-console@workspace:packages/khora/console"],
 
     "@khoralabs/khora-contracts": ["@khoralabs/khora-contracts@workspace:packages/khora/contracts"],
 

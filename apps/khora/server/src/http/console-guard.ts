@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/khora-console";
+import type { ConsoleAuth } from "@khoralabs/admin-token";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 

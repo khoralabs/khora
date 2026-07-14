@@ -5,7 +5,7 @@ import path from "node:path";
 
 const { dirname } = path;
 
-import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
+import { createConsoleAuthFromEnv } from "@khoralabs/admin-token";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";

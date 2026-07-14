@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
-import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { linkBetterAuthUser } from "@khoralabs/registry-accounts";
 import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import type { RegistryAdminSummary } from "@khoralabs/registry-catalog";

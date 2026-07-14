@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { ConsoleAuth } from "@khoralabs/khora-console";
+import type { ConsoleAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { V2HostRateLimiters } from "../rate-limit-buckets";
 

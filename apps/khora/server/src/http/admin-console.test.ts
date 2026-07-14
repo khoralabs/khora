@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
+import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { handleAdminStatsSummary } from "./admin-stats";
 import type { HostRouteDeps } from "./deps";
