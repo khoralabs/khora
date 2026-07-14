@@ -19,7 +19,7 @@ apps/
 
 packages/
 ├── agent/          # identity, relay, thread, persisted-signer
-├── cli/            # cli-kit, cli-flow
+├── cli/            # cli-kit
 ├── colonnade/      # Cell/outbox/inbox distributed storage
 ├── khora/          # contracts, auth, client, host, transport, relay-colonnade, react, invites
 ├── khoralabs/      # registry-* (catalog, accounts, auth, react)

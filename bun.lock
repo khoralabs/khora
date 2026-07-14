@@ -24,7 +24,6 @@
         "khora": "./src/cli.ts",
       },
       "dependencies": {
-        "@khoralabs/cli-flow": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
@@ -383,7 +382,6 @@
         "vellum": "./src/cli.ts",
       },
       "dependencies": {
-        "@khoralabs/cli-flow": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/obp-nbc": "workspace:*",
@@ -743,21 +741,6 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/libs/cli/cli-flow": {
-      "name": "@khoralabs/cli-flow",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/cli-kit": "workspace:*",
-        "@khoralabs/obp-model": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -2346,8 +2329,6 @@
     "@khoralabs/chat-persistence-turso": ["@khoralabs/chat-persistence-turso@workspace:vendor/chat/turso"],
 
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:vendor/chat/react"],
-
-    "@khoralabs/cli-flow": ["@khoralabs/cli-flow@workspace:packages/libs/cli/cli-flow"],
 
     "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli/cli-kit"],
 

@@ -1,17 +1,14 @@
-import { runOfferFlow } from "@khoralabs/cli-flow";
+import { runFlow } from "@khoralabs/cli-kit/flow";
 
 import type { KhoraCliContext } from "./context";
 import { profileUpdateFlowDefinition } from "./definitions";
-import { createKhoraFlowChainView } from "./khora-flow-chain";
 
 export async function runProfileUpdateInteractiveFlow(
   ctx: KhoraCliContext,
 ): Promise<{ displayName?: string; bio?: string }> {
-  const row = await runOfferFlow({
+  const row = await runFlow({
     readLine: ctx.readLine,
-    chain: createKhoraFlowChainView(),
     def: profileUpdateFlowDefinition,
-    offerId: "update",
   });
   const displayName = row.displayName?.trim();
   const bio = row.bio?.trim();

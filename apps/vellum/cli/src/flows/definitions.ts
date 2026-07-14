@@ -1,37 +1,22 @@
-import type { FlowDefinition } from "@khoralabs/cli-flow";
+import type { FlowDefinition } from "@khoralabs/cli-kit/flow";
 
 export const connectFlowDefinition: FlowDefinition = {
   id: "vellum-connect",
-  offers: [
-    {
-      id: "connect",
-      ports: [{ id: "channelId", prompt: "Channel ID: " }],
-    },
-  ],
+  fields: [{ id: "channelId", prompt: "Channel ID: " }],
 };
 
 export const channelJoinFlowDefinition: FlowDefinition = {
   id: "vellum-channel-join",
-  offers: [
-    {
-      id: "join",
-      ports: [{ id: "inviteToken", prompt: "Invite token: " }],
-    },
-  ],
+  fields: [{ id: "inviteToken", prompt: "Invite token: " }],
 };
 
 export const channelAttachFlowDefinition: FlowDefinition = {
   id: "vellum-channel-attach",
-  offers: [
+  fields: [
     {
-      id: "attach",
-      ports: [
-        {
-          id: "inviteToken",
-          prompt: "Invite token (leave empty if already a member): ",
-          optional: true,
-        },
-      ],
+      id: "inviteToken",
+      prompt: "Invite token (leave empty if already a member): ",
+      optional: true,
     },
   ],
 };

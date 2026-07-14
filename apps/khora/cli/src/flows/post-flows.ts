@@ -1,6 +1,6 @@
-import type { FlowDefinition } from "@khoralabs/cli-flow";
-import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow";
 import { splitTopics } from "@khoralabs/cli-kit";
+import type { FlowDefinition } from "@khoralabs/cli-kit/flow";
+import { requireFlowString, runFlow } from "@khoralabs/cli-kit/flow";
 import type {
   KhoraPostCreateContent,
   KhoraPostPatch,
@@ -14,7 +14,6 @@ import {
 } from "../lib/post-topics";
 import type { KhoraCliContext } from "./context";
 import { postsCreateFlowDefinition, postsUpdateFlowDefinition } from "./definitions";
-import { createKhoraFlowChainView } from "./khora-flow-chain";
 
 function parseVisibility(raw: string | undefined): KhoraPostVisibility | undefined {
   const v = raw?.trim();
@@ -23,25 +22,12 @@ function parseVisibility(raw: string | undefined): KhoraPostVisibility | undefin
   throw new Error("Visibility must be public, network, or private.");
 }
 
-function flowAfterBodyPrompt(
-  def: FlowDefinition,
-  offerId: string,
-  topicsPrompt: string,
-): FlowDefinition {
-  const offer = def.offers.find((o) => o.id === offerId);
-  if (offer === undefined) {
-    throw new Error(`flow missing offer "${offerId}"`);
-  }
+function flowAfterBodyPrompt(def: FlowDefinition, topicsPrompt: string): FlowDefinition {
   return {
     ...def,
-    offers: [
-      {
-        ...offer,
-        ports: offer.ports
-          .filter((port) => port.id !== "body")
-          .map((port) => (port.id === "topics" ? { ...port, prompt: topicsPrompt } : port)),
-      },
-    ],
+    fields: def.fields
+      .filter((field) => field.id !== "body")
+      .map((field) => (field.id === "topics" ? { ...field, prompt: topicsPrompt } : field)),
   };
 }
 
@@ -55,15 +41,9 @@ export async function runPostCreateInteractiveFlow(
   );
   const bodyTopics = parseTopicsFromBody(body);
 
-  const row = await runOfferFlow({
+  const row = await runFlow({
     readLine: ctx.readLine,
-    chain: createKhoraFlowChainView(),
-    def: flowAfterBodyPrompt(
-      postsCreateFlowDefinition,
-      "create",
-      topicsCreatePromptLine(bodyTopics),
-    ),
-    offerId: "create",
+    def: flowAfterBodyPrompt(postsCreateFlowDefinition, topicsCreatePromptLine(bodyTopics)),
   });
 
   const title = row.title?.trim();
@@ -84,15 +64,9 @@ export async function runPostUpdateInteractiveFlow(
   const bodyRaw = (await ctx.readLine("Body (leave empty to skip): ")).trim();
   const bodyTopics = bodyRaw.length > 0 ? parseTopicsFromBody(bodyRaw) : [];
 
-  const row = await runOfferFlow({
+  const row = await runFlow({
     readLine: ctx.readLine,
-    chain: createKhoraFlowChainView(),
-    def: flowAfterBodyPrompt(
-      postsUpdateFlowDefinition,
-      "update",
-      topicsUpdatePromptLine(bodyTopics),
-    ),
-    offerId: "update",
+    def: flowAfterBodyPrompt(postsUpdateFlowDefinition, topicsUpdatePromptLine(bodyTopics)),
   });
 
   const title = row.title?.trim();

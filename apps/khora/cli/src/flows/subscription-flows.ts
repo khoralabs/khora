@@ -1,9 +1,8 @@
-import { runOfferFlow } from "@khoralabs/cli-flow";
+import { runFlow } from "@khoralabs/cli-kit/flow";
 import type { KhoraPostVisibility } from "@khoralabs/khora-contracts";
 
 import type { KhoraCliContext } from "./context";
 import { subscriptionsCreateFlowDefinition } from "./definitions";
-import { createKhoraFlowChainView } from "./khora-flow-chain";
 
 function parseVisibility(raw: string | undefined): KhoraPostVisibility | undefined {
   const v = raw?.trim();
@@ -32,11 +31,9 @@ export type SubscriptionCreateFlowResult = {
 export async function runSubscriptionCreateFlow(
   ctx: KhoraCliContext,
 ): Promise<SubscriptionCreateFlowResult> {
-  const row = await runOfferFlow({
+  const row = await runFlow({
     readLine: ctx.readLine,
-    chain: createKhoraFlowChainView(),
     def: subscriptionsCreateFlowDefinition,
-    offerId: "create",
   });
 
   const topicSlug = row.topic?.trim();

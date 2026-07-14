@@ -8,6 +8,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./flow": {
+      "types": "./src/flow/index.ts",
+      "import": "./src/flow/index.ts",
+      "default": "./src/flow/index.ts"
     }
   },
   "scripts": {

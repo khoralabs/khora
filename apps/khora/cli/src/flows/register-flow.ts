@@ -1,8 +1,7 @@
-import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow";
+import { requireFlowString, runFlow } from "@khoralabs/cli-kit/flow";
 
 import type { KhoraCliContext } from "./context";
 import { registerFlowDefinition } from "./definitions";
-import { createKhoraFlowChainView } from "./khora-flow-chain";
 
 export async function runRegisterInteractiveFlow(
   ctx: KhoraCliContext,
@@ -13,11 +12,9 @@ export async function runRegisterInteractiveFlow(
   bio: string;
   inviteToken?: string;
 }> {
-  const row = await runOfferFlow({
+  const row = await runFlow({
     readLine: ctx.readLine,
-    chain: createKhoraFlowChainView(),
     def: registerFlowDefinition,
-    offerId: "register",
     partialSeeds: {
       username: defaults?.username?.trim() || undefined,
       displayName: defaults?.displayName?.trim() || undefined,
