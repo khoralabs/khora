@@ -8,7 +8,6 @@ export const zVellumAppConfigBase = z
   .object({
     $schema: z.string().optional(),
     relayBaseUrl: z.string().min(1).optional().describe("Vellum channel-relay HTTP origin"),
-    khoraBaseUrl: z.string().min(1).optional().describe("Khora discovery host (register / whoami)"),
     dataDir: z
       .string()
       .min(1)

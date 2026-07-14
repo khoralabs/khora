@@ -23,9 +23,7 @@ import { handleConnect } from "./connect";
 import { handleDisconnect } from "./disconnect";
 import { handleKeygen } from "./keygen";
 import { handleList } from "./list";
-import { handleRegister } from "./register";
 import { runSetupCommand } from "./setup";
-import { handleWhoami } from "./whoami";
 
 export async function dispatch(
   ctx: VellumCliContext,
@@ -39,18 +37,8 @@ export async function dispatch(
     return;
   }
 
-  if (a === "whoami") {
-    await handleWhoami(flags);
-    return;
-  }
-
   if (a === "keygen") {
     await handleKeygen(flags);
-    return;
-  }
-
-  if (a === "register") {
-    await handleRegister(ctx, flags);
     return;
   }
 

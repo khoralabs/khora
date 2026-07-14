@@ -1,5 +1,5 @@
 {
   "$schema": "./vellum-config.schema.json",
-  "khoraBaseUrl": "https://k-0.khoralabs.com",
+  "relayBaseUrl": "http://localhost:8790",
   "dataDir": "~/.vellum/data"
 }

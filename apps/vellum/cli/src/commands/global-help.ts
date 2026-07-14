@@ -9,13 +9,11 @@ export const commandHelpTextMap = buildCommandHelpTextMap(allCommandHelp, PROGRA
 export function printHelp(): void {
   console.error(`${style.bold(`${PROGRAM} — NBC tools for Vellum channels`)}
 
-Register on Khora for discovery; create channels on the Vellum channel-relay.
+Create channels on the Vellum channel-relay; run a local daemon per channel for chains/offers/ports.
 
 Usage:
   ${PROGRAM} help [<command> ...]
   ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
-  ${PROGRAM} register ... [--khora-base-url=…]
-  ${PROGRAM} whoami [--khora-base-url=…] [--json] [--no-fetch]
   ${PROGRAM} channel create ...
   ${PROGRAM} channel join ...              # roster admission only (prints JSON)
   ${PROGRAM} channel connect <id> …        # daemon + WS (idempotent)
@@ -30,7 +28,8 @@ Usage:
   ${PROGRAM} [--channel=id] policy read <portId> | policy validate <portId> --json=...
   ${PROGRAM} setup [--force] [--json]
 
-Env: VELLUM_BASE_URL (relay), KHORA_BASE_URL (discovery)
+Env / config: VELLUM_BASE_URL / --base-url / relayBaseUrl (channel-relay HTTP origin)
+Identity: VELLUM_AGENT_KEY_PATH / --agent-key-path (default ~/.vellum/identity.json)
 Channel id per command: positional <channelId> or --channel=<id> (see command --help)
 
 Run \`${PROGRAM} <command> --help\` for per-command interactive vs flag usage.`);

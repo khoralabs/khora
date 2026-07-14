@@ -29,8 +29,8 @@ export type PostinstallResult = {
   schemaCopied: boolean;
 };
 
-function expandHomePlaceholders(body: string, vellumHome: string, posixHome: string): string {
-  return body.replaceAll("~/.vellum", vellumHome).replaceAll("~/.khora", posixHome);
+function expandHomePlaceholders(body: string, vellumHome: string): string {
+  return body.replaceAll("~/.vellum", vellumHome);
 }
 
 export function runVellumConfigSetup(opts: {
@@ -42,7 +42,6 @@ export function runVellumConfigSetup(opts: {
   const force = opts.force ?? false;
   const dest = path.join(opts.home, ".vellum");
   fs.mkdirSync(dest, { recursive: true });
-  const khoraHome = path.join(opts.home, ".khora");
 
   const copied: string[] = [];
   const overwritten: string[] = [];
@@ -57,7 +56,7 @@ export function runVellumConfigSetup(opts: {
     }
     const src = path.join(opts.configsDir, name);
     let body = fs.readFileSync(src, "utf8");
-    body = expandHomePlaceholders(body, dest, khoraHome);
+    body = expandHomePlaceholders(body, dest);
     fs.writeFileSync(target, body);
     if (exists) overwritten.push(name);
     else copied.push(name);

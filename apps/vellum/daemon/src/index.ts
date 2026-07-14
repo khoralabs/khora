@@ -43,7 +43,6 @@ function loadDaemonLayeredConfig() {
 async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableSigner> {
   const p =
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
-    process.env.KHORA_AGENT_KEY_PATH?.trim() ??
     vcfg.agentKeyPath?.trim() ??
     defaultAgentIdentityPath();
   const signer = await loadIdentity(p);

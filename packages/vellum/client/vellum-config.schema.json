@@ -10,11 +10,6 @@
       "type": "string",
       "minLength": 1
     },
-    "khoraBaseUrl": {
-      "description": "Khora discovery host (register / whoami)",
-      "type": "string",
-      "minLength": 1
-    },
     "dataDir": {
       "description": "Vellum channel data root (SQLite + vellum.json under …/vellum/channels/…)",
       "type": "string",

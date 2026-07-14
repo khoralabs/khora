@@ -1,11 +1,7 @@
 import fs from "node:fs";
 import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
 import { loadIdentity, type PersistableSigner } from "@khoralabs/did-key-identity";
-import {
-  defaultAgentIdentityPath,
-  VELLUM_CANONICAL_KHORA_BASE_URL,
-  VellumClient,
-} from "@khoralabs/vellum-client";
+import { defaultAgentIdentityPath, VellumClient } from "@khoralabs/vellum-client";
 
 import { vellumCliResolvedConfig } from "../vellum-app-config";
 
@@ -26,16 +22,6 @@ export function readJsonArg(pathOrInline: string): unknown {
     return JSON.parse(raw) as unknown;
   }
   return JSON.parse(pathOrInline) as unknown;
-}
-
-export function cliKhoraBaseUrl(flags: FlagMap): string {
-  const cfg = vellumCliResolvedConfig(flags);
-  return (
-    strFlag(flags, "khora-base-url") ??
-    strFlag(flags, "khoraBaseUrl") ??
-    cfg.khoraBaseUrl ??
-    VELLUM_CANONICAL_KHORA_BASE_URL
-  );
 }
 
 export function cliRelayBaseUrl(flags: FlagMap): string {

@@ -1,17 +1,15 @@
 # Vellum CLI
 
-`vellum` drives NBC negotiation on Vellum **channels**: identity on Khora (discovery), channel spawn on the channel-relay, local daemon for chains/offers/ports.
+`vellum` drives NBC negotiation on Vellum **channels**: channel spawn on the channel-relay, local daemon for chains/offers/ports.
 
 **Multiple channels in parallel** are normal — each channel gets its own daemon process and data directory under `vellum/channels/<channelId>/`. Pass `--channel=<id>` or a positional channel id on every command that targets a channel.
 
 ## Quick start
 
 ```bash
-export KHORA_BASE_URL=https://k-0.khoralabs.com
 export VELLUM_BASE_URL=http://localhost:8790
 
 vellum keygen
-vellum register
 vellum channel create --json
 vellum channel attach --invite-token=<token>   # first-time invitee: join + start daemon
 vellum channel attach <otherChannelId>         # second parallel negotiation
@@ -48,13 +46,13 @@ vellum disconnect <channelId>
 | `list`, `channel attach --all` | No channel id (scans all local channels) |
 | `channel join`, `channel create` | No channel id |
 
-## Env
+## Env / config
 
-| Variable | Role |
+| Variable / config | Role |
 |----------|------|
-| `KHORA_BASE_URL` | Discovery (`register`, `whoami`) |
-| `VELLUM_BASE_URL` | Channel-relay (`channel create/join`, ticket mint) |
+| `VELLUM_BASE_URL` / `--base-url` / `relayBaseUrl` | Channel-relay HTTP origin (required for channel ops) |
 | `VELLUM_DATA_DIR` | Data root; artifacts live under `…/vellum/channels/<id>/` |
 | `VELLUM_STORE_ROOT` | Override artifact store root (default `{dataDir}/vellum`) |
+| `VELLUM_AGENT_KEY_PATH` / `--agent-key-path` | Identity JSON (default `~/.vellum/identity.json`) |
 
 See [`apps/vellum/README.md`](../README.md) and [`.brain/technical/vellum-channels.md`](../../../.brain/technical/vellum-channels.md).

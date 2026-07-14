@@ -15,13 +15,10 @@ export function vellumAppConfigFromEnv(
   const relayBaseUrl = trimmed(env.VELLUM_BASE_URL);
   if (relayBaseUrl !== undefined) out.relayBaseUrl = relayBaseUrl;
 
-  const khoraBaseUrl = trimmed(env.KHORA_BASE_URL) ?? trimmed(env.VELLUM_KHORA_BASE_URL);
-  if (khoraBaseUrl !== undefined) out.khoraBaseUrl = khoraBaseUrl;
-
   const dataDir = trimmed(env.VELLUM_DATA_DIR);
   if (dataDir !== undefined) out.dataDir = dataDir;
 
-  const agentKeyPath = trimmed(env.VELLUM_AGENT_KEY_PATH) ?? trimmed(env.KHORA_AGENT_KEY_PATH);
+  const agentKeyPath = trimmed(env.VELLUM_AGENT_KEY_PATH);
   if (agentKeyPath !== undefined) out.agentKeyPath = agentKeyPath;
 
   const defaultChannelWebSocketUrl = trimmed(env.VELLUM_CHANNEL_WS_URL);

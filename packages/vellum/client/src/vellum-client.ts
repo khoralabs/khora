@@ -123,7 +123,6 @@ export class VellumClient {
     return (
       this.opts.keyPath?.trim() ??
       process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
-      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
       defaultAgentIdentityPath()
     );
   }

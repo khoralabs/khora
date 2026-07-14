@@ -6,7 +6,6 @@ import path from "node:path";
 import {
   loadVellumAppConfig,
   readVellumConfigFileWithExtends,
-  VELLUM_CANONICAL_KHORA_BASE_URL,
   vellumAppConfigBuiltinDefaults,
   vellumAppConfigFromEnv,
   zVellumAppConfigBase,
@@ -21,7 +20,6 @@ describe("zVellumAppConfigBase", () => {
   test("accepts sample valid document", () => {
     const r = zVellumAppConfigBase.safeParse({
       relayBaseUrl: "http://127.0.0.1:8790",
-      khoraBaseUrl: "http://127.0.0.1:8787",
       dataDir: "/tmp/v",
       agentKeyPath: "/k",
       defaultChannelWebSocketUrl: "ws://x",
@@ -61,7 +59,6 @@ describe("loadVellumAppConfig", () => {
       layers: [vellumAppConfigBuiltinDefaults(), vellumAppConfigFromEnv({})],
       filePath: null,
     });
-    expect(config.khoraBaseUrl).toBe(VELLUM_CANONICAL_KHORA_BASE_URL);
     expect(config.dataDir).toBe(path.join(homedir(), ".vellum", "data"));
   });
 

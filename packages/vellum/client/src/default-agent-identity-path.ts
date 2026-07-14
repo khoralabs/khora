@@ -3,8 +3,8 @@ import path from "node:path";
 
 /**
  * Final fallback identity file when env/config `agentKeyPath` is unset.
- * Preserves the historical Vellum/Khora shared default (`~/.khora/identity.json`).
+ * Default: `~/.vellum/identity.json`.
  */
 export function defaultAgentIdentityPath(): string {
-  return path.join(homedir(), ".khora", "identity.json");
+  return path.join(homedir(), ".vellum", "identity.json");
 }

@@ -11,7 +11,7 @@ let home: string;
 const BASE_BODY = JSON.stringify(
   {
     $schema: "./vellum-config.schema.json",
-    khoraBaseUrl: "https://k-0.khoralabs.com",
+    relayBaseUrl: "http://localhost:8790",
     dataDir: "~/.vellum/data",
   },
   null,
@@ -56,7 +56,6 @@ describe("runVellumPostinstall", () => {
     const dest = path.join(home, ".vellum");
     const written = readFileSync(path.join(dest, "base.config.json"), "utf8");
     expect(written.includes("~/.vellum")).toBe(false);
-    expect(written.includes("~/.khora")).toBe(false);
     expect(written.includes(path.join(home, ".vellum", "data"))).toBe(true);
   });
 

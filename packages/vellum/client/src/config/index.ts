@@ -1,5 +1,4 @@
 export {
-  VELLUM_CANONICAL_KHORA_BASE_URL,
   vellumAppConfigBuiltinDefaults,
   vellumDefaultDataDir,
 } from "./defaults";

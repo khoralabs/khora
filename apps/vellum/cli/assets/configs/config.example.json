@@ -1,7 +1,6 @@
 {
   "$schema": "../../../packages/vellum/client/vellum-config.schema.json",
   "relayBaseUrl": "http://localhost:8790",
-  "khoraBaseUrl": "https://k-0.khoralabs.com",
   "dataDir": "~/.vellum/data",
   "defaultChannelWebSocketUrl": "ws://localhost:8790/v1/channels/<channelId>/ws?ticket=..."
 }

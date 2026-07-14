@@ -10,13 +10,13 @@ Agents commonly run **multiple channel daemons in parallel** — one process and
 | [`cli/`](cli) | `@khoralabs/vellum-cli` | `vellum` entrypoint — channel create/join/attach/connect, chain lifecycle, offers/ports, policy |
 | [`daemon/`](daemon) | `@khoralabs/vellum-daemon` | Per-channel WebSocket holder + local HTTP control plane + SQLite OBP graph |
 
-## Env split
+## Env
 
 | Env | Target |
 |-----|--------|
 | `VELLUM_BASE_URL` | Channel-relay HTTP (`POST /v1/channels`, ticket mint) |
-| `KHORA_BASE_URL` | Khora discovery only (`register`, `whoami`) |
 | `VELLUM_CHANNEL_WS_URL` | Daemon session (set by CLI on spawn) |
+| `VELLUM_AGENT_KEY_PATH` | Identity JSON (default `~/.vellum/identity.json`) |
 
 ## Quick start
 
@@ -25,10 +25,9 @@ Agents commonly run **multiple channel daemons in parallel** — one process and
 cd apps/vellum/channel-relay && bun run src/index.ts
 
 # Terminal 2 — CLI
-export KHORA_BASE_URL=https://k-0.khoralabs.com
 export VELLUM_BASE_URL=http://localhost:8790
 
-vellum register ...
+vellum keygen
 vellum channel create --json
 vellum channel attach --invite-token=...
 vellum channel attach <channelId>          # parallel channel
