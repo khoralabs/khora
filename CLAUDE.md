@@ -44,7 +44,7 @@ Apps with a React/HTML frontend served by `Bun.serve`:
 - **Dev:** `bun --hot src/index.ts` with `development: { hmr: true }`
 - **Prod:** `NODE_ENV=production bun src/index.ts` with `development: false` (or omit `development`)
 
-Optional AOT bundling via [`@khoralabs/bun-web`](packages/libs/bun-web/README.md) — not required for production.
+Optional AOT bundling via [`@khoralabs/bun-web`](vendor/libs/packages/bun-web/README.md) — not required for production.
 
 ## Registry packages
 
