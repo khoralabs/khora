@@ -23,6 +23,7 @@
     "@khoralabs/registry-persistence": "workspace:*",
     "@khoralabs/registry-sqlite": "workspace:*",
     "@khoralabs/registry-turso-serverless": "workspace:*",
+    "@khoralabs/registry-catalog": "workspace:*",
     "@khoralabs/registry-catalog-react": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
     "bun-plugin-tailwind": "^0.1.2",

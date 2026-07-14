@@ -147,11 +147,12 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
     printSetupSummary(result, skill);
   }
 
-  // Onboarding (keygen → host → register) only runs when -y is passed or the shell is
-  // interactive (process.stdin is a TTY). Tests and piped/non-interactive callers that
-  // omit -y get only the file-install step above.
+  // Onboarding (keygen → host → register) only runs when -y is passed, or when stdin is a
+  // TTY and interactive prompts are allowed. Piped callers, CI, and KHORA_NO_INTERACTIVE=1
+  // without -y get only the file-install step above.
   const isTTY = Boolean(process.stdin.isTTY);
-  if (!yes && !isTTY) {
+  const interactiveAllowed = isTTY && process.env.KHORA_NO_INTERACTIVE !== "1";
+  if (!yes && !interactiveAllowed) {
     if (asJson) console.log(JSON.stringify({ ...result, skill }));
     return;
   }

@@ -67,6 +67,7 @@
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-accounts-react": "workspace:*",
         "@khoralabs/registry-auth": "workspace:*",
+        "@khoralabs/registry-catalog": "workspace:*",
         "@khoralabs/registry-catalog-react": "workspace:*",
         "@khoralabs/registry-host": "workspace:*",
         "@khoralabs/registry-persistence": "workspace:*",

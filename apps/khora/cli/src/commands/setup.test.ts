@@ -79,6 +79,8 @@ describe("runSetupCommand", () => {
     origEnv = { ...process.env };
     process.env.HOME = home;
     process.env.USERPROFILE = home;
+    // bun test often has stdin.isTTY; skip interactive onboarding (file-install only).
+    process.env.KHORA_NO_INTERACTIVE = "1";
   });
 
   afterEach(() => {
