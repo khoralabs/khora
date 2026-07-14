@@ -754,7 +754,6 @@
       "dependencies": {
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
-        "@khoralabs/obp-nbc": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",

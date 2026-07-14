@@ -1,4 +1,3 @@
-export type { NbcPortSpec } from "@khoralabs/obp-nbc";
 export type { FlowChainView } from "./chain-view";
 export type { FlowDefinition, FlowOffer, FlowPort } from "./flow-types";
 export { createInMemoryFlowChainView } from "./in-memory-chain";
