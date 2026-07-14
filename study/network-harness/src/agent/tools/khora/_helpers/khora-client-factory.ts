@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { loadIdentity } from "@khoralabs/did-key-identity";
 import { KhoraClient } from "@khoralabs/khora-client";
-import { AgentStore } from "@khoralabs/khora-managed-agents";
+import { AgentStore } from "../../../../agents";
 
 export function resolveKhoraServerBaseUrl(): string | undefined {
   const value =

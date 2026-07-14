@@ -1,8 +1,9 @@
 import path from "node:path";
 import { loadIdentity } from "@khoralabs/did-key-identity";
-import type { AgentHandle, VellumHandle } from "@khoralabs/khora-managed-agents";
-import { AgentStore } from "@khoralabs/khora-managed-agents";
 import { RelayClient } from "@khoralabs/relay-client";
+
+import type { AgentHandle, VellumHandle } from "../agents";
+import { AgentStore } from "../agents";
 import { waitFor } from "./wait-for";
 
 export type VellumPairOptions = {

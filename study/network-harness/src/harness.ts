@@ -1,21 +1,12 @@
 import path from "node:path";
 
 import { loadIdentity } from "@khoralabs/did-key-identity";
-import { type AgentHandle, AgentStore, ManagedAgentPool } from "@khoralabs/khora-managed-agents";
 import { startKhoraServer } from "@khoralabs/khora-server/start-server";
-import {
-  createNoAuthProvider,
-  MemoriesServiceClient,
-  type RemoteMemoriesClientAsync,
-} from "@khoralabs/memories-service-client";
+import { createNoAuthProvider, MemoriesServiceClient } from "@khoralabs/memories-service-client";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service-storage-core";
 import { createLazyHarnessMemoriesClient } from "./agent/tools/memories/_helpers/memories-client.ts";
-import {
-  type AgentChatClient,
-  createSignedChatService,
-  type HarnessChat,
-  type SignedChatBackend,
-} from "./chat";
+import { type AgentHandle, type AgentMemoriesClient, AgentStore, ManagedAgentPool } from "./agents";
+import { createSignedChatService, type HarnessChat, type SignedChatBackend } from "./chat";
 import { startMemoriesService } from "./memories";
 import {
   emitNetworkEvent,
@@ -23,6 +14,8 @@ import {
   networkEventId,
 } from "./observability/network-log.ts";
 import { startRelayServer } from "./relay";
+
+export type { AgentMemoriesClient } from "./agents";
 
 export type NetworkHarnessOptions = {
   dataDir: string;
@@ -59,29 +52,6 @@ export type NetworkHarnessHandle = {
   readonly signedChat: SignedChatBackend;
   /** Tear down the server and memories service. Does not unregister agents. */
   stop(): void;
-};
-
-/** A bound memories client scoped to a single agent's database. */
-export type AgentMemoriesClient = {
-  /** The `MemoriesDatabaseId` for this agent. Pass to `MemoriesServiceClient` for raw access. */
-  readonly database: MemoriesDatabaseId;
-  open(): Promise<void>;
-  close(): Promise<void>;
-  checkpoint(): Promise<void>;
-  exists(): Promise<boolean>;
-  delete(): Promise<void>;
-  /** The underlying service client, for operations not covered by the shortcuts above. */
-  readonly serviceClient: MemoriesServiceClient;
-  /** Typed runtime client for search, merge, and delete — lazy-init on first use. */
-  readonly client: RemoteMemoriesClientAsync;
-};
-
-/** An `AgentHandle` paired with pre-bound memories and chat clients. */
-export type AgentWithMemories = {
-  readonly did: string;
-  readonly agentHandle: AgentHandle;
-  readonly memories: AgentMemoriesClient;
-  readonly chat: AgentChatClient;
 };
 
 export async function startNetworkHarness(
@@ -191,11 +161,10 @@ export async function startNetworkHarness(
 }
 
 /**
- * Spawn a new agent and open a memories database for it in one step.
- * Returns the agent handle alongside a pre-bound memories client so the
- * caller never has to manually construct a `MemoriesDatabaseId`.
+ * Spawn a new agent and bind memories + chat in one step.
+ * Returns a single {@link AgentHandle} with inbox, vellum, memories, and chat.
  */
-export async function spawnWithMemories(harness: NetworkHarnessHandle): Promise<AgentWithMemories> {
+export async function spawnWithMemories(harness: NetworkHarnessHandle): Promise<AgentHandle> {
   let capturedHandle: AgentHandle | undefined;
 
   const did = await harness.pool.spawn(async (handle) => {
@@ -203,30 +172,26 @@ export async function spawnWithMemories(harness: NetworkHarnessHandle): Promise<
     await harness.memoriesClient.openDatabase({ kind: "account", ownerKey: handle.did });
   });
 
-  const agentHandle = capturedHandle;
-  const database: MemoriesDatabaseId = { kind: "account", ownerKey: did };
-  const { memoriesClient } = harness;
-
-  if (!agentHandle) {
+  const agent = capturedHandle;
+  if (agent === undefined) {
     throw new Error("Failed to capture agent handle during spawn");
   }
 
-  return {
-    did,
-    agentHandle,
-    chat: harness.chat.forAgent(did),
-    memories: {
+  const database: MemoriesDatabaseId = { kind: "account", ownerKey: did };
+  const { memoriesClient } = harness;
+  const memories: AgentMemoriesClient = {
+    database,
+    open: () => memoriesClient.openDatabase(database),
+    close: () => memoriesClient.closeDatabase(database),
+    checkpoint: () => memoriesClient.checkpointDatabase(database),
+    exists: () => memoriesClient.databaseExists(database),
+    delete: () => memoriesClient.deleteDatabase(database),
+    serviceClient: memoriesClient,
+    client: createLazyHarnessMemoriesClient({
+      baseUrl: harness.memoriesBaseUrl,
       database,
-      open: () => memoriesClient.openDatabase(database),
-      close: () => memoriesClient.closeDatabase(database),
-      checkpoint: () => memoriesClient.checkpointDatabase(database),
-      exists: () => memoriesClient.databaseExists(database),
-      delete: () => memoriesClient.deleteDatabase(database),
-      serviceClient: memoriesClient,
-      client: createLazyHarnessMemoriesClient({
-        baseUrl: harness.memoriesBaseUrl,
-        database,
-      }),
-    },
+    }),
   };
+
+  return agent.bindServices(memories, harness.chat.forAgent(did));
 }

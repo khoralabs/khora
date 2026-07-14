@@ -6,7 +6,7 @@ The harness composes three things:
 
 - **Khora server** — a full `Bun.serve`-based host node (via `@khoralabs/khora-server`)
 - **Memories service** — a local SQLite-backed memories database service (via `@khoralabs/memories-service-storage-sqlite`)
-- **Managed agent pool** — agents with persisted Ed25519 identities, each registered on the server (via `@khoralabs/khora-managed-agents`)
+- **Managed agent pool** — agents with persisted Ed25519 identities, each registered on the server (integration layer under `src/agents/`)
 
 All components bind to random free ports by default, so multiple harness instances can run concurrently without collision.
 
@@ -29,7 +29,7 @@ console.log("Server:", harness.serverBaseUrl);
 console.log("Agent DID:", agent.did);
 
 // Connect the agent's inbox
-const conn = agent.agentHandle.connectInbox({
+const conn = agent.connectInbox({
   onEvent: (e) => console.log("inbox event", e),
   onLifecycle: (status) => console.log(agent.did, status),
 });
@@ -49,13 +49,16 @@ harness.stop();
 
 ### `spawnWithMemories(harness)`
 
-The primary way to add agents to a harness. Registers a new agent on the Khora server, opens a memories database for it, and returns both the agent handle and a pre-bound memories client — so you never have to construct or track a `MemoriesDatabaseId` manually.
+The primary way to add agents to a harness. Registers a new agent on the Khora server, opens a memories database for it, binds chat, and returns a single `AgentHandle` — so you never have to construct or track a `MemoriesDatabaseId` manually.
 
 ```ts
 const agent = await spawnWithMemories(harness);
 
 agent.did                   // "did:key:z6Mk..."
-agent.agentHandle           // AgentHandle — KhoraClient + connectInbox
+agent.client                // KhoraClient
+agent.connectInbox(...)     // reconnecting inbox WebSocket
+agent.vellum(...)           // Vellum channel handle
+agent.chat                  // AgentChatClient for this DID
 agent.memories.database     // { kind: "account", ownerKey: "did:key:..." }
 agent.memories.open()       // re-open after close
 agent.memories.close()      // checkpoint and release the SQLite file
@@ -74,14 +77,10 @@ const agents = await Promise.all(
 );
 
 const connections = agents.map((agent) =>
-  agent.agentHandle.connectInbox({
+  agent.connectInbox({
     onEvent: (e) => console.log(agent.did, e),
   })
 );
-
-// ...experiment...
-
-connections.forEach((c) => c.close());
 ```
 
 ### Manual pool control
@@ -150,10 +149,10 @@ await agent.memories.client.mergeMemory({
 
 ## Connecting agent inboxes
 
-`agent.agentHandle` is an `AgentHandle` from `@khoralabs/khora-managed-agents`. Call `connectInbox` to open a reconnecting WebSocket to the server:
+`agent` from `spawnWithMemories` is an integration-layer `AgentHandle`. Call `connectInbox` to open a reconnecting WebSocket to the server:
 
 ```ts
-const conn = agent.agentHandle.connectInbox({
+const conn = agent.connectInbox({
   onEvent(event) {
     // fired for each inbox event (excluding derived/internal kinds)
     console.log(event.type, event);

@@ -1,17 +1,17 @@
 import type { Database } from "bun:sqlite";
 import type { ChatService } from "@khoralabs/chat-core";
 import type { KhoraClient } from "@khoralabs/khora-client";
-import type { InboxConnection } from "@khoralabs/khora-managed-agents";
 import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
 
+import type { AgentHandle, InboxConnection } from "../agents";
 import type { AgentChatClient } from "../chat.ts";
-import type { AgentWithMemories, NetworkHarnessHandle } from "../harness.ts";
+import type { NetworkHarnessHandle } from "../harness.ts";
 import type { AgentLoopState, SwarmConfig } from "./types.ts";
 
 export type SwarmRuntimeSession = {
   config: SwarmConfig;
   harness: NetworkHarnessHandle;
-  agents: AgentWithMemories[];
+  agents: AgentHandle[];
   loopStates: AgentLoopState[];
   chatService: ChatService;
   chatDb: Database;

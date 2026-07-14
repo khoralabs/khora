@@ -582,22 +582,6 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/managed-agents": {
-      "name": "@khoralabs/khora-managed-agents",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/did-key-identity": "^0.1.0",
-        "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/vellum-client": "workspace:*",
-        "@khoralabs/vellum-contracts": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/khora/percolator/runtime": {
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
@@ -1046,7 +1030,6 @@
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/khora-managed-agents": "workspace:*",
         "@khoralabs/khora-server": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-ontologies": "workspace:*",
@@ -1060,6 +1043,8 @@
         "@khoralabs/relay-client": "workspace:*",
         "@khoralabs/relay-crypto": "workspace:*",
         "@khoralabs/relay-server-http": "workspace:*",
+        "@khoralabs/vellum-client": "workspace:*",
+        "@khoralabs/vellum-contracts": "workspace:*",
         "@libsql/client": "^0.14.0",
         "@noble/ed25519": "^3.1.0",
         "@opentelemetry/api": "^1.9.1",
@@ -2377,8 +2362,6 @@
     "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/khora/host"],
 
     "@khoralabs/khora-invites": ["@khoralabs/khora-invites@workspace:packages/khora/invites"],
-
-    "@khoralabs/khora-managed-agents": ["@khoralabs/khora-managed-agents@workspace:packages/khora/managed-agents"],
 
     "@khoralabs/khora-network-harness": ["@khoralabs/khora-network-harness@workspace:study/network-harness"],
 

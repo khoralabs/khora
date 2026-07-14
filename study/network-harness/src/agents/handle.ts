@@ -11,6 +11,9 @@ import type {
   VellumChainRow,
 } from "@khoralabs/vellum-contracts";
 
+import type { AgentChatClient } from "../chat";
+import type { AgentMemoriesClient } from "./memories-types";
+
 export type AgentHandleOptions = {
   signer: PersistableSigner;
   baseUrl: string;
@@ -58,19 +61,41 @@ const MIN_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 30_000;
 
 /**
- * A focused handle for a single managed agent. Exposes its DID, a
- * ready-to-use KhoraClient, and the ability to open a reconnecting inbox
- * WebSocket connection with event callbacks.
+ * Integration-layer handle for one harness agent: Khora client, inbox,
+ * Vellum channel ops, and (after {@link bindServices}) memories + chat.
  */
 export class AgentHandle {
   readonly did: string;
   readonly client: KhoraClient;
   readonly #keyPath: string | undefined;
+  #memories: AgentMemoriesClient | undefined;
+  #chat: AgentChatClient | undefined;
 
   constructor(opts: AgentHandleOptions) {
     this.did = opts.signer.did;
     this.client = new KhoraClient({ baseUrl: opts.baseUrl, signer: opts.signer });
     this.#keyPath = opts.keyPath;
+  }
+
+  get memories(): AgentMemoriesClient {
+    if (this.#memories === undefined) {
+      throw new Error(`Agent ${this.did} has no memories client (spawn via spawnWithMemories)`);
+    }
+    return this.#memories;
+  }
+
+  get chat(): AgentChatClient {
+    if (this.#chat === undefined) {
+      throw new Error(`Agent ${this.did} has no chat client (spawn via spawnWithMemories)`);
+    }
+    return this.#chat;
+  }
+
+  /** Attach harness memories + chat (used by {@link spawnWithMemories}). */
+  bindServices(memories: AgentMemoriesClient, chat: AgentChatClient): this {
+    this.#memories = memories;
+    this.#chat = chat;
+    return this;
   }
 
   /**

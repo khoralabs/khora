@@ -1,8 +1,8 @@
 import path from "node:path";
 import type { ChatService } from "@khoralabs/chat-core";
 import { loadIdentity, loadOrCreateIdentity } from "@khoralabs/did-key-identity";
-import { AgentStore } from "@khoralabs/khora-managed-agents";
 import type { RelaySigner } from "@khoralabs/relay-crypto";
+import { AgentStore } from "../agents";
 
 import {
   type AgentChatClient,

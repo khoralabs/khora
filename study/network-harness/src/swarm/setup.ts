@@ -92,7 +92,7 @@ export async function setupSwarm(config: SwarmConfig): Promise<{
     });
 
     inboxConnections.push(
-      agent.agentHandle.connectInbox({
+      agent.connectInbox({
         onEvent: (event) => {
           void appendInboxEntry(config.dataDir, config.sessionId, agent.did, event);
         },

@@ -1,10 +1,10 @@
-export type { VellumHandle } from "@khoralabs/khora-managed-agents";
 export {
   createBearerTokenAuthProvider,
   createNoAuthProvider,
   MemoriesServiceClient,
   type MemoriesServiceClientOptions,
 } from "@khoralabs/memories-service-client";
+export type { AgentHandle, VellumHandle } from "./agents";
 export {
   type AgentChatClient,
   type CreateAgentThreadInput,
@@ -17,7 +17,6 @@ export {
 } from "./chat";
 export {
   type AgentMemoriesClient,
-  type AgentWithMemories,
   type NetworkHarnessHandle,
   type NetworkHarnessOptions,
   spawnWithMemories,
