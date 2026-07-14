@@ -3,7 +3,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
+import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
@@ -131,7 +131,7 @@ function seedCellShard(
 }
 
 function deps(
-  consoleAuth: HostRouteDeps["consoleAuth"],
+  adminTokenAuth: HostRouteDeps["adminTokenAuth"],
   overrides?: Partial<KhoraHostContext>,
 ): HostRouteDeps {
   const cluster = {
@@ -166,11 +166,11 @@ function deps(
       ...overrides,
     } as unknown as KhoraHostContext,
     rateLimiters: {} as HostRouteDeps["rateLimiters"],
-    consoleAuth,
+    adminTokenAuth,
   };
 }
 
-async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>): Promise<string> {
+async function loginCookie(auth: ReturnType<typeof createRootTokenAdminAuth>): Promise<string> {
   const loginRes = await auth.route?.(
     new Request("http://x/admin/api/login", {
       method: "POST",
@@ -209,7 +209,7 @@ describe("admin stats", () => {
   });
 
   test("summary returns 401 without session", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const res = await handleAdminStatsSummary(
       new Request("http://x/admin/api/stats/summary"),
       deps(auth),
@@ -222,7 +222,7 @@ describe("admin stats", () => {
     seedCellShard(0, 2, 1);
     seedCellShard(1, 0, 0);
 
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     await withCellsDir(async () => {
       const res = await handleAdminStatsSummary(
@@ -280,7 +280,7 @@ describe("admin stats", () => {
     const staleMs = Date.now() - 10 * 24 * 60 * 60 * 1000;
     seedCellShard(0, 1, 0, staleMs);
 
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     await withCellsDir(async () => {
       const url = new URL("http://x/admin/api/stats/inactive-members?days=7");
@@ -296,14 +296,14 @@ describe("admin stats", () => {
   });
 
   test("cell returns 401 without session", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const url = new URL(`http://x/admin/api/stats/cell?cellId=${poolShardCellId(0)}`);
     const res = await handleAdminStatsCell(new Request(url), url, deps(auth));
     expect(res.status).toBe(401);
   });
 
   test("cell returns 400 when cellId is missing", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const url = new URL("http://x/admin/api/stats/cell");
     const res = await handleAdminStatsCell(
@@ -315,7 +315,7 @@ describe("admin stats", () => {
   });
 
   test("cell returns 400 for unknown shard id", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const url = new URL("http://x/admin/api/stats/cell?cellId=colonnade-shard-99");
     const res = await handleAdminStatsCell(
@@ -330,7 +330,7 @@ describe("admin stats", () => {
     seedCatalog();
     seedCellShard(0, 3, 2);
 
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     await withCellsDir(async () => {
       const cellId = poolShardCellId(0);
@@ -366,7 +366,7 @@ describe("admin stats", () => {
   });
 
   test("principal returns 401 without session", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const res = await handleAdminStatsPrincipal(
       new Request("http://x/admin/api/stats/principal?did=did:key:abc"),
       new URL("http://x/admin/api/stats/principal?did=did:key:abc"),
@@ -376,7 +376,7 @@ describe("admin stats", () => {
   });
 
   test("principal returns 400 when did is missing", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const res = await handleAdminStatsPrincipal(
       new Request("http://x/admin/api/stats/principal", { headers: { cookie } }),

@@ -1,4 +1,4 @@
-import { createConsoleAuthFromEnv } from "@khoralabs/admin-token";
+import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade-crypto";
 import {
   createBetterAuthRegistryIdentity,
@@ -69,7 +69,7 @@ export async function bootstrapRegistryHost(): Promise<{
   const host = createRegistryHost({
     db: registry,
     identity,
-    consoleAuth: createConsoleAuthFromEnv(),
+    adminTokenAuth: createAdminTokenAuthFromEnv(),
     publicUrl,
     resolveTrustedOrigins,
   });

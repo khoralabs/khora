@@ -25,7 +25,7 @@ export function createRegistryHost(deps: RegistryHostDeps): RegistryHostContext 
   const runtime: RegistryHostRuntime = {
     db: deps.db,
     identity,
-    consoleAuth: deps.consoleAuth,
+    adminTokenAuth: deps.adminTokenAuth,
     publicUrl: deps.publicUrl,
     trustedOrigins: () => trustedOriginsCache,
   };

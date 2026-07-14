@@ -55,7 +55,7 @@ flowchart TB
 **Dependency direction:**
 
 ```
-apps/khora/registry → registry-host, registry-auth, khora-console
+apps/khora/registry → registry-host, registry-auth, admin-token
 
 registry-host → registry-catalog, registry-accounts, *-contracts, khora-auth (link DID verify)
               → NO better-auth
@@ -103,7 +103,7 @@ Ceremony persistence (`device_authorizations`, `agent_auth_registrations`) lives
 1. `assertEncryptionKeys`
 2. `ensureRegistrySchema`
 3. `createBetterAuthRegistryIdentity` + `createBetterAuthRegistryRoutes`
-4. `createRegistryHost({ db, identity, consoleAuth, publicUrl, resolveTrustedOrigins })`
+4. `createRegistryHost({ db, identity, adminTokenAuth, publicUrl, resolveTrustedOrigins })`
 
 `index.ts` dispatch order: `identityRoutes.handle` → marketing → `host.fetch` → 404.
 

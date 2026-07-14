@@ -1,4 +1,4 @@
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import {
   adminStatsCellResponse,
@@ -12,7 +12,7 @@ export async function handleAdminStatsSummary(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, () => adminStatsSummaryResponse(deps));
+  return withAdminTokenAuth(req, deps, () => adminStatsSummaryResponse(deps));
 }
 
 export async function handleAdminStatsPrincipal(
@@ -24,7 +24,7 @@ export async function handleAdminStatsPrincipal(
   if (did.length === 0) {
     return jsonError("Missing did query parameter", 400);
   }
-  return withConsoleAuth(req, deps, () => adminStatsPrincipalResponse(deps, did));
+  return withAdminTokenAuth(req, deps, () => adminStatsPrincipalResponse(deps, did));
 }
 
 export async function handleAdminStatsCell(
@@ -36,7 +36,7 @@ export async function handleAdminStatsCell(
   if (cellId.length === 0) {
     return jsonError("Missing cellId query parameter", 400);
   }
-  return withConsoleAuth(req, deps, () => adminStatsCellResponse(deps, cellId));
+  return withAdminTokenAuth(req, deps, () => adminStatsCellResponse(deps, cellId));
 }
 
 export async function handleAdminStatsInactiveMembers(
@@ -44,5 +44,5 @@ export async function handleAdminStatsInactiveMembers(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, () => adminStatsInactiveMembersResponse(deps, url));
+  return withAdminTokenAuth(req, deps, () => adminStatsInactiveMembersResponse(deps, url));
 }

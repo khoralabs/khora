@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
+import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import {
@@ -22,7 +22,7 @@ import {
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
-async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>): Promise<string> {
+async function loginCookie(auth: ReturnType<typeof createRootTokenAdminAuth>): Promise<string> {
   const loginRes = await auth.route?.(
     new Request("http://x/admin/api/login", {
       method: "POST",
@@ -36,7 +36,7 @@ async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>):
 }
 
 describe("operator quota requests", () => {
-  const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+  const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(async () => {
     resetRegistrySqliteDatabase();

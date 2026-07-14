@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
+import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";
@@ -12,7 +12,7 @@ const ROOT_TOKEN = "test-root-token-16chars";
 describe("host admin config", () => {
   let catalogDb: Database;
   let hostSpec: ReturnType<typeof createKhoraHostSpecPort>;
-  const consoleAuth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+  const adminTokenAuth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(() => {
     catalogDb = new Database(":memory:");
@@ -43,12 +43,12 @@ describe("host admin config", () => {
         adminStats: { registeredPrincipalCount: () => 4 },
       } as unknown as KhoraHostContext,
       rateLimiters: {} as HostRouteDeps["rateLimiters"],
-      consoleAuth,
+      adminTokenAuth,
     };
   }
 
   async function loginCookie(): Promise<string> {
-    const loginRes = await consoleAuth.route?.(
+    const loginRes = await adminTokenAuth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

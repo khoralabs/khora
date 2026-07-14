@@ -1,4 +1,4 @@
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
@@ -28,21 +28,21 @@ export async function handleAdminAgentsRoute(
   const { did, action } = parsed;
 
   if (req.method === "POST" && action === "suspend") {
-    return withConsoleAuth(req, deps, async () => {
+    return withAdminTokenAuth(req, deps, async () => {
       deps.ctx.agentAccountStatus.setStatus(did, "suspended");
       return Response.json({ did, status: "suspended" });
     });
   }
 
   if (req.method === "POST" && action === "reactivate") {
-    return withConsoleAuth(req, deps, async () => {
+    return withAdminTokenAuth(req, deps, async () => {
       deps.ctx.agentAccountStatus.clearStatus(did);
       return Response.json({ did, status: null });
     });
   }
 
   if (req.method === "DELETE" && action === undefined) {
-    return withConsoleAuth(req, deps, async () => {
+    return withAdminTokenAuth(req, deps, async () => {
       deps.ctx.agentAccountStatus.setStatus(did, "deleted");
       if (deps.ctx.host.persistenceClient.registrationExists(did)) {
         await deps.ctx.phase1UnregisterPrincipal(did);

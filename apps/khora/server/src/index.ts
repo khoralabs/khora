@@ -5,7 +5,7 @@ import path from "node:path";
 
 const { dirname } = path;
 
-import { createConsoleAuthFromEnv } from "@khoralabs/admin-token";
+import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
@@ -62,9 +62,9 @@ const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
   ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
 });
 
-const consoleAuth = createConsoleAuthFromEnv();
-if (consoleAuth === null) {
-  logger.info("Admin console disabled (set KHORA_CONSOLE_ROOT_TOKEN to enable)");
+const adminTokenAuth = createAdminTokenAuthFromEnv();
+if (adminTokenAuth === null) {
+  logger.info("Admin token auth disabled (set ADMIN_ROOT_TOKEN to enable)");
 } else {
   logger.info("Admin console enabled at /admin");
 }
@@ -73,7 +73,7 @@ const deps: HostRouteDeps = {
   ctx,
   ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
   rateLimiters: createV2HostRateLimiters(),
-  consoleAuth,
+  adminTokenAuth,
 };
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 

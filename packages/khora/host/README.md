@@ -89,7 +89,7 @@ apps/khora/server/src/index.ts
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
     createKhoraCatalogApi()
     createKhoraHost(deps)           → HostRuntime + teardown worker
-  createConsoleAuthFromEnv()
+  createAdminTokenAuthFromEnv()
   Bun.serve() + route() + inbox WS handlers
   optional: startStdioUnaryIngress(), startDuplexUnixIngress()
 ```

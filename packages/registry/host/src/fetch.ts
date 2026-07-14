@@ -5,7 +5,7 @@ import {
   handleAdminAccountReactivateByEmail,
   handleAdminAccountSuspend,
 } from "./routes/admin/accounts";
-import { routeConsoleAuth } from "./routes/admin/console-guard";
+import { routeAdminTokenAuth } from "./routes/admin/admin-token-guard";
 import {
   handleAdminHostActivate,
   handleAdminHostDelete,
@@ -51,7 +51,7 @@ export async function dispatchRegistryHostFetch(
   const url = new URL(req.url);
   const path = url.pathname;
 
-  const consoleRoute = await routeConsoleAuth(req, url, runtime.consoleAuth);
+  const consoleRoute = await routeAdminTokenAuth(req, url, runtime.adminTokenAuth);
   if (consoleRoute !== undefined) {
     return withCors(req, consoleRoute);
   }
@@ -61,15 +61,15 @@ export async function dispatchRegistryHostFetch(
   }
 
   if (path === "/admin/api/stats/summary" && req.method === "GET") {
-    return withCors(req, await handleAdminStatsSummary(req, runtime.consoleAuth));
+    return withCors(req, await handleAdminStatsSummary(req, runtime.adminTokenAuth));
   }
 
   if (path === "/admin/api/lookup/email" && req.method === "GET") {
-    return withCors(req, await handleLookupEmail(req, url, runtime.consoleAuth));
+    return withCors(req, await handleLookupEmail(req, url, runtime.adminTokenAuth));
   }
 
   if (path === "/admin/api/lookup/account" && req.method === "GET") {
-    return withCors(req, await handleLookupAccount(req, url, runtime.consoleAuth));
+    return withCors(req, await handleLookupAccount(req, url, runtime.adminTokenAuth));
   }
 
   if (
@@ -78,7 +78,7 @@ export async function dispatchRegistryHostFetch(
     req.method === "POST"
   ) {
     const id = path.slice("/admin/api/accounts/".length, -"/suspend".length);
-    return withCors(req, await handleAdminAccountSuspend(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminAccountSuspend(req, runtime.adminTokenAuth, id));
   }
 
   if (
@@ -87,23 +87,23 @@ export async function dispatchRegistryHostFetch(
     req.method === "POST"
   ) {
     const id = path.slice("/admin/api/accounts/".length, -"/reactivate".length);
-    return withCors(req, await handleAdminAccountReactivate(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminAccountReactivate(req, runtime.adminTokenAuth, id));
   }
 
   if (path === "/admin/api/accounts/reactivate-by-email" && req.method === "POST") {
-    return withCors(req, await handleAdminAccountReactivateByEmail(req, runtime.consoleAuth));
+    return withCors(req, await handleAdminAccountReactivateByEmail(req, runtime.adminTokenAuth));
   }
 
   if (path.startsWith("/admin/api/accounts/") && req.method === "DELETE") {
     const id = path.slice("/admin/api/accounts/".length);
     if (id.length > 0 && !id.includes("/")) {
-      return withCors(req, await handleAdminAccountDelete(req, runtime.consoleAuth, id));
+      return withCors(req, await handleAdminAccountDelete(req, runtime.adminTokenAuth, id));
     }
   }
 
   if (path.startsWith("/admin/api/hosts/") && path.endsWith("/suspend") && req.method === "POST") {
     const id = path.slice("/admin/api/hosts/".length, -"/suspend".length);
-    return withCors(req, await handleAdminHostSuspend(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminHostSuspend(req, runtime.adminTokenAuth, id));
   }
 
   if (
@@ -112,19 +112,19 @@ export async function dispatchRegistryHostFetch(
     req.method === "POST"
   ) {
     const id = path.slice("/admin/api/hosts/".length, -"/reactivate".length);
-    return withCors(req, await handleAdminHostReactivate(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminHostReactivate(req, runtime.adminTokenAuth, id));
   }
 
   if (path.startsWith("/admin/api/hosts/") && req.method === "DELETE") {
     const id = path.slice("/admin/api/hosts/".length);
     if (id.length > 0 && !id.includes("/")) {
-      return withCors(req, await handleAdminHostDelete(req, runtime.consoleAuth, id));
+      return withCors(req, await handleAdminHostDelete(req, runtime.adminTokenAuth, id));
     }
   }
 
   if (path.startsWith("/admin/api/hosts/") && path.endsWith("/activate") && req.method === "POST") {
     const id = path.slice("/admin/api/hosts/".length, -"/activate".length);
-    return withCors(req, await handleAdminHostActivate(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminHostActivate(req, runtime.adminTokenAuth, id));
   }
 
   if (
@@ -133,7 +133,7 @@ export async function dispatchRegistryHostFetch(
     req.method === "GET"
   ) {
     const id = path.slice("/admin/api/hosts/".length, -"/origin-requests".length);
-    return withCors(req, await handleAdminHostOriginRequests(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminHostOriginRequests(req, runtime.adminTokenAuth, id));
   }
 
   if (
@@ -149,7 +149,7 @@ export async function dispatchRegistryHostFetch(
       const requestId = middle.slice(slash + "/origin-requests/".length);
       return withCors(
         req,
-        await handleAdminHostOriginRequestApprove(req, runtime.consoleAuth, id, requestId),
+        await handleAdminHostOriginRequestApprove(req, runtime.adminTokenAuth, id, requestId),
       );
     }
   }
@@ -167,7 +167,7 @@ export async function dispatchRegistryHostFetch(
       const requestId = middle.slice(slash + "/origin-requests/".length);
       return withCors(
         req,
-        await handleAdminHostOriginRequestReject(req, runtime.consoleAuth, id, requestId),
+        await handleAdminHostOriginRequestReject(req, runtime.adminTokenAuth, id, requestId),
       );
     }
   }
@@ -178,7 +178,7 @@ export async function dispatchRegistryHostFetch(
     req.method === "GET"
   ) {
     const id = path.slice("/admin/api/hosts/".length, -"/quota-requests".length);
-    return withCors(req, await handleAdminHostQuotaRequests(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminHostQuotaRequests(req, runtime.adminTokenAuth, id));
   }
 
   if (
@@ -194,7 +194,7 @@ export async function dispatchRegistryHostFetch(
       const requestId = middle.slice(slash + "/quota-requests/".length);
       return withCors(
         req,
-        await handleAdminHostQuotaRequestApprove(req, runtime.consoleAuth, id, requestId),
+        await handleAdminHostQuotaRequestApprove(req, runtime.adminTokenAuth, id, requestId),
       );
     }
   }
@@ -212,7 +212,7 @@ export async function dispatchRegistryHostFetch(
       const requestId = middle.slice(slash + "/quota-requests/".length);
       return withCors(
         req,
-        await handleAdminHostQuotaRequestReject(req, runtime.consoleAuth, id, requestId),
+        await handleAdminHostQuotaRequestReject(req, runtime.adminTokenAuth, id, requestId),
       );
     }
   }
@@ -223,7 +223,7 @@ export async function dispatchRegistryHostFetch(
     req.method === "PATCH"
   ) {
     const id = path.slice("/admin/api/hosts/".length, -"/registry".length);
-    return withCors(req, await handleAdminHostRegistry(req, runtime.consoleAuth, id));
+    return withCors(req, await handleAdminHostRegistry(req, runtime.adminTokenAuth, id));
   }
 
   if (path.startsWith("/v1/hosts/") && path.includes("/registry/")) {

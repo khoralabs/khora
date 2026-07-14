@@ -5,21 +5,21 @@ import {
   readSessionPrincipal,
   tokensEqual,
 } from "./session-cookie";
-import type { ConsoleAuth, ConsolePrincipal } from "./types";
+import type { AdminPrincipal, AdminTokenAuth } from "./types";
 
-export type RootTokenConsoleAuthOptions = {
+export type RootTokenAdminAuthOptions = {
   rootToken: string;
   secureCookies?: boolean;
   loginRateLimit?: RateLimitRule | null;
 };
 
-export function createRootTokenConsoleAuth(options: RootTokenConsoleAuthOptions): ConsoleAuth {
+export function createRootTokenAdminAuth(options: RootTokenAdminAuthOptions): AdminTokenAuth {
   const { rootToken, secureCookies = false, loginRateLimit = null } = options;
   const cookieOptions = { secure: secureCookies };
   const loginRateLimiter = createRateLimiter(loginRateLimit ?? null);
 
   return {
-    async authenticate(req: Request): Promise<ConsolePrincipal | null> {
+    async authenticate(req: Request): Promise<AdminPrincipal | null> {
       return readSessionPrincipal(req, rootToken);
     },
 

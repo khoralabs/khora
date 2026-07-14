@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
+import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { linkBetterAuthUser } from "@khoralabs/registry-accounts";
 import { ensureRegistrySchema } from "@khoralabs/registry-auth";
@@ -18,7 +18,7 @@ import { handleAdminStatsSummary } from "./stats";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
-async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>): Promise<string> {
+async function loginCookie(auth: ReturnType<typeof createRootTokenAdminAuth>): Promise<string> {
   const loginRes = await auth.route?.(
     new Request("http://x/admin/api/login", {
       method: "POST",
@@ -51,7 +51,7 @@ describe("registry admin console", () => {
   });
 
   test("login rejects invalid token", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const res = await auth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
@@ -64,7 +64,7 @@ describe("registry admin console", () => {
   });
 
   test("login accepts valid token and sets session cookie", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const res = await auth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
@@ -74,7 +74,7 @@ describe("registry admin console", () => {
       new URL("http://x/admin/api/login"),
     );
     expect(res?.status).toBe(200);
-    expect(res?.headers.get("set-cookie")).toContain("khora_console_session=");
+    expect(res?.headers.get("set-cookie")).toContain("admin_token_session=");
   });
 
   test("admin stats returns 503 when console disabled", async () => {
@@ -86,7 +86,7 @@ describe("registry admin console", () => {
   });
 
   test("admin stats returns 401 without session", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const res = await handleAdminStatsSummary(
       new Request("http://x/admin/api/stats/summary"),
       auth,
@@ -95,7 +95,7 @@ describe("registry admin console", () => {
   });
 
   test("admin stats returns 200 with valid session", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const res = await handleAdminStatsSummary(
       new Request("http://x/admin/api/stats/summary", { headers: { cookie } }),
@@ -108,7 +108,7 @@ describe("registry admin console", () => {
   });
 
   test("lookup returns 400 for missing email", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const res = await handleLookupEmail(
       new Request("http://x/admin/api/lookup/email", { headers: { cookie } }),
@@ -128,7 +128,7 @@ describe("registry admin console", () => {
     ).host;
     expect(pending.status).toBe("pending");
 
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const res = await handleAdminHostActivate(
       new Request(`http://x/admin/api/hosts/${pending.id}/activate`, {
@@ -145,7 +145,7 @@ describe("registry admin console", () => {
   });
 
   test("session endpoint reflects authentication state", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const unauth = await auth.route?.(
       new Request("http://x/admin/api/session"),
       new URL("http://x/admin/api/session"),
@@ -167,7 +167,7 @@ describe("registry admin console", () => {
       email: "lifecycle@example.com",
     });
 
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
 
     const suspendRes = await handleAdminAccountSuspend(

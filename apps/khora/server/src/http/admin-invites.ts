@@ -1,5 +1,5 @@
 import { KHORA_HOST_ADMIN_MINTER_DID } from "@khoralabs/khora-invites";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
@@ -17,7 +17,7 @@ function parseMintCount(body: unknown): number {
 }
 
 export async function handleAdminInvitesMint(req: Request, deps: HostRouteDeps): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const { invitesRepo } = deps.ctx;
     if (invitesRepo === undefined) {
       return jsonError("Invite minting is not configured", 503);
@@ -43,7 +43,7 @@ export async function handleAdminInvitesList(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, () => {
+  return withAdminTokenAuth(req, deps, () => {
     const { invitesRepo } = deps.ctx;
     if (invitesRepo === undefined) {
       return Response.json({ invites: [], configured: false });

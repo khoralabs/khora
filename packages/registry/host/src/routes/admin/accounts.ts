@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/admin-token";
 import {
   deleteAccount,
   listAccountEmails,
@@ -8,7 +8,7 @@ import {
   suspendAccount,
 } from "@khoralabs/registry-accounts";
 import { registryHostRuntime } from "../../runtime";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 
 function mapAccountLifecycleError(
   err: unknown,
@@ -23,10 +23,10 @@ function mapAccountLifecycleError(
 
 export function handleAdminAccountSuspend(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   accountId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = accountId.trim();
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
@@ -45,10 +45,10 @@ export function handleAdminAccountSuspend(
 
 export function handleAdminAccountDelete(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   accountId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = accountId.trim();
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
@@ -66,10 +66,10 @@ export function handleAdminAccountDelete(
 
 export function handleAdminAccountReactivate(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   accountId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = accountId.trim();
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
@@ -89,9 +89,9 @@ type ReactivateByEmailBody = { email?: string };
 
 export function handleAdminAccountReactivateByEmail(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     let body: ReactivateByEmailBody;
     try {
       body = (await req.json()) as ReactivateByEmailBody;

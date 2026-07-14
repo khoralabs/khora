@@ -1,6 +1,6 @@
 import { zKhoraHostSpecPatch } from "@khoralabs/khora-contracts";
 import z from "zod";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
@@ -12,7 +12,7 @@ export async function handleAdminHostConfigGet(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const effective = deps.ctx.hostSpec.readEffective();
     return Response.json({
       populationCurrent: deps.ctx.adminStats.registeredPrincipalCount(),
@@ -27,7 +27,7 @@ export async function handleAdminHostConfigPatch(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     let raw: unknown;
     try {
       raw = await req.json();

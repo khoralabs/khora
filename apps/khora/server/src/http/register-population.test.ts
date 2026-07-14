@@ -56,7 +56,7 @@ function deps(overrides: {
       },
     } as unknown as KhoraHostContext,
     rateLimiters: rateLimitersAlwaysOk(),
-    consoleAuth: null,
+    adminTokenAuth: null,
   };
 }
 

@@ -9,7 +9,7 @@ export function initTestRegistryHostRuntime(db: RegistryDatabase): void {
       getSession: async () => null,
       getSessionCookieHeader: () => null,
     },
-    consoleAuth: null,
+    adminTokenAuth: null,
     publicUrl: () => process.env.REGISTRY_URL?.replace(/\/$/, "") ?? "http://localhost:4000",
     trustedOrigins: () => [],
   });

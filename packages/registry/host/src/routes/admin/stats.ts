@@ -1,13 +1,13 @@
-import type { ConsoleAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/admin-token";
 import { getRegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { registryHostRuntime } from "../../runtime";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 
 export function handleAdminStatsSummary(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () =>
+  return withAdminTokenAuth(req, adminTokenAuth, async () =>
     Response.json(await getRegistryAdminSummary(registryHostRuntime().db)),
   );
 }

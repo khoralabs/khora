@@ -1,10 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const COOKIE_NAME = "khora_console_session";
+const COOKIE_NAME = "admin_token_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function sessionSigningKey(rootToken: string): Buffer {
-  return createHmac("sha256", rootToken).update("khora-console-session-v1").digest();
+  return createHmac("sha256", rootToken).update("admin-token-session-v1").digest();
 }
 
 function signPayload(payload: string, key: Buffer): string {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/admin-token";
+import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { ensureRegistrySchema } from "@khoralabs/registry-auth";
 import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
@@ -14,7 +14,7 @@ import { handleHostGet, handleHostRegister, handleHostsList } from "./hosts";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
-async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>): Promise<string> {
+async function loginCookie(auth: ReturnType<typeof createRootTokenAdminAuth>): Promise<string> {
   const loginRes = await auth.route?.(
     new Request("http://localhost/admin/api/login", {
       method: "POST",
@@ -60,7 +60,7 @@ describe("host registry API", () => {
     const listBefore = await handleHostsList();
     expect((await listBefore.json()) as { hosts: unknown[] }).toMatchObject({ hosts: [] });
 
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const activate = await handleAdminHostActivate(
       new Request(`http://localhost/admin/api/hosts/${regJson.host.id}/activate`, {
@@ -90,7 +90,7 @@ describe("host registry API", () => {
       }),
     );
     const regJson = (await reg.json()) as { host: { id: string } };
-    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     const hostId = regJson.host.id;
 

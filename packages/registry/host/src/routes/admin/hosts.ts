@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/admin-token";
 import {
   activateKhoraHost,
   approveHostTrustedOriginQuotaRequest,
@@ -19,7 +19,7 @@ import {
 import { probeHostHealthById } from "../../host-health";
 import { registryHostRuntime } from "../../runtime";
 import { hostToFullJson } from "../host-json";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 
 type HostRegistryBody = {
   registryParticipationEnabled?: boolean;
@@ -41,10 +41,10 @@ function mapHostLifecycleError(
 
 export function handleAdminHostSuspend(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -63,10 +63,10 @@ export function handleAdminHostSuspend(
 
 export function handleAdminHostReactivate(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -85,10 +85,10 @@ export function handleAdminHostReactivate(
 
 export function handleAdminHostDelete(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -107,10 +107,10 @@ export function handleAdminHostDelete(
 
 export function handleAdminHostActivate(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -135,10 +135,10 @@ export function handleAdminHostActivate(
 
 export function handleAdminHostRegistry(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -190,10 +190,10 @@ export function handleAdminHostRegistry(
 
 export function handleAdminHostOriginRequests(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -223,11 +223,11 @@ function mapOriginApprovalError(err: unknown): { message: string; status: number
 
 export function handleAdminHostOriginRequestApprove(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
@@ -251,11 +251,11 @@ export function handleAdminHostOriginRequestApprove(
 
 export function handleAdminHostOriginRequestReject(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
@@ -278,10 +278,10 @@ export function handleAdminHostOriginRequestReject(
 
 export function handleAdminHostQuotaRequests(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
@@ -304,11 +304,11 @@ function mapQuotaApprovalError(err: unknown): { message: string; status: number 
 
 export function handleAdminHostQuotaRequestApprove(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {
@@ -333,11 +333,11 @@ export function handleAdminHostQuotaRequestApprove(
 
 export function handleAdminHostQuotaRequestReject(
   req: Request,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
   hostId: string,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, consoleAuth, async () => {
+  return withAdminTokenAuth(req, adminTokenAuth, async () => {
     const id = hostId.trim();
     const rid = requestId.trim();
     if (id.length === 0 || rid.length === 0) {

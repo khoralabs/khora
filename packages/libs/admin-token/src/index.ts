@@ -1,29 +1,29 @@
 import {
-  readConsoleAuthKind,
-  readConsoleLoginRateLimit,
-  readConsoleRootToken,
+  readAdminRootToken,
+  readAdminTokenAuthKind,
+  readAdminTokenLoginRateLimit,
   readSecureCookies,
 } from "./env";
-import { createRootTokenConsoleAuth } from "./root-token";
-import type { ConsoleAuth } from "./types";
+import { createRootTokenAdminAuth } from "./root-token";
+import type { AdminTokenAuth } from "./types";
 
 export {
-  readConsoleAuthKind,
-  readConsoleLoginRateLimit,
-  readConsoleRootToken,
+  readAdminRootToken,
+  readAdminTokenAuthKind,
+  readAdminTokenLoginRateLimit,
   readSecureCookies,
 } from "./env";
-export { createRootTokenConsoleAuth } from "./root-token";
-export type { ConsoleAuth, ConsolePrincipal } from "./types";
+export { createRootTokenAdminAuth } from "./root-token";
+export type { AdminPrincipal, AdminTokenAuth } from "./types";
 
-/** Returns null when console is disabled (no root token configured). */
-export function createConsoleAuthFromEnv(): ConsoleAuth | null {
-  const rootToken = readConsoleRootToken();
+/** Returns null when admin token auth is disabled (no root token configured). */
+export function createAdminTokenAuthFromEnv(): AdminTokenAuth | null {
+  const rootToken = readAdminRootToken();
   if (rootToken === undefined) return null;
-  readConsoleAuthKind();
-  return createRootTokenConsoleAuth({
+  readAdminTokenAuthKind();
+  return createRootTokenAdminAuth({
     rootToken,
     secureCookies: readSecureCookies(),
-    loginRateLimit: readConsoleLoginRateLimit(),
+    loginRateLimit: readAdminTokenLoginRateLimit(),
   });
 }

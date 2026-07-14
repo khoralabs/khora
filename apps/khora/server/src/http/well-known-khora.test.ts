@@ -19,7 +19,7 @@ describe("well-known khora", () => {
         adminStats: { registeredPrincipalCount: () => populationCurrent },
       } as unknown as KhoraHostContext,
       rateLimiters: {} as HostRouteDeps["rateLimiters"],
-      consoleAuth: null,
+      adminTokenAuth: null,
     };
   }
 

@@ -11,8 +11,8 @@ import {
   handleAdminStatsPrincipal,
   handleAdminStatsSummary,
 } from "./admin-stats";
+import { routeAdminTokenAuth } from "./admin-token-guard";
 import { handleListAuthorSubscriptions } from "./authors";
-import { routeConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";
 import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./host-admin";
@@ -67,7 +67,7 @@ export async function route(
     return jsonError("Not found", 404);
   }
 
-  const consoleRoute = await routeConsoleAuth(req, url, deps.consoleAuth);
+  const consoleRoute = await routeAdminTokenAuth(req, url, deps.adminTokenAuth);
   if (consoleRoute !== undefined) return consoleRoute;
 
   if (req.method === "GET" && url.pathname === "/admin/api/stats/summary") {

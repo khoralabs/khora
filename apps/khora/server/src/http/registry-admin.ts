@@ -9,12 +9,12 @@ import {
   requestHostTrustedOriginQuotaRemote,
   requestHostTrustedOriginRemote,
 } from "../registry-client";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
 export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const hostSpec = deps.ctx.hostSpec;
 
     function connectionBase() {
@@ -93,7 +93,7 @@ export async function handleAdminRegistryConfigPut(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     let body: {
       registryUrl?: string;
       slug?: string;
@@ -128,7 +128,7 @@ export async function handleAdminRegistryRegisterPost(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const hostSpec = deps.ctx.hostSpec;
     const config = hostSpec.readEffective();
     if (config.slug === undefined) {
@@ -165,7 +165,7 @@ export async function handleAdminRegistryClaimPost(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const hostSpec = deps.ctx.hostSpec;
     const config = hostSpec.readEffective();
     if (config.slug === undefined || config.registrationSecret === undefined) {
@@ -198,7 +198,7 @@ export async function handleAdminRegistryOriginRequestPost(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);
@@ -230,7 +230,7 @@ export async function handleAdminRegistryOriginRequestDelete(
   deps: HostRouteDeps,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);
@@ -250,7 +250,7 @@ export async function handleAdminRegistryOriginDelete(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);
@@ -281,7 +281,7 @@ export async function handleAdminRegistryQuotaRequestPost(
   req: Request,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);
@@ -312,7 +312,7 @@ export async function handleAdminRegistryQuotaRequestDelete(
   deps: HostRouteDeps,
   requestId: string,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, async () => {
+  return withAdminTokenAuth(req, deps, async () => {
     const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);

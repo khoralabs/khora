@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { createConsoleAuthFromEnv, createRootTokenConsoleAuth } from "./index";
+import { createAdminTokenAuthFromEnv, createRootTokenAdminAuth } from "./index";
 import { clearSessionCookie, issueSessionCookie } from "./session-cookie";
 
-describe("khora-console", () => {
-  test("createRootTokenConsoleAuth authenticates after login cookie", async () => {
-    const auth = createRootTokenConsoleAuth({ rootToken: "test-root-token-16chars" });
+describe("admin-token", () => {
+  test("createRootTokenAdminAuth authenticates after login cookie", async () => {
+    const auth = createRootTokenAdminAuth({ rootToken: "test-root-token-16chars" });
     const login = await auth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
@@ -30,13 +30,13 @@ describe("khora-console", () => {
   });
 
   test("login is rate limited by IP", async () => {
-    const auth = createRootTokenConsoleAuth({
+    const auth = createRootTokenAdminAuth({
       rootToken: "test-root-token-16chars",
       loginRateLimit: { windowMs: 60_000, max: 2 },
     });
     const url = new URL("http://x/admin/api/login");
     const req = () =>
-      new Request(url, {
+      new Request(url.href, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-real-ip": "203.0.113.1" },
         body: JSON.stringify({ token: "wrong" }),
@@ -48,14 +48,17 @@ describe("khora-console", () => {
     expect(limited?.headers.get("retry-after")).toBeTruthy();
   });
 
-  test("createConsoleAuthFromEnv returns null without token", () => {
+  test("createAdminTokenAuthFromEnv returns null without token", () => {
+    const prevAdmin = process.env.ADMIN_ROOT_TOKEN;
     const prevKhora = process.env.KHORA_CONSOLE_ROOT_TOKEN;
     const prevRegistry = process.env.REGISTRY_CONSOLE_ROOT_TOKEN;
+    delete process.env.ADMIN_ROOT_TOKEN;
     delete process.env.KHORA_CONSOLE_ROOT_TOKEN;
     delete process.env.REGISTRY_CONSOLE_ROOT_TOKEN;
     try {
-      expect(createConsoleAuthFromEnv()).toBeNull();
+      expect(createAdminTokenAuthFromEnv()).toBeNull();
     } finally {
+      if (prevAdmin !== undefined) process.env.ADMIN_ROOT_TOKEN = prevAdmin;
       if (prevKhora !== undefined) process.env.KHORA_CONSOLE_ROOT_TOKEN = prevKhora;
       if (prevRegistry !== undefined) process.env.REGISTRY_CONSOLE_ROOT_TOKEN = prevRegistry;
     }

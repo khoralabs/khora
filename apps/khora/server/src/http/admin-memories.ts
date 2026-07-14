@@ -35,7 +35,7 @@ import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
 import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
 import { NAMESPACE_ENTITY_PROFILE } from "../persistence/id-conventions";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
@@ -516,5 +516,5 @@ export async function handleAdminMemoriesRoute(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, () => handleMemoriesRoute(req, url, deps));
+  return withAdminTokenAuth(req, deps, () => handleMemoriesRoute(req, url, deps));
 }

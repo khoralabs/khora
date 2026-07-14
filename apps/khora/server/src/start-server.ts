@@ -57,7 +57,7 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
     ctx,
     ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
     rateLimiters: createV2HostRateLimiters(),
-    consoleAuth: null,
+    adminTokenAuth: null,
   };
   const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 

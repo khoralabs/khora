@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/admin-token";
 import {
   lookupRegistryByAccountId,
   lookupRegistryByEmail,
@@ -7,7 +7,7 @@ import {
   type RegistryEmailLookupResponse,
 } from "@khoralabs/registry-accounts";
 import { registryHostRuntime } from "../../runtime";
-import { withConsoleAuth } from "./console-guard";
+import { withAdminTokenAuth } from "./admin-token-guard";
 
 async function findAuthUserByEmail(email: string): Promise<RegistryAuthUser | null> {
   const db = registryHostRuntime().db;
@@ -48,17 +48,17 @@ export async function lookupAccountResponse(accountId: string): Promise<Response
 export function handleLookupEmail(
   req: Request,
   url: URL,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
 ): Promise<Response> {
   const email = url.searchParams.get("email") ?? "";
-  return withConsoleAuth(req, consoleAuth, () => lookupEmailResponse(email));
+  return withAdminTokenAuth(req, adminTokenAuth, () => lookupEmailResponse(email));
 }
 
 export function handleLookupAccount(
   req: Request,
   url: URL,
-  consoleAuth: ConsoleAuth | null,
+  adminTokenAuth: AdminTokenAuth | null,
 ): Promise<Response> {
   const id = url.searchParams.get("id") ?? "";
-  return withConsoleAuth(req, consoleAuth, () => lookupAccountResponse(id));
+  return withAdminTokenAuth(req, adminTokenAuth, () => lookupAccountResponse(id));
 }
