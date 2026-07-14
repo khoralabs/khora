@@ -4,8 +4,8 @@ Understanding the split between channel-relay spawn and local daemon state is im
 
 **Protocol specs** (normative behavior, not implementation):
 
-- [`packages/vellum/spec/channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md) — **canonical:** one container = one channel; OOB join tokens
-- [`packages/vellum/spec/channel-control-protocol.md`](../../packages/vellum/spec/channel-control-protocol.md) — limits, roster, chain slots, attach credentials
+- [`channel-relay-deployment.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-relay-deployment.md) — **canonical:** one container = one channel; OOB join tokens
+- [`channel-control-protocol.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-control-protocol.md) — limits, roster, chain slots, attach credentials
 - [`.brain/technical/channel-lifecycle.md`](channel-lifecycle.md) — protocol event matrix
 
 **Terminology:** one **channel** = one nonce-gated byte **multiplex** (`channel_id`). Production intent is **one relay container per channel**; parties coordinate OOB and distribute single-use join tokens. The current `channel-relay` app can also run as a **multi-tenant pool** for local dev. OBP **hub** = relay stamping on a stream — not a "channel hub."
@@ -76,9 +76,9 @@ Override: `VELLUM_STORE_ROOT` env var.
 
 ## Channel-relay
 
-**Canonical deployment** ([`channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md)): one container, one `channel_id`, join via **single-use token OOB**. Policy (`maxPopulation`, `maxChains`, chain allocate/release) is still enforced on that instance.
+**Canonical deployment** ([`channel-relay-deployment.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-relay-deployment.md)): one container, one `channel_id`, join via **single-use token OOB**. Policy (`maxPopulation`, `maxChains`, chain allocate/release) is still enforced on that instance.
 
-**Reference pool app** (`apps/vellum/channel-relay`): multi-tenant Bun server for local dev — SQLCipher registry + frame store, DID-signed HTTP, `invite_only` admission, `VELLUM_RELAY_MAX_CHANNELS`.
+**Reference pool app** (relay / channel-relay in [`khoralabs/vellum`](https://github.com/khoralabs/vellum) or study harness): multi-tenant Bun server for local dev — SQLCipher registry + frame store, DID-signed HTTP, `invite_only` admission, `VELLUM_RELAY_MAX_CHANNELS`.
 
 ### Control-plane routes
 

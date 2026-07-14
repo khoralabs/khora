@@ -1,22 +1,24 @@
 # homebrew-tap
 
-Homebrew tap for [Khora](https://github.com/khoralabs/khora) CLI tools.
+Homebrew tap for [Khora](https://github.com/khoralabs/khora) and [Vellum](https://github.com/khoralabs/vellum) CLI tools.
 
 ## Install
 
 ```bash
 brew tap khoralabs/tap
 brew install khora
+brew install vellum
 ```
 
-This installs `khora` and `khora-daemon` on your PATH and runs `khora setup` once to seed `~/.khora/` config templates.
+- `brew install khora` installs `khora` and `khora-daemon`, then runs `khora setup` once to seed `~/.khora/` config templates.
+- `brew install vellum` installs `vellum` and `vellum-daemon`, then runs `vellum setup` once to seed `~/.vellum/` config templates.
 
-## Updating the formula
+## Updating formulae
 
-The canonical formula lives in this directory. On each `khora-cli` release, CI:
+Canonical formulae live in each product monorepo (`khora/homebrew-tap`, `vellum/homebrew-tap`). On each CLI release, that repo’s CI:
 
-1. Uploads platform tarballs to [GitHub Releases](https://github.com/khoralabs/khora/releases)
-2. Rewrites `Formula/khora.rb` with the new version and `sha256`
+1. Uploads platform tarballs to GitHub Releases
+2. Rewrites the local `Formula/<name>.rb` with the new version and `sha256`
 3. Pushes to the public [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) repo when `HOMEBREW_TAP_TOKEN` is configured
 
 To publish this directory as the tap repo:
@@ -40,4 +42,4 @@ Users then run `brew tap khoralabs/tap` (GitHub resolves `khoralabs/tap` → `kh
 | --- | --- |
 | `HOMEBREW_TAP_TOKEN` | PAT or GitHub App token with `contents: write` on `khoralabs/homebrew-tap` |
 
-If unset, release CI still updates the formula in the main `khora` repo; sync to the tap repo is manual until the secret is added.
+If unset, release CI still updates the formula in the product repo; sync to the tap repo is manual until the secret is added.

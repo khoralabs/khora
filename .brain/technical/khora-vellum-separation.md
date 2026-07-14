@@ -2,7 +2,7 @@
 
 Strategic intent and engineering pathway for treating **Khora** and **Vellum** as separate products, generalizing **channel auth**, and evolving the **channel multiplex** toward N participants and late joins — while keeping **NBC chains strictly bilateral**.
 
-Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../product/vellum.md), [`technical/discovery.md`](discovery.md), [`technical/vellum-channels.md`](vellum-channels.md), [`technical/channel-lifecycle.md`](channel-lifecycle.md), [`packages/vellum/spec/channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md), [`packages/vellum/spec/channel-control-protocol.md`](../../packages/vellum/spec/channel-control-protocol.md), [`technical/obp-protocol.md`](obp-protocol.md), [`technical/host.md`](host.md), [`technical/dag-join-key-research.md`](dag-join-key-research.md), [`roadmap/open-questions.md`](../roadmap/open-questions.md). Relay data plane: [`relay`](https://github.com/khoralabs/relay) (`@khoralabs/relay-server-http`, `relay_channels`, `relay_spool`).
+Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../product/vellum.md), [`technical/discovery.md`](discovery.md), [`technical/vellum-channels.md`](vellum-channels.md), [`technical/channel-lifecycle.md`](channel-lifecycle.md), [`channel-relay-deployment.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-relay-deployment.md), [`channel-control-protocol.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-control-protocol.md), [`technical/obp-protocol.md`](obp-protocol.md), [`technical/host.md`](host.md), [`technical/dag-join-key-research.md`](dag-join-key-research.md), [`roadmap/open-questions.md`](../roadmap/open-questions.md). Relay data plane: [`relay`](https://github.com/khoralabs/relay) (`@khoralabs/relay-server-http`, `relay_channels`, `relay_spool`). Vellum implementation: [`khoralabs/vellum`](https://github.com/khoralabs/vellum).
 
 ---
 
@@ -104,7 +104,7 @@ Minimal cross-product notification (replaces inbox transport handoff):
 | Phase | Outcome | Stack changes |
 |-------|---------|---------------|
 | **P0 — Document & ports** | Frame relay deployable without Khora catalog | `@khoralabs/obp-frame-relay` + relay repo persistence |
-| **P1 — Vellum channel-relay** | One **container per channel**: OBP multiplex + policy enforcement (roster cap, chain slots); join = OOB single-use token | Pool reference app done; canonical deployment per [`channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md) |
+| **P1 — Vellum channel-relay** | One **container per channel**: OBP multiplex + policy enforcement (roster cap, chain slots); join = OOB single-use token | Pool reference app done; canonical deployment per [`channel-relay-deployment.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-relay-deployment.md) |
 | **P2 — Vellum client cutover** | `POST /v1/channels` + join/allocate APIs; `VellumChannelClient` | **Done** — admission modes, chain limits, CLI `channel *` |
 | **P3 — Khora handoff** | Inbox `negotiation_invite`; no Khora-mediated tickets for new flows | `@khoralabs/khora-contracts` notification kind; discovery docs updated |
 | **P4 — Decouple social graph** | `network` visibility independent of channel existence | Relationship model not created by channel spawn; optional explicit `connection_request` flow |
@@ -193,7 +193,7 @@ flowchart LR
 | **A1 — Khora `BearerAuthStrategy`** | Optional OAuth JWT on Khora HTTP (discovery APIs only) | `packages/khora/auth` |
 | **A2 — Relay WS auth** | Vellum relay: validate bearer or DID sig on upgrade; bind ticket to principal | `relay-server-http` |
 | **A3 — Actor lease service** | POST `/v1/actor-lease` after principal auth → ephemeral pubkey + expiry | Vellum relay or sidecar |
-| **A4 — Chain admission policy** | Daemon refuses `chain/init` unless principal authorized for channel; peer pubkey from roster | `apps/vellum/daemon` control server |
+| **A4 — Chain admission policy** | Daemon refuses `chain/init` unless principal authorized for channel; peer pubkey from roster | Vellum `apps/daemon` control server |
 | **A5 — Document principal URIs** | `negotiation_invite.peerPrincipal` as URI (`did:`, `urn:oidc:sub:`) | Contracts + discovery doc |
 
 ### Non-goals
@@ -340,7 +340,7 @@ Recommended order: **P1 → P2 → A2 → M1 → M2 → P3** (infra and auth bef
 | Frame relay hub port | `packages/obp/frame-relay/impl/ts/src/hub.ts` |
 | Bilateral `SessionInit` | `packages/obp/frames/spec/model/frame-protocol.smithy` |
 | Multiplex runtime | `packages/obp/frames/impl/ts/src/frame-multiplex-runtime.ts` |
-| Vellum chain create | `packages/vellum/client/src/vellum-client.ts` |
+| Vellum chain create | [`vellum-client.ts`](https://github.com/khoralabs/vellum/blob/main/packages/client/src/vellum-client.ts) |
 | Khora host (discovery only) | `apps/khora/server` |
 | Pluggable Khora HTTP auth | `packages/khora/auth/src/strategy.ts` |
 | Channel lifecycle doc | [`channel-lifecycle.md`](channel-lifecycle.md) |

@@ -37,7 +37,7 @@ Bilateral OBP/NBC sessions use **relay channels** (`POST /v1/channels`, WebSocke
 
 1. **Discovery** — `KhoraClient.connectInbox()` for post fan-out and future `negotiation_invite` handoff notifications.
 2. **Channel transport** — `RelayClient` + `connectRelay` or `MlsChannelConnection` against a Vellum-provisioned relay URL. See [`packages/relay`](../../../packages/relay) and [`.brain/technical/channel-lifecycle.md`](../../../.brain/technical/channel-lifecycle.md).
-3. **Local daemon** — [`@khoralabs/vellum-daemon`](../../../apps/vellum/daemon) connects to the relay multiplex; the Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers inbox delivery only.
+3. **Local daemon** — [`@khoralabs/vellum-daemon`](https://github.com/khoralabs/vellum) (separate repo) connects to the relay multiplex; the Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers inbox delivery only.
 
 ## Subscriptions
 

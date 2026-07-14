@@ -14,8 +14,6 @@
 **/out
 apps/khora/cli/dist
 apps/khora/daemon/dist
-apps/vellum/cli/dist
-apps/vellum/daemon/dist
 **/coverage
 **/.cache
 **/*.tsbuildinfo

@@ -12,7 +12,6 @@ The `agent-kernel` monorepo is a Bun workspace containing three runnable applica
 apps/
 ├── khora/          # Khora server, CLI, daemon, homepage
 ├── khoralabs/      # khoralabs.com homepage + registry
-├── vellum/         # Vellum daemon + CLI
 ├── memories/       # Domus demo server
 ├── redis/          # Local Redis (dev only)
 └── s3/             # MinIO (local Litestream dev)
@@ -26,9 +25,10 @@ packages/
 ├── libs/           # blog, bun-web, sqlite-*, agent-io, RRF, ...
 ├── memories/       # core, sqlite, convex, agents, react/graph, stores, spec
 ├── obp/            # OBP v2 (Smithy specs + TypeScript impls)
-├── percolator/     # Standing-query fan-out engine
-└── vellum/         # contracts, client, bind-policy, transport
+└── percolator/     # Standing-query fan-out engine
 ```
+
+Vellum (NBC CLI/daemon/client) lives in a separate monorepo: [`khoralabs/vellum`](https://github.com/khoralabs/vellum).
 
 ---
 

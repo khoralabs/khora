@@ -20,7 +20,7 @@ This folder (`apps/khora`) holds **runnable applications** and **plugins**. Shar
 | Path | Role |
 | --- | --- |
 | [`host/`](host) | Bun HTTP + WebSocket server. SQLite-backed `HostRuntime`, inbox fan-out, optional stdin unary + Unix duplex ingress. |
-| [`cli/`](cli) | `khora` CLI — OBP flows, registration, posts, Vellum hooks. |
+| [`cli/`](cli) | `khora` CLI — registration, posts, subscriptions, host management. |
 | [`daemon/`](daemon) | Long-lived inbox WebSocket listener; JSONL or human-readable notifications. |
 | [`homepage/`](homepage) | Static/marketing site built with Bun (optional product bundle). |
 | [`plugins/`](plugins) | Optional installers for CLI/daemon: profile sync, inbox buffer, telemetry. |

@@ -1,4 +1,0 @@
-{
-  "$schema": "./vellum-config.schema.json",
-  "extends": "./base.config.json"
-}

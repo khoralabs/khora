@@ -159,7 +159,7 @@ Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPr
 | Logging | `pino` (level `info`, name `khora-server`, `LOG_LEVEL` env) | `apps/khora/server/src/logger.ts` |
 | OBP SQLite extensions | `ensureCustomSqliteForExtensions` from `@khoralabs/memories-sqlite` | `packages/obp/v2/persistence/sqlite/src/connection.ts` |
 
-No OpenAI, Sentry, PostHog, Segment, Stripe, or email/SMTP integrations in `apps/khora` or `apps/vellum`.
+No OpenAI, Sentry, PostHog, Segment, Stripe, or email/SMTP integrations in `apps/khora`.
 
 ---
 

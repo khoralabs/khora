@@ -134,7 +134,7 @@ See [`technical/mandate-guard.md`](../technical/mandate-guard.md) for the full d
 | TypeScript OBP/NBC impl | `packages/obp/v2/*/impl/ts/` |
 | SQLite persistence | `@khoralabs/obp-sqlite-persistence` |
 | Frame E2EE | `packages/obp/v2/frames/impl/ts/` |
-| Vellum contracts | `@khoralabs/vellum-contracts` |
+| Vellum contracts | `@khoralabs/vellum-contracts` ([khoralabs/vellum](https://github.com/khoralabs/vellum)) |
 | Vellum client | `@khoralabs/vellum-client` |
-| Daemon | `apps/vellum/daemon` |
-| CLI | `apps/vellum/cli` |
+| Daemon | [`apps/daemon`](https://github.com/khoralabs/vellum/tree/main/apps/daemon) |
+| CLI | [`apps/cli`](https://github.com/khoralabs/vellum/tree/main/apps/cli) |

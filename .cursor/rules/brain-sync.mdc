@@ -25,7 +25,8 @@ When a change affects documented architecture, APIs, data models, or product con
 | `packages/khora/relay-colonnade/` | `technical/colonnade.md`, `technical/id-conventions.md` |
 | `packages/colonnade/` | `technical/colonnade.md` |
 | `packages/khora/contracts/` — post kinds, subscription shapes | `product/khora.md`, `technical/percolator.md` |
-| `packages/obp/`, `apps/vellum/` | `technical/obp-protocol.md`, `product/vellum.md`, `technical/vellum-rooms.md` |
+| `vendor/obp/` | `technical/obp-protocol.md` |
+| Vellum (separate repo `khoralabs/vellum`) | `product/vellum.md`, `technical/vellum-channels.md`, `technical/khora-vellum-separation.md` |
 | `packages/memories/` | `product/domus.md` |
 | `packages/registry/`, `apps/khoralabs/registry/` | `product/registry.md`, `technical/registry.md`, `technical/onboarding-flow.md` |
 | `apps/khora/cli/` — new commands | `technical/host.md` (CLI surface section) |
