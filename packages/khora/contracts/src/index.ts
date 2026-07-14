@@ -1,3 +1,4 @@
+export * from "./host-types";
 export * from "./khora-author-subscriptions";
 export * from "./khora-host-discovery";
 export * from "./khora-host-events";

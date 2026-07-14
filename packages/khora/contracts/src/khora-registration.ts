@@ -1,5 +1,5 @@
-import type { PrincipalRegistrationResult } from "@khoralabs/host-runtime";
 import z from "zod";
+import type { PrincipalRegistrationResult } from "./host-types";
 import type { KhoraProfile } from "./khora-profile";
 import { zKhoraProfile } from "./khora-profile";
 

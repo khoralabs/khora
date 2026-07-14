@@ -1,9 +1,10 @@
-import type { PrincipalId, SocialRelationshipPersistence } from "@khoralabs/host-runtime";
+import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import type {
   KhoraSearchOriginal,
   KhoraSearchQuery,
   KhoraSearchRequest,
   KhoraSearchResponse,
+  PrincipalId,
 } from "@khoralabs/khora-contracts";
 import type {
   MemoriesClientAsync,

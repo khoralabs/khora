@@ -1,28 +1,10 @@
-import type { PrincipalId, PrincipalRegistrationRequest } from "./registration/types";
+import type {
+  HostEventBase,
+  PrincipalId,
+  PrincipalRegistrationRequest,
+} from "@khoralabs/khora-contracts";
 
-/** Stable reference to the logical entity an event refers to. */
-export type HostAggregateRef = {
-  domain: string;
-  id: string;
-};
-
-export type HostEventChange = "created" | "updated" | "deleted";
-
-export type HostEventSource = "host" | "app";
-
-/**
- * Standard envelope for host and app events so generic handlers can rely on
- * stable fields without per-entity dispatch methods.
- */
-export type HostEventBase<TKind extends string = string, TPayload = unknown> = {
-  kind: TKind;
-  occurredAt: number;
-  aggregate: HostAggregateRef;
-  change: HostEventChange;
-  source: HostEventSource;
-  payload: TPayload;
-  correlationId?: string;
-};
+export type { HostEventBase };
 
 /** Constraint for {@link HostRuntime} `TAppEvent` generic. */
 export type HostAppEventConstraint = HostEventBase<string, unknown>;

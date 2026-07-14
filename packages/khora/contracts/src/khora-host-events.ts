@@ -1,4 +1,4 @@
-import type { HostEventBase } from "@khoralabs/host-runtime";
+import type { HostEventBase } from "./host-types";
 import type { KhoraPost } from "./khora-post";
 
 export const KHORA_EVENT_KIND = {

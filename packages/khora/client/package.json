@@ -1,8 +1,31 @@
 {
   "name": "@khoralabs/khora-client",
   "version": "0.0.0",
+  "description": "Typed HTTP/WS client for Khora hosts.",
+  "license": "MIT",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khoralabs/khora.git",
+    "directory": "packages/khora/client"
+  },
+  "homepage": "https://github.com/khoralabs/khora/tree/main/packages/khora/client",
+  "bugs": "https://github.com/khoralabs/khora/issues",
+  "keywords": [
+    "khora",
+    "client",
+    "khoralabs"
+  ],
+  "files": [
+    "dist",
+    "khora-config.schema.json",
+    "README.md",
+    "LICENSE"
+  ],
   "module": "src/index.ts",
   "exports": {
     ".": {
@@ -13,24 +36,27 @@
     "./khora-config.schema.json": "./khora-config.schema.json"
   },
   "scripts": {
+    "build": "bun run scripts/build.ts",
+    "build:schema": "bun run scripts/build-json-schema.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
-    "build:schema": "bun run scripts/build-json-schema.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
-    "@khoralabs/obp-session-impl": "workspace:*",
-    "@khoralabs/obp-transport-ws": "workspace:*",
-    "@khoralabs/host-runtime": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.58.9",
     "@types/bun": "latest",
     "typescript": "^5"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

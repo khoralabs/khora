@@ -1,4 +1,5 @@
-import type { PrincipalId, PrincipalLifecycle } from "@khoralabs/host-runtime";
+import type { PrincipalLifecycle } from "@khoralabs/host-runtime";
+import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { KhoraHostPersistence } from "./types";
 
 export type PrincipalLifecycleDeps = {

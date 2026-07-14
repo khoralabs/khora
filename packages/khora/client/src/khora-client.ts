@@ -1,4 +1,4 @@
-import type { RelaySigner } from "@khoralabs/khora-auth";
+import type { Signer as RelaySigner } from "@khoralabs/did-key-identity";
 import type {
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,

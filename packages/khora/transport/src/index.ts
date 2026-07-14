@@ -7,6 +7,7 @@ export {
   createHttpKhoraTransportBundle,
   createKhoraTransportBundleFromEnv,
 } from "./bundle";
+export type { DuplexByteStream } from "./byte-stream/index";
 export {
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,

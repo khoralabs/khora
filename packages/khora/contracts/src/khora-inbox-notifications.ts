@@ -1,4 +1,4 @@
-import type { PrincipalId } from "@khoralabs/host-runtime";
+import type { PrincipalId } from "./host-types";
 
 export type InboxSubscriptionMatch = {
   subscriptionId: string;

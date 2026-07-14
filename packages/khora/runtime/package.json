@@ -13,7 +13,8 @@
     }
   },
   "dependencies": {
-    "@khoralabs/obp-byte-stream": "workspace:*"
+    "@khoralabs/khora-contracts": "workspace:*",
+    "@khoralabs/khora-transport": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"

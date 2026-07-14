@@ -1,66 +1,20 @@
+export type { Signer as RelaySigner } from "@khoralabs/did-key-identity";
 export type {
+  HostAggregateRef,
+  HostEventBase,
+  HostEventChange,
+  HostEventSource,
+  PrincipalId,
   PrincipalRegistrationRequest,
   PrincipalRegistrationResult,
-} from "@khoralabs/host-runtime";
-export type { RelaySigner } from "@khoralabs/khora-auth";
-export type {
-  AgentStatusResponse,
-  KhoraInboxNotification,
-  KhoraInviteListResponse,
-  KhoraInvitePreviewResponse,
-  KhoraPost,
-  KhoraPostCreate,
-  KhoraPostIndexableFeature,
-  KhoraPostIndexableFeatureKey,
-  KhoraPostPatch,
-  KhoraProfile,
-  KhoraProfilePatch,
-  KhoraRegistrationRequestBody,
-  KhoraRegistrationResult,
-  KhoraSearchHit,
-  KhoraSearchOriginal,
-  KhoraSearchQuery,
-  KhoraSearchRequest,
-  KhoraSearchResponse,
-  KhoraStandingSearchRequest,
-  KhoraSubscriptionCreate,
 } from "@khoralabs/khora-contracts";
-export {
-  khoraPostIndexableFeatures,
-  khoraPostIndexableLexicalText,
-  khoraPostLexicalText,
-  khoraPostObservationSummary,
-  khoraProfileLexicalText,
-  khoraSubscriptionLexicalText,
-  mergeKhoraPostPatch,
-  mergeKhoraProfilePatch,
-  normalizeTopicSlug,
-  parseKhoraRegistrationMetadata,
-  zAgentStatusResponse,
-  zKhoraInviteListResponse,
-  zKhoraInvitePreviewResponse,
-  zKhoraPost,
-  zKhoraPostCreate,
-  zKhoraPostKind,
-  zKhoraPostPatch,
-  zKhoraPostVisibility,
-  zKhoraProfile,
-  zKhoraProfilePatch,
-  zKhoraRegisterResult,
-  zKhoraRegistrationMetadata,
-  zKhoraRegistrationRequestBody,
-  zKhoraSearchRequest,
-  zKhoraSearchResponse,
-  zKhoraStandingSearchRequest,
-  zKhoraUnregisterRequestBody,
-} from "@khoralabs/khora-contracts";
+export * from "@khoralabs/khora-contracts";
 export type {
   InboxWsHandlers,
   KhoraFetch,
   KhoraTransportBundle,
   KhoraUnaryTransport,
 } from "@khoralabs/khora-transport";
-/** Transport helpers live in `@khoralabs/khora-transport`; these are commonly paired with the client. */
 export {
   type InboxNotificationRow,
   type InboxWsNotificationMessage,

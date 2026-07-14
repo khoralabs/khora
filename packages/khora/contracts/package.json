@@ -1,8 +1,31 @@
 {
   "name": "@khoralabs/khora-contracts",
   "version": "0.0.0",
+  "description": "Zod schemas and shared types for the Khora HTTP/WS wire format.",
+  "license": "MIT",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khoralabs/khora.git",
+    "directory": "packages/khora/contracts"
+  },
+  "homepage": "https://github.com/khoralabs/khora/tree/main/packages/khora/contracts",
+  "bugs": "https://github.com/khoralabs/khora/issues",
+  "keywords": [
+    "khora",
+    "contracts",
+    "zod",
+    "khoralabs"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "module": "src/index.ts",
   "exports": {
     ".": {
@@ -12,11 +35,11 @@
     }
   },
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json --emitDeclarationOnly && bun build ./src/index.ts --outfile=dist/index.js --target=node --format=esm --packages=external",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/host-runtime": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {
@@ -25,5 +48,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

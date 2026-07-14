@@ -15,4 +15,4 @@ Zod schemas and TypeScript types shared across the **khora** packages. No runtim
 
 ## Role in the directory
 
-Anything that crosses a process boundary in khora should be validated or typed through these schemas first. This package depends only on `zod` and `@khoralabs/host-runtime`. Keep it dependency-light.
+Anything that crosses a process boundary in khora should be validated or typed through these schemas first. This package depends only on `zod`. Keep it dependency-light.

@@ -14,7 +14,9 @@ node_modules
 # output
 out
 dist
+.dts-build
 apps/khora/release
+release/
 *.tgz
 
 # code coverage

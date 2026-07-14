@@ -1,17 +1,10 @@
-/** Opaque globally unique principal key (routing id for registrations, inbox, subscriptions). Format is adapter-defined; host-runtime does not validate shape. */
-export type PrincipalId = string;
+import type {
+  PrincipalId,
+  PrincipalRegistrationRequest,
+  PrincipalRegistrationResult,
+} from "@khoralabs/khora-contracts";
 
-export type PrincipalRegistrationRequest = {
-  principalId: PrincipalId;
-  metadata?: Record<string, unknown>;
-  correlationId?: string;
-};
-
-export type PrincipalRegistrationResult<TProfile> = {
-  principalId: PrincipalId;
-  profile: TProfile;
-  profileId: string;
-};
+export type { PrincipalId, PrincipalRegistrationRequest, PrincipalRegistrationResult };
 
 /** Requires `profile.id: string` for event aggregates and indexing conventions. */
 export function profileEntityId(profile: unknown): string {
