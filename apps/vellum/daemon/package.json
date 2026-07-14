@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "@khoralabs/did-key-identity": "^0.1.0",
-    "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/nbc-bind-policy": "workspace:*",
+    "@khoralabs/obp-byte-stream": "workspace:*",
     "@khoralabs/obp-frames-impl": "workspace:*",
     "@khoralabs/obp-model": "workspace:*",
     "@khoralabs/obp-nbc": "workspace:*",
