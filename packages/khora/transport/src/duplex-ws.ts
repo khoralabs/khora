@@ -3,7 +3,7 @@ import type { DuplexByteStream } from "@khoralabs/obp-byte-stream";
 import { createWebSocketDuplexByteStream } from "@khoralabs/obp-byte-stream";
 import { type ConnectInboxOptions, connectInbox, type InboxWsHandlers } from "./inbox-connect";
 
-export type NegotiationDuplexArgs = {
+export type WebSocketByteDuplexArgs = {
   webSocketUrl: string;
   WebSocketCtor: typeof WebSocket;
   /** e.g. one-time upgrade nonce subprotocol for Vellum channel relay. */
@@ -11,14 +11,15 @@ export type NegotiationDuplexArgs = {
 };
 
 /** Owns the underlying socket until {@link dispose}. */
-export type NegotiationDuplexHandle = {
+export type WebSocketByteDuplexHandle = {
   channel: DuplexByteStream;
   dispose(): void;
 };
 
-export async function openWebSocketNegotiationDuplex(
-  args: NegotiationDuplexArgs,
-): Promise<NegotiationDuplexHandle> {
+/** Open a WebSocket and wrap it as a {@link DuplexByteStream}. */
+export async function openWebSocketByteDuplex(
+  args: WebSocketByteDuplexArgs,
+): Promise<WebSocketByteDuplexHandle> {
   const WS = args.WebSocketCtor;
   const ws =
     args.webSocketProtocols !== undefined
@@ -44,7 +45,8 @@ export async function openWebSocketNegotiationDuplex(
   });
 
   const bridge = createWebSocketDuplexByteStream((bytes) => {
-    ws.send(bytes);
+    // DOM WebSocket.send expects ArrayBuffer-backed views; DuplexByteStream uses ArrayBufferLike.
+    ws.send(bytes.slice());
   });
 
   const onMessage = (ev: MessageEvent): void => {
@@ -80,14 +82,14 @@ export async function openWebSocketNegotiationDuplex(
 }
 
 export interface KhoraDuplexTransport {
-  openNegotiationDuplex(args: NegotiationDuplexArgs): Promise<NegotiationDuplexHandle>;
+  openByteDuplex(args: WebSocketByteDuplexArgs): Promise<WebSocketByteDuplexHandle>;
   connectInbox(opts: ConnectInboxOptions, handlers: InboxWsHandlers): Promise<{ close(): void }>;
 }
 
-/** Default duplex binding: WebSocket for NBC negotiation + inbox subscription. */
+/** Default duplex binding: WebSocket byte channel + inbox subscription. */
 export class WsKhoraDuplexTransport implements KhoraDuplexTransport {
-  async openNegotiationDuplex(args: NegotiationDuplexArgs): Promise<NegotiationDuplexHandle> {
-    return openWebSocketNegotiationDuplex(args);
+  async openByteDuplex(args: WebSocketByteDuplexArgs): Promise<WebSocketByteDuplexHandle> {
+    return openWebSocketByteDuplex(args);
   }
 
   connectInbox(opts: ConnectInboxOptions, handlers: InboxWsHandlers): Promise<{ close(): void }> {

@@ -15,11 +15,11 @@ export {
 } from "./client-events";
 export type {
   KhoraDuplexTransport,
-  NegotiationDuplexArgs,
-  NegotiationDuplexHandle,
+  WebSocketByteDuplexArgs,
+  WebSocketByteDuplexHandle,
 } from "./duplex-ws";
 export {
-  openWebSocketNegotiationDuplex,
+  openWebSocketByteDuplex,
   WsKhoraDuplexTransport,
 } from "./duplex-ws";
 export { formatThrownError, KhoraClientError } from "./errors";

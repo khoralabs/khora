@@ -1,4 +1,5 @@
-import { openWebSocketNegotiationDuplex } from "@khoralabs/khora-transport";
+import { Buffer } from "node:buffer";
+import { createWebSocketDuplexByteStream } from "@khoralabs/obp-byte-stream";
 import {
   connectObpFrameChannelSession,
   type ObpFrameConnection,
@@ -18,6 +19,72 @@ function webSocketUrlWithReplay(base: string, replayAfter?: number): string {
   const u = new URL(base);
   u.searchParams.set("replayAfter", String(replayAfter));
   return u.toString();
+}
+
+async function openRelayByteDuplex(args: {
+  webSocketUrl: string;
+  webSocketProtocols?: string | string[] | undefined;
+  WebSocketCtor: typeof WebSocket;
+}): Promise<{ channel: ByteChannel; dispose(): void }> {
+  const WS = args.WebSocketCtor;
+  const ws =
+    args.webSocketProtocols !== undefined
+      ? new WS(args.webSocketUrl, args.webSocketProtocols)
+      : new WS(args.webSocketUrl);
+  ws.binaryType = "arraybuffer";
+
+  await new Promise<void>((resolve, reject) => {
+    const onOpen = (): void => {
+      cleanup();
+      resolve();
+    };
+    const onErr = (e: Event): void => {
+      cleanup();
+      reject(new Error(`WebSocket error: ${String((e as ErrorEvent).message ?? "error")}`));
+    };
+    const cleanup = (): void => {
+      ws.removeEventListener("open", onOpen);
+      ws.removeEventListener("error", onErr);
+    };
+    ws.addEventListener("open", onOpen, { once: true });
+    ws.addEventListener("error", onErr, { once: true });
+  });
+
+  const bridge = createWebSocketDuplexByteStream((bytes) => {
+    // DOM WebSocket.send expects ArrayBuffer-backed views; DuplexByteStream uses ArrayBufferLike.
+    ws.send(bytes.slice());
+  });
+
+  const onMessage = (ev: MessageEvent): void => {
+    const d = ev.data;
+    if (d instanceof ArrayBuffer) {
+      bridge.onMessage(d);
+    } else if (d instanceof Uint8Array) {
+      bridge.onMessage(d);
+    } else if (Buffer.isBuffer(d)) {
+      bridge.onMessage(new Uint8Array(d));
+    } else if (typeof Blob !== "undefined" && d instanceof Blob) {
+      void d.arrayBuffer().then((b) => bridge.onMessage(b));
+    }
+  };
+  const onClose = (): void => {
+    bridge.onClose();
+  };
+  ws.addEventListener("message", onMessage);
+  ws.addEventListener("close", onClose);
+
+  return {
+    channel: bridge.channel,
+    dispose(): void {
+      ws.removeEventListener("message", onMessage);
+      ws.removeEventListener("close", onClose);
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
+    },
+  };
 }
 
 /**
@@ -81,7 +148,7 @@ export async function connectObpOverRelay(
   runner: (conn: ObpFrameConnection, getFrameCount: () => number) => Promise<void>,
 ): Promise<ObpSessionResult> {
   const { webSocketUrl, webSocketProtocols, WebSocketCtor, replayAfter, ...rest } = options;
-  const handle = await openWebSocketNegotiationDuplex({
+  const handle = await openRelayByteDuplex({
     webSocketUrl: webSocketUrlWithReplay(webSocketUrl, replayAfter),
     webSocketProtocols,
     WebSocketCtor: WebSocketCtor ?? WebSocket,
