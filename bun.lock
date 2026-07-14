@@ -746,7 +746,7 @@
         "typescript": "^5",
       },
     },
-    "packages/libs/cli/cli-kit": {
+    "packages/libs/cli": {
       "name": "@khoralabs/cli-kit",
       "version": "0.0.0",
       "dependencies": {
@@ -2330,7 +2330,7 @@
 
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:vendor/chat/react"],
 
-    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli/cli-kit"],
+    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli"],
 
     "@khoralabs/colonnade-crypto": ["@khoralabs/colonnade-crypto@workspace:packages/colonnade/crypto"],
 
