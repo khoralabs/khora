@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/cli-flow-nbc",
+  "name": "@khoralabs/cli-flow",
   "version": "0.0.0",
   "private": true,
   "type": "module",

@@ -1,5 +1,5 @@
-import type { FlowChainView } from "@khoralabs/cli-flow-nbc";
-import { createInMemoryFlowChainView } from "@khoralabs/cli-flow-nbc";
+import type { FlowChainView } from "@khoralabs/cli-flow";
+import { createInMemoryFlowChainView } from "@khoralabs/cli-flow";
 import type { VellumClient } from "@khoralabs/vellum-client";
 
 export type VellumFlowChainViewOptions = {

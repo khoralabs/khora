@@ -1,4 +1,4 @@
-import type { FlowDefinition } from "@khoralabs/cli-flow-nbc";
+import type { FlowDefinition } from "@khoralabs/cli-flow";
 
 export const connectFlowDefinition: FlowDefinition = {
   id: "vellum-connect",

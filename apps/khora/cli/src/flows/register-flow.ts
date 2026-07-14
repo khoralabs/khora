@@ -1,4 +1,4 @@
-import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
+import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow";
 
 import type { KhoraCliContext } from "./context";
 import { registerFlowDefinition } from "./definitions";

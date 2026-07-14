@@ -1,4 +1,4 @@
-import { runOfferFlow } from "@khoralabs/cli-flow-nbc";
+import { runOfferFlow } from "@khoralabs/cli-flow";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 

@@ -1,4 +1,4 @@
-import { createInMemoryFlowChainView } from "@khoralabs/cli-flow-nbc";
+import { createInMemoryFlowChainView } from "@khoralabs/cli-flow";
 
 export function createKhoraFlowChainView(
   seedBinds?: ReadonlyMap<string, string>,

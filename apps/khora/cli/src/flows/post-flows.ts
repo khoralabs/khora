@@ -1,5 +1,5 @@
-import type { FlowDefinition } from "@khoralabs/cli-flow-nbc";
-import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
+import type { FlowDefinition } from "@khoralabs/cli-flow";
+import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow";
 import { splitTopics } from "@khoralabs/cli-kit";
 import type {
   KhoraPostCreateContent,

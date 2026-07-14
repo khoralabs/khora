@@ -17,7 +17,7 @@
   "dependencies": {
     "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-auth": "workspace:*",
-    "@khoralabs/cli-flow-nbc": "workspace:*",
+    "@khoralabs/cli-flow": "workspace:*",
     "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",

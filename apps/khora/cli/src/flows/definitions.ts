@@ -1,4 +1,4 @@
-import type { FlowDefinition } from "@khoralabs/cli-flow-nbc";
+import type { FlowDefinition } from "@khoralabs/cli-flow";
 
 export const registerFlowDefinition: FlowDefinition = {
   id: "khora-register",

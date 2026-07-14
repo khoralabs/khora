@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@khoralabs/did-key-identity": "^0.1.0",
-    "@khoralabs/cli-flow-nbc": "workspace:*",
+    "@khoralabs/cli-flow": "workspace:*",
     "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/obp-nbc": "workspace:*",
     "@khoralabs/relay-client": "workspace:*",

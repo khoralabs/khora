@@ -1,4 +1,4 @@
-import { runOfferFlow } from "@khoralabs/cli-flow-nbc";
+import { runOfferFlow } from "@khoralabs/cli-flow";
 import type { KhoraPostVisibility } from "@khoralabs/khora-contracts";
 
 import type { KhoraCliContext } from "./context";

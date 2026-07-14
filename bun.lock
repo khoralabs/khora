@@ -24,7 +24,7 @@
         "khora": "./src/cli.ts",
       },
       "dependencies": {
-        "@khoralabs/cli-flow-nbc": "workspace:*",
+        "@khoralabs/cli-flow": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
@@ -383,7 +383,7 @@
         "vellum": "./src/cli.ts",
       },
       "dependencies": {
-        "@khoralabs/cli-flow-nbc": "workspace:*",
+        "@khoralabs/cli-flow": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/obp-nbc": "workspace:*",
@@ -748,8 +748,8 @@
         "typescript": "^5",
       },
     },
-    "packages/libs/cli/cli-flow-nbc": {
-      "name": "@khoralabs/cli-flow-nbc",
+    "packages/libs/cli/cli-flow": {
+      "name": "@khoralabs/cli-flow",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/cli-kit": "workspace:*",
@@ -2348,7 +2348,7 @@
 
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:vendor/chat/react"],
 
-    "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/libs/cli/cli-flow-nbc"],
+    "@khoralabs/cli-flow": ["@khoralabs/cli-flow@workspace:packages/libs/cli/cli-flow"],
 
     "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/libs/cli/cli-kit"],
 
