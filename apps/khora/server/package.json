@@ -23,7 +23,6 @@
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
-    "@khoralabs/khora-react": "workspace:*",
     "@khoralabs/khora-server-http": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/registry-catalog-contracts": "workspace:*",
@@ -31,7 +30,6 @@
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/memories-ontologies": "workspace:*",
     "@khoralabs/memories-investigator": "workspace:*",
-    "@khoralabs/memories-react-graph": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/memories-projections": "workspace:*",
     "@khoralabs/memories-projections-sqlite": "workspace:*",
@@ -40,27 +38,12 @@
     "@khoralabs/sqlite-crypto": "^0.1.0",
     "@khoralabs/observability": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.5.0",
     "ai": "^6",
-    "bun-plugin-tailwind": "^0.1.2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.545.0",
     "pino": "^10.3.1",
-    "radix-ui": "^1.4.3",
-    "react": "^19",
-    "react-dom": "^19",
-    "tailwind-merge": "^3.3.1",
-    "three": "^0.183.2",
     "zod": "^4"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/three": "^0.183.1",
-    "tailwindcss": "^4.1.11",
     "typescript": "^5"
   }
 }

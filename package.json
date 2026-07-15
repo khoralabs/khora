@@ -36,6 +36,7 @@
     "apps/khora/cli",
     "apps/khora/daemon",
     "apps/khora/plugins/*",
+    "apps/khora/admin",
     "apps/khora/registry",
     "apps/khora/server",
     "apps/khoralabs/*/**",

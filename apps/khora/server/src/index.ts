@@ -34,8 +34,6 @@ import { logger } from "./logger";
 import { envMemoriesBootstrapConfig } from "./memories-env";
 import { tracer } from "./otel";
 import { maybeRegistryOptInOnStartup } from "./registry-opt-in";
-import adminPage from "./routes/admin/index.html";
-import adminLoginPage from "./routes/admin/login/index.html";
 
 /** App root (parent of `src/` or `dist/`) — not `process.cwd()` when prod runs from `dist/`. */
 const appRoot = path.resolve(import.meta.dir, "..");
@@ -69,7 +67,7 @@ const adminTokenAuth = createAdminTokenAuthFromEnv();
 if (adminTokenAuth === null) {
   logger.info("Admin token auth disabled (set ADMIN_ROOT_TOKEN to enable)");
 } else {
-  logger.info("Admin console enabled at /admin");
+  logger.info("Admin API enabled at /admin/api (serve HTML via @khoralabs/khora-admin)");
 }
 
 const deps: HostRouteDeps = {
@@ -83,28 +81,8 @@ const { route } = createHostRouter({
 });
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 
-const htmlRoutes = {
-  "/admin": adminPage,
-  "/admin/": adminPage,
-  "/admin/network": adminPage,
-  "/admin/network/*": adminPage,
-  "/admin/infrastructure": adminPage,
-  "/admin/infrastructure/*": adminPage,
-  "/admin/operations": adminPage,
-  "/admin/operations/*": adminPage,
-  "/admin/registry": adminPage,
-  "/admin/registry/*": adminPage,
-  "/admin/lookup": adminPage,
-  "/admin/lookup/*": adminPage,
-  "/admin/graph": adminPage,
-  "/admin/graph/*": adminPage,
-  "/admin/login": adminLoginPage,
-  "/admin/login/": adminLoginPage,
-};
-
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
-  routes: htmlRoutes,
   async fetch(req) {
     const startMs = Date.now();
     const url = new URL(req.url);
@@ -133,10 +111,6 @@ const server = Bun.serve<KhoraWsData>({
         );
       }
     });
-  },
-  development: process.env.NODE_ENV !== "production" && {
-    hmr: true,
-    console: true,
   },
   websocket: inboxWsHandlers,
 });

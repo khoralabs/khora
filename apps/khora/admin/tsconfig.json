@@ -4,6 +4,7 @@
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",
+    "jsx": "react-jsx",
     "allowJs": true,
 
     "moduleResolution": "bundler",
@@ -17,12 +18,17 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
 
-  "include": ["./src/**/*", "./bun-env.d.ts"],
+  "include": ["./src/**/*"],
 
   "exclude": ["dist", "node_modules"]
 }
