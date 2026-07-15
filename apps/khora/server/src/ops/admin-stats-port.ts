@@ -316,6 +316,8 @@ function clampInactiveDays(days: number | undefined): number {
 
 export function createKhoraAdminStatsPort(deps: {
   hostDb: Database;
+  /** Standing queries live on the percolator DB (separate file from host meta). */
+  percolatorDb: Database;
   cellsDir: string;
   tenantKey: string;
   cellPoolCount: number;
@@ -325,6 +327,7 @@ export function createKhoraAdminStatsPort(deps: {
 }): KhoraAdminStatsPort {
   const {
     hostDb,
+    percolatorDb,
     cellsDir,
     tenantKey,
     cellPoolCount,
@@ -377,9 +380,11 @@ export function createKhoraAdminStatsPort(deps: {
         .prepare(`SELECT COUNT(*) AS c FROM khora_host_projections WHERE tenant_key = ?`)
         .get(tenantKey) as { c: number }
     ).c;
-    const standingQueries = tableExists(hostDb, "standing_queries")
+    const standingQueries = tableExists(percolatorDb, "standing_queries")
       ? (
-          hostDb.prepare(`SELECT COUNT(*) AS c FROM standing_queries WHERE active = 1`).get() as {
+          percolatorDb
+            .prepare(`SELECT COUNT(*) AS c FROM standing_queries WHERE active = 1`)
+            .get() as {
             c: number;
           }
         ).c
@@ -528,9 +533,9 @@ export function createKhoraAdminStatsPort(deps: {
       const username = lookupNormalizedUsernameForPrincipal(did);
       const cellId = cluster.assignPrincipalToCell(did);
       const outboxCount = countOutboxForPrincipal(cellsDir, cellId, tenantKey, did, sqlCipherKey);
-      const subscriptionCount = tableExists(hostDb, "standing_queries")
+      const subscriptionCount = tableExists(percolatorDb, "standing_queries")
         ? (
-            hostDb
+            percolatorDb
               .prepare(
                 `SELECT COUNT(*) AS c FROM standing_queries
                  WHERE owner_id = ? AND active = 1`,

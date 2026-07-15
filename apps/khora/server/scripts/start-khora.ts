@@ -1,6 +1,6 @@
 /**
- * When KHORA_LITESTREAM is set, runs Litestream (host DB + watched cells dir)
- * then the Bun server. Otherwise runs the server only.
+ * When KHORA_LITESTREAM is set, runs Litestream (data-dir *.sqlite + cells/) then the Bun server.
+ * Otherwise runs the server only.
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -36,30 +36,38 @@ async function runWithLitestream(): Promise<void> {
   validateEnv();
 
   const persistencePaths = resolveKhoraPersistencePaths(process.env, serverRoot);
-  const hostDbAbs = path.resolve(process.cwd(), persistencePaths.hostDbPath);
+  const dataDirAbs = path.resolve(process.cwd(), persistencePaths.dataDir);
   const cellsAbs = path.resolve(process.cwd(), persistencePaths.cellsDir);
-  const memoriesConfig = envMemoriesEnabled()
-    ? envMemoriesBootstrapConfig(persistencePaths)
-    : undefined;
-  const memoriesAbs =
-    memoriesConfig !== undefined ? path.resolve(process.cwd(), memoriesConfig.dbPath) : undefined;
 
-  mkdirSync(persistencePaths.dataDir, { recursive: true });
-  mkdirSync(path.dirname(hostDbAbs), { recursive: true });
+  mkdirSync(dataDirAbs, { recursive: true });
+  mkdirSync(path.dirname(path.resolve(process.cwd(), persistencePaths.hostDbPath)), {
+    recursive: true,
+  });
+  mkdirSync(path.dirname(path.resolve(process.cwd(), persistencePaths.authNoncesDbPath)), {
+    recursive: true,
+  });
+  mkdirSync(path.dirname(path.resolve(process.cwd(), persistencePaths.percolatorDbPath)), {
+    recursive: true,
+  });
   mkdirSync(cellsAbs, { recursive: true });
-  if (memoriesAbs !== undefined) {
-    mkdirSync(path.dirname(memoriesAbs), { recursive: true });
+  if (envMemoriesEnabled()) {
+    const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
+    if (memoriesConfig === undefined) {
+      throw new Error("KHORA_MEMORIES_DB_PATH is required when KHORA_MEMORIES_ENABLED is true");
+    }
+    mkdirSync(path.dirname(path.resolve(process.cwd(), memoriesConfig.dbPath)), {
+      recursive: true,
+    });
   }
 
   const litestreamBin = resolveLitestreamBin(serverRoot);
   const configPath = path.join(tmpdir(), `litestream-khora-${process.pid}.yml`);
+  // Watch the data dir for *.sqlite (host / auth nonces / percolator / memories).
+  // Cells remain a nested dir scan — Litestream dir entries are non-recursive.
   const yaml = buildLitestreamYaml({
     ...s3,
     dbs: [
-      { kind: "file", path: hostDbAbs, replicaSuffix: "host.sqlite" },
-      ...(memoriesAbs !== undefined
-        ? [{ kind: "file" as const, path: memoriesAbs, replicaSuffix: "memories.sqlite" }]
-        : []),
+      { kind: "dir", dir: dataDirAbs, pattern: "*.sqlite", watch: true, replicaSuffix: "data" },
       { kind: "dir", dir: cellsAbs, pattern: "*.sqlite", watch: true, replicaSuffix: "cells" },
     ],
   });

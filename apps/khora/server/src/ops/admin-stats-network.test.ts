@@ -24,6 +24,7 @@ hostDb.run(`
     PRIMARY KEY (tenant_key, namespace, entry_key)
   );
 `);
+const percolatorDb = new Database(":memory:");
 
 function registerPrincipal(did: string, username?: string): void {
   hostDb
@@ -90,6 +91,7 @@ function seedOutbox(
 function makePort(lookup?: (did: string) => string | undefined) {
   return createKhoraAdminStatsPort({
     hostDb,
+    percolatorDb,
     cellsDir,
     tenantKey: "relay",
     cellPoolCount: 2,
@@ -115,6 +117,7 @@ beforeEach(() => {
 
 afterAll(() => {
   hostDb.close();
+  percolatorDb.close();
   rmSync(testRoot, { recursive: true, force: true });
 });
 

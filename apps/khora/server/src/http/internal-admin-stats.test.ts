@@ -34,6 +34,10 @@ hostDb.run(`
     updated_at_ms INTEGER NOT NULL,
     PRIMARY KEY (tenant_key, namespace, entry_key)
   );
+`);
+
+const percolatorDb = new Database(":memory:");
+percolatorDb.run(`
   CREATE TABLE standing_queries (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL,
@@ -48,7 +52,7 @@ hostDb.run(`
 
 function seedCatalog(): void {
   hostDb.run("DELETE FROM khora_host_projections");
-  hostDb.run("DELETE FROM standing_queries");
+  percolatorDb.run("DELETE FROM standing_queries");
   hostDb
     .prepare(
       `INSERT INTO khora_host_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
@@ -61,7 +65,7 @@ function seedCatalog(): void {
        VALUES (?, ?, ?, '{}', ?)`,
     )
     .run("relay", "khora:social:username-to-principal", "alice", Date.now());
-  hostDb
+  percolatorDb
     .prepare(
       `INSERT INTO standing_queries (id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms)
        VALUES (?, ?, '{}', 0, 1, ?, ?)`,
@@ -148,6 +152,7 @@ function deps(
     overrides?.lookupNormalizedUsernameForPrincipal ?? (() => undefined);
   const adminStats = createKhoraAdminStatsPort({
     hostDb,
+    percolatorDb,
     cellsDir,
     tenantKey: "relay",
     cellPoolCount: 2,
@@ -196,6 +201,7 @@ function withCellsDir<T>(fn: () => T): T {
 
 afterAll(() => {
   hostDb.close();
+  percolatorDb.close();
   rmSync(testRoot, { recursive: true, force: true });
 });
 

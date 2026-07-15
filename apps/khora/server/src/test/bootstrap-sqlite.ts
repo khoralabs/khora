@@ -1,3 +1,4 @@
+import path from "node:path";
 import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
 import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
@@ -14,14 +15,20 @@ import {
   type KhoraHostHealthPort,
   type KhoraHostSpecPort,
 } from "@khoralabs/khora-host";
-import { openKhoraHostSqlitePersistence } from "@khoralabs/khora-host-sqlite";
+import {
+  applyKhoraSqlitePragmas,
+  openKhoraHostSqlitePersistence,
+} from "@khoralabs/khora-host-sqlite";
 import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,
 } from "@khoralabs/percolator-sqlite";
+import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 
 export type CreateTestKhoraHostOpts = {
   hostDbPath: string;
+  authNoncesDbPath?: string;
+  percolatorDbPath?: string;
   cellsDir: string;
   cellPoolCount?: number;
   useCellWorkers?: boolean;
@@ -38,12 +45,29 @@ export async function createTestKhoraHost(
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? false;
   const encryption = createTestEncryptionMaterial();
+  const dataDir = path.dirname(opts.hostDbPath);
+  const authNoncesDbPath = opts.authNoncesDbPath ?? path.join(dataDir, "khora-auth-nonces.sqlite");
+  const percolatorDbPath = opts.percolatorDbPath ?? path.join(dataDir, "khora-percolator.sqlite");
   const { persistence, hostDb } = await openKhoraHostSqlitePersistence({
     hostDbPath: opts.hostDbPath,
     encryptionProvider: encryption.provider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
-  ensurePercolatorSchema(hostDb);
+  const authNoncesDb = await openEncryptedDatabase(
+    authNoncesDbPath,
+    { create: true },
+    "khora",
+    encryption.provider,
+  );
+  applyKhoraSqlitePragmas(authNoncesDb);
+  const percolatorDb = await openEncryptedDatabase(
+    percolatorDbPath,
+    { create: true },
+    "khora",
+    encryption.provider,
+  );
+  applyKhoraSqlitePragmas(percolatorDb);
+  ensurePercolatorSchema(percolatorDb);
   const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
@@ -57,7 +81,7 @@ export async function createTestKhoraHost(
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const percolator = bootstrapKhoraPercolator({
-    persistence: createPercolatorSqlitePersistence(hostDb),
+    persistence: createPercolatorSqlitePersistence(percolatorDb),
   });
   const principalLifecycle = createPrincipalLifecycle({
     persistence,
@@ -127,7 +151,7 @@ export async function createTestKhoraHost(
     storeSecrets: (secrets) => ({ ...secrets, updatedAtMs: Date.now() }),
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };
-  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(hostDb) });
+  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
   return createKhoraHost({
     persistence,
     tenantKey,

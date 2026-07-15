@@ -60,6 +60,14 @@ export function envHostDbPath(): string {
   return persistencePaths().hostDbPath;
 }
 
+export function envAuthNoncesDbPath(): string {
+  return persistencePaths().authNoncesDbPath;
+}
+
+export function envPercolatorDbPath(): string {
+  return persistencePaths().percolatorDbPath;
+}
+
 export function envCellsDir(): string {
   return persistencePaths().cellsDir;
 }

@@ -10,6 +10,7 @@ import {
 import type { KhoraWsData } from "@khoralabs/khora-transport";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap";
+import { KHORA_PERSISTENCE_REL } from "./persistence-paths";
 
 const DEFAULT_CIPHER_KEY = "harness-test-cipher-key-32chars!";
 const DEFAULT_OUTBOX_KEY_HEX = "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
@@ -38,13 +39,17 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
 
   const encryption = await bootstrapKhoraEncryption();
 
-  const hostDbPath = path.join(opts.dataDir, "khora-host.sqlite");
-  const cellsDir = path.join(opts.dataDir, "cells");
+  const hostDbPath = path.join(opts.dataDir, KHORA_PERSISTENCE_REL.hostDb);
+  const authNoncesDbPath = path.join(opts.dataDir, KHORA_PERSISTENCE_REL.authNoncesDb);
+  const percolatorDbPath = path.join(opts.dataDir, KHORA_PERSISTENCE_REL.percolatorDb);
+  const cellsDir = path.join(opts.dataDir, KHORA_PERSISTENCE_REL.cellsDir);
   mkdirSync(opts.dataDir, { recursive: true });
   mkdirSync(cellsDir, { recursive: true });
 
   const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
     hostDbPath,
+    authNoncesDbPath,
+    percolatorDbPath,
     cellsDir,
     cellPoolCount: opts.cellPoolCount ?? 2,
     useCellWorkers: opts.useCellWorkers ?? false,
