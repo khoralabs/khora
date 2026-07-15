@@ -1,6 +1,9 @@
 import type { RegistryClientConfig } from "@khoralabs/registry-client";
 
-import { envRegistryTrustBaseUrlOrigin } from "./env";
+function envRegistryTrustBaseUrlOrigin(): boolean {
+  const v = process.env.KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN?.trim().toLowerCase();
+  return v === "1" || v === "true";
+}
 
 /** Build registry client config from host-spec effective values + env policy. */
 export function toRegistryClientConfig(config: {
@@ -10,6 +13,7 @@ export function toRegistryClientConfig(config: {
   displayName?: string;
   registrationSecret?: string;
   managementToken?: string;
+  trustBaseUrlOrigin?: boolean;
 }): RegistryClientConfig {
   return {
     registryUrl: config.registryUrl,
@@ -20,6 +24,6 @@ export function toRegistryClientConfig(config: {
       ? { registrationSecret: config.registrationSecret }
       : {}),
     ...(config.managementToken !== undefined ? { managementToken: config.managementToken } : {}),
-    trustBaseUrlOrigin: envRegistryTrustBaseUrlOrigin(),
+    trustBaseUrlOrigin: config.trustBaseUrlOrigin ?? envRegistryTrustBaseUrlOrigin(),
   };
 }

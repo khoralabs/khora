@@ -6,15 +6,15 @@ import { join } from "node:path";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
-import { createKhoraAdminStatsPort } from "../ops/admin-stats-port";
 import {
+  type HostRouteDeps,
   handleAdminStatsCell,
   handleAdminStatsInactiveMembers,
   handleAdminStatsPrincipal,
   handleAdminStatsSummary,
-} from "./admin-stats";
-import type { HostRouteDeps } from "./deps";
+} from "@khoralabs/khora-server-http";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
+import { createKhoraAdminStatsPort } from "../ops/admin-stats-port";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";

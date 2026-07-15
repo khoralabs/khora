@@ -1,10 +1,10 @@
 import type { KhoraHostContext, KhoraHostSpecPort } from "@khoralabs/khora-host";
+import { toRegistryClientConfig } from "@khoralabs/khora-server-http";
 import {
   fetchHostRegistrationStatus,
   registerHostWithRegistryRemote,
   syncHostRegistryOnStartup,
 } from "@khoralabs/registry-client";
-
 import {
   envHostDisplayName,
   envHostSlug,
@@ -14,7 +14,6 @@ import {
   envRegistryUrl,
 } from "./env";
 import { logger } from "./logger";
-import { toRegistryClientConfig } from "./registry-client-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 

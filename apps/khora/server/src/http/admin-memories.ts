@@ -8,6 +8,7 @@ import {
   resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
 } from "@khoralabs/khora-host";
+import { type HostRouteDeps, jsonError, withAdminTokenAuth } from "@khoralabs/khora-server-http";
 import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import { MemoriesClient, type SearchHit, searchAsync } from "@khoralabs/memories-core";
 import {
@@ -35,9 +36,6 @@ import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
 import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
 import { NAMESPACE_ENTITY_PROFILE } from "../persistence/id-conventions";
-import { withAdminTokenAuth } from "./admin-token-guard";
-import type { HostRouteDeps } from "./deps";
-import { jsonError } from "./responses";
 
 const ADMIN_MEMORIES_PREFIX = "/admin/api/memories";
 

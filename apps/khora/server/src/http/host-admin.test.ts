@@ -2,10 +2,13 @@ import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
+import {
+  type HostRouteDeps,
+  handleAdminHostConfigGet,
+  handleAdminHostConfigPatch,
+} from "@khoralabs/khora-server-http";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";
-import type { HostRouteDeps } from "./deps";
-import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./host-admin";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 

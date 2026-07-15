@@ -24,6 +24,7 @@
     "@khoralabs/khora-host": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
     "@khoralabs/khora-react": "workspace:*",
+    "@khoralabs/khora-server-http": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/registry-catalog-contracts": "workspace:*",
     "@khoralabs/registry-client": "workspace:*",

@@ -6,6 +6,14 @@ import path from "node:path";
 const { dirname } = path;
 
 import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
+import {
+  createHostRouter,
+  createInboxDrainWebSocketHandlers,
+  createV2HostRateLimiters,
+  type HostRouteDeps,
+  startDuplexUnixIngress,
+  startStdioUnaryIngress,
+} from "@khoralabs/khora-server-http";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
@@ -21,18 +29,13 @@ import {
   resolveKhoraPersistencePaths,
   validateEnv,
 } from "./env";
-import type { HostRouteDeps } from "./http/deps";
-import { route } from "./http/router";
+import { handleAdminMemoriesRoute } from "./http/admin-memories";
 import { logger } from "./logger";
 import { envMemoriesBootstrapConfig } from "./memories-env";
 import { tracer } from "./otel";
-import { createV2HostRateLimiters } from "./rate-limit-buckets";
 import { maybeRegistryOptInOnStartup } from "./registry-opt-in";
 import adminPage from "./routes/admin/index.html";
 import adminLoginPage from "./routes/admin/login/index.html";
-import { startDuplexUnixIngress } from "./server/duplex-unix-listener";
-import { startStdioUnaryIngress } from "./server/stdio-unary-listener";
-import { createInboxDrainWebSocketHandlers } from "./ws/inbox";
 
 /** App root (parent of `src/` or `dist/`) — not `process.cwd()` when prod runs from `dist/`. */
 const appRoot = path.resolve(import.meta.dir, "..");
@@ -75,6 +78,9 @@ const deps: HostRouteDeps = {
   rateLimiters: createV2HostRateLimiters(),
   adminTokenAuth,
 };
+const { route } = createHostRouter({
+  adminMemoriesRoute: handleAdminMemoriesRoute,
+});
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 
 const htmlRoutes = {

@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { handleAdminStatsSummary } from "./admin-stats";
-import type { HostRouteDeps } from "./deps";
-import { adminStatsSummaryResponse } from "./internal-admin-stats";
+import {
+  adminStatsSummaryResponse,
+  type HostRouteDeps,
+  handleAdminStatsSummary,
+} from "@khoralabs/khora-server-http";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 

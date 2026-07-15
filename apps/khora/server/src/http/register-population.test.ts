@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import type { HostRouteDeps } from "./deps";
-import { handleRegister } from "./register";
+import { type HostRouteDeps, handleRegister } from "@khoralabs/khora-server-http";
 
 const registerBody = {
   did: "did:key:new-agent",
