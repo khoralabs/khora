@@ -54,7 +54,6 @@ jobs:
         run: |
           set -euo pipefail
           test -f vendor/memories/package.json
-          test -f vendor/obp/package.json
 
       - uses: oven-sh/setup-bun@v2
         with:

@@ -1,9 +1,6 @@
 [submodule "vendor/memories"]
 	path = vendor/memories
 	url = git@github.com:khoralabs/memories.git
-[submodule "vendor/obp"]
-	path = vendor/obp
-	url = git@github.com:khoralabs/open-binding-protocol.git
 [submodule "vendor/chat"]
 	path = vendor/chat
 	url = git@github.com:khoralabs/chat.git
