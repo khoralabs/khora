@@ -1,6 +1,8 @@
+import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
 import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
+import { maybeRegistryOptInOnStartup } from "../registry-opt-in";
 import { handleInboxWsUpgrade } from "../ws/inbox";
 import { handleAdminAgentsRoute } from "./admin-agents";
 import { handleAdminInvitesList, handleAdminInvitesMint } from "./admin-invites";
@@ -50,6 +52,11 @@ export type AdminMemoriesRoute = (
 export type CreateHostRouterOptions = {
   /** App-provided; when omitted, /admin/api/memories returns 404. */
   adminMemoriesRoute?: AdminMemoriesRoute;
+  /**
+   * When set, runs env-gated registry opt-in once at router creation
+   * ({@link maybeRegistryOptInOnStartup}).
+   */
+  hostSpec?: KhoraHostSpecPort;
 };
 
 export type HostRouter = {
@@ -66,6 +73,10 @@ export type HostRouter = {
  * Match `req` + `url` against khora HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.
  */
 export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter {
+  if (opts.hostSpec !== undefined) {
+    maybeRegistryOptInOnStartup(opts.hostSpec);
+  }
+
   async function route(
     req: Request,
     url: URL,

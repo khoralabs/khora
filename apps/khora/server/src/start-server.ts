@@ -66,7 +66,7 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
     rateLimiters: createV2HostRateLimiters(),
     adminTokenAuth: null,
   };
-  const { route } = createHostRouter();
+  const { route } = createHostRouter({ hostSpec: ctx.hostSpec });
   const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 
   const server = Bun.serve<KhoraWsData>({

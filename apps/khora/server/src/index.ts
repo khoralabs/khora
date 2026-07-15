@@ -33,7 +33,6 @@ import { handleAdminMemoriesRoute } from "./http/admin-memories";
 import { logger } from "./logger";
 import { envMemoriesBootstrapConfig } from "./memories-env";
 import { tracer } from "./otel";
-import { maybeRegistryOptInOnStartup } from "./registry-opt-in";
 
 /** App root (parent of `src/` or `dist/`) — not `process.cwd()` when prod runs from `dist/`. */
 const appRoot = path.resolve(import.meta.dir, "..");
@@ -82,6 +81,7 @@ const deps: HostRouteDeps = {
 };
 const { route } = createHostRouter({
   adminMemoriesRoute: handleAdminMemoriesRoute,
+  hostSpec: ctx.hostSpec,
 });
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 
@@ -120,8 +120,6 @@ const server = Bun.serve<KhoraWsData>({
 });
 
 logger.info({ port: server.port }, "listening");
-
-maybeRegistryOptInOnStartup(ctx.hostSpec);
 
 const unaryIngress = envHostUnaryIngress();
 if (unaryIngress === "stdio") {

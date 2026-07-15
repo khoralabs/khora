@@ -1,21 +1,48 @@
-import type { KhoraHostContext, KhoraHostSpecPort } from "@khoralabs/khora-host";
-import { toRegistryClientConfig } from "@khoralabs/khora-server-http";
+import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
 import {
   fetchHostRegistrationStatus,
   registerHostWithRegistryRemote,
   syncHostRegistryOnStartup,
 } from "@khoralabs/registry-client";
-import {
-  envHostDisplayName,
-  envHostSlug,
-  envPort,
-  envPublicBaseUrl,
-  envRegistryParticipate,
-  envRegistryUrl,
-} from "./env";
 import { logger } from "./logger";
+import { toRegistryClientConfig } from "./registry-client-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
+
+function envHostSlug(): string | undefined {
+  const slug = process.env.KHORA_HOST_SLUG?.trim();
+  return slug !== undefined && slug.length > 0 ? slug : undefined;
+}
+
+function envPort(): number {
+  const raw = process.env.PORT?.trim();
+  if (raw === undefined || raw.length === 0) return 8788;
+  const p = Number(raw);
+  return Number.isFinite(p) && p > 0 ? Math.floor(p) : 8788;
+}
+
+function envPublicBaseUrl(port: number): string {
+  const fromEnv = process.env.KHORA_PUBLIC_BASE_URL?.trim();
+  if (fromEnv !== undefined && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return `http://127.0.0.1:${port}`;
+}
+
+function envRegistryUrl(): string | undefined {
+  const url = process.env.KHORA_REGISTRY_URL?.trim();
+  return url !== undefined && url.length > 0 ? url.replace(/\/$/, "") : undefined;
+}
+
+function envRegistryParticipate(): boolean {
+  const v = process.env.KHORA_REGISTRY_PARTICIPATE?.trim().toLowerCase();
+  return v === "1" || v === "true";
+}
+
+function envHostDisplayName(): string | undefined {
+  const name = process.env.KHORA_HOST_DISPLAY_NAME?.trim();
+  return name !== undefined && name.length > 0 ? name : undefined;
+}
 
 export type RegistryOptInParams = {
   registryUrl: string;
@@ -51,10 +78,11 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
   }
 }
 
-export function maybeRegistryOptInOnStartup(
-  hostSpec: KhoraHostSpecPort,
-  _ctx?: KhoraHostContext,
-): void {
+/**
+ * Env-gated registry registration + pending-token poll + trusted-origin sync.
+ * No-op when participation is off and no stored slug; safe to call from every host bootstrap.
+ */
+export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
   const effective = hostSpec.readEffective();
   const envParticipate = envRegistryParticipate();
   const slug = effective.slug ?? envHostSlug();

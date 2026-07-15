@@ -31,6 +31,11 @@ export {
 } from "./rate-limit";
 export { createV2HostRateLimiters, type V2HostRateLimiters } from "./rate-limit-buckets";
 export { toRegistryClientConfig } from "./registry-client-config";
+export {
+  maybeRegistryOptInOnStartup,
+  type RegistryOptInParams,
+  registerHostWithRegistry,
+} from "./registry-opt-in";
 export type { DuplexUnixIngressHandle } from "./server/duplex-unix-listener";
 export { startDuplexUnixIngress } from "./server/duplex-unix-listener";
 export { startStdioUnaryIngress } from "./server/stdio-unary-listener";
