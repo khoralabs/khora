@@ -4,7 +4,7 @@ import {
   popRelayInboxDrainItemsForDid,
   runInboxDuplexAttachment,
 } from "@khoralabs/khora-host";
-import type { DuplexByteStream } from "@khoralabs/obp-byte-stream";
+import type { DuplexByteStream } from "@khoralabs/khora-transport/byte-stream";
 import type { HostRouteDeps } from "../http/deps";
 import { KHORA_UNARY_INGRESS_ORIGIN } from "./unary-dispatch";
 

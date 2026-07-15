@@ -18,7 +18,6 @@
     "@khoralabs/agent-capabilities": "^0.2.0",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
-    "@khoralabs/obp-byte-stream": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",

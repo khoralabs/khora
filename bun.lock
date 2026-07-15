@@ -114,7 +114,6 @@
         "@khoralabs/memories-projections-sqlite": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/obp-byte-stream": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
