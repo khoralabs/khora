@@ -1,5 +1,5 @@
-import type { PrincipalLifecycle } from "@khoralabs/host-runtime";
 import type { KhoraHostPersistence } from "./persistence/types";
+import type { PrincipalLifecycle } from "./runtime";
 
 /** Catalog operations used by HTTP adapters. */
 export type KhoraHostCatalogApi = {

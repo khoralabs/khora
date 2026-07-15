@@ -13,7 +13,7 @@
 |---|---|
 | Auth engine (Ed25519 DID-key, nonce replay protection) | `packages/khora/auth/src/auth.ts` |
 | Wired at bootstrap (`createKhoraDidAuth` + SQLite nonce store) | `bootstrap-khora.ts` |
-| Preflight handed to `HostRuntime` | `packages/host-runtime/src/runtime.ts` |
+| Preflight handed to `HostRuntime` | `packages/khora/host/src/runtime/runtime.ts` |
 
 **Route guards:**
 - `requireAuthenticatedRequest` — posts, profile, relationships, etc.
@@ -27,7 +27,7 @@
 | Step | File |
 |---|---|
 | HTTP handler, rate limits, invite gate | `src/http/register.ts` |
-| Core registration (`ctx.host.registerPrincipal`) | `@khoralabs/khora-host` / `@khoralabs/host-runtime` |
+| Core registration (`ctx.host.registerPrincipal`) | `@khoralabs/khora-host` |
 | Persistence of DID→profileId | via `createHostPersistenceClient` in bootstrap |
 | Unregister (`POST /v1/unregister`) | `src/http/unregister.ts` |
 | Discovery doc | `src/http/well-known-khora.ts` → `GET /.well-known/khora` |

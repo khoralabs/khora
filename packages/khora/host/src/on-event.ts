@@ -4,13 +4,6 @@ import type {
 } from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
 import {
-  deliverNotification,
-  HOST_EVENT_KIND,
-  type HostEventUnion,
-  type HostRuntimeEventHandlerCtx,
-  type SocialRelationshipPersistence,
-} from "@khoralabs/host-runtime";
-import {
   type InboxSubscriptionMatch,
   KHORA_EVENT_KIND,
   type KhoraHostAppEvent,
@@ -31,6 +24,13 @@ import type { KhoraColonnadeCluster } from "./ports";
 import { decodePostId } from "./post-address-id";
 import { canDeliverPostToRecipient } from "./post-visibility";
 import { deletePostOutboxRecord } from "./resolve-post";
+import {
+  deliverNotification,
+  HOST_EVENT_KIND,
+  type HostEventUnion,
+  type HostRuntimeEventHandlerCtx,
+  type SocialRelationshipPersistence,
+} from "./runtime";
 
 const postEncoder = new TextEncoder();
 

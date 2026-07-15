@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentAccountStatus, AgentAccountStatusPort } from "@khoralabs/host-runtime";
+import type { AgentAccountStatus, AgentAccountStatusPort } from "@khoralabs/khora-host";
 
 export function createAgentAccountStatusPort(db: Database): AgentAccountStatusPort {
   return {

@@ -1,8 +1,8 @@
-import type { HostPersistenceClient } from "@khoralabs/host-runtime";
 import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import { MemoriesClientAsync } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { PostResolver } from "../ports";
+import type { HostPersistenceClient } from "../runtime";
 import { createKhoraMemoriesIndexer, type KhoraMemoriesIndexer } from "./indexer";
 import { createKhoraCanonicalStore, type KhoraCanonicalStore } from "./khora-canonical-store";
 import { khoraOntology } from "./khora-ontology";

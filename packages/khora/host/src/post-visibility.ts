@@ -1,6 +1,6 @@
-import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import type { KhoraPost, PrincipalId } from "@khoralabs/khora-contracts";
 import { decodePostId } from "./post-address-id";
+import type { SocialRelationshipPersistence } from "./runtime";
 
 export function authorPrincipalIdFromPost(post: KhoraPost): string | undefined {
   const address = decodePostId(post.id);

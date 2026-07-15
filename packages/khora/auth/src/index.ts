@@ -32,6 +32,13 @@ export {
   signKhoraPostPayload,
   verifyKhoraPostSignature,
 } from "./post-signing";
+export type {
+  AuthenticatedPrincipalVerifyContext,
+  AuthPreflight,
+  InboxAccessVerifyContext,
+  RegistrationVerifyClientHints,
+  RegistrationVerifyContext,
+} from "./preflight";
 export {
   type SignAgentRequestInput,
   type SignedAgentRequest,

@@ -15,7 +15,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
@@ -31,10 +30,7 @@
     "typescript": "^5"
   },
   "devDependencies": {
-    "@khoralabs/host-runtime": "workspace:*",
-    "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
-    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"

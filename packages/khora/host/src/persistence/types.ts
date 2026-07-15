@@ -1,9 +1,5 @@
-import type {
-  HostPersistence,
-  SocialAgentIdentity,
-  SocialRegisterAgentInput,
-} from "@khoralabs/host-runtime";
 import type { PrincipalId } from "@khoralabs/khora-contracts";
+import type { HostPersistence, SocialAgentIdentity, SocialRegisterAgentInput } from "../runtime";
 
 /**
  * Bidirectional username ↔ principal index.

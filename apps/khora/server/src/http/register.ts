@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationRequest } from "@khoralabs/host-runtime";
+import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
 import { zKhoraRegisterResult, zKhoraRegistrationRequestBody } from "@khoralabs/khora-contracts";
 import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/khora-invites";
 import { logger } from "../logger";

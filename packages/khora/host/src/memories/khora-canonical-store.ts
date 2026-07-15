@@ -1,5 +1,4 @@
 import { OutboxGhostError } from "@khoralabs/colonnade-persistence";
-import type { HostPersistenceClient } from "@khoralabs/host-runtime";
 import {
   type KhoraPost,
   type KhoraProfile,
@@ -14,6 +13,7 @@ import type {
 } from "@khoralabs/memories-core";
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
 import type { PostResolver } from "../ports";
+import type { HostPersistenceClient } from "../runtime";
 import type { khoraOntology } from "./khora-ontology";
 
 export class KhoraCanonicalStore implements Store {

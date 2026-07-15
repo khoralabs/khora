@@ -6,12 +6,6 @@ import {
 } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
-import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
-import {
-  createHostPersistenceClient,
-  type HostPersistence,
-  type HostRuntimeEventHandlerCtx,
-} from "@khoralabs/host-runtime";
 import {
   authorSubscriptionSearch,
   KHORA_EVENT_KIND,
@@ -22,6 +16,12 @@ import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralab
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 import { toPercolatorSearch } from "./percolator/adapter";
+import type { SocialRelationshipPersistence } from "./runtime";
+import {
+  createHostPersistenceClient,
+  type HostPersistence,
+  type HostRuntimeEventHandlerCtx,
+} from "./runtime";
 
 function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
   const catalogDb = new Database(":memory:");

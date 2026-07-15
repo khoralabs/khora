@@ -1,13 +1,13 @@
+import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
+import type { KhoraHostContext } from "./context";
+import type { KhoraHostDeps } from "./khora-host-deps";
+import { createKhoraRelayOnEvent } from "./on-event";
 import {
   createInboxWsHub,
   HostRuntime,
   type NotificationBufferPort,
   startPrincipalTeardownWorker,
-} from "@khoralabs/host-runtime";
-import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
-import type { KhoraHostContext } from "./context";
-import type { KhoraHostDeps } from "./khora-host-deps";
-import { createKhoraRelayOnEvent } from "./on-event";
+} from "./runtime";
 
 export type { KhoraHostDeps } from "./khora-host-deps";
 

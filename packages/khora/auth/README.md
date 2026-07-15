@@ -16,7 +16,7 @@ Swapping the auth scheme is intended to be a one-file change: pass a different `
 graph LR
   client["khora client"] -->|"Signer, signAgentRequest"| auth["@khoralabs/khora-auth"]
   host["khora host"] -->|"createKhoraDidAuth(db)"| auth
-  auth -->|"AuthPreflight"| relay["@khoralabs/host-runtime"]
+  auth -->|"AuthPreflight"| host
 ```
 
 ## Lifecycle

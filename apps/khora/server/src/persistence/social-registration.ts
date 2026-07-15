@@ -1,7 +1,10 @@
 import type { Database } from "bun:sqlite";
-import type { SocialAgentIdentity, SocialRegisterAgentInput } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
-import type { KhoraHostPersistence } from "@khoralabs/khora-host";
+import type {
+  KhoraHostPersistence,
+  SocialAgentIdentity,
+  SocialRegisterAgentInput,
+} from "@khoralabs/khora-host";
 
 export function registerAgentOnPersistence(
   persistence: KhoraHostPersistence,

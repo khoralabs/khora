@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { HostRegistrations, PrincipalId } from "@khoralabs/host-runtime";
+import type { PrincipalId } from "@khoralabs/khora-contracts";
+import type { HostRegistrations } from "@khoralabs/khora-host";
 import type { CatalogProjectionStore } from "./catalog-projection-store";
 import { NAMESPACE_REG_BY_PRINCIPAL, NAMESPACE_REG_BY_PROFILE } from "./id-conventions";
 

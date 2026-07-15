@@ -1,6 +1,5 @@
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import type { PrincipalLifecycle } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
@@ -13,6 +12,7 @@ import type {
   KhoraHostHealthPort,
   KhoraHostSpecPort,
 } from "./ports";
+import type { PrincipalLifecycle } from "./runtime";
 
 export type KhoraHostDeps = {
   persistence: KhoraHostPersistence;

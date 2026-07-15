@@ -1,4 +1,3 @@
-import type { SocialRelationshipPersistence } from "@khoralabs/host-runtime";
 import type {
   KhoraSearchOriginal,
   KhoraSearchQuery,
@@ -15,6 +14,7 @@ import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import { authorPrincipalIdFromPostId } from "../post-address-id";
 import { canReadPost } from "../post-visibility";
+import type { SocialRelationshipPersistence } from "../runtime";
 import {
   hydrateMemoryLabels,
   type KhoraCanonicalStore,

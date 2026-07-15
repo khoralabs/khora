@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { PrincipalId } from "@khoralabs/host-runtime";
+import type { PrincipalId } from "@khoralabs/khora-contracts";
 
 export class SocialPrincipalChannelStore {
   private readonly insertStmt;

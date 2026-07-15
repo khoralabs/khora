@@ -1,4 +1,4 @@
-import type { PrincipalId } from "@khoralabs/host-runtime";
+import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { UsernameIndexPort } from "@khoralabs/khora-host";
 import type { CatalogProjectionStore } from "./catalog-projection-store";
 import {

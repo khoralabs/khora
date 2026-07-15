@@ -1,10 +1,10 @@
-import { HOST_AGGREGATE_DOMAIN, HOST_EVENT_KIND } from "@khoralabs/host-runtime";
 import {
   mergeKhoraProfilePatch,
   normalizeUsername,
   zKhoraProfile,
   zKhoraProfilePatch,
 } from "@khoralabs/khora-contracts";
+import { HOST_AGGREGATE_DOMAIN, HOST_EVENT_KIND } from "@khoralabs/khora-host";
 import z from "zod";
 import type { HostRouteDeps } from "./deps";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses";

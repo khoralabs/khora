@@ -1,3 +1,4 @@
+import type { AuthPreflight, RegistrationVerifyContext } from "@khoralabs/khora-auth";
 import { HOST_EVENT_KIND, type HostAppEventConstraint, type HostEventUnion } from "./events";
 import type { InboxFanoutPort } from "./inbox/inbox-fanout-port";
 import { HOST_AGGREGATE_DOMAIN } from "./model/index";
@@ -9,7 +10,6 @@ import {
   type PrincipalRegistrationResult,
   profileEntityId,
 } from "./registration/types";
-import type { AuthPreflight, RegistrationVerifyContext } from "./registration/verify";
 
 /** Passed to {@link HostRuntimeDeps.onEvent} together with each dispatched event. */
 export type HostRuntimeEventHandlerCtx = {
@@ -18,7 +18,7 @@ export type HostRuntimeEventHandlerCtx = {
   notificationBuffer?: NotificationBufferPort;
   /** When set, principal inbox WebSocket fan-out (see {@link deliverNotification} from inbox module). */
   inboxHub?: InboxFanoutPort;
-  /** App-owned runtime handle(s); host-runtime does not interpret (e.g. SQLite `Database`). */
+  /** App-owned runtime handle(s); khora-host does not interpret (e.g. SQLite `Database`). */
   appContext?: unknown;
 };
 

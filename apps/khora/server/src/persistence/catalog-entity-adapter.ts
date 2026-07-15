@@ -1,9 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type {
-  HostEntityPersistence,
-  HostEntityRow,
-  HostEntityUpsert,
-} from "@khoralabs/host-runtime";
+import type { HostEntityPersistence, HostEntityRow, HostEntityUpsert } from "@khoralabs/khora-host";
 import type { CatalogProjectionStore } from "./catalog-projection-store";
 
 export function parseEntityRow(projection: unknown, id: string): HostEntityRow | undefined {

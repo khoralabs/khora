@@ -1,12 +1,12 @@
 import type { Database } from "bun:sqlite";
+import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
+import type { NonceStore } from "./nonce-store";
 import type {
   AuthenticatedPrincipalVerifyContext,
   AuthPreflight,
   InboxAccessVerifyContext,
-  PrincipalRegistrationRequest,
   RegistrationVerifyContext,
-} from "@khoralabs/host-runtime";
-import type { NonceStore } from "./nonce-store";
+} from "./preflight";
 import { createSqliteNonceStore } from "./sqlite-nonce-store";
 import type { AuthStrategy } from "./strategy";
 import { createDidKeyEd25519Strategy } from "./strategy-did-key";

@@ -2,10 +2,7 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
-    "types": ["bun"],
-    "paths": {
-      "@khoralabs/host-runtime": ["../../host-runtime/src/index.ts"]
-    }
+    "types": ["bun"]
   },
   "include": ["src/**/*.ts"]
 }

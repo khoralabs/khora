@@ -194,7 +194,7 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 
 **Contracts:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-profile.ts`
 
-**Persistence client:** `packages/host-runtime/src/persistence/client.ts` — `ctx.host.persistenceClient.getProfileById()`, `profileIdForPrincipal()`
+**Persistence client:** `packages/khora/host/src/runtime/persistence/client.ts` — `ctx.host.persistenceClient.getProfileById()`, `profileIdForPrincipal()`
 
 ### Posts (Tier 2 outbox — not in catalog)
 
@@ -365,5 +365,4 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 | `@khoralabs/khora-auth` | `packages/khora/auth/` | DID auth + nonce store |
 | `@khoralabs/khora-invites` | `packages/khora/invites/` | Invite tokens repo + env |
 | `@khoralabs/khora-contracts` | `packages/khora/contracts/` | Profile/post Zod schemas |
-| `@khoralabs/host-runtime` | `packages/host-runtime/` | `HostRuntime`, persistence client |
 | `@khoralabs/khora-transport` | `packages/khora/transport/` | Inbox WS, unary HTTP |

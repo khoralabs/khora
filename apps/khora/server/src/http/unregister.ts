@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationRequest } from "@khoralabs/host-runtime";
+import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
 import { zKhoraUnregisterRequestBody } from "@khoralabs/khora-contracts";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";

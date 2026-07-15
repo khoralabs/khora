@@ -95,6 +95,55 @@ export {
   resolvePostById,
 } from "./resolve-post";
 export {
+  HOST_EVENT_KIND,
+  type HostAppEventConstraint,
+  type HostBuiltInEvent,
+  type HostEventBase,
+  type HostEventUnion,
+  type HostProfileCreatedEvent,
+  type HostProfileDeletedEvent,
+  type HostProfileUpdatedEvent,
+  type HostRegistrationProfileBuildEvent,
+  type HostRegistrationProfileBuildPayload,
+} from "./runtime/events";
+export {
+  createInboxWsHub,
+  deliverNotification,
+  inboxWebSocketFromDuplexUtf8,
+  type RunInboxDuplexAttachmentResult,
+  runInboxDuplexAttachment,
+} from "./runtime/inbox/index";
+export { HOST_AGGREGATE_DOMAIN } from "./runtime/model/index";
+export {
+  createHostPersistenceClient,
+  type HostPersistenceClient,
+} from "./runtime/persistence/client";
+export type {
+  AgentAccountStatus,
+  AgentAccountStatusPort,
+  HostEntityPersistence,
+  HostEntityRow,
+  HostEntityUpsert,
+  HostPersistence,
+  HostRegistrations,
+  PrincipalLifecycle,
+  SocialAgentIdentity,
+  SocialRegisterAgentInput,
+  SocialRelationshipPersistence,
+  SocialRelationshipRow,
+} from "./runtime/persistence/types";
+export type {
+  HostNotification,
+  HostNotificationRow,
+  NotificationBufferPort,
+} from "./runtime/registration/notifications";
+export {
+  type PrincipalTeardownWorkerHandle,
+  startPrincipalTeardownWorker,
+} from "./runtime/registration/teardown-worker";
+export type { HostRuntimeDeps, HostRuntimeEventHandlerCtx } from "./runtime/runtime";
+export { HostRuntime } from "./runtime/runtime";
+export {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,

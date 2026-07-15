@@ -1,5 +1,4 @@
 import { sha256HexLower } from "@khoralabs/colonnade-persistence";
-import type { HostPersistenceClient } from "@khoralabs/host-runtime";
 import {
   type KhoraPost,
   type KhoraProfile,
@@ -11,6 +10,7 @@ import { ids, type MemoriesClientAsync } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import { decodePostId } from "../post-address-id";
+import type { HostPersistenceClient } from "../runtime";
 import {
   ensureAgentScope,
   ensureTopicScope,

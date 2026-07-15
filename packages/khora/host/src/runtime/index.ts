@@ -50,11 +50,5 @@ export type {
   PrincipalRegistrationRequest,
   PrincipalRegistrationResult,
 } from "./registration/types";
-export type {
-  AuthenticatedPrincipalVerifyContext,
-  AuthPreflight,
-  InboxAccessVerifyContext,
-  RegistrationVerifyContext,
-} from "./registration/verify";
 export type { HostRuntimeDeps, HostRuntimeEventHandlerCtx } from "./runtime";
 export { HostRuntime } from "./runtime";

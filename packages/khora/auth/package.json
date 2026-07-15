@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@khoralabs/did-key-identity": "^0.1.0",
-    "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/relay-contracts": "workspace:*",

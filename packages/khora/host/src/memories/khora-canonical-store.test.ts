@@ -5,12 +5,12 @@ import {
   TEST_POST_AUTHOR_SIGNATURE,
 } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
-import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { ids, MemoriesClientAsync } from "@khoralabs/memories-core";
 import { createMemoriesPersistenceAsync, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { encodePostId } from "../post-address-id";
 import { createColonnadePostResolver } from "../resolve-post";
+import { createHostPersistenceClient } from "../runtime";
 import { createKhoraMemoriesIndexer } from "./indexer";
 import { createKhoraCanonicalStore, hydrateMemoryLabels } from "./khora-canonical-store";
 import {

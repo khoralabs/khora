@@ -57,7 +57,7 @@ export const zKhoraInvitePreviewResponse = z.object({
 
 export type KhoraInvitePreviewResponse = z.infer<typeof zKhoraInvitePreviewResponse>;
 
-/** HTTP uses `did`; host-runtime uses opaque `principalId` (same string at runtime). */
+/** HTTP uses `did`; host uses opaque `principalId` (same string at runtime). */
 export type KhoraRegistrationResult = Omit<
   PrincipalRegistrationResult<KhoraProfile>,
   "principalId"

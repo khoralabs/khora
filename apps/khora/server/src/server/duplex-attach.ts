@@ -1,6 +1,9 @@
-import { inboxWebSocketFromDuplexUtf8, runInboxDuplexAttachment } from "@khoralabs/host-runtime";
 import { AuthError } from "@khoralabs/khora-auth";
-import { popRelayInboxDrainItemsForDid } from "@khoralabs/khora-host";
+import {
+  inboxWebSocketFromDuplexUtf8,
+  popRelayInboxDrainItemsForDid,
+  runInboxDuplexAttachment,
+} from "@khoralabs/khora-host";
 import type { DuplexByteStream } from "@khoralabs/obp-byte-stream";
 import type { HostRouteDeps } from "../http/deps";
 import { KHORA_UNARY_INGRESS_ORIGIN } from "./unary-dispatch";

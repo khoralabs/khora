@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationRequest } from "./types";
+import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
 
 /** Optional HTTP hints supplied by the adapter. */
 export type RegistrationVerifyClientHints = {
@@ -34,7 +34,7 @@ export type InboxAccessVerifyContext = {
 };
 
 /**
- * Optional preflight: verify registration payloads and inbound routes before host-runtime proceeds.
+ * Optional preflight: verify registration payloads and inbound routes before host proceeds.
  * Omitted when the embedder trusts another layer or disables verification (e.g. tests).
  */
 export interface AuthPreflight {
