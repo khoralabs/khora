@@ -18,11 +18,11 @@ import {
 } from "@khoralabs/khora-host";
 import { openKhoraHostSqlitePersistence } from "@khoralabs/khora-host-sqlite";
 import {
-  createKhoraInvitesSqliteRepo,
   parseInviteSeedTokens,
   readInvitePepper,
   validateInviteEnvConfig,
 } from "@khoralabs/khora-invites";
+import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-invites-sqlite";
 import {
   createMemoriesPersistenceAsync,
   ensureCustomSqliteForExtensions,

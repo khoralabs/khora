@@ -24,6 +24,7 @@
     "@khoralabs/khora-host": "workspace:*",
     "@khoralabs/khora-host-sqlite": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
+    "@khoralabs/khora-invites-sqlite": "workspace:*",
     "@khoralabs/khora-server-http": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/registry-catalog-contracts": "workspace:*",

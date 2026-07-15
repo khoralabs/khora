@@ -1,11 +1,12 @@
 import type { Database } from "bun:sqlite";
-import { generateInvitePlaintext, hashInviteToken } from "./crypto";
-import type {
-  InvitePreviewResult,
-  KhoraInviteAdminListRow,
-  KhoraInviteListRow,
-  KhoraInvitesRepo,
-} from "./ports";
+import {
+  generateInvitePlaintext,
+  hashInviteToken,
+  type InvitePreviewResult,
+  type KhoraInviteAdminListRow,
+  type KhoraInviteListRow,
+  type KhoraInvitesRepo,
+} from "@khoralabs/khora-invites";
 import { ensureKhoraInviteSchema, KHORA_INVITE_KIND } from "./schema";
 
 function previewFromHash(tokenHash: string): string {
