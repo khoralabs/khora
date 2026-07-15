@@ -555,7 +555,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/percolator/runtime": {
+    "packages/khora/percolator": {
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
       "dependencies": {
@@ -1861,7 +1861,7 @@
 
     "@khoralabs/observability": ["@khoralabs/observability@workspace:vendor/libs/packages/observability"],
 
-    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator/runtime"],
+    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator"],
 
     "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/khora/percolator/sqlite"],
 
