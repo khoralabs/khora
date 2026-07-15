@@ -19,6 +19,7 @@
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
+    "@khoralabs/khora-auth-sqlite": "workspace:*",
     "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",

@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
 import type { NonceStore } from "./nonce-store";
 import type {
@@ -7,7 +6,6 @@ import type {
   InboxAccessVerifyContext,
   RegistrationVerifyContext,
 } from "./preflight";
-import { createSqliteNonceStore } from "./sqlite-nonce-store";
 import type { AuthStrategy } from "./strategy";
 import { createDidKeyEd25519Strategy } from "./strategy-did-key";
 import {
@@ -43,15 +41,7 @@ export type KhoraDidAuthOptions = {
   sweepIntervalMs?: number;
 };
 
-export type CreateKhoraDidAuthOptions = Omit<KhoraDidAuthOptions, "nonceStore"> & {
-  /**
-   * Bun SQLite database. Used to build the default {@link NonceStore}; ignored when a custom
-   * `nonceStore` is provided.
-   */
-  db?: Database;
-  /** Custom replay-protection store (overrides the SQLite default). */
-  nonceStore?: NonceStore;
-};
+export type CreateKhoraDidAuthOptions = KhoraDidAuthOptions;
 
 /**
  * Lifecycle owner for Khora DID authentication. Construct one per host process, hand
@@ -272,19 +262,12 @@ function messageOf(e: unknown): string {
 }
 
 /**
- * Factory wrapping {@link KhoraDidAuth} with sensible defaults: SQLite-backed nonce store and
- * the did:key Ed25519 strategy. Pass a custom `nonceStore` or `strategy` to override.
+ * Factory wrapping {@link KhoraDidAuth} with the did:key Ed25519 strategy by default.
+ * Pass a custom `strategy` to override.
  */
 export function createKhoraDidAuth(opts: CreateKhoraDidAuthOptions): KhoraDidAuth {
-  const nonceStore =
-    opts.nonceStore ??
-    (opts.db !== undefined
-      ? createSqliteNonceStore(opts.db)
-      : (() => {
-          throw new Error("createKhoraDidAuth: provide `db` or `nonceStore`");
-        })());
   return new KhoraDidAuth({
-    nonceStore,
+    nonceStore: opts.nonceStore,
     ...(opts.strategy !== undefined ? { strategy: opts.strategy } : {}),
     ...(opts.now !== undefined ? { now: opts.now } : {}),
     ...(opts.freshnessWindowMs !== undefined ? { freshnessWindowMs: opts.freshnessWindowMs } : {}),

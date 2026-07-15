@@ -142,7 +142,7 @@ Tables:
 - `relay_social_principal_channels` — social channel index
 - `principal_teardown_jobs` — unregister queue
 - `khora_invite_tokens` — invites (when enabled)
-- `agent_request_nonces` — auth nonces (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`)
+- `agent_request_nonces` — auth nonces (`packages/khora/auth/sqlite/src/sqlite-nonce-store.ts`)
 
 Opened via `openKhoraHostDb()` → `openKhoraHostSqlitePersistence()`.
 

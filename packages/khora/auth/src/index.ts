@@ -46,7 +46,6 @@ export {
   signAgentRequest,
   signedInboxUrl,
 } from "./signer";
-export { createSqliteNonceStore } from "./sqlite-nonce-store";
 export { type AuthStrategy, AuthStrategyError } from "./strategy";
 export { createDidKeyEd25519Strategy } from "./strategy-did-key";
 export {

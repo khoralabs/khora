@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { generateIdentity, type Signer as RelaySigner } from "@khoralabs/did-key-identity";
+import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
 import { createKhoraDidAuth } from "./auth";
 import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, signatureBytesToB64Url } from "./wire";
 
@@ -36,7 +37,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("accepts fresh + valid signed request", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -60,7 +61,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("rejects stale timestamp", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -83,7 +84,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("rejects duplicate nonce", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -112,7 +113,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("rejects DID mismatch", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -135,7 +136,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("rejects bad signature (tampered body)", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -159,7 +160,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("verifyRegistration also checks body DID matches signature DID", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const bodyText = JSON.stringify({ did: "did:key:zMismatch" });
     const headers = await buildSignedHeaders({
@@ -182,7 +183,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   test("verifyUnregister signs POST /v1/unregister", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const bodyText = JSON.stringify({ did: signer.did });
     const headers = await buildSignedHeaders({
@@ -205,7 +206,7 @@ describe("KhoraDidAuth.requireAuthenticatedRequest", () => {
   test("returns DID on success and wraps failures in AuthError", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -231,7 +232,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
   test("accepts /v1/inbox?limit=10&markRead=1 when client signs the canonical path", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -253,7 +254,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
   test("rejects when the URL query is tampered after signing", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,
@@ -273,7 +274,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
   test("allowlist order is canonical regardless of URL order", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const auth = createKhoraDidAuth({ db, now: () => now });
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
     const signer = await generateIdentity();
     const headers = await buildSignedHeaders({
       signer,

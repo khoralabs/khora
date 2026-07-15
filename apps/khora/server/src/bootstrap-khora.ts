@@ -2,7 +2,8 @@ import type { Database } from "bun:sqlite";
 import { EnvKeyProvider, outboxKeyBytesToHex } from "@khoralabs/colonnade-crypto";
 import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
-import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
+import { createKhoraDidAuth } from "@khoralabs/khora-auth";
+import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
 import {
   bootstrapKhoraMemories,
   bootstrapKhoraPercolator,

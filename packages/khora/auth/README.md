@@ -5,7 +5,7 @@ The authentication layer for **khora** agents. Owns:
 - **Wire format** (`X-Agent-*` headers, WS query params, canonical request message).
 - **Client signing** (`Signer` interface + `signAgentRequest` / `signedInboxUrl` helpers).
 - **Identity persistence** (re-exports `@khoralabs/did-key-identity` plus Khora-specific `defaultIdentityPath()` for `~/.khora/identity.json`).
-- **Replay protection** (`NonceStore` port + a default SQLite implementation).
+- **Replay protection** (`NonceStore` port; SQLite impl in `@khoralabs/khora-auth-sqlite`).
 - **Host-side facade** (`KhoraDidAuth` class) that wraps `HostRuntime`'s `AuthPreflight` interface so the host can verify any route in one call.
 
 Swapping the auth scheme is intended to be a one-file change: pass a different `AuthStrategy` to `KhoraDidAuth` and clients + host stay aligned.
@@ -15,7 +15,7 @@ Swapping the auth scheme is intended to be a one-file change: pass a different `
 ```mermaid
 graph LR
   client["khora client"] -->|"Signer, signAgentRequest"| auth["@khoralabs/khora-auth"]
-  host["khora host"] -->|"createKhoraDidAuth(db)"| auth
+  host["khora host"] -->|"createKhoraDidAuth(nonceStore)"| auth
   auth -->|"AuthPreflight"| host
 ```
 
@@ -30,8 +30,9 @@ graph LR
 
 ```ts
 import { createKhoraDidAuth } from "@khoralabs/khora-auth";
+import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
 
-const auth = createKhoraDidAuth({ db });
+const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db) });
 const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
 ```
 
@@ -45,7 +46,7 @@ const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
 | `signer.ts` | `Signer`, `signAgentRequest`, `signedInboxUrl`. |
 | identity (via `@khoralabs/did-key-identity` + `identity-path.ts`) | `defaultIdentityPath`, `loadIdentity`, `saveIdentity`, `loadOrCreateIdentity`, `generateIdentity`. |
 | `nonce-store.ts` | `NonceStore` port. |
-| `sqlite-nonce-store.ts` | `createSqliteNonceStore`. |
+| `@khoralabs/khora-auth-sqlite` | `createSqliteNonceStore`. |
 | `strategy.ts` | `AuthStrategy`, `AuthStrategyError`. |
 | `strategy-did-key.ts` | `createDidKeyEd25519Strategy` (default). |
 | `auth.ts` | `KhoraDidAuth`, `createKhoraDidAuth`, `AuthError`. |

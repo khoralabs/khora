@@ -1,9 +1,8 @@
 {
-  "name": "@khoralabs/khora-auth",
+  "name": "@khoralabs/khora-auth-sqlite",
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "module": "src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -12,18 +11,13 @@
     }
   },
   "scripts": {
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
-    "@khoralabs/did-key-identity": "^0.1.0",
-    "@khoralabs/khora-contracts": "workspace:*",
-    "@noble/ed25519": "^3.1.0",
-    "@scure/base": "^1.2.6",
-    "lru-cache": "^11.5.1"
+    "@khoralabs/khora-auth": "workspace:*"
   },
   "devDependencies": {
-    "@khoralabs/khora-auth-sqlite": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   },
