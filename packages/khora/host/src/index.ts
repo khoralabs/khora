@@ -15,9 +15,26 @@ export {
   type KhoraMemoriesHost,
 } from "./memories/bootstrap";
 export {
+  createKhoraMemoriesIndexer,
+  type KhoraMemoriesIndexer,
+} from "./memories/indexer";
+export {
+  createKhoraCanonicalStore,
+  hydrateMemoryLabels,
+  KhoraCanonicalStore,
+} from "./memories/khora-canonical-store";
+export {
   executeKhoraMemoriesSearch,
   khoraSearchRequestFromGetQuery,
 } from "./memories/khora-memories-search";
+export {
+  agentScope,
+  PROFILE_MEMORY_KEY,
+  postsMemoryNamespace,
+  profileMemoryNamespace,
+  topicScope,
+} from "./memories/khora-namespace";
+export { khoraOntology } from "./memories/khora-ontology";
 export { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 export {
   enqueuePendingEmbedding,

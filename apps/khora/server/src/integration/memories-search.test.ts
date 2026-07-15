@@ -3,17 +3,23 @@ import { describe, expect, test } from "bun:test";
 import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import type { KhoraProfile } from "@khoralabs/khora-contracts";
+import {
+  agentScope,
+  createColonnadePostResolver,
+  createHostPersistenceClient,
+  createKhoraCanonicalStore,
+  createKhoraMemoriesIndexer,
+  DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
+  executeKhoraMemoriesSearch,
+  khoraOntology,
+  PROFILE_MEMORY_KEY,
+} from "@khoralabs/khora-host";
 import { MemoriesClientAsync } from "@khoralabs/memories-core";
-import { createMemoriesPersistenceAsync, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
-import { createColonnadePostResolver } from "../resolve-post";
-import { createHostPersistenceClient } from "../runtime";
-import { createKhoraMemoriesIndexer } from "./indexer";
-import { createKhoraCanonicalStore } from "./khora-canonical-store";
-import { executeKhoraMemoriesSearch } from "./khora-memories-search";
-import { agentScope, PROFILE_MEMORY_KEY } from "./khora-namespace";
-import { khoraOntology } from "./khora-ontology";
-import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
-import { memoriesSqliteVecAvailable } from "./test-sqlite";
+import {
+  createMemoriesPersistenceAsync,
+  memoriesSqliteVecAvailable,
+  openMemoriesDatabase,
+} from "@khoralabs/memories-sqlite";
 
 function memoriesTest(name: string, fn: () => Promise<void>): void {
   test.skipIf(!memoriesSqliteVecAvailable())(name, fn);

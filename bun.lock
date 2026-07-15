@@ -503,8 +503,6 @@
         "zod": "^4",
       },
       "devDependencies": {
-        "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
-        "@khoralabs/memories-sqlite": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },

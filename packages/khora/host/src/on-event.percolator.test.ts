@@ -1,11 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, mock, test } from "bun:test";
-import {
-  createTestEncryptionMaterial,
-  TEST_POST_AUTHOR_SIGNATURE,
-} from "@khoralabs/colonnade-crypto";
+import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import {
   authorSubscriptionSearch,
   KHORA_EVENT_KIND,
@@ -16,12 +12,28 @@ import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralab
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 import { toPercolatorSearch } from "./percolator/adapter";
+import type { KhoraColonnadeCluster } from "./ports";
 import type { SocialRelationshipPersistence } from "./runtime";
 import {
   createHostPersistenceClient,
   type HostPersistence,
   type HostRuntimeEventHandlerCtx,
 } from "./runtime";
+
+function stubCluster(cellPoolCount = 2): KhoraColonnadeCluster {
+  return {
+    cellPoolCount,
+    resolveCell() {
+      throw new Error("stubCluster: resolveCell not used in percolator tests");
+    },
+    assignPrincipalToCell(principalId: string) {
+      let h = 0;
+      for (let i = 0; i < principalId.length; i++) h = (h * 31 + principalId.charCodeAt(i)) >>> 0;
+      return `cell-${h % cellPoolCount}`;
+    },
+    close() {},
+  };
+}
 
 function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
   const catalogDb = new Database(":memory:");
@@ -157,17 +169,7 @@ describe("percolator inbox subscriptionMatches", () => {
       "did:author": authorProfile,
       "did:sub": subProfile,
     });
-    const encryption = createTestEncryptionMaterial();
-    const cluster = createSqliteColonnadeCluster({
-      cellsDirectory: `/tmp/khora-percolator-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
-      useCellWorkers: false,
-      encryption: {
-        sqlCipherKey: encryption.sqlCipherKey,
-        outboxPayloadCodec: encryption.outboxPayloadCodec,
-        outboxKeyHex: encryption.outboxKeyHex,
-      },
-    });
+    const cluster = stubCluster();
     const memories = createMemoriesStub();
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
@@ -243,17 +245,7 @@ describe("percolator inbox subscriptionMatches", () => {
       "did:author": authorProfile,
       "did:sub": subProfile,
     });
-    const encryption = createTestEncryptionMaterial();
-    const cluster = createSqliteColonnadeCluster({
-      cellsDirectory: `/tmp/khora-percolator-sub-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
-      useCellWorkers: false,
-      encryption: {
-        sqlCipherKey: encryption.sqlCipherKey,
-        outboxPayloadCodec: encryption.outboxPayloadCodec,
-        outboxKeyHex: encryption.outboxKeyHex,
-      },
-    });
+    const cluster = stubCluster();
     const memories = createMemoriesStub();
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
@@ -327,17 +319,7 @@ describe("percolator inbox subscriptionMatches", () => {
       "did:author": authorProfile,
       "did:sub": subProfile,
     });
-    const encryption = createTestEncryptionMaterial();
-    const cluster = createSqliteColonnadeCluster({
-      cellsDirectory: `/tmp/khora-percolator-author-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
-      useCellWorkers: false,
-      encryption: {
-        sqlCipherKey: encryption.sqlCipherKey,
-        outboxPayloadCodec: encryption.outboxPayloadCodec,
-        outboxKeyHex: encryption.outboxKeyHex,
-      },
-    });
+    const cluster = stubCluster();
     const memories = createMemoriesStub();
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
@@ -403,17 +385,7 @@ describe("percolator inbox subscriptionMatches", () => {
       "did:author": authorProfile,
       "did:sub": subProfile,
     });
-    const encryption = createTestEncryptionMaterial();
-    const cluster = createSqliteColonnadeCluster({
-      cellsDirectory: `/tmp/khora-percolator-private-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
-      useCellWorkers: false,
-      encryption: {
-        sqlCipherKey: encryption.sqlCipherKey,
-        outboxPayloadCodec: encryption.outboxPayloadCodec,
-        outboxKeyHex: encryption.outboxKeyHex,
-      },
-    });
+    const cluster = stubCluster();
     const memories = createMemoriesStub();
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
@@ -488,17 +460,7 @@ describe("percolator inbox subscriptionMatches", () => {
       "did:peer": peerProfile,
       "did:stranger": strangerProfile,
     });
-    const encryption = createTestEncryptionMaterial();
-    const cluster = createSqliteColonnadeCluster({
-      cellsDirectory: `/tmp/khora-percolator-network-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
-      useCellWorkers: false,
-      encryption: {
-        sqlCipherKey: encryption.sqlCipherKey,
-        outboxPayloadCodec: encryption.outboxPayloadCodec,
-        outboxKeyHex: encryption.outboxKeyHex,
-      },
-    });
+    const cluster = stubCluster();
     const memories = createMemoriesStub();
     const percolator = {
       percolator: createPercolator({ persistence: createInMemoryPercolatorPersistence() }),
@@ -572,17 +534,7 @@ describe("percolator inbox subscriptionMatches", () => {
     const { persistence: relayPersistence, persistenceClient } = createRelayPersistence({
       "did:author": authorProfile,
     });
-    const encryption = createTestEncryptionMaterial();
-    const cluster = createSqliteColonnadeCluster({
-      cellsDirectory: `/tmp/khora-percolator-post-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
-      useCellWorkers: false,
-      encryption: {
-        sqlCipherKey: encryption.sqlCipherKey,
-        outboxPayloadCodec: encryption.outboxPayloadCodec,
-        outboxKeyHex: encryption.outboxKeyHex,
-      },
-    });
+    const cluster = stubCluster();
 
     const authorPrincipalId = "did:author";
     const { recordKey, cellPoolCount } = assignPostAddress({ cluster, authorPrincipalId });

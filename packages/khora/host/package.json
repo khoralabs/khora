@@ -30,8 +30,6 @@
     "typescript": "^5"
   },
   "devDependencies": {
-    "@khoralabs/memories-sqlite": "workspace:*",
-    "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   }
