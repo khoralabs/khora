@@ -1,5 +1,11 @@
 import type { KhoraHostContext, KhoraHostSpecPort } from "@khoralabs/khora-host";
 import {
+  fetchHostRegistrationStatus,
+  registerHostWithRegistryRemote,
+  syncHostRegistryOnStartup,
+} from "@khoralabs/registry-client";
+
+import {
   envHostDisplayName,
   envHostSlug,
   envPort,
@@ -8,7 +14,7 @@ import {
   envRegistryUrl,
 } from "./env";
 import { logger } from "./logger";
-import { fetchHostRegistrationStatus, syncHostRegistryOnStartup } from "./registry-client";
+import { toRegistryClientConfig } from "./registry-client-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 
@@ -22,39 +28,28 @@ export type RegistryOptInParams = {
 
 export async function registerHostWithRegistry(params: RegistryOptInParams): Promise<void> {
   const { registryUrl, slug, baseUrl, displayName, fetchImpl = fetch } = params;
-  const url = `${registryUrl.replace(/\/$/, "")}/v1/hosts/register`;
-  const body: Record<string, string> = { slug, baseUrl };
-  if (displayName !== undefined) {
-    body.displayName = displayName;
-  }
-
-  let res: Response;
   try {
-    res = await fetchImpl(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    logger.warn({ err, registryUrl, slug }, "registry opt-in: request failed");
-    return;
-  }
-
-  const text = await res.text();
-  if (res.status === 201) {
+    await registerHostWithRegistryRemote(
+      {
+        registryUrl,
+        slug,
+        publicBaseUrl: baseUrl,
+        ...(displayName !== undefined ? { displayName } : {}),
+      },
+      fetchImpl,
+    );
     logger.info({ slug, registryUrl }, "registry opt-in: host registered");
-    return;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("already registered") || msg.includes("(409)")) {
+      logger.info({ slug, registryUrl }, "registry opt-in: host already registered");
+      return;
+    }
+    logger.warn(
+      { err, slug, registryUrl, body: msg.slice(0, 500) },
+      "registry opt-in: registration failed",
+    );
   }
-
-  if (res.status === 409 || text.includes("already registered")) {
-    logger.info({ slug, registryUrl }, "registry opt-in: host already registered");
-    return;
-  }
-
-  logger.warn(
-    { slug, registryUrl, status: res.status, body: text.slice(0, 500) },
-    "registry opt-in: registration failed",
-  );
 }
 
 export function maybeRegistryOptInOnStartup(
@@ -89,13 +84,15 @@ export function maybeRegistryOptInOnStartup(
   if (registrationSecret !== undefined && hostSpec.readEffective().managementToken === undefined) {
     void (async () => {
       try {
-        const remote = await fetchHostRegistrationStatus({
-          registryUrl,
-          slug,
-          publicBaseUrl: baseUrl,
-          ...(displayName !== undefined ? { displayName } : {}),
-          registrationSecret,
-        });
+        const remote = await fetchHostRegistrationStatus(
+          toRegistryClientConfig({
+            registryUrl,
+            slug,
+            publicBaseUrl: baseUrl,
+            ...(displayName !== undefined ? { displayName } : {}),
+            registrationSecret,
+          }),
+        );
         if (remote.managementToken !== undefined) {
           hostSpec.storeSecrets({ managementToken: remote.managementToken });
           hostSpec.clearRegistrationSecret();
@@ -111,13 +108,15 @@ export function maybeRegistryOptInOnStartup(
   if (effectiveToken !== undefined) {
     void (async () => {
       try {
-        await syncHostRegistryOnStartup({
-          registryUrl,
-          slug,
-          publicBaseUrl: baseUrl,
-          ...(displayName !== undefined ? { displayName } : {}),
-          managementToken: effectiveToken,
-        });
+        await syncHostRegistryOnStartup(
+          toRegistryClientConfig({
+            registryUrl,
+            slug,
+            publicBaseUrl: baseUrl,
+            ...(displayName !== undefined ? { displayName } : {}),
+            managementToken: effectiveToken,
+          }),
+        );
         logger.info({ slug, registryUrl }, "registry: synced trusted origins");
       } catch (err) {
         logger.warn({ err, slug, registryUrl }, "registry: trusted origin sync failed");

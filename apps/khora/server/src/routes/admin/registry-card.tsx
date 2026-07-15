@@ -1,8 +1,8 @@
+import type { RegistrationRequirementState } from "@khoralabs/registry-catalog-contracts";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { RegistrationRequirementState } from "../../registry-types";
 
 type OriginRequest = {
   id: string;

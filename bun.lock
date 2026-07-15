@@ -117,6 +117,8 @@
         "@khoralabs/obp-byte-stream": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
+        "@khoralabs/registry-client": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@opentelemetry/api": "^1.9.0",
         "@react-three/drei": "^10.7.7",
@@ -731,6 +733,20 @@
       "peerDependencies": {
         "react": "^19",
         "react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/client": {
+      "name": "@khoralabs/registry-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
         "typescript": "^5",
       },
     },
@@ -2097,6 +2113,8 @@
     "@khoralabs/registry-catalog-contracts": ["@khoralabs/registry-catalog-contracts@workspace:packages/registry/catalog-contracts"],
 
     "@khoralabs/registry-catalog-react": ["@khoralabs/registry-catalog-react@workspace:packages/registry/catalog-react"],
+
+    "@khoralabs/registry-client": ["@khoralabs/registry-client@workspace:packages/registry/client"],
 
     "@khoralabs/registry-host": ["@khoralabs/registry-host@workspace:packages/registry/host"],
 

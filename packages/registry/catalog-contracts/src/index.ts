@@ -18,6 +18,11 @@ export type {
   RegistryHostsSummary,
 } from "./catalog";
 export type {
+  HostRegistrationHostWire,
+  HostRegistrationWireState,
+  HostRegistryWireState,
+} from "./host-wire";
+export type {
   RegistrationPolicy,
   RegistrationRequirementId,
   RegistrationRequirementState,

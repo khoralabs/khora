@@ -8,7 +8,9 @@ import {
   removeHostTrustedOriginRemote,
   requestHostTrustedOriginQuotaRemote,
   requestHostTrustedOriginRemote,
-} from "../registry-client";
+} from "@khoralabs/registry-client";
+
+import { toRegistryClientConfig } from "../registry-client-config";
 import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
@@ -44,14 +46,14 @@ export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps):
 
     if (config.registrationSecret !== undefined && config.managementToken === undefined) {
       try {
-        const remote = await fetchHostRegistrationStatus(config);
+        const remote = await fetchHostRegistrationStatus(toRegistryClientConfig(config));
         if (remote.managementToken !== undefined) {
           hostSpec.storeSecrets({ managementToken: remote.managementToken });
           hostSpec.clearRegistrationSecret();
         }
         ({ config, base } = connectionBase());
         if (remote.status === "active" && config.managementToken !== undefined) {
-          const state = await fetchHostRegistryState(config);
+          const state = await fetchHostRegistryState(toRegistryClientConfig(config));
           return Response.json({
             configured: true,
             ...base,
@@ -80,7 +82,7 @@ export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps):
     }
 
     try {
-      const state = await fetchHostRegistryState(config);
+      const state = await fetchHostRegistryState(toRegistryClientConfig(config));
       return Response.json({ configured: true, ...base, ...state });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "registry read failed";
@@ -136,7 +138,7 @@ export async function handleAdminRegistryRegisterPost(
     }
 
     try {
-      const result = await registerHostWithRegistryRemote(config);
+      const result = await registerHostWithRegistryRemote(toRegistryClientConfig(config));
       if (result.registrationSecret !== undefined) {
         hostSpec.storeSecrets({ registrationSecret: result.registrationSecret });
       }
@@ -173,7 +175,7 @@ export async function handleAdminRegistryClaimPost(
     }
 
     try {
-      const result = await claimHostRegistration(config);
+      const result = await claimHostRegistration(toRegistryClientConfig(config));
       if (result.managementToken !== undefined) {
         hostSpec.storeSecrets({ managementToken: result.managementToken });
         hostSpec.clearRegistrationSecret();
@@ -216,7 +218,7 @@ export async function handleAdminRegistryOriginRequestPost(
     }
 
     try {
-      const state = await requestHostTrustedOriginRemote(config, origin);
+      const state = await requestHostTrustedOriginRemote(toRegistryClientConfig(config), origin);
       return Response.json(state);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "origin request failed";
@@ -237,7 +239,10 @@ export async function handleAdminRegistryOriginRequestDelete(
     }
 
     try {
-      const state = await cancelHostTrustedOriginRequestRemote(config, requestId.trim());
+      const state = await cancelHostTrustedOriginRequestRemote(
+        toRegistryClientConfig(config),
+        requestId.trim(),
+      );
       return Response.json(state);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "cancel origin request failed";
@@ -268,7 +273,7 @@ export async function handleAdminRegistryOriginDelete(
     }
 
     try {
-      const state = await removeHostTrustedOriginRemote(config, origin);
+      const state = await removeHostTrustedOriginRemote(toRegistryClientConfig(config), origin);
       return Response.json(state);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "remove origin failed";
@@ -298,7 +303,10 @@ export async function handleAdminRegistryQuotaRequestPost(
     }
 
     try {
-      const state = await requestHostTrustedOriginQuotaRemote(config, body.requestedIncluded);
+      const state = await requestHostTrustedOriginQuotaRemote(
+        toRegistryClientConfig(config),
+        body.requestedIncluded,
+      );
       return Response.json(state);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "quota request failed";
@@ -319,7 +327,10 @@ export async function handleAdminRegistryQuotaRequestDelete(
     }
 
     try {
-      const state = await cancelHostTrustedOriginQuotaRequestRemote(config, requestId.trim());
+      const state = await cancelHostTrustedOriginQuotaRequestRemote(
+        toRegistryClientConfig(config),
+        requestId.trim(),
+      );
       return Response.json(state);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "cancel quota request failed";

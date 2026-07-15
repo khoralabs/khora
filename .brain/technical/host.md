@@ -56,7 +56,7 @@ Registration is **fully local**: DID signature verified on-host; no registry cal
 | Host side | Registry side |
 |---|---|
 | Poller: `src/registry-invite-poller.ts` | Access request: `apps/khoralabs/registry/src/api/access-token.ts` |
-| Client calls: `src/registry-client.ts` | Workflow: `src/workflows/access-token.ts` |
+| Client calls: `@khoralabs/registry-client` | Workflow: `src/workflows/access-token.ts` |
 | Started from: `src/registry-opt-in.ts` | Mint API: `src/api/host-invite-mint.ts` |
 
 ---
@@ -87,7 +87,7 @@ Khora host is **discovery-only**. Negotiation transport (E2EE frame channels) li
 |---|---|
 | Host spec port (slug, registry URL, base URL, secrets in catalog projection) | `src/ops/host-spec-port.ts` |
 | Startup opt-in (register, poll for management token, sync origins, start poller) | `src/registry-opt-in.ts` |
-| HTTP client functions | `src/registry-client.ts` |
+| HTTP client functions | `@khoralabs/registry-client` (`packages/registry/client`) |
 | Admin UI | `src/http/registry-admin.ts` |
 
 ### Trusted origins
