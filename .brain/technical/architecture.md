@@ -20,7 +20,7 @@ packages/
 ├── agent/          # identity, relay, thread, persisted-signer
 ├── cli/            # cli-kit
 ├── colonnade/      # Cell/outbox/inbox distributed storage
-├── khora/          # contracts, auth, client, host, transport, relay-colonnade, react, invites
+├── khora/          # contracts, auth, client, host, transport, react, invites
 ├── khoralabs/      # registry-* (catalog, accounts, auth, react)
 ├── libs/           # blog, bun-web, sqlite-*, agent-io, RRF, ...
 ├── memories/       # core, sqlite, convex, agents, react/graph, stores, spec

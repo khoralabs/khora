@@ -25,7 +25,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | `adminStats` | `KhoraAdminStatsPort` — internal admin stats |
 | `startPrincipalTeardownWorker?` | Background unregister teardown (default `true`) |
 
-SQLite handles and relay-colonnade stores are wired in the server bootstrap (`createRelayColonnadeSocial`, health/admin ports, `createKhoraCatalogApi`) — not passed to `createKhoraHost`.
+SQLite handles and catalog/social persistence adapters are wired in the server bootstrap (health/admin ports, `createKhoraCatalogApi`) — not passed to `createKhoraHost`.
 
 **Invite env** (read in server bootstrap, not inside host):
 - `@khoralabs/khora-invites` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
@@ -102,7 +102,7 @@ apps/khora/server/src/index.ts
 | Host orchestration | `packages/khora/host/src/khora-host.ts` |
 | Health / admin ops ports | `apps/khora/server/src/ops/health-port.ts`, `admin-stats-port.ts` |
 | Invites | `packages/khora/invites/` |
-| Relay social layer | `packages/khora/relay-colonnade/src/create-relay-colonnade-social.ts` |
+| Catalog / social persistence | `apps/khora/server/src/persistence/` |
 | Cell cluster | `packages/colonnade/impl/ts/src/sqlite/cluster.ts` |
 | Event handler (posts/profiles) | `packages/khora/host/src/on-event.ts` |
 | Litestream wrapper | `apps/khora/server/scripts/start-khora.ts` |
@@ -119,7 +119,7 @@ apps/khora/server/src/index.ts
 | 2 | Cell `outbox` | Post JSON bodies (field-encrypted AES-GCM). Address-encoded ids (`atp0:…`). No catalog rows for posts. |
 | 3 | Cell `inbox` | Fan-out delivery pointers (posts) + inline JSON notifications |
 
-Negotiation byte transport (relay channels, blob spool) lives in the separate [`relay`](../../../packages/relay) repo (`@khoralabs/relay-server-http`), not on the Khora host.
+Negotiation byte transport (channels, blob spool) lives in the separate [`khoralabs/relay`](https://github.com/khoralabs/relay) product, not on the Khora host.
 
 Key rules:
 - Posts are **never** catalog-replicated (`replicate_to_catalog: false`)
@@ -134,7 +134,7 @@ Three SQLite files (all `bun:sqlite`):
 
 ### Tier 1 — Relay catalog (`{KHORA_DATA_DIR}/khora-catalog.sqlite`)
 
-**Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/sqlite-setup.ts`
+**Schema / catalog setup:** `apps/khora/server/src/persistence/` (wired in `bootstrap-khora.ts`)
 
 Tables:
 - `relay_catalog_projections` — JSON KV (profiles, registrations, social graph, …)
@@ -180,12 +180,12 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 
 **Storage:**
 - Namespace `relay:entity:profile` in `relay_catalog_projections`
-- Adapter: `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/catalog-entity-adapter.ts`
+- Adapter: `apps/khora/server/src/persistence/catalog-entity-adapter.ts`
 - Shape: `{ id, memoryId, bodyJson, updatedAtMs }` (JSON profile in `bodyJson`)
 - Registration maps: `relay:reg:by-principal` ↔ `relay:reg:by-profile`
 - Username index: global tenant `relay:username-index-global`
 
-**Registration:** `registerAgentOnColonnadePersistence()` in `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/social-registration.ts` — triggered from `on-event.ts` on `REGISTRATION_PROFILE_BUILD`.
+**Registration:** `apps/khora/server/src/persistence/social-registration.ts` — triggered from `on-event.ts` on `REGISTRATION_PROFILE_BUILD`.
 
 **HTTP access:** `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/http/profile.ts`
 - `GET /v1/profiles/:did` — `profileIdForPrincipal(did)` → `getProfileById()` → parse `zKhoraProfile`
@@ -285,7 +285,7 @@ For post pointers: resolve author outbox via `resolveSourcemap`, verify content 
 
 ## 7. ID conventions
 
-Code constants: `packages/khora/relay-colonnade/src/relay-id-conventions.ts`
+Code constants: `apps/khora/server/src/persistence/id-conventions.ts`
 
 | ID | Format |
 |----|--------|
@@ -359,8 +359,7 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 | Package | Path | Role |
 |---------|------|------|
 | `@khoralabs/khora-host` | `packages/khora/host/` | Host composition, posts, inbox drain |
-| `@khoralabs/khora-server` | `apps/khora/server/` | HTTP/WS server |
-| `@khoralabs/relay-colonnade` | `packages/khora/relay-colonnade/` | Catalog SQLite, persistence adapters |
+| `@khoralabs/khora-server` | `apps/khora/server/` | HTTP/WS server, catalog/social persistence |
 | `@khoralabs/colonnade-persistence` | `packages/colonnade/impl/ts/` | Cell cluster, outbox/inbox, PostOperation |
 | `@khoralabs/khora-auth` | `packages/khora/auth/` | DID auth + nonce store |
 | `@khoralabs/khora-invites` | `packages/khora/invites/` | Invite tokens repo + env |

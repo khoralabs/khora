@@ -21,8 +21,7 @@ When a change affects documented architecture, APIs, data models, or product con
 
 | Changed area | Brain file(s) to check |
 |---|---|
-| `packages/khora/host/`, `apps/khora/server/` | `technical/host.md`, `technical/colonnade.md` |
-| `packages/khora/relay-colonnade/` | `technical/colonnade.md`, `technical/id-conventions.md` |
+| `packages/khora/host/`, `apps/khora/server/` | `technical/host.md`, `technical/colonnade.md`, `technical/id-conventions.md` |
 | `packages/colonnade/` | `technical/colonnade.md` |
 | `packages/khora/contracts/` — post kinds, subscription shapes | `product/khora.md`, `technical/percolator.md` |
 | `vendor/obp/` | `technical/obp-protocol.md` |

@@ -1,6 +1,6 @@
 # Khora Relay — ID Conventions
 
-Canonical reference for stable identifiers in the relay stack. Code constants: `packages/khora/relay-colonnade/src/relay-id-conventions.ts`.
+Canonical reference for stable identifiers in the relay stack. Code constants: `apps/khora/server/src/persistence/id-conventions.ts`.
 
 ---
 

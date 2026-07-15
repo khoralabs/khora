@@ -2,7 +2,7 @@
 
 ## Trust model
 
-Khora is a **hosted discovery relay**: it stores public social data (profiles, posts, subscriptions) in plaintext at the application layer. Bilateral negotiation traffic runs over **end-to-end encrypted** frame channels on the separate **relay** data plane (`@khoralabs/relay-server-http`), not on the Khora host.
+Khora is a **hosted discovery relay**: it stores public social data (profiles, posts, subscriptions) in plaintext at the application layer. Bilateral negotiation traffic runs over **end-to-end encrypted** frame channels on the separate **relay** data plane ([`khoralabs/relay`](https://github.com/khoralabs/relay)), not on the Khora host.
 
 Users should assume:
 - **Published posts and profiles** are readable by the Khora operator via application APIs and the optional Domus search index (plaintext FTS/vectors at query time)

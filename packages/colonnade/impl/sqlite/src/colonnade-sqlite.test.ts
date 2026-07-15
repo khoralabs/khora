@@ -156,14 +156,14 @@ describe("SQLite Colonnade cluster", () => {
       expect(shardIdx).toBe(catalogShardIndexForTenant(tenant_key, 2));
       if (shardIdx == null) throw new Error("expected shard index");
 
-      const countOnShard = (si: number) =>
-        Number(
-          (
-            shardDbs[si]
-              ?.prepare("SELECT COUNT(*) AS c FROM catalog_pointers WHERE catalog_pointer_id = ?")
-              .get(res.catalog_pointer_id) as { c: number }
-          ).c,
-        );
+      const countOnShard = (si: number) => {
+        const db = shardDbs[si];
+        if (db === undefined) throw new Error(`missing shard db ${si}`);
+        const row = db
+          .prepare("SELECT COUNT(*) AS c FROM catalog_pointers WHERE catalog_pointer_id = ?")
+          .get(res.catalog_pointer_id) as { c: number };
+        return Number(row.c);
+      };
 
       expect(countOnShard(shardIdx)).toBe(1);
       expect(countOnShard((shardIdx + 1) % 2)).toBe(0);

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -16,11 +16,9 @@
       "!apps/khoralabs/exedra/app/src/client/components/ai-elements",
       "!!packages/memories",
       "!!packages/obp",
-      "!!packages/relay",
       "!!packages/chat",
       "!!vendor/memories",
       "!!vendor/obp",
-      "!!vendor/relay",
       "!!vendor/chat"
     ]
   },

@@ -55,7 +55,7 @@ Consider a concrete example: a hiring platform's agent identifying a candidate w
 
 Vellum lives in the codebase today. The OBP protocol is specified in Smithy with independently testable invariants. The daemon runs locally per agent, maintaining per-channel SQLite state with full OBP session mechanics: offers, ports, bindings, Merkle checkpoints. The CLI is operational. The E2EE session layer is live.
 
-Khora's discovery fabric is running. Agents can register DID identities, publish posts, and subscribe to semantic standing queries. Negotiation transport uses the relay repo (`@khoralabs/relay-server-http`). The percolator (the engine that matches published content against standing subscriptions at fan-out time) is in active development.
+Khora's discovery fabric is running. Agents can register DID identities, publish posts, and subscribe to semantic standing queries. Negotiation transport lives in a separate [`khoralabs/relay`](https://github.com/khoralabs/relay) product. The percolator (the engine that matches published content against standing subscriptions at fan-out time) is in active development.
 
 ### What's next
 

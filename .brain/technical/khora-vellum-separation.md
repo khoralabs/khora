@@ -2,7 +2,7 @@
 
 Strategic intent and engineering pathway for treating **Khora** and **Vellum** as separate products, generalizing **channel auth**, and evolving the **channel multiplex** toward N participants and late joins — while keeping **NBC chains strictly bilateral**.
 
-Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../product/vellum.md), [`technical/discovery.md`](discovery.md), [`technical/vellum-channels.md`](vellum-channels.md), [`technical/channel-lifecycle.md`](channel-lifecycle.md), [`channel-relay-deployment.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-relay-deployment.md), [`channel-control-protocol.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-control-protocol.md), [`technical/obp-protocol.md`](obp-protocol.md), [`technical/host.md`](host.md), [`technical/dag-join-key-research.md`](dag-join-key-research.md), [`roadmap/open-questions.md`](../roadmap/open-questions.md). Relay data plane: [`relay`](https://github.com/khoralabs/relay) (`@khoralabs/relay-server-http`, `relay_channels`, `relay_spool`). Vellum implementation: [`khoralabs/vellum`](https://github.com/khoralabs/vellum).
+Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../product/vellum.md), [`technical/discovery.md`](discovery.md), [`technical/vellum-channels.md`](vellum-channels.md), [`technical/channel-lifecycle.md`](channel-lifecycle.md), [`channel-relay-deployment.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-relay-deployment.md), [`channel-control-protocol.md`](https://github.com/khoralabs/vellum/blob/main/packages/spec/channel-control-protocol.md), [`technical/obp-protocol.md`](obp-protocol.md), [`technical/host.md`](host.md), [`technical/dag-join-key-research.md`](dag-join-key-research.md), [`roadmap/open-questions.md`](../roadmap/open-questions.md). Relay data plane: [`khoralabs/relay`](https://github.com/khoralabs/relay) ( `relay_channels`, `relay_spool`). Vellum implementation: [`khoralabs/vellum`](https://github.com/khoralabs/vellum).
 
 ---
 
@@ -10,7 +10,7 @@ Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../pro
 
 | Concern | Before P6 (removed) | Today / target |
 |---------|---------------------|----------------|
-| **Product boundary** | Khora host owned discovery *and* embedded frame relay + inbox transport handoff | **Khora = discovery only**; **Vellum** spawns channels; **relay** (`@khoralabs/relay-server-http`) owns byte transport |
+| **Product boundary** | Khora host owned discovery *and* embedded frame relay + inbox transport handoff | **Khora = discovery only**; **Vellum** spawns channels; **relay** ([`khoralabs/relay`](https://github.com/khoralabs/relay)) owns byte transport |
 | **Channel auth** | Khora DID-key HTTP auth; frame relay ticket HMAC; `SessionInit` fixes two Ed25519 actors | Pluggable principal credentials (DID, OAuth/OIDC, registry session, client credentials) at channel/chain admission |
 | **Channel vs chain** | One embedded `channelId` ≈ one bilateral NBC session; both peers known at `init` | Channel multiplex carries **N** transport participants with **late join**; each NBC **chain** remains **two signers** |
 
@@ -24,7 +24,7 @@ Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../pro
 
 **Khora** is the intent-based discovery fabric: standing queries, percolator fan-out, inbox delivery, search, profiles, and social visibility. Its job ends when an agent (or human principal) has enough signal to decide *whether* to negotiate and *with whom*.
 
-**Vellum** is the negotiation-channel product: spawn and allocate **ephemeral** transport runtimes where parties run **local OBP/NBC daemons**. The **relay** (`@khoralabs/relay-server-http` in the [`relay`](https://github.com/khoralabs/relay) repo) holds opaque bytes and admission tickets; negotiation semantics and DAG state live on participants' devices. A relay instance may be destroyed and recreated; an **equivalent bilateral DAG** (same `genesis_hash`, matching Merkle checkpoint, participant actor keys) is the cryptographic join key — not the Khora catalog.
+**Vellum** is the negotiation-channel product: spawn and allocate **ephemeral** transport runtimes where parties run **local OBP/NBC daemons**. The **relay** ([`khoralabs/relay`](https://github.com/khoralabs/relay)) holds opaque bytes and admission tickets; negotiation semantics and DAG state live on participants' devices. A relay instance may be destroyed and recreated; an **equivalent bilateral DAG** (same `genesis_hash`, matching Merkle checkpoint, participant actor keys) is the cryptographic join key — not the Khora catalog.
 
 These are **separate products** with a thin integration contract, not one monolithic host.
 
@@ -61,7 +61,7 @@ flowchart TB
 
   subgraph vellum [Vellum — channel orchestration]
     Spawn[POST /v1/channels spawn]
-    Relay["@khoralabs/relay-server-http"]
+    Relay["khoralabs/relay"]
     Admit[Channel admission + tickets]
   end
 
@@ -109,7 +109,7 @@ Minimal cross-product notification (replaces inbox transport handoff):
 | **P3 — Khora handoff** | Inbox `negotiation_invite`; no Khora-mediated tickets for new flows | `@khoralabs/khora-contracts` notification kind; discovery docs updated |
 | **P4 — Decouple social graph** | `network` visibility independent of channel existence | Relationship model not created by channel spawn; optional explicit `connection_request` flow |
 | **P5 — Ephemeral infra** | Relay on Fly/Modal per channel or pool; destroy OK; rejoin via DAG descriptor | Orchestrator in Vellum spawn; see §3 rejoin |
-| **P6 — Retire Khora embedded relay** | **Done** — embedded HTTP/WS, frames DB, and hub removed | Khora host is discovery-only; relay data plane = `@khoralabs/relay-server-http` |
+| **P6 — Retire Khora embedded relay** | **Done** — embedded HTTP/WS, frames DB, and hub removed | Khora host is discovery-only; relay data plane = [`khoralabs/relay`](https://github.com/khoralabs/relay) |
 
 ### DAG as join key (relay disposable)
 
@@ -147,7 +147,7 @@ OBP `Party { id, name }` remains graph-local and opaque. `SessionInit.party_ids`
 
 - **Khora `AuthStrategy`** — pluggable HTTP verification (`packages/khora/auth/src/strategy.ts`); default DID-key only.
 - **Registry dual plane** — Better Auth for humans; agent DID for host; `auth_links` / `khora link` bridge (see [`technical/onboarding-flow.md`](onboarding-flow.md)).
-- **Relay tickets** — HMAC admission via `@khoralabs/relay-admission`; no principal identity in ticket alone.
+- **Relay tickets** — HMAC admission via relay admission (`khoralabs/relay`); no principal identity in ticket alone.
 - **`SessionInit`** — exactly two `actor_pubkeys`; both must be known at bootstrap (bilateral v2).
 - **Vellum daemon** — loads Ed25519 identity file → `FrameSigner`; local control HTTP is localhost-trust.
 
@@ -191,7 +191,7 @@ flowchart LR
 |-------|---------|---------|
 | **A0 — Identity provider interface** | `VellumIdentityProvider` in `@khoralabs/vellum-client`: `did-file \| oauth-pkce \| registry-session` | New contracts package types |
 | **A1 — Khora `BearerAuthStrategy`** | Optional OAuth JWT on Khora HTTP (discovery APIs only) | `packages/khora/auth` |
-| **A2 — Relay WS auth** | Vellum relay: validate bearer or DID sig on upgrade; bind ticket to principal | `relay-server-http` |
+| **A2 — Relay WS auth** | Vellum relay: validate bearer or DID sig on upgrade; bind ticket to principal | relay server |
 | **A3 — Actor lease service** | POST `/v1/actor-lease` after principal auth → ephemeral pubkey + expiry | Vellum relay or sidecar |
 | **A4 — Chain admission policy** | Daemon refuses `chain/init` unless principal authorized for channel; peer pubkey from roster | Vellum `apps/daemon` control server |
 | **A5 — Document principal URIs** | `negotiation_invite.peerPrincipal` as URI (`did:`, `urn:oidc:sub:`) | Contracts + discovery doc |
@@ -283,7 +283,7 @@ These are **not** NBC `TURN` bodies — they are multiplex control plane for the
 
 | Phase | Outcome | Changes |
 |-------|---------|---------|
-| **M0 — N attach relay** | Hub allows >2 peers per `channelId`; fan-out to all attached peers | `@khoralabs/obp-frame-relay` hub + `relay-server-http` |
+| **M0 — N attach relay** | Hub allows >2 peers per `channelId`; fan-out to all attached peers | `@khoralabs/obp-frame-relay` hub + relay server |
 | **M1 — Roster wire format** | Smithy + TS types in `@khoralabs/vellum-contracts` | New spec namespace `khora.vellum.channel` |
 | **M2 — Daemon roster** | On WS connect, announce self; persist roster in channel metadata SQLite | `run-vellum-daemon.ts` |
 | **M3 — Late join replay cursor** | Attach replays from `last_blob_id` or full spool; document cursor handshake | Relay attach + client |
@@ -335,8 +335,8 @@ Recommended order: **P1 → P2 → A2 → M1 → M2 → P3** (infra and auth bef
 
 | Area | Package / path |
 |------|----------------|
-| Relay hub + spool | [`relay`](https://github.com/khoralabs/relay) — `@khoralabs/relay-server-http` |
-| Channel admission | `@khoralabs/relay-admission` (`relay_channels`) |
+| Relay hub + spool | [`relay`](https://github.com/khoralabs/relay) — [`khoralabs/relay`](https://github.com/khoralabs/relay) |
+| Channel admission | relay admission (`khoralabs/relay`) (`relay_channels`) |
 | Frame relay hub port | `packages/obp/frame-relay/impl/ts/src/hub.ts` |
 | Bilateral `SessionInit` | `packages/obp/frames/spec/model/frame-protocol.smithy` |
 | Multiplex runtime | `packages/obp/frames/impl/ts/src/frame-multiplex-runtime.ts` |

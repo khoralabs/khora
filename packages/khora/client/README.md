@@ -1,6 +1,6 @@
 # `@khoralabs/khora-client`
 
-TypeScript client for Khora / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS). Negotiation transport uses the separate [`relay`](../../../packages/relay) repo (`@khoralabs/relay-client`), not the Khora host.
+TypeScript client for Khora / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS). Negotiation byte transport lives in a separate product ([`khoralabs/relay`](https://github.com/khoralabs/relay)), not the Khora host.
 
 ## Transport
 
@@ -31,13 +31,13 @@ The JSON Schema artifact is exported at `@khoralabs/khora-client/khora-config.sc
 - `bun test` — package tests
 - `bun run build:schema` — regenerate `khora-config.schema.json`
 
-## Negotiation channels (relay, not Khora host)
+## Negotiation channels (separate from Khora host)
 
-Bilateral OBP/NBC sessions use **relay channels** (`POST /v1/channels`, WebSocket upgrade nonces) from `@khoralabs/relay-client` / `@khoralabs/relay-mls`. The Khora host provides discovery (profiles, posts, inbox) only.
+Bilateral OBP/NBC sessions use channel multiplex transport from [`khoralabs/relay`](https://github.com/khoralabs/relay) (and Vellum orchestration). The Khora host provides discovery (profiles, posts, inbox) only.
 
 1. **Discovery** — `KhoraClient.connectInbox()` for post fan-out and future `negotiation_invite` handoff notifications.
-2. **Channel transport** — `RelayClient` + `connectRelay` or `MlsChannelConnection` against a Vellum-provisioned relay URL. See [`packages/relay`](../../../packages/relay) and [`.brain/technical/channel-lifecycle.md`](../../../.brain/technical/channel-lifecycle.md).
-3. **Local daemon** — [`@khoralabs/vellum-daemon`](https://github.com/khoralabs/vellum) (separate repo) connects to the relay multiplex; the Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers inbox delivery only.
+2. **Channel transport** — against a Vellum-provisioned relay URL. See [`.brain/technical/channel-lifecycle.md`](../../../.brain/technical/channel-lifecycle.md) and [`khoralabs/relay`](https://github.com/khoralabs/relay).
+3. **Local daemon** — [`@khoralabs/vellum-daemon`](https://github.com/khoralabs/vellum) connects to the multiplex; the Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers inbox delivery only.
 
 ## Subscriptions
 

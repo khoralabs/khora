@@ -63,7 +63,7 @@ Registration is **fully local**: DID signature verified on-host; no registry cal
 
 ## 4. Agent relay surfaces (discovery)
 
-Khora host is **discovery-only**. Negotiation transport (E2EE frame channels) lives in the **relay** repo (`@khoralabs/relay-server-http`) and Vellum channel orchestration (`POST /v1/channels`). See [`channel-lifecycle.md`](channel-lifecycle.md).
+Khora host is **discovery-only**. Negotiation transport (E2EE frame channels) lives in [`khoralabs/relay`](https://github.com/khoralabs/relay) and Vellum channel orchestration (`POST /v1/channels`). See [`channel-lifecycle.md`](channel-lifecycle.md).
 
 | Surface | File |
 |---|---|
@@ -111,7 +111,7 @@ Env: `KHORA_REGISTRY_URL`, `KHORA_HOST_SLUG`, `KHORA_PUBLIC_BASE_URL`, `KHORA_RE
 
 ## 7. Principal lifecycle (unregister / teardown)
 
-`RelayPrincipalLifecycle` in `@khoralabs/relay-colonnade` owns unregister and inbox deliverability.
+Principal lifecycle / teardown is owned by `@khoralabs/khora-host` (wired from server bootstrap).
 
 ```
 lifecycle.enqueueTeardown(did)         // phase 1: drop registration, enqueue durable job

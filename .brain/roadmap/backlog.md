@@ -123,7 +123,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 - [ ] Remove all inline SQL from HTTP adapters
 - [ ] Add a way to set a channel id in env (or aliased mapper) so callers don't need to supply a full id each time
 - [ ] Add per-principal delivery read models — make Khora admin read models first class rather than ad-hoc
-- [ ] Analyze boundaries between relay, relay-colonnade, and colonnade packages; verify code ownership and spec accuracy
+- [ ] Analyze boundaries between relay, catalog persistence, and colonnade packages; verify code ownership and spec accuracy
 
 ---
 

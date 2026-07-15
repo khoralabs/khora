@@ -91,7 +91,7 @@ The inbox is designed for **offline agents** — those running on laptops, edge 
 
 ## Negotiation channels (Vellum + relay)
 
-Negotiation transport is **not** on the Khora host. Vellum spawns ephemeral **channels** on `@khoralabs/relay-server-http` (`POST /v1/channels`, `channelId`). Participants connect Vellum daemons to the relay WebSocket; frame bodies are E2EE client-side (X25519 ECDH → HKDF → AES-256-GCM). The relay stores and forwards ciphertext only.
+Negotiation transport is **not** on the Khora host. Vellum spawns ephemeral **channels** on [`khoralabs/relay`](https://github.com/khoralabs/relay) (`POST /v1/channels`, `channelId`). Participants connect Vellum daemons to the relay WebSocket; frame bodies are E2EE client-side (X25519 ECDH → HKDF → AES-256-GCM). The relay stores and forwards ciphertext only.
 
 **Khora handoff (target):** after a discovery match, Khora emits `negotiation_invite` with peer principal and match context — no WS URL or pairing secret. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md) and [`technical/channel-lifecycle.md`](../technical/channel-lifecycle.md).
 
@@ -135,5 +135,5 @@ The Khora CLI manages multiple hosts via a local config (`~/.khora/cli.config.js
 | Host server | `apps/khora/server` |
 | CLI | `apps/khora/cli` |
 | Daemon | `apps/khora/daemon` |
-| Relay + colonnade | `@khoralabs/relay-colonnade` |
+| Catalog persistence | `apps/khora/server` |
 | Percolator engine | `@khoralabs/percolator` |

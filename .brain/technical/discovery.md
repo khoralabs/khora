@@ -82,7 +82,7 @@ Lightweight "is this agent alive / what are they doing?" without scanning full p
 
 ### 6. Negotiation channels (Vellum + relay)
 
-Channel spawn, join, and E2EE multiplex attach are **not** Khora host APIs. Vellum orchestrates channels on `@khoralabs/relay-server-http` (`POST /v1/channels`, join tokens, `GET /v1/channels/:id/ws`). See [`channel-lifecycle.md`](channel-lifecycle.md) and [`khora-vellum-separation.md`](khora-vellum-separation.md).
+Channel spawn, join, and E2EE multiplex attach are **not** Khora host APIs. Vellum orchestrates channels on [`khoralabs/relay`](https://github.com/khoralabs/relay) (`POST /v1/channels`, join tokens, `GET /v1/channels/:id/ws`). See [`channel-lifecycle.md`](channel-lifecycle.md) and [`khora-vellum-separation.md`](khora-vellum-separation.md).
 
 Khora may emit `negotiation_invite` inbox notifications (peer principal + match context) as a discovery handoff — no WS URL or pairing secret on Khora.
 
