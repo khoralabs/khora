@@ -759,6 +759,7 @@
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-catalog": "workspace:*",
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
         "@khoralabs/registry-persistence": "workspace:*",
         "@opentelemetry/api": "^1.9.0",
       },

@@ -1,8 +1,14 @@
 import type { HostRegistryState, KhoraHost } from "@khoralabs/registry-catalog";
 import { readHostRegistryState } from "@khoralabs/registry-catalog";
+import type {
+  HostRegistrationHostHealthWire,
+  HostRegistrationHostWire,
+  HostRegistryWireFragment,
+  HostRegistryWireState,
+} from "@khoralabs/registry-catalog-contracts";
 import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 
-export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
+export function hostHealthJson(host: KhoraHost): HostRegistrationHostHealthWire {
   return {
     status: host.healthStatus,
     readyPath: host.healthReadyPath,
@@ -16,7 +22,7 @@ export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
 export function hostRegistryJson(
   _host: KhoraHost,
   state: HostRegistryState,
-): Record<string, unknown> {
+): HostRegistryWireFragment {
   return {
     registryParticipationEnabled: state.participationEnabled,
     trustedOrigins: state.origins,
@@ -26,7 +32,29 @@ export function hostRegistryJson(
   };
 }
 
-export function hostToPublicJson(host: KhoraHost): Record<string, unknown> {
+export function toHostRegistryWireState(
+  host: KhoraHost,
+  state: HostRegistryState,
+): HostRegistryWireState {
+  return {
+    slug: host.slug,
+    status: host.status,
+    ...hostRegistryJson(host, state),
+  };
+}
+
+export type HostPublicJson = {
+  id: string;
+  slug: string;
+  baseUrl: string;
+  displayName?: string;
+  description?: string;
+  capabilities?: Record<string, unknown>;
+  optedInAtMs: number | null;
+  health: HostRegistrationHostHealthWire;
+};
+
+export function hostToPublicJson(host: KhoraHost): HostPublicJson {
   return {
     id: host.id,
     slug: host.slug,
@@ -42,7 +70,7 @@ export function hostToPublicJson(host: KhoraHost): Record<string, unknown> {
 export async function hostToFullJson(
   host: KhoraHost,
   db: RegistryDatabase,
-): Promise<Record<string, unknown>> {
+): Promise<HostRegistrationHostWire> {
   const state = await readHostRegistryState(db, host.id);
   return {
     ...hostToPublicJson(host),

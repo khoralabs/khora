@@ -1,6 +1,7 @@
 import type {
   HostHealthProbedEndpoint,
   HostHealthStatus,
+  HostRegistrationStatusWire,
   KhoraHost,
 } from "@khoralabs/registry-catalog-contracts";
 import type { RegistryDatabase } from "@khoralabs/registry-persistence";
@@ -100,7 +101,7 @@ export async function tryAutoActivateHost(
 export function registrationStatusJson(
   host: KhoraHost,
   policy: RegistrationPolicy,
-): Record<string, unknown> {
+): HostRegistrationStatusWire {
   return {
     slug: host.slug,
     status: host.status,

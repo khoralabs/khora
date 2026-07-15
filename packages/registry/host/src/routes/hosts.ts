@@ -10,6 +10,7 @@ import {
   registrationStatusJson,
   tryAutoActivateHost,
 } from "@khoralabs/registry-catalog";
+import type { HostRegistrationWireState } from "@khoralabs/registry-catalog-contracts";
 import { probeHostHealth } from "../host-health";
 import { registryHostRuntime } from "../runtime";
 import { hostToFullJson, hostToPublicJson } from "./host-json";
@@ -116,19 +117,17 @@ export async function handleHostRegister(req: Request): Promise<Response> {
           ? "Host registered as pending. An operator must activate it before it appears in the public catalog."
           : "Host registered as pending. Complete registration requirements and claim activation.";
 
-    return Response.json(
-      {
-        ...registrationStatusJson(activation.host, policy),
-        host: await hostToFullJson(activation.host, db),
-        registrationSecret,
-        activated: activation.activated,
-        ...(activation.managementToken !== null
-          ? { managementToken: activation.managementToken }
-          : {}),
-        message,
-      },
-      { status: 201 },
-    );
+    const responseBody: HostRegistrationWireState = {
+      ...registrationStatusJson(activation.host, policy),
+      host: await hostToFullJson(activation.host, db),
+      registrationSecret,
+      activated: activation.activated,
+      ...(activation.managementToken !== null
+        ? { managementToken: activation.managementToken }
+        : {}),
+      message,
+    };
+    return Response.json(responseBody, { status: 201 });
   } catch (err: unknown) {
     if (
       err instanceof InvalidHostSlugError ||

@@ -10,9 +10,10 @@ import {
   TrustedOriginConflictError,
   verifyHostManagementToken,
 } from "@khoralabs/registry-catalog";
+import type { HostRegistryWireState } from "@khoralabs/registry-catalog-contracts";
 import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { registryHostRuntime } from "../runtime";
-import { hostRegistryJson, hostToFullJson } from "./host-json";
+import { hostToFullJson, toHostRegistryWireState } from "./host-json";
 
 function readBearerToken(req: Request): string | null {
   const auth = req.headers.get("authorization")?.trim() ?? "";
@@ -32,11 +33,8 @@ async function registryStateResponse(
   if (state === null) {
     return Response.json({ error: "Host not found" }, { status: 404 });
   }
-  return Response.json({
-    slug: host.slug,
-    status: host.status,
-    ...hostRegistryJson(host, state),
-  });
+  const body: HostRegistryWireState = toHostRegistryWireState(host, state);
+  return Response.json(body);
 }
 
 function mapOriginRequestError(err: unknown): { message: string; status: number } {
@@ -220,15 +218,20 @@ export async function handleHostRegistryQuotaRequestDelete(
   }
 }
 
+export type HostRegistryFullJson = {
+  host: Awaited<ReturnType<typeof hostToFullJson>>;
+  managementToken?: string;
+} & Partial<HostRegistryWireState>;
+
 export async function hostRegistryFullJson(
   host: Parameters<typeof hostToFullJson>[0],
   db: RegistryDatabase,
   managementToken: string | null,
-): Promise<Record<string, unknown>> {
+): Promise<HostRegistryFullJson> {
   const state = await readHostRegistryState(db, host.id);
   return {
     host: await hostToFullJson(host, db),
     ...(managementToken !== null ? { managementToken } : {}),
-    ...(state !== null ? hostRegistryJson(host, state) : {}),
+    ...(state !== null ? toHostRegistryWireState(host, state) : {}),
   };
 }

@@ -6,6 +6,7 @@ import {
   tryAutoActivateHost,
   verifyHostRegistrationSecret,
 } from "@khoralabs/registry-catalog";
+import type { HostRegistrationWireState } from "@khoralabs/registry-catalog-contracts";
 import type { RegistryDatabase } from "@khoralabs/registry-persistence";
 import { probeHostHealth } from "../host-health";
 import { registryHostRuntime } from "../runtime";
@@ -46,17 +47,18 @@ async function resolveHostForRegistrationSecret(
 async function registrationResponse(
   db: RegistryDatabase,
   host: NonNullable<Awaited<ReturnType<typeof findHostBySlug>>>,
-  extras?: Record<string, unknown>,
+  extras?: Pick<HostRegistrationWireState, "activated">,
 ): Promise<Response> {
   const policy = readHostRegistrationPolicy();
   const managementToken =
     host.status === "active" ? await deliverPendingManagementToken(db, host.id) : null;
-  return Response.json({
+  const body: HostRegistrationWireState = {
     ...registrationStatusJson(host, policy),
     host: await hostToFullJson(host, db),
     ...(managementToken !== null ? { managementToken } : {}),
     ...extras,
-  });
+  };
+  return Response.json(body);
 }
 
 export async function handleHostRegistrationGet(req: Request, slug: string): Promise<Response> {
@@ -98,10 +100,11 @@ export async function handleHostRegistrationClaim(req: Request, slug: string): P
     managementToken = await deliverPendingManagementToken(db, result.host.id);
   }
 
-  return Response.json({
+  const body: HostRegistrationWireState = {
     ...registrationStatusJson(result.host, policy),
     host: await hostToFullJson(result.host, db),
     activated: result.activated,
     ...(managementToken !== null ? { managementToken } : {}),
-  });
+  };
+  return Response.json(body);
 }
