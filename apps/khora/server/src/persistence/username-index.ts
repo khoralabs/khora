@@ -1,13 +1,13 @@
 import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { UsernameIndexPort } from "@khoralabs/khora-host";
-import type { CatalogProjectionStore } from "./catalog-projection-store";
 import {
   NAMESPACE_PRINCIPAL_TO_USERNAME,
   NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./id-conventions";
+import type { ProjectionStore } from "./projection-store";
 
-export function createUsernameIndex(store: CatalogProjectionStore): UsernameIndexPort {
+export function createUsernameIndex(store: ProjectionStore): UsernameIndexPort {
   function readPrincipalId(projection: unknown): PrincipalId | undefined {
     if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
       return undefined;

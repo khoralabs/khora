@@ -34,8 +34,8 @@ import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
-import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
 import { NAMESPACE_ENTITY_PROFILE } from "../persistence/id-conventions";
+import { ProjectionStore } from "../persistence/projection-store";
 
 const ADMIN_MEMORIES_PREFIX = "/admin/api/memories";
 
@@ -122,7 +122,7 @@ async function listCatalogProfiles(
     new EnvKeyProvider(),
   );
   try {
-    const store = new CatalogProjectionStore(catalogDb);
+    const store = new ProjectionStore(catalogDb);
     const rows = store.listByPrefix(tenantKey, NAMESPACE_ENTITY_PROFILE, "");
     const out: Array<{ profileId: string; username?: string }> = [];
     for (const row of rows) {

@@ -2,10 +2,10 @@ import type { Database } from "bun:sqlite";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
 import type { KhoraHostPersistence } from "@khoralabs/khora-host";
 import { createAgentAccountStatusPort } from "./agent-account-status";
-import { createCatalogEntityAdapter } from "./catalog-entity-adapter";
-import { CatalogProjectionStore } from "./catalog-projection-store";
-import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter";
+import { createEntityAdapter } from "./entity-adapter";
 import { NAMESPACE_ENTITY_PROFILE } from "./id-conventions";
+import { ProjectionStore } from "./projection-store";
+import { createRegistrationAdapter } from "./registration-adapter";
 import { SocialPrincipalChannelStore } from "./social-principal-channel-store";
 import { registerAgentOnPersistence } from "./social-registration";
 import { createSocialRelationshipPersistence } from "./social-relationship-persistence";
@@ -17,16 +17,16 @@ export function buildKhoraHostPersistence(
   catalogDb: Database,
   tenantKey = "khora",
 ): KhoraHostPersistence {
-  const projectionStore = new CatalogProjectionStore(catalogDb);
+  const projectionStore = new ProjectionStore(catalogDb);
   const principalChannelStore = new SocialPrincipalChannelStore(catalogDb);
 
-  const profiles = createCatalogEntityAdapter(
+  const profiles = createEntityAdapter(
     projectionStore,
     catalogDb,
     tenantKey,
     NAMESPACE_ENTITY_PROFILE,
   );
-  const registrations = createCatalogRegistrationAdapter(projectionStore, catalogDb, tenantKey);
+  const registrations = createRegistrationAdapter(projectionStore, catalogDb, tenantKey);
   const social = createSocialRelationshipPersistence({
     projectionStore,
     principalChannelStore,

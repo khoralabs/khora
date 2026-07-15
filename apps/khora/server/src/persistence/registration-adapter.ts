@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { HostRegistrations } from "@khoralabs/khora-host";
-import type { CatalogProjectionStore } from "./catalog-projection-store";
 import { NAMESPACE_REG_BY_PRINCIPAL, NAMESPACE_REG_BY_PROFILE } from "./id-conventions";
+import type { ProjectionStore } from "./projection-store";
 
 function readProfileId(projection: unknown): string | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -20,8 +20,8 @@ function readPrincipalId(projection: unknown): PrincipalId | undefined {
   return typeof v === "string" && v.length > 0 ? (v as PrincipalId) : undefined;
 }
 
-export function createCatalogRegistrationAdapter(
-  store: CatalogProjectionStore,
+export function createRegistrationAdapter(
+  store: ProjectionStore,
   db: Database,
   tenantKey: string,
 ): HostRegistrations {

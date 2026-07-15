@@ -5,12 +5,12 @@ export function escapeSqlLikeLiteral(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
-export type CatalogProjectionListedRow = {
+export type ProjectionListedRow = {
   entry_key: string;
   projection: unknown;
 };
 
-export class CatalogProjectionStore {
+export class ProjectionStore {
   private readonly upsertStmt;
   private readonly lookupStmt;
   private readonly listByPrefixStmt;
@@ -77,13 +77,13 @@ export class CatalogProjectionStore {
     tenant_key: string,
     namespace: string,
     entryKeyPrefix: string,
-  ): CatalogProjectionListedRow[] {
+  ): ProjectionListedRow[] {
     const pattern = `${escapeSqlLikeLiteral(entryKeyPrefix)}%`;
     const rows = this.listByPrefixStmt.all(tenant_key, namespace, pattern) as {
       entry_key: string;
       projection: string;
     }[];
-    const out: CatalogProjectionListedRow[] = [];
+    const out: ProjectionListedRow[] = [];
     for (const r of rows) {
       let projection: unknown = {};
       try {

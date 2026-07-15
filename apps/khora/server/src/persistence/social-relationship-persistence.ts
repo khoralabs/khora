@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { SocialRelationshipPersistence, SocialRelationshipRow } from "@khoralabs/khora-host";
-import type { CatalogProjectionStore } from "./catalog-projection-store";
 import { NAMESPACE_SOCIAL_RELATIONSHIP } from "./id-conventions";
+import type { ProjectionStore } from "./projection-store";
 import type { SocialPrincipalChannelStore } from "./social-principal-channel-store";
 
 function parseRelationshipRow(
@@ -37,7 +37,7 @@ function parseRelationshipRow(
 }
 
 export function createSocialRelationshipPersistence(deps: {
-  projectionStore: CatalogProjectionStore;
+  projectionStore: ProjectionStore;
   principalChannelStore: SocialPrincipalChannelStore;
   catalogDb: Database;
   tenantKey: string;

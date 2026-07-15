@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { HostEntityPersistence, HostEntityRow, HostEntityUpsert } from "@khoralabs/khora-host";
-import type { CatalogProjectionStore } from "./catalog-projection-store";
+import type { ProjectionStore } from "./projection-store";
 
 export function parseEntityRow(projection: unknown, id: string): HostEntityRow | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -22,8 +22,8 @@ export function parseEntityRow(projection: unknown, id: string): HostEntityRow |
   return { id: rowId, memoryId, bodyJson, updatedAtMs };
 }
 
-export function createCatalogEntityAdapter(
-  store: CatalogProjectionStore,
+export function createEntityAdapter(
+  store: ProjectionStore,
   db: Database,
   tenantKey: string,
   namespace: string,

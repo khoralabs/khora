@@ -14,8 +14,8 @@ import {
   envPublicBaseUrl,
   envRegistryUrl,
 } from "../env";
-import { CatalogProjectionStore } from "../persistence/catalog-projection-store";
 import { NAMESPACE_HOST_SPEC } from "../persistence/id-conventions";
+import { ProjectionStore } from "../persistence/projection-store";
 
 const HOST_SPEC_ENTRY_KEY = "self";
 
@@ -31,7 +31,7 @@ export function createKhoraHostSpecPort(deps: {
   catalogDb: Database;
   tenantKey: string;
 }): KhoraHostSpecPort {
-  const store = new CatalogProjectionStore(deps.catalogDb);
+  const store = new ProjectionStore(deps.catalogDb);
 
   function readStored(): KhoraHostSpec | null {
     const { found, projection } = store.lookupProjection(

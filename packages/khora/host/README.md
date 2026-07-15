@@ -180,7 +180,7 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 
 **Storage:**
 - Namespace `relay:entity:profile` in `relay_catalog_projections`
-- Adapter: `apps/khora/server/src/persistence/catalog-entity-adapter.ts`
+- Adapter: `apps/khora/server/src/persistence/entity-adapter.ts`
 - Shape: `{ id, memoryId, bodyJson, updatedAtMs }` (JSON profile in `bodyJson`)
 - Registration maps: `relay:reg:by-principal` ↔ `relay:reg:by-profile`
 - Username index: global tenant `relay:username-index-global`
