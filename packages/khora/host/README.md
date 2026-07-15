@@ -15,7 +15,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | Dep | Purpose |
 |-----|---------|
 | `persistence`, `social` | Relay persistence + social relationships (on context via `host` / `social`) |
-| `catalog` | Pre-built `KhoraHostCatalogApi` (registration, username maps) |
+| `registration` | Pre-built `KhoraRegistrationApi` (registration, username maps) |
 | `cluster` | `KhoraColonnadeCluster` — cell shards, post resolution |
 | `publicationClient` | Colonnade publish/fan-out |
 | `auth` | `KhoraDidAuth` |
@@ -25,7 +25,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | `adminStats` | `KhoraAdminStatsPort` — internal admin stats |
 | `startPrincipalTeardownWorker?` | Background unregister teardown (default `true`) |
 
-SQLite handles and catalog/social persistence adapters are wired in the server bootstrap (health/admin ports, `createKhoraCatalogApi`) — not passed to `createKhoraHost`.
+SQLite handles and catalog/social persistence adapters are wired in the server bootstrap (health/admin ports, `createKhoraRegistrationApi`) — not passed to `createKhoraHost`.
 
 **Invite env** (read in server bootstrap, not inside host):
 - `@khoralabs/khora-invites` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
@@ -65,7 +65,7 @@ Key fields on `KhoraHostContext`:
 - `social`, `principalLifecycle`
 - `invitesRepo` (optional)
 - `memories` (optional)
-- Catalog helpers from `KhoraHostCatalogApi` (username lookup, registration maps, etc.)
+- Registration helpers from `KhoraRegistrationApi` (username lookup, registration maps, etc.)
 
 Raw SQLite handles are **not** on context; server ops use `health` and `adminStats` ports instead.
 
@@ -78,7 +78,7 @@ apps/khora/server/src/index.ts
   validateEnv()
   mkdir KHORA_DATA_DIR + catalog/cells/memories paths
   bootstrapKhoraHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
-    createRelayColonnadeSocial()     → catalog DB, HostPersistence
+    openKhoraHostSqlitePersistence()     → host DB, HostPersistence
     createSqliteColonnadeCluster()   → cell shards
     createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
@@ -87,7 +87,7 @@ apps/khora/server/src/index.ts
     createKhoraDidAuth({ db: catalogDb })
     bootstrapKhoraMemories()        → if KHORA_MEMORIES enabled (default on)
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
-    createKhoraCatalogApi()
+    createKhoraRegistrationApi()
     createKhoraHost(deps)           → HostRuntime + teardown worker
   createAdminTokenAuthFromEnv()
   Bun.serve() + route() + inbox WS handlers
@@ -115,7 +115,7 @@ apps/khora/server/src/index.ts
 
 | Tier | Storage | What lives there |
 |------|---------|-----------------|
-| 1 | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, username index, social relationships, host spec |
+| 1 | `khora_host_projections` (host DB) | Profiles, registrations, topics, username index, social relationships, host spec |
 | 2 | Cell `outbox` | Post JSON bodies (field-encrypted AES-GCM). Address-encoded ids (`atp0:…`). No catalog rows for posts. |
 | 3 | Cell `inbox` | Fan-out delivery pointers (posts) + inline JSON notifications |
 
@@ -137,14 +137,14 @@ Three SQLite files (all `bun:sqlite`):
 **Schema / catalog setup:** `apps/khora/server/src/persistence/` (wired in `bootstrap-khora.ts`)
 
 Tables:
-- `relay_catalog_projections` — JSON KV (profiles, registrations, social graph, …)
+- `khora_host_projections` — JSON KV (profiles, registrations, social graph, …)
 - `standing_queries` — percolator receive-side subscription queries
 - `relay_social_principal_channels` — social channel index
 - `principal_teardown_jobs` — unregister queue
 - `khora_invite_tokens` — invites (when enabled)
 - `agent_request_nonces` — auth nonces (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`)
 
-Opened via `openRelayCatalogDb()` → `createRelayColonnadeSocial()`.
+Opened via `openKhoraHostDb()` → `openKhoraHostSqlitePersistence()`.
 
 ### Tier 2–3 — Cell shards (`{KHORA_DATA_DIR}/cells/`)
 
@@ -179,8 +179,8 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 ### Profiles (Tier 1 catalog)
 
 **Storage:**
-- Namespace `relay:entity:profile` in `relay_catalog_projections`
-- Adapter: `apps/khora/server/src/persistence/entity-adapter.ts`
+- Namespace `relay:entity:profile` in `khora_host_projections`
+- Adapter: `packages/khora/host/sqlite/`
 - Shape: `{ id, memoryId, bodyJson, updatedAtMs }` (JSON profile in `bodyJson`)
 - Registration maps: `relay:reg:by-principal` ↔ `relay:reg:by-profile`
 - Username index: global tenant `relay:username-index-global`

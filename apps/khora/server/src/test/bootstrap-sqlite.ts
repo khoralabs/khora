@@ -5,19 +5,22 @@ import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-aut
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
   bootstrapKhoraPercolator,
-  createKhoraCatalogApi,
   createKhoraHost,
+  createKhoraRegistrationApi,
   createPrincipalLifecycle,
   type KhoraAdminStatsPort,
   type KhoraHostContext,
   type KhoraHostHealthPort,
   type KhoraHostSpecPort,
 } from "@khoralabs/khora-host";
-import { createPercolatorSqlitePersistence } from "@khoralabs/percolator-sqlite";
-import { openKhoraHostPersistence } from "../persistence/khora-persistence";
+import { openKhoraHostSqlitePersistence } from "@khoralabs/khora-host-sqlite";
+import {
+  createPercolatorSqlitePersistence,
+  ensurePercolatorSchema,
+} from "@khoralabs/percolator-sqlite";
 
 export type CreateTestKhoraHostOpts = {
-  catalogPath: string;
+  hostDbPath: string;
   cellsDir: string;
   cellPoolCount?: number;
   useCellWorkers?: boolean;
@@ -34,11 +37,12 @@ export async function createTestKhoraHost(
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? false;
   const encryption = createTestEncryptionMaterial();
-  const { persistence, catalogDb } = await openKhoraHostPersistence({
-    catalogPath: opts.catalogPath,
+  const { persistence, hostDb } = await openKhoraHostSqlitePersistence({
+    hostDbPath: opts.hostDbPath,
     encryptionProvider: encryption.provider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
+  ensurePercolatorSchema(hostDb);
   const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
@@ -52,7 +56,7 @@ export async function createTestKhoraHost(
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const percolator = bootstrapKhoraPercolator({
-    persistence: createPercolatorSqlitePersistence(catalogDb),
+    persistence: createPercolatorSqlitePersistence(hostDb),
   });
   const principalLifecycle = createPrincipalLifecycle({
     persistence,
@@ -66,10 +70,10 @@ export async function createTestKhoraHost(
       }
     },
   });
-  const catalog = createKhoraCatalogApi({ persistence, principalLifecycle });
+  const registration = createKhoraRegistrationApi({ persistence, principalLifecycle });
   const health = opts.health ?? {
     ping() {
-      catalogDb.query("SELECT 1").run();
+      hostDb.query("SELECT 1").run();
     },
   };
   const adminStats = opts.adminStats ?? {
@@ -122,7 +126,7 @@ export async function createTestKhoraHost(
     storeSecrets: (secrets) => ({ ...secrets, updatedAtMs: Date.now() }),
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };
-  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
+  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(hostDb) });
   return createKhoraHost({
     persistence,
     tenantKey,
@@ -131,7 +135,7 @@ export async function createTestKhoraHost(
     cellPoolCount,
     auth,
     principalLifecycle,
-    catalog,
+    registration,
     health,
     adminStats,
     hostSpec,

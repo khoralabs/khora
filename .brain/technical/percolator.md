@@ -151,7 +151,7 @@ Connected-set lookup: `social.listRelationshipsForPrincipal(authorDid)` → peer
 
 2. **Do content posts still carry `topics`?** Yes for authoring/hydration; routing should not depend on a parallel edge table. Topics become candidate labels at index + percolator time.
 
-3. **Catalog vs projections for public subscriptions?** Short term: `relay_catalog_projections` namespace (consistent with existing Tier 1). Long term: enable `replicate_to_catalog` for public marker posts to make Colonnade discovery the cross-product catalog surface.
+3. **Catalog vs projections for public subscriptions?** Short term: `khora_host_projections` namespace (consistent with existing Tier 1). Long term: enable `replicate_to_catalog` for public marker posts to make Colonnade discovery the cross-product catalog surface.
 
 4. **Percolator DB placement:** Co-locate with catalog DB. Subscription routing is host-global and survives without memories.
 

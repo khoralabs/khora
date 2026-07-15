@@ -24,9 +24,9 @@ const testRoot = mkdtempSync(join(tmpdir(), "admin-stats-test-"));
 const cellsDir = join(testRoot, "cells");
 mkdirSync(cellsDir, { recursive: true });
 
-const catalogDb = new Database(":memory:");
-catalogDb.run(`
-  CREATE TABLE relay_catalog_projections (
+const hostDb = new Database(":memory:");
+hostDb.run(`
+  CREATE TABLE khora_host_projections (
     tenant_key TEXT NOT NULL,
     namespace TEXT NOT NULL,
     entry_key TEXT NOT NULL,
@@ -47,21 +47,21 @@ catalogDb.run(`
 `);
 
 function seedCatalog(): void {
-  catalogDb.run("DELETE FROM relay_catalog_projections");
-  catalogDb.run("DELETE FROM standing_queries");
-  catalogDb
+  hostDb.run("DELETE FROM khora_host_projections");
+  hostDb.run("DELETE FROM standing_queries");
+  hostDb
     .prepare(
-      `INSERT INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
+      `INSERT INTO khora_host_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
        VALUES (?, ?, ?, '{}', ?)`,
     )
     .run("relay", REG_BY_PRINCIPAL, "did:key:alice", Date.now());
-  catalogDb
+  hostDb
     .prepare(
-      `INSERT INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
+      `INSERT INTO khora_host_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
        VALUES (?, ?, ?, '{}', ?)`,
     )
     .run("relay", "khora:social:username-to-principal", "alice", Date.now());
-  catalogDb
+  hostDb
     .prepare(
       `INSERT INTO standing_queries (id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms)
        VALUES (?, ?, '{}', 0, 1, ?, ?)`,
@@ -147,7 +147,7 @@ function deps(
   const lookupNormalizedUsernameForPrincipal =
     overrides?.lookupNormalizedUsernameForPrincipal ?? (() => undefined);
   const adminStats = createKhoraAdminStatsPort({
-    catalogDb,
+    hostDb,
     cellsDir,
     tenantKey: "relay",
     cellPoolCount: 2,
@@ -195,7 +195,7 @@ function withCellsDir<T>(fn: () => T): T {
 }
 
 afterAll(() => {
-  catalogDb.close();
+  hostDb.close();
   rmSync(testRoot, { recursive: true, force: true });
 });
 

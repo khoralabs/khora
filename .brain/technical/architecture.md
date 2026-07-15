@@ -68,7 +68,7 @@ Negotiation transport (separate relay repo):
 
 | Tier | Storage | What's there |
 |------|---------|-------------|
-| Tier 1 | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, social relationships, username index |
+| Tier 1 | `khora_host_projections` (host DB) | Profiles, registrations, topics, social relationships, username index |
 | Tier 2 | Cell `outbox` (cells/*.sqlite) | Post bodies (field-encrypted AES-GCM) — author only |
 | Tier 3 | Cell `inbox` (cells/*.sqlite) | Inbox pointers + inline metadata |
 

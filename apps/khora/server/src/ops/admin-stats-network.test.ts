@@ -13,9 +13,9 @@ const testRoot = mkdtempSync(join(tmpdir(), "admin-network-test-"));
 const cellsDir = join(testRoot, "cells");
 mkdirSync(cellsDir, { recursive: true });
 
-const catalogDb = new Database(":memory:");
-catalogDb.run(`
-  CREATE TABLE relay_catalog_projections (
+const hostDb = new Database(":memory:");
+hostDb.run(`
+  CREATE TABLE khora_host_projections (
     tenant_key TEXT NOT NULL,
     namespace TEXT NOT NULL,
     entry_key TEXT NOT NULL,
@@ -26,17 +26,17 @@ catalogDb.run(`
 `);
 
 function registerPrincipal(did: string, username?: string): void {
-  catalogDb
+  hostDb
     .prepare(
-      `INSERT OR REPLACE INTO relay_catalog_projections
+      `INSERT OR REPLACE INTO khora_host_projections
        (tenant_key, namespace, entry_key, projection, updated_at_ms)
        VALUES (?, ?, ?, '{}', ?)`,
     )
     .run("relay", REG_BY_PRINCIPAL, did, Date.now());
   if (username !== undefined) {
-    catalogDb
+    hostDb
       .prepare(
-        `INSERT OR REPLACE INTO relay_catalog_projections
+        `INSERT OR REPLACE INTO khora_host_projections
          (tenant_key, namespace, entry_key, projection, updated_at_ms)
          VALUES (?, ?, ?, '{}', ?)`,
       )
@@ -89,7 +89,7 @@ function seedOutbox(
 
 function makePort(lookup?: (did: string) => string | undefined) {
   return createKhoraAdminStatsPort({
-    catalogDb,
+    hostDb,
     cellsDir,
     tenantKey: "relay",
     cellPoolCount: 2,
@@ -108,13 +108,13 @@ function makePort(lookup?: (did: string) => string | undefined) {
 }
 
 beforeEach(() => {
-  catalogDb.run("DELETE FROM relay_catalog_projections");
+  hostDb.run("DELETE FROM khora_host_projections");
   rmSync(cellsDir, { recursive: true, force: true });
   mkdirSync(cellsDir, { recursive: true });
 });
 
 afterAll(() => {
-  catalogDb.close();
+  hostDb.close();
   rmSync(testRoot, { recursive: true, force: true });
 });
 

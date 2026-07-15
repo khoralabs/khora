@@ -135,6 +135,7 @@
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-host": "workspace:*",
+        "@khoralabs/khora-host-sqlite": "workspace:*",
         "@khoralabs/khora-invites": "workspace:*",
         "@khoralabs/khora-server-http": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
@@ -517,6 +518,23 @@
         "@khoralabs/percolator": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
         "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/host/sqlite": {
+      "name": "@khoralabs/khora-host-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/khora-host": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1772,6 +1790,8 @@
     "@khoralabs/khora-daemon": ["@khoralabs/khora-daemon@workspace:apps/khora/daemon"],
 
     "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/khora/host"],
+
+    "@khoralabs/khora-host-sqlite": ["@khoralabs/khora-host-sqlite@workspace:packages/khora/host/sqlite"],
 
     "@khoralabs/khora-invites": ["@khoralabs/khora-invites@workspace:packages/khora/invites"],
 

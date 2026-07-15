@@ -22,7 +22,7 @@ test("resolvePostById reads author outbox; delete leaves ghost", async () => {
   const root = join(tmpRoot, `h${seq++}`);
   mkdirSync(root, { recursive: true });
   const ctx = await createTestKhoraHost({
-    catalogPath: join(root, "c.sqlite"),
+    hostDbPath: join(root, "c.sqlite"),
     cellsDir: join(root, "cells"),
     tenantKey: "tn",
     startPrincipalTeardownWorker: false,

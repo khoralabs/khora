@@ -2,7 +2,6 @@ import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
-import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
 import type { KhoraHostPersistence } from "./persistence/types";
@@ -12,6 +11,7 @@ import type {
   KhoraHostHealthPort,
   KhoraHostSpecPort,
 } from "./ports";
+import type { KhoraRegistrationApi } from "./registration-api";
 import type { PrincipalLifecycle } from "./runtime";
 
 export type KhoraHostDeps = {
@@ -28,7 +28,7 @@ export type KhoraHostDeps = {
   health: KhoraHostHealthPort;
   adminStats: KhoraAdminStatsPort;
   hostSpec: KhoraHostSpecPort;
-  catalog: KhoraHostCatalogApi;
+  registration: KhoraRegistrationApi;
   outboxPayloadCodec: OutboxPayloadCodec;
   startPrincipalTeardownWorker?: boolean;
 };

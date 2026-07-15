@@ -56,8 +56,8 @@ export function envDataDir(): string {
   return persistencePaths().dataDir;
 }
 
-export function envCatalogPath(): string {
-  return persistencePaths().catalogPath;
+export function envHostDbPath(): string {
+  return persistencePaths().hostDbPath;
 }
 
 export function envCellsDir(): string {

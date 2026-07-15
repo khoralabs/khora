@@ -15,7 +15,6 @@ import {
 } from "@khoralabs/khora-contracts";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import type { StandingQuery } from "@khoralabs/percolator";
-import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import { toPercolatorSearch } from "./percolator/adapter";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
@@ -23,6 +22,7 @@ import { buildPercolatorCandidateFromPost } from "./percolator/candidate";
 import type { KhoraColonnadeCluster } from "./ports";
 import { decodePostId } from "./post-address-id";
 import { canDeliverPostToRecipient } from "./post-visibility";
+import type { KhoraRegistrationApi } from "./registration-api";
 import { deletePostOutboxRecord } from "./resolve-post";
 import {
   deliverNotification,
@@ -173,7 +173,7 @@ function registerSubscriptionQuery(
 }
 
 export function createKhoraRelayOnEvent(deps: {
-  catalog: KhoraHostCatalogApi;
+  registration: KhoraRegistrationApi;
   tenantKey: string;
   cluster: KhoraColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
@@ -184,7 +184,8 @@ export function createKhoraRelayOnEvent(deps: {
   ctx: HostRuntimeEventHandlerCtx,
   event: HostEventUnion<KhoraProfile, KhoraHostAppEvent>,
 ) => void | Promise<void> {
-  const { catalog, tenantKey, cluster, publicationClient, memories, percolator, social } = deps;
+  const { registration, tenantKey, cluster, publicationClient, memories, percolator, social } =
+    deps;
   return async (
     ctx: HostRuntimeEventHandlerCtx,
     event: HostEventUnion<KhoraProfile, KhoraHostAppEvent>,
@@ -199,7 +200,7 @@ export function createKhoraRelayOnEvent(deps: {
           displayName: meta.displayName,
           bio: meta.bio,
         });
-        catalog.applyProfileUsernameAndMaps({
+        registration.applyProfileUsernameAndMaps({
           principalId: req.principalId,
           username: meta.username,
           profileUpsert: { id: profile.id, bodyJson: JSON.stringify(profile) },

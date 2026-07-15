@@ -32,9 +32,9 @@ function memoriesTest(name: string, fn: () => Promise<void>): void {
 }
 
 function createTestRelayPersistence(profile: KhoraProfile) {
-  const catalogDb = new Database(":memory:");
-  catalogDb.exec(`
-    CREATE TABLE relay_catalog_projections (
+  const hostDb = new Database(":memory:");
+  hostDb.exec(`
+    CREATE TABLE khora_host_projections (
       tenant_key TEXT NOT NULL,
       namespace TEXT NOT NULL,
       entry_key TEXT NOT NULL,
@@ -43,11 +43,11 @@ function createTestRelayPersistence(profile: KhoraProfile) {
       PRIMARY KEY (tenant_key, namespace, entry_key)
     );
   `);
-  const upsertStmt = catalogDb.prepare(
-    `INSERT OR REPLACE INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
+  const upsertStmt = hostDb.prepare(
+    `INSERT OR REPLACE INTO khora_host_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
   );
-  const lookupStmt = catalogDb.prepare(
-    `SELECT projection FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+  const lookupStmt = hostDb.prepare(
+    `SELECT projection FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
   );
   function upsert(tenantKey: string, ns: string, key: string, value: unknown) {
     upsertStmt.run(tenantKey, ns, key, JSON.stringify(value), Date.now());

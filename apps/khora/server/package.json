@@ -22,6 +22,7 @@
     "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",
+    "@khoralabs/khora-host-sqlite": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
     "@khoralabs/khora-server-http": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",

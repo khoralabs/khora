@@ -8,6 +8,7 @@ import {
   resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
 } from "@khoralabs/khora-host";
+import { NAMESPACE_ENTITY_PROFILE, ProjectionStore } from "@khoralabs/khora-host-sqlite";
 import { type HostRouteDeps, jsonError, withAdminTokenAuth } from "@khoralabs/khora-server-http";
 import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import { MemoriesClient, type SearchHit, searchAsync } from "@khoralabs/memories-core";
@@ -32,10 +33,8 @@ import {
 } from "@khoralabs/memories-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
-import { envCatalogPath } from "../env";
+import { envHostDbPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
-import { NAMESPACE_ENTITY_PROFILE } from "../persistence/id-conventions";
-import { ProjectionStore } from "../persistence/projection-store";
 
 const ADMIN_MEMORIES_PREFIX = "/admin/api/memories";
 
@@ -112,17 +111,17 @@ function parseProfileUsername(bodyJson: string): string | undefined {
   }
 }
 
-async function listCatalogProfiles(
+async function listHostProfiles(
   tenantKey: string,
 ): Promise<Array<{ profileId: string; username?: string }>> {
-  const catalogDb = await openEncryptedDatabase(
-    envCatalogPath(),
+  const hostDb = await openEncryptedDatabase(
+    envHostDbPath(),
     { readonly: true },
     "khora",
     new EnvKeyProvider(),
   );
   try {
-    const store = new ProjectionStore(catalogDb);
+    const store = new ProjectionStore(hostDb);
     const rows = store.listByPrefix(tenantKey, NAMESPACE_ENTITY_PROFILE, "");
     const out: Array<{ profileId: string; username?: string }> = [];
     for (const row of rows) {
@@ -141,7 +140,7 @@ async function listCatalogProfiles(
     }
     return out;
   } finally {
-    catalogDb.close();
+    hostDb.close();
   }
 }
 
@@ -226,7 +225,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
     try {
       const namespaces = listMemoryNamespaces(db);
       const namespaceSet = new Set(namespaces);
-      const catalogProfiles = await listCatalogProfiles(deps.ctx.tenantKey);
+      const catalogProfiles = await listHostProfiles(deps.ctx.tenantKey);
       const profiles: AdminMemoriesProfileEntry[] = catalogProfiles.map((p) => {
         const ns = profileMemoryNamespace(namespaceRoot, p.profileId);
         return {

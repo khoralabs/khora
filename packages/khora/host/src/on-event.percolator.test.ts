@@ -38,7 +38,7 @@ function stubCluster(cellPoolCount = 2): KhoraColonnadeCluster {
 function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
   const catalogDb = new Database(":memory:");
   catalogDb.run(`
-    CREATE TABLE relay_catalog_projections (
+    CREATE TABLE khora_host_projections (
       tenant_key TEXT NOT NULL,
       namespace TEXT NOT NULL,
       entry_key TEXT NOT NULL,
@@ -48,10 +48,10 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
     );
   `);
   const upsertStmt = catalogDb.prepare(
-    `INSERT OR REPLACE INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO khora_host_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
   );
   const lookupStmt = catalogDb.prepare(
-    `SELECT projection FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+    `SELECT projection FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
   );
   function upsert(tenantKey: string, ns: string, key: string, value: unknown) {
     upsertStmt.run(tenantKey, ns, key, JSON.stringify(value), Date.now());
@@ -206,7 +206,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      catalog: {} as never,
+      registration: {} as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -282,7 +282,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      catalog: {} as never,
+      registration: {} as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -349,7 +349,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      catalog: {} as never,
+      registration: {} as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -419,7 +419,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      catalog: {} as never,
+      registration: {} as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -502,7 +502,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      catalog: {} as never,
+      registration: {} as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -560,7 +560,7 @@ describe("percolator inbox subscriptionMatches", () => {
     };
 
     const onEvent = createKhoraRelayOnEvent({
-      catalog: {} as never,
+      registration: {} as never,
       tenantKey: "relay",
       cluster,
       publicationClient,

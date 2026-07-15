@@ -1,5 +1,5 @@
 /**
- * When KHORA_LITESTREAM is set, runs Litestream (catalog + watched cells dir)
+ * When KHORA_LITESTREAM is set, runs Litestream (host DB + watched cells dir)
  * then the Bun server. Otherwise runs the server only.
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -36,7 +36,7 @@ async function runWithLitestream(): Promise<void> {
   validateEnv();
 
   const persistencePaths = resolveKhoraPersistencePaths(process.env, serverRoot);
-  const catalogAbs = path.resolve(process.cwd(), persistencePaths.catalogPath);
+  const hostDbAbs = path.resolve(process.cwd(), persistencePaths.hostDbPath);
   const cellsAbs = path.resolve(process.cwd(), persistencePaths.cellsDir);
   const memoriesConfig = envMemoriesEnabled()
     ? envMemoriesBootstrapConfig(persistencePaths)
@@ -45,7 +45,7 @@ async function runWithLitestream(): Promise<void> {
     memoriesConfig !== undefined ? path.resolve(process.cwd(), memoriesConfig.dbPath) : undefined;
 
   mkdirSync(persistencePaths.dataDir, { recursive: true });
-  mkdirSync(path.dirname(catalogAbs), { recursive: true });
+  mkdirSync(path.dirname(hostDbAbs), { recursive: true });
   mkdirSync(cellsAbs, { recursive: true });
   if (memoriesAbs !== undefined) {
     mkdirSync(path.dirname(memoriesAbs), { recursive: true });
@@ -56,7 +56,7 @@ async function runWithLitestream(): Promise<void> {
   const yaml = buildLitestreamYaml({
     ...s3,
     dbs: [
-      { kind: "file", path: catalogAbs, replicaSuffix: "catalog.sqlite" },
+      { kind: "file", path: hostDbAbs, replicaSuffix: "host.sqlite" },
       ...(memoriesAbs !== undefined
         ? [{ kind: "file" as const, path: memoriesAbs, replicaSuffix: "memories.sqlite" }]
         : []),

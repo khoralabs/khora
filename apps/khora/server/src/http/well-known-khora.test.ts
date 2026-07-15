@@ -1,13 +1,13 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host-sqlite";
 import { type HostRouteDeps, handleWellKnownKhora } from "@khoralabs/khora-server-http";
 import { buildKhoraHostDiscovery } from "../ops/build-host-discovery";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
-import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";
 
 describe("well-known khora", () => {
-  let catalogDb: Database;
+  let hostDb: Database;
   let hostSpec: ReturnType<typeof createKhoraHostSpecPort>;
   const prev: Record<string, string | undefined> = {};
 
@@ -23,9 +23,9 @@ describe("well-known khora", () => {
   }
 
   beforeEach(() => {
-    catalogDb = new Database(":memory:");
-    catalogDb.run(`
-      CREATE TABLE relay_catalog_projections (
+    hostDb = new Database(":memory:");
+    hostDb.run(`
+      CREATE TABLE khora_host_projections (
         tenant_key TEXT NOT NULL,
         namespace TEXT NOT NULL,
         entry_key TEXT NOT NULL,
@@ -35,7 +35,7 @@ describe("well-known khora", () => {
       );
     `);
     hostSpec = createKhoraHostSpecPort({
-      catalogDb,
+      hostDb,
       tenantKey: DEFAULT_TENANT_KEY,
     });
     for (const key of [
@@ -50,7 +50,7 @@ describe("well-known khora", () => {
   });
 
   afterEach(() => {
-    catalogDb.close();
+    hostDb.close();
     for (const key of Object.keys(prev)) {
       if (prev[key] === undefined) delete process.env[key];
       else process.env[key] = prev[key];

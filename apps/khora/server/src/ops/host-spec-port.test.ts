@@ -1,15 +1,15 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host-sqlite";
 import { createKhoraHostSpecPort } from "./host-spec-port";
 
 describe("host spec port", () => {
-  let catalogDb: Database;
+  let hostDb: Database;
 
   beforeEach(() => {
-    catalogDb = new Database(":memory:");
-    catalogDb.run(`
-      CREATE TABLE relay_catalog_projections (
+    hostDb = new Database(":memory:");
+    hostDb.run(`
+      CREATE TABLE khora_host_projections (
         tenant_key TEXT NOT NULL,
         namespace TEXT NOT NULL,
         entry_key TEXT NOT NULL,
@@ -21,7 +21,7 @@ describe("host spec port", () => {
   });
 
   afterEach(() => {
-    catalogDb.close();
+    hostDb.close();
     delete process.env.KHORA_HOST_SLUG;
     delete process.env.KHORA_REGISTRY_URL;
     delete process.env.KHORA_PUBLIC_BASE_URL;
@@ -31,7 +31,7 @@ describe("host spec port", () => {
 
   test("storeSecrets persists before next read", () => {
     const port = createKhoraHostSpecPort({
-      catalogDb,
+      hostDb,
       tenantKey: DEFAULT_TENANT_KEY,
     });
     port.storeSecrets({ registrationSecret: "secret-abc" });
@@ -41,7 +41,7 @@ describe("host spec port", () => {
 
   test("management token replaces registration secret on disk", () => {
     const port = createKhoraHostSpecPort({
-      catalogDb,
+      hostDb,
       tenantKey: DEFAULT_TENANT_KEY,
     });
     port.storeSecrets({ registrationSecret: "secret-abc" });
@@ -52,7 +52,7 @@ describe("host spec port", () => {
 
   test("population limit env override and patch clear", () => {
     const port = createKhoraHostSpecPort({
-      catalogDb,
+      hostDb,
       tenantKey: DEFAULT_TENANT_KEY,
     });
     port.patch({ populationLimit: 99 });
@@ -65,7 +65,7 @@ describe("host spec port", () => {
 
   test("env overrides effective slug and registry URL", () => {
     const port = createKhoraHostSpecPort({
-      catalogDb,
+      hostDb,
       tenantKey: DEFAULT_TENANT_KEY,
     });
     port.patch({ slug: "stored-slug", registryUrl: "http://registry.example.com" });

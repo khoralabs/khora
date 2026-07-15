@@ -5,7 +5,6 @@ export type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
-export { createKhoraCatalogApi, type KhoraHostCatalogApi } from "./catalog-facade";
 export type { KhoraHostContext } from "./context";
 export { createKhoraHost } from "./khora-host";
 export type { KhoraHostDeps } from "./khora-host-deps";
@@ -100,6 +99,7 @@ export {
   type PostAddressInput,
 } from "./post-address-id";
 export { canDeliverPostToRecipient, canReadPost } from "./post-visibility";
+export { createKhoraRegistrationApi, type KhoraRegistrationApi } from "./registration-api";
 export { enqueueCellInboxInline } from "./relay-cell-inbox";
 export {
   popRelayInboxDrainItemsForDid,

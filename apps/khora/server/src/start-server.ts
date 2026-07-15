@@ -38,13 +38,13 @@ export async function startKhoraServer(opts: StartKhoraServerOptions): Promise<K
 
   const encryption = await bootstrapKhoraEncryption();
 
-  const catalogPath = path.join(opts.dataDir, "khora-catalog.sqlite");
+  const hostDbPath = path.join(opts.dataDir, "khora-host.sqlite");
   const cellsDir = path.join(opts.dataDir, "cells");
   mkdirSync(opts.dataDir, { recursive: true });
   mkdirSync(cellsDir, { recursive: true });
 
   const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
-    catalogPath,
+    hostDbPath,
     cellsDir,
     cellPoolCount: opts.cellPoolCount ?? 2,
     useCellWorkers: opts.useCellWorkers ?? false,

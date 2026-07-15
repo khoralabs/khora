@@ -33,7 +33,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     inboxHub,
     notificationBuffer,
     onEvent: createKhoraRelayOnEvent({
-      catalog: deps.catalog,
+      registration: deps.registration,
       tenantKey: deps.tenantKey,
       cluster: deps.cluster,
       publicationClient: deps.publicationClient,
@@ -64,6 +64,6 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     principalTeardownWorker,
     percolator: deps.percolator,
     ...(deps.memories !== undefined ? { memories: deps.memories } : {}),
-    ...deps.catalog,
+    ...deps.registration,
   };
 }

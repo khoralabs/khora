@@ -34,7 +34,7 @@ Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + Type
 
 | Tier | Name | Storage | What lives there |
 |------|------|---------|-----------------|
-| 1 | Catalog projections | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, username index, social relationships, host spec |
+| 1 | Host projections | `khora_host_projections` (host DB) | Profiles, registrations, topics, username index, social relationships, host spec |
 | 2 | Author outbox | Cell `outbox` (cells/*.sqlite) | Post JSON bodies, field-encrypted AES-GCM |
 | 3 | Cell inbox | Cell `inbox` (cells/*.sqlite) | Fan-out delivery pointers (posts) |
 
@@ -98,7 +98,7 @@ For serverless / multi-region hosts, use **`@khoralabs/colonnade-persistence-tur
 
 ## Catalog projection namespace index
 
-Tier 1 table: `relay_catalog_projections` — PK `(tenant_key, namespace, entry_key)`.
+Tier 1 table: `khora_host_projections` — PK `(tenant_key, namespace, entry_key)`.
 
 | `namespace` | Typical `entry_key` | Projection gist |
 |-------------|---------------------|-----------------|
@@ -119,7 +119,7 @@ Username index uses `tenant_key = relay:username-index-global` (unique across re
 
 | Layer | What it is | Used by Khora? |
 |-------|------------|----------------|
-| **Application catalog** | `relay_catalog_projections` + edge tables — profiles, registrations, subscriptions, social graph | **Yes — heavily** |
+| **Host projections** | `khora_host_projections` + edge tables — profiles, registrations, subscriptions, social graph | **Yes — heavily** |
 | **Colonnade publication catalog** | `discovery_documents` + `catalog_pointers` written when `replicate_to_catalog: true` | **No** — Khora passes `replicate_to_catalog: false`; `ColonnadePublicationClient` defaults to noop |
 
 **Profiles are stored in the relay catalog database. They do not go through `CatalogPersistenceStrategy`.** The noop is only for the optional Colonnade post-replication index path that Khora skips.
@@ -219,7 +219,7 @@ The write log (`write_log` table on each cell) is spec-complete but **operationa
 
 ```
 Catalog SQLite (khora-catalog.sqlite)
-  relay_catalog_projections  — profiles, subs, social graph, usernames (Tier 1)
+  khora_host_projections  — profiles, subs, social graph, usernames (Tier 1)
   principal_teardown_jobs, invites, nonces
 
 Cell pool SQLite (cells/*.sqlite)
@@ -247,7 +247,7 @@ GET /v1/inbox/ws
 1. ~~Dual persistence APIs for the same catalog file~~ — Resolved: one catalog SQLite for Tier 1 projections; cell cluster uses noop catalog.
 2. ~~Dual inbox systems~~ — Resolved: single cell inbox for post fan-out.
 3. **`write_log` is spec-complete but operationally inert** — No production worker applies log entries. Live until a replication use case emerges.
-4. ~~Synthetic pointers obscure the model~~ — Resolved: Tier 1 uses projection-only `relay_catalog_projections`.
+4. ~~Synthetic pointers obscure the model~~ — Resolved: Tier 1 uses projection-only `khora_host_projections`.
 5. ~~Hand-rolled secondary indexes in JSON projections~~ — Resolved: subscriptions and social indexes use normalized SQLite edge tables.
 6. **Sharding complexity with partial adoption** — Khora typically runs a single catalog file; sharding infrastructure exists for future scale.
 7. **Placement immutability** — `assignPrincipalToCell` is pure hash; no rebalance if `cellPoolCount` changes.

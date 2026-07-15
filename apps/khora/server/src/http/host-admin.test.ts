@@ -2,25 +2,25 @@ import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host-sqlite";
 import {
   type HostRouteDeps,
   handleAdminHostConfigGet,
   handleAdminHostConfigPatch,
 } from "@khoralabs/khora-server-http";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
-import { DEFAULT_TENANT_KEY } from "../persistence/id-conventions";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
 describe("host admin config", () => {
-  let catalogDb: Database;
+  let hostDb: Database;
   let hostSpec: ReturnType<typeof createKhoraHostSpecPort>;
   const adminTokenAuth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(() => {
-    catalogDb = new Database(":memory:");
-    catalogDb.run(`
-      CREATE TABLE relay_catalog_projections (
+    hostDb = new Database(":memory:");
+    hostDb.run(`
+      CREATE TABLE khora_host_projections (
         tenant_key TEXT NOT NULL,
         namespace TEXT NOT NULL,
         entry_key TEXT NOT NULL,
@@ -30,13 +30,13 @@ describe("host admin config", () => {
       );
     `);
     hostSpec = createKhoraHostSpecPort({
-      catalogDb,
+      hostDb,
       tenantKey: DEFAULT_TENANT_KEY,
     });
   });
 
   afterEach(() => {
-    catalogDb.close();
+    hostDb.close();
   });
 
   function routeDeps(): HostRouteDeps {

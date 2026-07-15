@@ -1,8 +1,8 @@
 import type { KhoraHostPersistence } from "./persistence/types";
 import type { PrincipalLifecycle } from "./runtime";
 
-/** Catalog operations used by HTTP adapters. */
-export type KhoraHostCatalogApi = {
+/** Registration / username-map operations used by HTTP adapters and on-event. */
+export type KhoraRegistrationApi = {
   lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined;
   lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined;
   rollbackUsernameMapsAfterFailedRegistration(
@@ -17,10 +17,10 @@ export type KhoraHostCatalogApi = {
   phase1UnregisterPrincipal(principalId: string): void;
 };
 
-export function createKhoraCatalogApi(deps: {
+export function createKhoraRegistrationApi(deps: {
   persistence: KhoraHostPersistence;
   principalLifecycle: PrincipalLifecycle;
-}): KhoraHostCatalogApi {
+}): KhoraRegistrationApi {
   const { persistence, principalLifecycle } = deps;
   return {
     lookupPrincipalIdByNormalizedUsername(normalized) {

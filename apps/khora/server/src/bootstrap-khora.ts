@@ -8,14 +8,15 @@ import {
   bootstrapKhoraPercolator,
   createColonnadePostResolver,
   createHostPersistenceClient,
-  createKhoraCatalogApi,
   createKhoraHost,
+  createKhoraRegistrationApi,
   createPrincipalLifecycle,
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
   type KhoraHostContext,
   startEmbeddingRetryWorker,
 } from "@khoralabs/khora-host";
+import { openKhoraHostSqlitePersistence } from "@khoralabs/khora-host-sqlite";
 import {
   createKhoraInvitesSqliteRepo,
   parseInviteSeedTokens,
@@ -27,17 +28,19 @@ import {
   ensureCustomSqliteForExtensions,
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
-import { createPercolatorSqlitePersistence } from "@khoralabs/percolator-sqlite";
+import {
+  createPercolatorSqlitePersistence,
+  ensurePercolatorSchema,
+} from "@khoralabs/percolator-sqlite";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
 import { createKhoraHostHealthPort } from "./ops/health-port";
 import { createKhoraHostSpecPort } from "./ops/host-spec-port";
-import { openKhoraHostPersistence } from "./persistence/khora-persistence";
 
 export type BootstrapKhoraHostOpts = {
-  catalogPath: string;
+  hostDbPath: string;
   cellsDir: string;
   cellPoolCount: number;
   useCellWorkers: boolean;
@@ -61,11 +64,12 @@ export async function bootstrapKhoraHost(
   const encryption = opts.encryption;
   const encryptionProvider = new EnvKeyProvider();
   const outboxKey = await encryptionProvider.getOutboxFieldKey();
-  const { persistence, catalogDb } = await openKhoraHostPersistence({
-    catalogPath: opts.catalogPath,
+  const { persistence, hostDb } = await openKhoraHostSqlitePersistence({
+    hostDbPath: opts.hostDbPath,
     encryptionProvider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
+  ensurePercolatorSchema(hostDb);
   const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
@@ -80,7 +84,7 @@ export async function bootstrapKhoraHost(
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
   const percolator = bootstrapKhoraPercolator({
-    persistence: createPercolatorSqlitePersistence(catalogDb),
+    persistence: createPercolatorSqlitePersistence(hostDb),
     ...(opts.memories?.embeddingModel !== undefined
       ? { embeddingModel: opts.memories.embeddingModel }
       : {}),
@@ -103,19 +107,19 @@ export async function bootstrapKhoraHost(
       void memories?.indexer.deleteProfile(profileId);
     },
   });
-  const catalog = createKhoraCatalogApi({ persistence, principalLifecycle });
-  const health = createKhoraHostHealthPort(catalogDb);
-  const hostSpec = createKhoraHostSpecPort({ catalogDb, tenantKey });
+  const registration = createKhoraRegistrationApi({ persistence, principalLifecycle });
+  const health = createKhoraHostHealthPort(hostDb);
+  const hostSpec = createKhoraHostSpecPort({ hostDb, tenantKey });
   const adminStats = createKhoraAdminStatsPort({
-    catalogDb,
+    hostDb,
     cellsDir: opts.cellsDir,
     tenantKey,
     cellPoolCount,
     cluster,
-    lookupNormalizedUsernameForPrincipal: catalog.lookupNormalizedUsernameForPrincipal,
+    lookupNormalizedUsernameForPrincipal: registration.lookupNormalizedUsernameForPrincipal,
     sqlCipherKey: encryption.sqlCipherKey,
   });
-  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
+  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(hostDb) });
   const persistenceClient = createHostPersistenceClient(persistence);
 
   const seedTokens = parseInviteSeedTokens(process.env.KHORA_INVITE_SEED_TOKENS);
@@ -123,7 +127,7 @@ export async function bootstrapKhoraHost(
   const pepper = readInvitePepper();
   let invitesRepoValue: ReturnType<typeof createKhoraInvitesSqliteRepo> | undefined;
   if (pepper !== undefined && pepper.length > 0) {
-    const repo = createKhoraInvitesSqliteRepo(catalogDb, pepper);
+    const repo = createKhoraInvitesSqliteRepo(hostDb, pepper);
     repo.insertSeedInviteTokens(seedTokens);
     const rootPlain = repo.ensureRootInviteIfAbsent();
     if (rootPlain !== undefined) {
@@ -168,7 +172,7 @@ export async function bootstrapKhoraHost(
     cellPoolCount,
     auth,
     principalLifecycle,
-    catalog,
+    registration,
     health,
     adminStats,
     hostSpec,

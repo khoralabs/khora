@@ -1,12 +1,11 @@
 import type { Database } from "bun:sqlite";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
-import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./teardown-queue";
 
-export function ensureKhoraCatalogProjectionsSchema(db: Database): void {
+export function ensureKhoraHostProjectionsSchema(db: Database): void {
   db.run(`
-    CREATE TABLE IF NOT EXISTS relay_catalog_projections (
+    CREATE TABLE IF NOT EXISTS khora_host_projections (
       tenant_key TEXT NOT NULL,
       namespace TEXT NOT NULL,
       entry_key TEXT NOT NULL,
@@ -14,8 +13,8 @@ export function ensureKhoraCatalogProjectionsSchema(db: Database): void {
       updated_at_ms INTEGER NOT NULL,
       PRIMARY KEY (tenant_key, namespace, entry_key)
     );
-    CREATE INDEX IF NOT EXISTS idx_relay_username_to_principal
-      ON relay_catalog_projections (
+    CREATE INDEX IF NOT EXISTS idx_khora_username_to_principal
+      ON khora_host_projections (
         tenant_key,
         json_extract(projection, '$.principalId')
       )
@@ -45,14 +44,14 @@ export function applyKhoraSqlitePragmas(db: Database): void {
   `);
 }
 
-export async function openKhoraCatalogDb(
+/** Open encrypted host DB and ensure host-owned schemas (not percolator). */
+export async function openKhoraHostDb(
   path: string,
   provider: EncryptionKeyProvider,
 ): Promise<Database> {
   const db = await openEncryptedDatabase(path, { create: true }, "khora", provider);
   applyKhoraSqlitePragmas(db);
-  ensureKhoraCatalogProjectionsSchema(db);
-  ensurePercolatorSchema(db);
+  ensureKhoraHostProjectionsSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
   return db;
 }

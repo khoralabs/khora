@@ -25,7 +25,7 @@ afterAll(() => {
 test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistered (phase1)", async () => {
   const root = nextHostDir();
   const ctx = await createTestKhoraHost({
-    catalogPath: join(root, "c.sqlite"),
+    hostDbPath: join(root, "c.sqlite"),
     cellsDir: join(root, "cells"),
     tenantKey: "tn",
     startPrincipalTeardownWorker: false,

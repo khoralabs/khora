@@ -39,10 +39,10 @@ function parseRelationshipRow(
 export function createSocialRelationshipPersistence(deps: {
   projectionStore: ProjectionStore;
   principalChannelStore: SocialPrincipalChannelStore;
-  catalogDb: Database;
+  hostDb: Database;
   tenantKey: string;
 }): SocialRelationshipPersistence {
-  const { projectionStore: store, principalChannelStore, catalogDb, tenantKey } = deps;
+  const { projectionStore: store, principalChannelStore, hostDb, tenantKey } = deps;
 
   function getImpl(channelId: string): SocialRelationshipRow | undefined {
     const { found, projection } = store.lookupProjection(
@@ -65,7 +65,7 @@ export function createSocialRelationshipPersistence(deps: {
         ...(params.expiresAtMs !== undefined ? { expiresAtMs: params.expiresAtMs } : {}),
         ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
       };
-      catalogDb.transaction(() => {
+      hostDb.transaction(() => {
         store.upsert({
           tenant_key: tenantKey,
           namespace: NAMESPACE_SOCIAL_RELATIONSHIP,
@@ -79,7 +79,7 @@ export function createSocialRelationshipPersistence(deps: {
     getRelationship: getImpl,
 
     bindPeer(params): void {
-      catalogDb.transaction(() => {
+      hostDb.transaction(() => {
         const { found, projection } = store.lookupProjection(
           tenantKey,
           NAMESPACE_SOCIAL_RELATIONSHIP,
@@ -108,7 +108,7 @@ export function createSocialRelationshipPersistence(deps: {
     },
 
     refreshRelationshipTicketExpiry(params): void {
-      catalogDb.transaction(() => {
+      hostDb.transaction(() => {
         const current = getImpl(params.channelId);
         if (current === undefined) return;
         store.upsert({
@@ -135,7 +135,7 @@ export function createSocialRelationshipPersistence(deps: {
     deleteRelationship(channelId: string): SocialRelationshipRow | undefined {
       const r = getImpl(channelId);
       if (r === undefined) return undefined;
-      catalogDb.transaction(() => {
+      hostDb.transaction(() => {
         store.deleteRow(tenantKey, NAMESPACE_SOCIAL_RELATIONSHIP, channelId);
         principalChannelStore.deleteChannel(tenantKey, r.creatorPrincipalId, channelId);
         if (r.peerPrincipalId !== null) {

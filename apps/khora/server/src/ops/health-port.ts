@@ -1,10 +1,10 @@
 import type { Database } from "bun:sqlite";
 import type { KhoraHostHealthPort } from "@khoralabs/khora-host";
 
-export function createKhoraHostHealthPort(catalogDb: Database): KhoraHostHealthPort {
+export function createKhoraHostHealthPort(hostDb: Database): KhoraHostHealthPort {
   return {
     ping() {
-      catalogDb.query("SELECT 1").run();
+      hostDb.query("SELECT 1").run();
     },
   };
 }

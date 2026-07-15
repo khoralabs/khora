@@ -6,6 +6,7 @@ import {
   zKhoraHostSpec,
 } from "@khoralabs/khora-contracts";
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
+import { NAMESPACE_HOST_SPEC, ProjectionStore } from "@khoralabs/khora-host-sqlite";
 import {
   envHostDisplayName,
   envHostSlug,
@@ -14,8 +15,6 @@ import {
   envPublicBaseUrl,
   envRegistryUrl,
 } from "../env";
-import { NAMESPACE_HOST_SPEC } from "../persistence/id-conventions";
-import { ProjectionStore } from "../persistence/projection-store";
 
 const HOST_SPEC_ENTRY_KEY = "self";
 
@@ -28,10 +27,10 @@ function parseStored(projection: unknown): KhoraHostSpec | null {
 }
 
 export function createKhoraHostSpecPort(deps: {
-  catalogDb: Database;
+  hostDb: Database;
   tenantKey: string;
 }): KhoraHostSpecPort {
-  const store = new ProjectionStore(deps.catalogDb);
+  const store = new ProjectionStore(deps.hostDb);
 
   function readStored(): KhoraHostSpec | null {
     const { found, projection } = store.lookupProjection(

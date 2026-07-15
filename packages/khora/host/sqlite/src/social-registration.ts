@@ -8,13 +8,13 @@ import type {
 
 export function registerAgentOnPersistence(
   persistence: KhoraHostPersistence,
-  catalogDb: Database,
+  hostDb: Database,
   input: SocialRegisterAgentInput,
 ): SocialAgentIdentity {
   const username = normalizeUsername(input.username);
   const profileId = input.profileUpsert.id;
 
-  catalogDb.transaction(() => {
+  hostDb.transaction(() => {
     persistence.profiles.upsert(input.profileUpsert);
     persistence.registrations.upsert(input.principalId, profileId);
 

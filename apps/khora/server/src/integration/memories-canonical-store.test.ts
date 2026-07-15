@@ -31,9 +31,9 @@ function memoriesTest(name: string, fn: () => Promise<void>): void {
 }
 
 function setup(profile: KhoraProfile, post: KhoraPost) {
-  const catalogDb = new Database(":memory:");
-  catalogDb.run(`
-    CREATE TABLE relay_catalog_projections (
+  const hostDb = new Database(":memory:");
+  hostDb.run(`
+    CREATE TABLE khora_host_projections (
       tenant_key TEXT NOT NULL,
       namespace TEXT NOT NULL,
       entry_key TEXT NOT NULL,
@@ -42,11 +42,11 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
       PRIMARY KEY (tenant_key, namespace, entry_key)
     );
   `);
-  const upsertStmt = catalogDb.prepare(
-    `INSERT OR REPLACE INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
+  const upsertStmt = hostDb.prepare(
+    `INSERT OR REPLACE INTO khora_host_projections (tenant_key, namespace, entry_key, projection, updated_at_ms) VALUES (?, ?, ?, ?, ?)`,
   );
-  const lookupStmt = catalogDb.prepare(
-    `SELECT projection FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+  const lookupStmt = hostDb.prepare(
+    `SELECT projection FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
   );
   function upsert(tenantKey: string, ns: string, key: string, value: unknown) {
     upsertStmt.run(tenantKey, ns, key, JSON.stringify(value), Date.now());
@@ -85,9 +85,9 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
         };
       },
       deleteById: (id) => {
-        catalogDb
+        hostDb
           .prepare(
-            `DELETE FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+            `DELETE FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
           )
           .run("relay", "relay:entity:profile", id);
       },
@@ -145,9 +145,9 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
     profile,
     persistenceClient,
     removeProfile: () => {
-      catalogDb
+      hostDb
         .prepare(
-          `DELETE FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+          `DELETE FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
         )
         .run("relay", "relay:entity:profile", profile.id);
     },

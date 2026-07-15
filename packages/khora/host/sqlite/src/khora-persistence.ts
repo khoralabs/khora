@@ -9,33 +9,34 @@ import { createRegistrationAdapter } from "./registration-adapter";
 import { SocialPrincipalChannelStore } from "./social-principal-channel-store";
 import { registerAgentOnPersistence } from "./social-registration";
 import { createSocialRelationshipPersistence } from "./social-relationship-persistence";
-import { openKhoraCatalogDb } from "./sqlite-setup";
+import { openKhoraHostDb } from "./sqlite-setup";
 import { createPrincipalTeardownQueue } from "./teardown-queue";
 import { createUsernameIndex } from "./username-index";
 
-export function buildKhoraHostPersistence(
-  catalogDb: Database,
-  tenantKey = "khora",
+export function createKhoraHostSqlitePersistence(
+  hostDb: Database,
+  opts?: { tenantKey?: string },
 ): KhoraHostPersistence {
-  const projectionStore = new ProjectionStore(catalogDb);
-  const principalChannelStore = new SocialPrincipalChannelStore(catalogDb);
+  const tenantKey = opts?.tenantKey ?? "khora";
+  const projectionStore = new ProjectionStore(hostDb);
+  const principalChannelStore = new SocialPrincipalChannelStore(hostDb);
 
   const profiles = createEntityAdapter(
     projectionStore,
-    catalogDb,
+    hostDb,
     tenantKey,
     NAMESPACE_ENTITY_PROFILE,
   );
-  const registrations = createRegistrationAdapter(projectionStore, catalogDb, tenantKey);
+  const registrations = createRegistrationAdapter(projectionStore, hostDb, tenantKey);
   const social = createSocialRelationshipPersistence({
     projectionStore,
     principalChannelStore,
-    catalogDb,
+    hostDb,
     tenantKey,
   });
-  const agentAccountStatus = createAgentAccountStatusPort(catalogDb);
+  const agentAccountStatus = createAgentAccountStatusPort(hostDb);
   const usernameIndex = createUsernameIndex(projectionStore);
-  const teardownQueue = createPrincipalTeardownQueue(catalogDb);
+  const teardownQueue = createPrincipalTeardownQueue(hostDb);
 
   const persistence: KhoraHostPersistence = {
     profiles,
@@ -45,10 +46,10 @@ export function buildKhoraHostPersistence(
     usernameIndex,
     teardownQueue,
     registerAgent(input) {
-      return registerAgentOnPersistence(persistence, catalogDb, input);
+      return registerAgentOnPersistence(persistence, hostDb, input);
     },
     phase1Unregister(principalId, profileId, nowMs) {
-      catalogDb.transaction(() => {
+      hostDb.transaction(() => {
         registrations.delete(principalId, profileId);
         teardownQueue.enqueue(principalId, profileId, nowMs);
       })();
@@ -58,13 +59,14 @@ export function buildKhoraHostPersistence(
   return persistence;
 }
 
-export async function openKhoraHostPersistence(opts: {
-  catalogPath: string;
+export async function openKhoraHostSqlitePersistence(opts: {
+  hostDbPath: string;
   tenantKey?: string;
   encryptionProvider: EncryptionKeyProvider;
-}): Promise<{ persistence: KhoraHostPersistence; catalogDb: Database }> {
-  const tenantKey = opts.tenantKey ?? "khora";
-  const catalogDb = await openKhoraCatalogDb(opts.catalogPath, opts.encryptionProvider);
-  const persistence = buildKhoraHostPersistence(catalogDb, tenantKey);
-  return { persistence, catalogDb };
+}): Promise<{ persistence: KhoraHostPersistence; hostDb: Database }> {
+  const hostDb = await openKhoraHostDb(opts.hostDbPath, opts.encryptionProvider);
+  const persistence = createKhoraHostSqlitePersistence(hostDb, {
+    ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
+  });
+  return { persistence, hostDb };
 }

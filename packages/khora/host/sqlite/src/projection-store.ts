@@ -18,23 +18,23 @@ export class ProjectionStore {
 
   constructor(db: Database) {
     this.upsertStmt = db.prepare(
-      `INSERT INTO relay_catalog_projections(tenant_key, namespace, entry_key, projection, updated_at_ms)
+      `INSERT INTO khora_host_projections(tenant_key, namespace, entry_key, projection, updated_at_ms)
        VALUES (?, ?, ?, json(?), ?)
        ON CONFLICT(tenant_key, namespace, entry_key) DO UPDATE SET
          projection = excluded.projection,
          updated_at_ms = excluded.updated_at_ms`,
     );
     this.lookupStmt = db.query(
-      `SELECT projection FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+      `SELECT projection FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
     );
     this.listByPrefixStmt = db.query(
       `SELECT entry_key, projection
-       FROM relay_catalog_projections
+       FROM khora_host_projections
        WHERE tenant_key = ? AND namespace = ? AND entry_key LIKE ? ESCAPE '\\'
        ORDER BY rowid ASC`,
     );
     this.deleteStmt = db.prepare(
-      `DELETE FROM relay_catalog_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
+      `DELETE FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
     );
   }
 

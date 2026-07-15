@@ -3,7 +3,6 @@ import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistenc
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
-import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
 import type {
@@ -12,6 +11,7 @@ import type {
   KhoraHostHealthPort,
   KhoraHostSpecPort,
 } from "./ports";
+import type { KhoraRegistrationApi } from "./registration-api";
 import type {
   AgentAccountStatusPort,
   HostRuntime,
@@ -20,8 +20,8 @@ import type {
   SocialRelationshipPersistence,
 } from "./runtime";
 
-export type { KhoraHostCatalogApi } from "./catalog-facade";
 export type { KhoraMemoriesHost } from "./memories/bootstrap";
+export type { KhoraRegistrationApi } from "./registration-api";
 
 export type KhoraHostContext = {
   host: HostRuntime<KhoraProfile, KhoraHostAppEvent>;
@@ -41,4 +41,4 @@ export type KhoraHostContext = {
   agentAccountStatus: AgentAccountStatusPort;
   hostSpec: KhoraHostSpecPort;
   outboxPayloadCodec: OutboxPayloadCodec;
-} & KhoraHostCatalogApi;
+} & KhoraRegistrationApi;

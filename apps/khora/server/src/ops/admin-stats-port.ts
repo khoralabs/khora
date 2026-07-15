@@ -12,9 +12,11 @@ import type {
   KhoraAdminStatsSummary,
   KhoraColonnadeCluster,
 } from "@khoralabs/khora-host";
+import {
+  countRegisteredPrincipals,
+  NAMESPACE_REG_BY_PRINCIPAL,
+} from "@khoralabs/khora-host-sqlite";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
-import { countRegisteredPrincipals } from "../persistence/count-registered-principals";
-import { NAMESPACE_REG_BY_PRINCIPAL } from "../persistence/id-conventions";
 
 const REG_BY_PRINCIPAL = NAMESPACE_REG_BY_PRINCIPAL;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -104,10 +106,10 @@ function cellTableCounts(
   }
 }
 
-function listRegisteredPrincipalIds(catalogDb: Database, tenantKey: string): string[] {
-  const rows = catalogDb
+function listRegisteredPrincipalIds(hostDb: Database, tenantKey: string): string[] {
+  const rows = hostDb
     .prepare(
-      `SELECT entry_key FROM relay_catalog_projections
+      `SELECT entry_key FROM khora_host_projections
        WHERE tenant_key = ? AND namespace = ?`,
     )
     .all(tenantKey, REG_BY_PRINCIPAL) as { entry_key: string }[];
@@ -313,7 +315,7 @@ function clampInactiveDays(days: number | undefined): number {
 }
 
 export function createKhoraAdminStatsPort(deps: {
-  catalogDb: Database;
+  hostDb: Database;
   cellsDir: string;
   tenantKey: string;
   cellPoolCount: number;
@@ -322,7 +324,7 @@ export function createKhoraAdminStatsPort(deps: {
   sqlCipherKey: string;
 }): KhoraAdminStatsPort {
   const {
-    catalogDb,
+    hostDb,
     cellsDir,
     tenantKey,
     cellPoolCount,
@@ -332,14 +334,14 @@ export function createKhoraAdminStatsPort(deps: {
   } = deps;
 
   function inviteStats(): KhoraAdminStatsSummary["invites"] {
-    if (!tableExists(catalogDb, "khora_invite_tokens")) {
+    if (!tableExists(hostDb, "khora_invite_tokens")) {
       return { configured: false, total: 0, consumed: 0, unconsumed: 0 };
     }
     const total = (
-      catalogDb.prepare(`SELECT COUNT(*) AS c FROM khora_invite_tokens`).get() as { c: number }
+      hostDb.prepare(`SELECT COUNT(*) AS c FROM khora_invite_tokens`).get() as { c: number }
     ).c;
     const consumed = (
-      catalogDb
+      hostDb
         .prepare(`SELECT COUNT(*) AS c FROM khora_invite_tokens WHERE consumed_at_ms IS NOT NULL`)
         .get() as { c: number }
     ).c;
@@ -347,10 +349,10 @@ export function createKhoraAdminStatsPort(deps: {
   }
 
   function teardownQueueStats(): KhoraAdminStatsSummary["teardown"] {
-    if (!tableExists(catalogDb, "principal_teardown_jobs")) {
+    if (!tableExists(hostDb, "principal_teardown_jobs")) {
       return { pending: 0, running: 0, active: 0, completed: 0, failed: 0 };
     }
-    const rows = catalogDb
+    const rows = hostDb
       .prepare(`SELECT state, COUNT(*) AS c FROM principal_teardown_jobs GROUP BY state`)
       .all() as { state: string; c: number }[];
     const byState = new Map(rows.map((r) => [r.state, r.c]));
@@ -366,20 +368,20 @@ export function createKhoraAdminStatsPort(deps: {
   }
 
   function registeredUsersCount(): number {
-    return countRegisteredPrincipals(catalogDb, tenantKey);
+    return countRegisteredPrincipals(hostDb, tenantKey);
   }
 
   function catalogStats(registeredUsers: number): KhoraAdminStatsSummary["catalog"] {
     const projectionRows = (
-      catalogDb
-        .prepare(`SELECT COUNT(*) AS c FROM relay_catalog_projections WHERE tenant_key = ?`)
+      hostDb
+        .prepare(`SELECT COUNT(*) AS c FROM khora_host_projections WHERE tenant_key = ?`)
         .get(tenantKey) as { c: number }
     ).c;
-    const standingQueries = tableExists(catalogDb, "standing_queries")
+    const standingQueries = tableExists(hostDb, "standing_queries")
       ? (
-          catalogDb
-            .prepare(`SELECT COUNT(*) AS c FROM standing_queries WHERE active = 1`)
-            .get() as { c: number }
+          hostDb.prepare(`SELECT COUNT(*) AS c FROM standing_queries WHERE active = 1`).get() as {
+            c: number;
+          }
         ).c
       : 0;
     return { projectionRows, standingQueries, registeredUsers };
@@ -388,7 +390,7 @@ export function createKhoraAdminStatsPort(deps: {
   function buildCellShardsSummary(): KhoraAdminStatsSummary["cells"] {
     const homeCounts = homePrincipalCountsByCell(
       cluster,
-      listRegisteredPrincipalIds(catalogDb, tenantKey),
+      listRegisteredPrincipalIds(hostDb, tenantKey),
     );
     const shards = Array.from({ length: cellPoolCount }, (_, i) => {
       const cellId = poolShardCellId(i);
@@ -412,7 +414,7 @@ export function createKhoraAdminStatsPort(deps: {
 
     summary(): KhoraAdminStatsSummary {
       const registeredUsers = registeredUsersCount();
-      const principalIds = listRegisteredPrincipalIds(catalogDb, tenantKey);
+      const principalIds = listRegisteredPrincipalIds(hostDb, tenantKey);
       const nowMs = Date.now();
       const weekStart = nowMs - WEEK_MS;
       const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellPoolCount);
@@ -441,7 +443,7 @@ export function createKhoraAdminStatsPort(deps: {
       const fileSizeBytes = provisioned ? statSync(path).size : null;
       const homeCounts = homePrincipalCountsByCell(
         cluster,
-        listRegisteredPrincipalIds(catalogDb, tenantKey),
+        listRegisteredPrincipalIds(hostDb, tenantKey),
       );
       const homePrincipals = homeCounts.get(cellId) ?? 0;
       const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
@@ -514,9 +516,9 @@ export function createKhoraAdminStatsPort(deps: {
     },
 
     principalDetail(did: string): KhoraAdminPrincipalDetailResult {
-      const reg = catalogDb
+      const reg = hostDb
         .prepare(
-          `SELECT projection FROM relay_catalog_projections
+          `SELECT projection FROM khora_host_projections
            WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
         )
         .get(tenantKey, REG_BY_PRINCIPAL, did) as { projection: string } | undefined;
@@ -526,9 +528,9 @@ export function createKhoraAdminStatsPort(deps: {
       const username = lookupNormalizedUsernameForPrincipal(did);
       const cellId = cluster.assignPrincipalToCell(did);
       const outboxCount = countOutboxForPrincipal(cellsDir, cellId, tenantKey, did, sqlCipherKey);
-      const subscriptionCount = tableExists(catalogDb, "standing_queries")
+      const subscriptionCount = tableExists(hostDb, "standing_queries")
         ? (
-            catalogDb
+            hostDb
               .prepare(
                 `SELECT COUNT(*) AS c FROM standing_queries
                  WHERE owner_id = ? AND active = 1`,
@@ -536,9 +538,9 @@ export function createKhoraAdminStatsPort(deps: {
               .get(did) as { c: number }
           ).c
         : 0;
-      const accountStatus = tableExists(catalogDb, "agent_account_status")
+      const accountStatus = tableExists(hostDb, "agent_account_status")
         ? (
-            catalogDb.prepare(`SELECT status FROM agent_account_status WHERE did = ?`).get(did) as
+            hostDb.prepare(`SELECT status FROM agent_account_status WHERE did = ?`).get(did) as
               | { status: "suspended" | "deleted" }
               | undefined
           )?.status
@@ -556,7 +558,7 @@ export function createKhoraAdminStatsPort(deps: {
     inactiveMembers(opts?: { inactiveDays?: number }): KhoraAdminInactiveMembersResult {
       const inactiveDays = clampInactiveDays(opts?.inactiveDays);
       const asOfMs = Date.now();
-      const principalIds = listRegisteredPrincipalIds(catalogDb, tenantKey);
+      const principalIds = listRegisteredPrincipalIds(hostDb, tenantKey);
       const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellPoolCount);
       return buildInactiveMembers(
         principalIds,

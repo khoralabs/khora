@@ -41,11 +41,11 @@ const appRoot = path.resolve(import.meta.dir, "..");
 validateEnv(appRoot);
 
 const persistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
-const { catalogPath, cellsDir, dataDir } = persistencePaths;
+const { hostDbPath, cellsDir, dataDir } = persistencePaths;
 const cellPoolCount = envCellPoolCount();
 const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
 mkdirSync(dataDir, { recursive: true });
-mkdirSync(dirname(catalogPath), { recursive: true });
+mkdirSync(dirname(hostDbPath), { recursive: true });
 mkdirSync(cellsDir, { recursive: true });
 if (memoriesConfig !== undefined) {
   mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
@@ -54,7 +54,7 @@ if (memoriesConfig !== undefined) {
 const tenantKey = envTenantKey();
 const encryption = await bootstrapKhoraEncryption();
 const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
-  catalogPath,
+  hostDbPath,
   cellsDir,
   cellPoolCount,
   useCellWorkers: envColonnadeUseCellWorkers(),
