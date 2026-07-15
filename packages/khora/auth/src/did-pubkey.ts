@@ -1,4 +1,4 @@
-import { ed25519PublicKeyBytesFromDid } from "@khoralabs/relay-crypto";
+import { ed25519PublicKeyBytesFromDid } from "./did";
 
 import { AuthStrategyError } from "./strategy";
 

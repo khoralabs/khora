@@ -10,4 +10,4 @@ export {
   parseAgentRequestEnvelopeFromSearch,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
-} from "@khoralabs/relay-contracts";
+} from "./auth-wire";

@@ -18,10 +18,9 @@
   "dependencies": {
     "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-contracts": "workspace:*",
-    "@khoralabs/relay-client": "workspace:*",
-    "@khoralabs/relay-contracts": "workspace:*",
-    "@khoralabs/relay-crypto": "workspace:*",
-    "@noble/ed25519": "^3.1.0"
+    "@noble/ed25519": "^3.1.0",
+    "@scure/base": "^1.2.6",
+    "lru-cache": "^11.5.1"
   },
   "devDependencies": {
     "@types/bun": "latest",
