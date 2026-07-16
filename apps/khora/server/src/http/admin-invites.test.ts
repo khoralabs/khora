@@ -3,10 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-invites-sqlite";
-import {
-  type HostRouteDeps,
-  handleAdminInvitesMint,
-} from "@khoralabs/khora-server-http";
+import { type HostRouteDeps, handleAdminInvitesMint } from "@khoralabs/khora-server-http";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 const INVITE_PEPPER = "test-invite-pepper-32chars-xxxx";
@@ -50,7 +47,7 @@ describe("admin invites mint", () => {
     expect(body.ok).toBe(true);
     expect(body.tokens).toHaveLength(1);
     expect(typeof body.tokens[0]).toBe("string");
-    expect(body.tokens[0]!.length).toBeGreaterThan(0);
+    expect(body.tokens[0]?.length).toBeGreaterThan(0);
   });
 
   test("POST /admin/api/invites/mint rejects missing auth", async () => {
