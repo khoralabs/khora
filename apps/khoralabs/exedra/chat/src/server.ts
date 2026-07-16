@@ -1,12 +1,23 @@
+import { chatHttpPort } from "@khoralabs/chat-http";
+import {
+  createChatRoutesWithParams,
+  dispatchChatRoute,
+  requireInternalToken,
+} from "@khoralabs/chat-http/routes";
+import {
+  getChatService,
+  initChatStorage,
+  subscribeToChatThread,
+} from "@khoralabs/chat-http/service";
 import { type ServerWebSocket, serve } from "bun";
-import { chatInternalToken } from "./config";
-import { createChatRoutesWithParams, dispatchChatRoute, requireInternalToken } from "./routes";
-import { getChatService, initChatStorage, subscribeToChatThread } from "./service";
 
+import { applyExedraChatEnv, chatInternalToken } from "./config";
+
+applyExedraChatEnv();
 const token = chatInternalToken();
 await initChatStorage();
 const routes = createChatRoutesWithParams(getChatService(), token);
-const port = Number(process.env.PORT?.trim() || "3002");
+const port = chatHttpPort();
 
 type WsData = {
   threadId: string;
@@ -43,4 +54,4 @@ serve<WsData>({
   },
 });
 
-console.log(`chat service listening on ${port}`);
+console.log(`exedra chat service listening on ${port}`);

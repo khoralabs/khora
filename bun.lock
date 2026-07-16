@@ -269,6 +269,7 @@
       "name": "@khoralabs/exedra-chat",
       "dependencies": {
         "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-http": "workspace:*",
         "@khoralabs/chat-persistence-turso": "workspace:*",
         "ai": "^5.0.0",
       },
@@ -489,7 +490,7 @@
     },
     "packages/khora/client": {
       "name": "@khoralabs/khora-client",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
@@ -950,6 +951,23 @@
         "@types/bun": "latest",
         "@types/react": "^19",
         "@types/react-dom": "^19",
+      },
+    },
+    "vendor/chat/http": {
+      "name": "@khoralabs/chat-http",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence-turso": "workspace:*",
+        "ai": "^7.0.9",
+      },
+      "devDependencies": {
+        "@khoralabs/chat-persistence": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
       },
     },
     "vendor/chat/persistence": {
@@ -1849,6 +1867,8 @@
     "@khoralabs/chat-core": ["@khoralabs/chat-core@workspace:vendor/chat/core"],
 
     "@khoralabs/chat-example": ["@khoralabs/chat-example@workspace:vendor/chat/example"],
+
+    "@khoralabs/chat-http": ["@khoralabs/chat-http@workspace:vendor/chat/http"],
 
     "@khoralabs/chat-persistence": ["@khoralabs/chat-persistence@workspace:vendor/chat/persistence"],
 

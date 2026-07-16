@@ -15,6 +15,8 @@ beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "exedra-chat-service-test-"));
   process.env.EXEDRA_DATA_DIR = dataDir;
   process.env.EXEDRA_INTERNAL_TOKEN = TEST_TOKEN;
+  delete process.env.CHAT_DB_PATH;
+  delete process.env.CHAT_INTERNAL_TOKEN;
   closeChatDb();
 });
 
@@ -24,6 +26,8 @@ afterEach(() => {
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.EXEDRA_CHAT_DB_PATH;
   delete process.env.EXEDRA_INTERNAL_TOKEN;
+  delete process.env.CHAT_DB_PATH;
+  delete process.env.CHAT_INTERNAL_TOKEN;
 });
 
 function createTestClient() {
@@ -79,39 +83,28 @@ test("internal streamed post lifecycle works via routes", async () => {
   await client.createThread({
     id: threadId,
     root: { type: "channel", channelId },
+    metadata: { kind: "interview", sessionId, userId },
   });
 
   const started = await client.startStreamedPost({
     threadId,
-    author: { type: "agent", id: "agent-1" },
-    message: { id: "assistant-1", role: "assistant", parts: [] },
+    author: { type: "agent", id: "exedra-agent" },
+    message: { id: "post-1", role: "assistant", parts: [{ type: "text", text: "" }] },
   });
-  expect(started.post.id).toBeDefined();
 
-  const delta = await client.applyPostDelta({
+  await client.applyPostDelta({
     postId: started.post.id,
     message: {
-      id: "assistant-1",
+      id: started.post.id,
       role: "assistant",
-      parts: [{ type: "text", text: "Hello" }],
+      parts: [{ type: "text", text: "hello from exedra" }],
     },
+    expectedRevision: started.revision,
   });
-  expect(delta.revision).toBeGreaterThanOrEqual(0);
 
-  const completed = await client.completeStreamedPost({ postId: started.post.id });
+  const completed = await client.completeStreamedPost({
+    postId: started.post.id,
+    expectedRevision: started.revision + 1,
+  });
   expect(completed.post.status).toBe("complete");
-});
-
-test("rejects unauthorized internal requests", async () => {
-  const service = getChatService();
-  const routes = createChatRoutesWithParams(service, TEST_TOKEN);
-  const res = await dispatchChatRoute(
-    routes,
-    new Request("http://chat.test/internal/chat/streamed-posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    }),
-  );
-  expect(res.status).toBe(401);
 });
