@@ -45,7 +45,6 @@
     "vendor/chat/*/**",
     "packages/khora/*/**",
     "packages/registry/*/**",
-    "packages/colonnade/*/**",
     "vendor/*/**",
     "vendor/memories/packages/*/**",
     "vendor/memories/packages/memories-service/*/**",
