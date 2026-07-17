@@ -11,7 +11,7 @@ describe("server release tarball helpers", () => {
     expect(serverReleaseTagForVersion("1.2.3")).toBe("khora-server-v1.2.3");
     expect(serverTarballFilename("darwin-arm64")).toBe("khora-server-darwin-arm64.tar.gz");
     expect(serverTarballDownloadUrl("1.2.3", "darwin-arm64")).toBe(
-      "https://github.com/khoralabs/khora/releases/download/khora-server-v1.2.3/khora-server-darwin-arm64.tar.gz",
+      "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v1.2.3/khora-server-darwin-arm64.tar.gz",
     );
   });
 });
@@ -26,6 +26,8 @@ describe("renderKhoraServerFormula", () => {
     });
     expect(body).toContain('version "0.2.0"');
     expect(body).toContain("khora-server-v0.2.0/khora-server-darwin-arm64.tar.gz");
+    expect(body).toContain("khoralabs/homebrew-tap");
+    expect(body).toContain('homepage "https://github.com/khoralabs/homebrew-tap"');
     expect(body).toContain('sha256 "abc123"');
     expect(body).toContain('depends_on "sqlcipher"');
     expect(body).toContain('depends_on "sqlite"');

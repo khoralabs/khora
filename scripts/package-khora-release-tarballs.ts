@@ -25,7 +25,8 @@ export type ReleaseTarballManifest = {
   tarballs: ReleaseTarball[];
 };
 
-export const KHORA_RELEASE_REPO = "khoralabs/khora";
+/** Public GitHub Releases host (private source builds upload assets here). */
+export const KHORA_RELEASE_REPO = "khoralabs/homebrew-tap";
 
 export function releaseTagForVersion(version: string): string {
   return `khora-cli-v${version}`;

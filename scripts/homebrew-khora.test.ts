@@ -11,7 +11,7 @@ describe("release tarball helpers", () => {
     expect(releaseTagForVersion("1.2.3")).toBe("khora-cli-v1.2.3");
     expect(tarballFilename("darwin-arm64")).toBe("khora-darwin-arm64.tar.gz");
     expect(tarballDownloadUrl("1.2.3", "darwin-arm64")).toBe(
-      "https://github.com/khoralabs/khora/releases/download/khora-cli-v1.2.3/khora-darwin-arm64.tar.gz",
+      "https://github.com/khoralabs/homebrew-tap/releases/download/khora-cli-v1.2.3/khora-darwin-arm64.tar.gz",
     );
   });
 });
@@ -24,6 +24,8 @@ describe("renderKhoraFormula", () => {
     });
     expect(body).toContain('version "0.2.0"');
     expect(body).toContain("khora-cli-v0.2.0/khora-darwin-arm64.tar.gz");
+    expect(body).toContain("khoralabs/homebrew-tap");
+    expect(body).toContain('homepage "https://github.com/khoralabs/homebrew-tap"');
     expect(body).toContain('sha256 "abc123"');
     expect(body).toContain('system bin/"khora", "setup"');
     expect(body).toContain("on_arm");

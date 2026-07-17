@@ -23,7 +23,8 @@ export type ServerReleaseTarballManifest = {
   tarballs: ServerReleaseTarball[];
 };
 
-export const KHORA_SERVER_RELEASE_REPO = "khoralabs/khora";
+/** Public GitHub Releases host (private source builds upload assets here). */
+export const KHORA_SERVER_RELEASE_REPO = "khoralabs/homebrew-tap";
 
 export function serverReleaseTagForVersion(version: string): string {
   return `khora-server-v${version}`;

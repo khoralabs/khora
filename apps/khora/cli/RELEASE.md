@@ -92,7 +92,7 @@ Before publish, CI smoke-tests each compiled binary (`scripts/verify-khora-relea
 
 ## GitHub release tarballs + Homebrew
 
-After staging, CI runs `scripts/package-khora-release-tarballs.ts` to produce `apps/khora/release/tarballs/khora-<platform>.tar.gz` (CLI + daemon + configs + schema). Assets upload to GitHub Releases under tag `khora-cli-v<semver>`.
+After staging, CI runs `scripts/package-khora-release-tarballs.ts` to produce `apps/khora/release/tarballs/khora-<platform>.tar.gz` (CLI + daemon + configs + schema). Assets upload to the **public** [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) Releases under tag `khora-cli-v<semver>` (source builds remain in the private repo).
 
 The Homebrew formula lives in [`homebrew-tap/Formula/khora.rb`](../../../homebrew-tap/Formula/khora.rb). Release CI rewrites it via `scripts/bump-homebrew-khora-formula.ts` and pushes to [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) when `HOMEBREW_TAP_TOKEN` is set.
 

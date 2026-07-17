@@ -23,18 +23,20 @@ README.md
 ### Install (curl)
 
 ```bash
-# Example — pick the asset matching your OS/arch from the GitHub release
+# Example — pick the asset matching your OS/arch from the public release
 VERSION=0.1.0
 SLUG=darwin-arm64   # or linux-x64 / linux-arm64
-curl -fsSL "https://github.com/khoralabs/khora/releases/download/khora-server-v${VERSION}/khora-server-${SLUG}.tar.gz" \
+curl -fsSL "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v${VERSION}/khora-server-${SLUG}.tar.gz" \
   | tar -xz -C /usr/local
 ```
 
-Or use the helper:
+Or use the helper (hosted on the public tap):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/khoralabs/khora/main/apps/khora/server/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/khoralabs/homebrew-tap/main/scripts/install-khora-server.sh | bash
 ```
+
+Release assets are published to [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap/releases) (the source repo is private).
 
 ### Install (Homebrew)
 

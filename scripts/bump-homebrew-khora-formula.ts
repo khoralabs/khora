@@ -20,13 +20,16 @@ export const HOMEBREW_TAP_REPO = "khoralabs/homebrew-tap";
 export function renderKhoraFormula(opts: {
   version: string;
   darwinArm64Sha256: string;
+  /** Release-asset repo (defaults to public tap). */
   repo?: string;
+  homepage?: string;
 }): string {
   const repo = opts.repo ?? KHORA_RELEASE_REPO;
+  const homepage = opts.homepage ?? `https://github.com/${HOMEBREW_TAP_REPO}`;
   const url = tarballDownloadUrl(opts.version, "darwin-arm64", repo);
   return `class Khora < Formula
   desc "CLI for the Khora agent host"
-  homepage "https://github.com/${repo}"
+  homepage "${homepage}"
   version "${opts.version}"
   license "MIT"
 

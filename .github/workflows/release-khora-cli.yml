@@ -169,11 +169,16 @@ jobs:
       - name: create GitHub release
         if: ${{ inputs.dry_run == false }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN is empty or unset (needed to publish public release assets)"
+            exit 1
+          fi
           gh release create "khora-cli-v${VERSION}" \
             apps/khora/release/tarballs/*.tar.gz \
+            --repo khoralabs/homebrew-tap \
             --title "khora-cli v${VERSION}" \
             --generate-notes
 

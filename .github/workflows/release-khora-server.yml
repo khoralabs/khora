@@ -82,11 +82,16 @@ jobs:
       - name: create GitHub release
         if: ${{ inputs.dry_run == false }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN is empty or unset (needed to publish public release assets)"
+            exit 1
+          fi
           gh release create "khora-server-v${VERSION}" \
             apps/khora/release/server-tarballs/*.tar.gz \
+            --repo khoralabs/homebrew-tap \
             --title "khora-server v${VERSION}" \
             --generate-notes
 
@@ -101,6 +106,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add homebrew-tap/Formula/khora-server.rb
+          git add homebrew-tap/Formula/khora-server.rb homebrew-tap/scripts/install-khora-server.sh
           git diff --staged --quiet || git commit -m "chore(homebrew): khora-server@${VERSION}"
           HUSKY=0 git push origin HEAD
