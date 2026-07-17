@@ -42,12 +42,13 @@ docker run --rm -p 4000:4000 \
 |-----|---------|-------------|
 | `INSTALL_LITESTREAM` | `1` | Download Litestream binary into `.bin/` (set `0` for faster dev builds) |
 
-Use `DOCKER_BUILDKIT=0` if Colima lacks buildx.
+Use `DOCKER_BUILDKIT=0` if your Docker daemon lacks buildx.
 
-## Local smoke test (Colima)
+## Local smoke test
+
+Requires a running Docker daemon. From the repo root:
 
 ```bash
-colima start --cpu 4 --memory 8
-./scripts/docker-smoke-colima.sh          # INSTALL_LITESTREAM=0 by default in script
-SKIP_BUILD=1 ./scripts/docker-smoke-colima.sh   # re-run health checks only
+./scripts/docker-smoke.sh          # INSTALL_LITESTREAM=0 by default in script
+SKIP_BUILD=1 ./scripts/docker-smoke.sh   # re-run health checks only
 ```

@@ -1,0 +1,106 @@
+name: release khora-server
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver to publish (e.g. 0.1.0)"
+        required: true
+        type: string
+      dry_run:
+        description: "Build and verify only; skip GitHub release / Homebrew bump"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: init submodules
+        env:
+          TOKEN: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::KHORALABS_SUBMODULES_TOKEN secret is empty or unset"
+            exit 1
+          fi
+          sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+      - name: verify submodules
+        run: |
+          set -euo pipefail
+          test -f vendor/memories/package.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: install
+        run: bun install --frozen-lockfile
+
+      - name: test packaging helpers
+        run: bun test scripts/homebrew-khora-server.test.ts
+
+      - name: install system sqlite libs (smoke host)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libsqlcipher1 libsqlite3-0
+
+      - name: cross-compile server binaries
+        run: |
+          set -euo pipefail
+          for slug in darwin-arm64 linux-x64 linux-arm64; do
+            echo "::group::server bun-$slug"
+            bun run apps/khora/server/scripts/build.ts "bun-$slug"
+            echo "::endgroup::"
+          done
+
+      - name: stage server packages
+        run: bun run scripts/stage-khora-server-release.ts "$VERSION"
+
+      - name: smoke-test compiled binaries
+        run: bun run scripts/verify-khora-server-release-binaries.ts
+
+      - name: package server tarballs
+        run: bun run scripts/package-khora-server-release-tarballs.ts "$VERSION"
+
+      - name: create GitHub release
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create "khora-server-v${VERSION}" \
+            apps/khora/release/server-tarballs/*.tar.gz \
+            --title "khora-server v${VERSION}" \
+            --generate-notes
+
+      - name: bump homebrew formula
+        if: ${{ inputs.dry_run == false }}
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: bun run scripts/bump-homebrew-khora-server-formula.ts "$VERSION"
+
+      - name: commit homebrew formula
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add homebrew-tap/Formula/khora-server.rb
+          git diff --staged --quiet || git commit -m "chore(homebrew): khora-server@${VERSION}"
+          HUSKY=0 git push origin HEAD

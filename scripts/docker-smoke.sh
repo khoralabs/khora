@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Build and smoke-test Khora registry + server images via Colima (linux/amd64).
+# Build and smoke-test Khora registry + server images (linux/amd64).
+# Requires a working Docker daemon (Docker Desktop, Colima, etc.).
 #
 # Usage (from repo root):
-#   ./scripts/docker-smoke-colima.sh              # build + smoke
-#   SKIP_BUILD=1 ./scripts/docker-smoke-colima.sh # smoke only (images already built)
-#   BUILD_ONLY=1 ./scripts/docker-smoke-colima.sh # build only
+#   ./scripts/docker-smoke.sh              # build + smoke
+#   SKIP_BUILD=1 ./scripts/docker-smoke.sh # smoke only (images already built)
+#   BUILD_ONLY=1 ./scripts/docker-smoke.sh # build only
 #
 # Faster local builds (skip Litestream download; not needed for /health smoke):
-#   INSTALL_LITESTREAM=0 ./scripts/docker-smoke-colima.sh
+#   INSTALL_LITESTREAM=0 ./scripts/docker-smoke.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -55,7 +56,7 @@ wait_for_health() {
 
 echo "==> Docker daemon"
 if ! docker info >/dev/null 2>&1; then
-  echo "Docker not reachable. Start Colima: colima start --cpu 4 --memory 8" >&2
+  echo "Docker not reachable. Start your Docker daemon and retry." >&2
   exit 1
 fi
 

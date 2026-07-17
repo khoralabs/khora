@@ -1,5 +1,5 @@
-import path from "node:path";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
+import { resolvePersistenceCwd } from "./packaged-runtime";
 import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
 
 /**
@@ -10,8 +10,7 @@ let cachedPersistencePaths: KhoraPersistencePaths | undefined;
 
 function persistencePaths(): KhoraPersistencePaths {
   if (cachedPersistencePaths === undefined) {
-    const appRoot = path.resolve(import.meta.dir, "..");
-    cachedPersistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
+    cachedPersistencePaths = resolveKhoraPersistencePaths(process.env, resolvePersistenceCwd());
   }
   return cachedPersistencePaths;
 }

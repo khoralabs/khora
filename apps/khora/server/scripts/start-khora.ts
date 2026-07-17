@@ -1,6 +1,6 @@
 /**
- * When KHORA_LITESTREAM is set, runs Litestream (data-dir *.sqlite + cells/) then the Bun server.
- * Otherwise runs the server only.
+ * Production launcher: optional Litestream sidecar, then the HTTP server in-process.
+ * Compiled entry for `khora-server` release binaries (`bun build --compile`).
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -15,107 +15,122 @@ import {
 } from "../../../../scripts/litestream-config";
 import { resolveKhoraPersistencePaths, validateEnv } from "../src/env";
 import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env";
+import {
+  applyPackagedRuntimeDefaults,
+  isKhoraPackaged,
+  resolvePackageRoot,
+  resolvePersistenceCwd,
+} from "../src/packaged-runtime";
 
-const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
-const indexEntry = path.join(serverRoot, "src", "index.ts");
-const serverEnv = buildOtelServerEnv({ defaultServiceName: "khora-server" });
+applyPackagedRuntimeDefaults();
 
-async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(["bun", "run", indexEntry], {
-    cwd: serverRoot,
-    stdio: ["inherit", "inherit", "inherit"],
-    env: serverEnv,
-  });
-  await proc.exited;
-  process.exit(proc.exitCode === 0 ? 0 : (proc.exitCode ?? 1));
+const otelEnv = buildOtelServerEnv({ defaultServiceName: "khora-server" });
+for (const [key, value] of Object.entries(otelEnv)) {
+  process.env[key] = value;
 }
 
-async function runWithLitestream(): Promise<void> {
-  const s3 = readLitestreamS3Env("khora/litestream");
-  assertLitestreamCredentials(s3);
-  validateEnv();
+const serverRoot = isKhoraPackaged() ? resolvePackageRoot() : resolvePersistenceCwd();
 
-  const persistencePaths = resolveKhoraPersistencePaths(process.env, serverRoot);
-  const dataDirAbs = path.resolve(process.cwd(), persistencePaths.dataDir);
-  const cellsAbs = path.resolve(process.cwd(), persistencePaths.cellsDir);
+async function ensurePersistenceDirs(): Promise<void> {
+  validateEnv(resolvePersistenceCwd());
+  const persistencePaths = resolveKhoraPersistencePaths(process.env, resolvePersistenceCwd());
+  const dataDirAbs = persistencePaths.dataDir;
+  const cellsAbs = persistencePaths.cellsDir;
 
   mkdirSync(dataDirAbs, { recursive: true });
-  mkdirSync(path.dirname(path.resolve(process.cwd(), persistencePaths.hostDbPath)), {
-    recursive: true,
-  });
-  mkdirSync(path.dirname(path.resolve(process.cwd(), persistencePaths.authNoncesDbPath)), {
-    recursive: true,
-  });
-  mkdirSync(path.dirname(path.resolve(process.cwd(), persistencePaths.percolatorDbPath)), {
-    recursive: true,
-  });
+  mkdirSync(path.dirname(persistencePaths.hostDbPath), { recursive: true });
+  mkdirSync(path.dirname(persistencePaths.authNoncesDbPath), { recursive: true });
+  mkdirSync(path.dirname(persistencePaths.percolatorDbPath), { recursive: true });
   mkdirSync(cellsAbs, { recursive: true });
   if (envMemoriesEnabled()) {
     const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
     if (memoriesConfig === undefined) {
       throw new Error("KHORA_MEMORIES_DB_PATH is required when KHORA_MEMORIES_ENABLED is true");
     }
-    mkdirSync(path.dirname(path.resolve(process.cwd(), memoriesConfig.dbPath)), {
-      recursive: true,
-    });
+    mkdirSync(path.dirname(memoriesConfig.dbPath), { recursive: true });
   }
+}
 
+async function startLitestream(): Promise<{
+  kill: (sig?: NodeJS.Signals) => void;
+  exited: Promise<number>;
+}> {
+  const s3 = readLitestreamS3Env("khora/litestream");
+  assertLitestreamCredentials(s3);
+  await ensurePersistenceDirs();
+
+  const persistencePaths = resolveKhoraPersistencePaths(process.env, resolvePersistenceCwd());
   const litestreamBin = resolveLitestreamBin(serverRoot);
   const configPath = path.join(tmpdir(), `litestream-khora-${process.pid}.yml`);
-  // Watch the data dir for *.sqlite (host / auth nonces / percolator / memories).
-  // Cells remain a nested dir scan — Litestream dir entries are non-recursive.
   const yaml = buildLitestreamYaml({
     ...s3,
     dbs: [
-      { kind: "dir", dir: dataDirAbs, pattern: "*.sqlite", watch: true, replicaSuffix: "data" },
-      { kind: "dir", dir: cellsAbs, pattern: "*.sqlite", watch: true, replicaSuffix: "cells" },
+      {
+        kind: "dir",
+        dir: persistencePaths.dataDir,
+        pattern: "*.sqlite",
+        watch: true,
+        replicaSuffix: "data",
+      },
+      {
+        kind: "dir",
+        dir: persistencePaths.cellsDir,
+        pattern: "*.sqlite",
+        watch: true,
+        replicaSuffix: "cells",
+      },
     ],
   });
   writeFileSync(configPath, yaml, "utf8");
 
   const lsProc = Bun.spawn([litestreamBin, "replicate", "-config", configPath], {
-    cwd: serverRoot,
+    cwd: resolvePersistenceCwd(),
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(["bun", "run", indexEntry], {
-    cwd: serverRoot,
-    stdio: ["inherit", "inherit", "inherit"],
-    env: serverEnv,
-  });
-
-  for (const sig of ["SIGINT", "SIGTERM"] as const) {
-    process.on(sig, () => {
+  return {
+    kill(sig: NodeJS.Signals = "SIGTERM") {
       try {
-        srvProc.kill(sig);
+        lsProc.kill(sig);
       } catch {
         /* ignore */
       }
+      try {
+        rmSync(configPath);
+      } catch {
+        /* ignore */
+      }
+    },
+    exited: lsProc.exited.then((code) => code ?? 1),
+  };
+}
+
+async function main(): Promise<void> {
+  let litestream: Awaited<ReturnType<typeof startLitestream>> | undefined;
+  if (isTruthyEnv(process.env.KHORA_LITESTREAM)) {
+    litestream = await startLitestream();
+  }
+
+  for (const sig of ["SIGINT", "SIGTERM"] as const) {
+    process.on(sig, () => {
+      litestream?.kill(sig);
     });
   }
 
-  await srvProc.exited;
-  const code = srvProc.exitCode ?? 1;
-
   try {
-    lsProc.kill("SIGTERM");
-    await lsProc.exited;
-  } catch {
-    /* ignore */
+    const { runHttpServer } = await import("../src/run-http-server");
+    await runHttpServer();
+  } finally {
+    litestream?.kill("SIGTERM");
+    if (litestream !== undefined) {
+      try {
+        await litestream.exited;
+      } catch {
+        /* ignore */
+      }
+    }
   }
-
-  try {
-    rmSync(configPath);
-  } catch {
-    /* ignore */
-  }
-
-  process.exit(code === 0 ? 0 : code);
 }
 
-if (isTruthyEnv(process.env.KHORA_LITESTREAM)) {
-  await runWithLitestream();
-} else {
-  await runServerOnly();
-}
+await main();

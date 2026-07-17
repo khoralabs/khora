@@ -2,6 +2,8 @@
 
 Build context is the **repository root**.
 
+For non-Docker installs (tarball / Homebrew), see [DISTRIBUTION.md](./DISTRIBUTION.md).
+
 ## Build
 
 ```bash
@@ -66,12 +68,13 @@ Memories (sqlite-vec) is **on** by default. Disable with `KHORA_MEMORIES=0`.
 |-----|---------|-------------|
 | `INSTALL_LITESTREAM` | `1` | Download Litestream binary (set `0` for faster dev builds) |
 
-Use `DOCKER_BUILDKIT=0` if Colima lacks buildx.
+Use `DOCKER_BUILDKIT=0` if your Docker daemon lacks buildx.
 
-## Local smoke test (Colima)
+## Local smoke test
+
+Requires a running Docker daemon. From the repo root:
 
 ```bash
-colima start --cpu 4 --memory 8
-./scripts/docker-smoke-colima.sh
-SKIP_BUILD=1 ./scripts/docker-smoke-colima.sh
+./scripts/docker-smoke.sh
+SKIP_BUILD=1 ./scripts/docker-smoke.sh
 ```
