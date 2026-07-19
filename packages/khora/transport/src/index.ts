@@ -28,8 +28,12 @@ export type { ConnectInboxOptions, InboxWsHandlers } from "./inbox-connect";
 export { connectInbox } from "./inbox-connect";
 export type {
   InboxNotificationRow,
+  InboxWsBindErrorMessage,
+  InboxWsBoundMessage,
   InboxWsDrainMessage,
+  InboxWsHelloMessage,
   InboxWsNotificationMessage,
+  InboxWsServerMessage,
   InboxWsSnapshotMessage,
 } from "./inbox-ws";
 export { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws";

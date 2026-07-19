@@ -145,15 +145,11 @@ async function settleDuplexUnixSession(
 ): Promise<void> {
   const st = socket.data.state;
   if (st.tag !== "session") return;
-  const { handshake, bridge } = st;
+  const { bridge } = st;
 
   const { dispose } = await attachInboxDuplexAfterAuth({
     deps,
     duplex: bridge.duplex,
-    did: handshake.did,
-    ts: handshake.ts,
-    nonce: handshake.nonce,
-    sig: handshake.sig,
   });
   st.dispose = dispose;
 }

@@ -9,6 +9,8 @@ export type V2HostRateLimiters = {
   topicsDid: RateLimiter;
   profileDid: RateLimiter;
   inboxDid: RateLimiter;
+  inboxBindDid: RateLimiter;
+  inboxUnboundIp: RateLimiter;
   defaultIp: RateLimiter;
   invitePreviewIp: RateLimiter;
   invitesListDid: RateLimiter;
@@ -30,6 +32,12 @@ export function createV2HostRateLimiters(): V2HostRateLimiters {
       envRatePerMinute(process.env.KHORA_RL_PROFILE_PATCH_PER_MIN_PER_DID, 60),
     ),
     inboxDid: createRateLimiter(envRatePerMinute(process.env.KHORA_RL_INBOX_PER_MIN_PER_DID, 120)),
+    inboxBindDid: createRateLimiter(
+      envRatePerMinute(process.env.KHORA_RL_INBOX_BIND_PER_MIN_PER_DID, 60),
+    ),
+    inboxUnboundIp: createRateLimiter(
+      envRatePerMinute(process.env.KHORA_RL_INBOX_UNBOUND_PER_MIN_PER_IP, 60),
+    ),
     defaultIp: createRateLimiter(
       envRatePerMinute(process.env.KHORA_RL_DEFAULT_PER_MIN_PER_IP, 900),
     ),

@@ -142,15 +142,17 @@ Push delivery requires **both**: a standing query match AND visibility permissio
 
 | Endpoint | Auth |
 |----------|------|
-| `GET /v1/inbox/ws` | Signed URL (`did`, `ts`, `nonce`, `sig`) |
+| `GET /v1/inbox/ws` | Unsigned upgrade; multiplex `bind` with per-DID `signInboxBind(connection_id)` |
 
-The socket delivers:
+After upgrade the server sends `hello` (`connection_id`). The client binds one or more principals. The socket then delivers:
 
 | Frame | Meaning |
 |-------|---------|
-| `snapshot` | Buffered server notifications for this principal |
-| `notification` | Live event (`inbox_post`, `connection_request`, …; target: `negotiation_invite`) |
-| `drain` | Batch of resolved inbox items (pointer → outbox bytes or inline JSON) |
+| `hello` | Server-issued `connection_id` for bind signatures |
+| `bound` / `bind_error` | Per-DID bind result |
+| `snapshot` | Buffered server notifications for a bound principal (`did` tagged) |
+| `notification` | Live event (`inbox_post`, …; `did` tagged) |
+| `drain` | Batch of resolved inbox items for a bound principal (`did` tagged) |
 
 For post fan-out, notifications include `postId`, `authorPrincipalId`, `subscriptionMatches` (`subscriptionId` + `score`). The client (or daemon) drains the cell inbox, verifies content hashes, and resolves the post JSON from the author's outbox; use `listAuthorSubscriptions()` or `getPost(subscriptionId)` to resolve subscription details.
 

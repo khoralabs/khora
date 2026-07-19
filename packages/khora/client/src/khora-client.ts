@@ -210,11 +210,14 @@ export class KhoraClient {
     return httpSearchPost(this.transport, body);
   }
 
-  connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {
+  connectInbox(
+    handlers: InboxWsHandlers,
+    signers?: readonly RelaySigner[],
+  ): Promise<{ close(): void }> {
     return this.duplex.connectInbox(
       {
         base: this.transport.base,
-        signer: this.transport.signer,
+        signers: signers ?? [this.transport.signer],
         now: this.transport.now,
         nonce: this.transport.nonce,
         WebSocketCtor: this.WebSocketCtor,

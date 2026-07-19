@@ -13,7 +13,11 @@ export {
 export {
   createInboxWsHub,
   deliverNotification,
+  handleInboxClientMessage,
+  helloFrame,
+  type InboxMultiplexWsData,
   inboxWebSocketFromDuplexUtf8,
+  newInboxConnectionId,
   type RunInboxDuplexAttachmentResult,
   runInboxDuplexAttachment,
 } from "./inbox/index";

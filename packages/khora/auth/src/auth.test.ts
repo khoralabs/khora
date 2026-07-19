@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { generateIdentity, type Signer as RelaySigner } from "@khoralabs/did-key-identity";
 import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
 import { createKhoraDidAuth } from "./auth";
+import { INBOX_BIND_METHOD, inboxBindCanonicalPath, signInboxBind } from "./signer";
 import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, signatureBytesToB64Url } from "./wire";
 
 function freshDb(): Database {
@@ -291,5 +292,60 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const url = new URL(req.url);
     const out = await auth.requireInboxAccess(req, url, ["limit", "markRead"]);
     expect(out.did).toBe(signer.did);
+  });
+});
+
+describe("KhoraDidAuth.verifyInboxBind", () => {
+  test("accepts a fresh bind signature for connection_id", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
+    const signer = await generateIdentity();
+    const envelope = await signInboxBind({
+      connectionId: "conn-1",
+      signer,
+      now: () => now,
+      nonce: () => "n-bind-ok",
+    });
+    const out = await auth.verifyInboxBind({ connectionId: "conn-1", envelope });
+    expect(out.did).toBe(signer.did);
+  });
+
+  test("rejects bind for a different connection_id", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
+    const signer = await generateIdentity();
+    const envelope = await signInboxBind({
+      connectionId: "conn-a",
+      signer,
+      now: () => now,
+      nonce: () => "n-bind-wrong-conn",
+    });
+    await expect(auth.verifyInboxBind({ connectionId: "conn-b", envelope })).rejects.toThrow(
+      /signature|mismatch|verify/i,
+    );
+  });
+
+  test("rejects nonce reuse on the same DID", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
+    const signer = await generateIdentity();
+    const envelope = await signInboxBind({
+      connectionId: "conn-1",
+      signer,
+      now: () => now,
+      nonce: () => "n-bind-reuse",
+    });
+    await auth.verifyInboxBind({ connectionId: "conn-1", envelope });
+    await expect(auth.verifyInboxBind({ connectionId: "conn-1", envelope })).rejects.toThrow(
+      /nonce/,
+    );
+  });
+
+  test("inboxBindCanonicalPath is stable", () => {
+    expect(inboxBindCanonicalPath("abc")).toBe("/v1/inbox/ws?connection_id=abc");
+    expect(INBOX_BIND_METHOD).toBe("BIND");
   });
 });

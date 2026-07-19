@@ -6,6 +6,7 @@ import type {
   InboxAccessVerifyContext,
   RegistrationVerifyContext,
 } from "./preflight";
+import { INBOX_BIND_METHOD, inboxBindCanonicalPath } from "./signer";
 import type { AuthStrategy } from "./strategy";
 import { createDidKeyEd25519Strategy } from "./strategy-did-key";
 import {
@@ -99,9 +100,9 @@ export class KhoraDidAuth {
   }
 
   /**
-   * Variant of {@link requireAuthenticatedRequest} for the inbox HTTP and WebSocket routes:
-   * accepts the agent DID via `?did=` search param when the `X-Agent-Did` header is absent
-   * (WebSocket upgrades cannot carry custom headers in browsers).
+   * Variant of {@link requireAuthenticatedRequest} for legacy inbox HTTP routes that still
+   * accept the agent DID via `?did=` / headers. Multiplex WebSocket auth uses
+   * {@link verifyInboxBind} after upgrade instead.
    */
   async requireInboxAccess(
     req: Request,
@@ -121,6 +122,32 @@ export class KhoraDidAuth {
       throw new AuthError(messageOf(e), 401);
     });
     return { did };
+  }
+
+  /**
+   * Verify a per-principal multiplex bind: signature covers
+   * `BIND\n/v1/inbox/ws?connection_id=…\nts\nnonce\n…` and consumes a nonce for that DID.
+   */
+  async verifyInboxBind(opts: {
+    connectionId: string;
+    envelope: AgentRequestEnvelope;
+  }): Promise<{ did: string }> {
+    const connectionId = opts.connectionId.trim();
+    if (connectionId.length === 0) {
+      throw new AuthError("connection_id required", 400);
+    }
+    try {
+      await this.verifyEnvelope({
+        envelope: opts.envelope,
+        claimedDid: opts.envelope.did,
+        method: INBOX_BIND_METHOD,
+        path: inboxBindCanonicalPath(connectionId),
+        bodyText: "",
+      });
+    } catch (e) {
+      throw new AuthError(messageOf(e), 401);
+    }
+    return { did: opts.envelope.did };
   }
 
   /**

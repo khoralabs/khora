@@ -2,9 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws";
 
 describe("parseInboxWebSocketMessage", () => {
-  test("snapshot", () => {
+  test("hello", () => {
+    const msg = parseInboxWebSocketMessage(JSON.stringify({ type: "hello", connection_id: "c1" }));
+    expect(msg).toEqual({ type: "hello", connection_id: "c1" });
+  });
+
+  test("snapshot requires did", () => {
     const raw = JSON.stringify({
       type: "snapshot",
+      did: "did:key:a",
       notifications: [
         {
           id: 1,
@@ -24,12 +30,14 @@ describe("parseInboxWebSocketMessage", () => {
     const msg = parseInboxWebSocketMessage(raw);
     expect(msg?.type).toBe("snapshot");
     if (msg?.type !== "snapshot") return;
+    expect(msg.did).toBe("did:key:a");
     expect(msg.notifications[0]?.notification.kind).toBe("inbox_post");
   });
 
   test("live notification", () => {
     const raw = JSON.stringify({
       type: "notification",
+      did: "did:key:a",
       id: 2,
       notification: {
         kind: "inbox_post",
@@ -43,6 +51,7 @@ describe("parseInboxWebSocketMessage", () => {
     const msg = parseInboxWebSocketMessage(raw);
     expect(msg?.type).toBe("notification");
     if (msg?.type !== "notification") return;
+    expect(msg.did).toBe("did:key:a");
     expect(msg.id).toBe(2);
     expect(msg.notification.kind).toBe("inbox_post");
   });
@@ -50,6 +59,7 @@ describe("parseInboxWebSocketMessage", () => {
   test("drain batch", () => {
     const raw = JSON.stringify({
       type: "drain",
+      did: "did:key:a",
       items: [
         {
           entryKey: "did:key:a/p1",
@@ -61,6 +71,7 @@ describe("parseInboxWebSocketMessage", () => {
     const msg = parseInboxWebSocketMessage(raw);
     expect(msg?.type).toBe("drain");
     if (msg?.type !== "drain") return;
+    expect(msg.did).toBe("did:key:a");
     expect(msg.items).toHaveLength(1);
     expect(msg.items[0]?.entryKey).toBe("did:key:a/p1");
   });
@@ -75,14 +86,17 @@ describe("parseInboxWebSocketMessage", () => {
 });
 
 describe("inboxWebSocketUrl", () => {
-  test("http to ws with did query", () => {
+  test("http to ws without did by default", () => {
+    expect(inboxWebSocketUrl("http://localhost:8787")).toBe("ws://localhost:8787/v1/inbox/ws");
+  });
+
+  test("optional did query for compat", () => {
     expect(inboxWebSocketUrl("http://localhost:8787", "did:key:1")).toBe(
       "ws://localhost:8787/v1/inbox/ws?did=did%3Akey%3A1",
     );
   });
 
   test("https to wss", () => {
-    expect(inboxWebSocketUrl("https://khora.example/", "did:x:y")).toContain("wss://");
-    expect(inboxWebSocketUrl("https://khora.example/", "did:x:y")).toContain("did=did%3Ax%3Ay");
+    expect(inboxWebSocketUrl("https://khora.example/")).toContain("wss://");
   });
 });

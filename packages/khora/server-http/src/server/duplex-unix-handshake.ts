@@ -1,11 +1,8 @@
 import z from "zod";
 
+/** Unix duplex handshake: session kind only; auth is multiplex bind after hello. */
 const zInbox = z.object({
   kind: z.literal("inbox"),
-  did: z.string().min(1),
-  ts: z.string().min(1),
-  nonce: z.string().min(1),
-  sig: z.string().min(1),
 });
 
 export const zDuplexUnixHandshake = zInbox;

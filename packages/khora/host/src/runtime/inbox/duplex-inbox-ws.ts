@@ -40,7 +40,7 @@ export async function runInboxDuplexAttachment(opts: {
   opts.inboxHub.add(opts.did, inboxWs);
 
   void discardInboundPump(opts.duplex).finally(() => {
-    opts.inboxHub.remove(opts.did, inboxWs);
+    opts.inboxHub.removeSession(inboxWs);
   });
 
   return {

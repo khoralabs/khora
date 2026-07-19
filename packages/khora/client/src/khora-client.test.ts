@@ -144,10 +144,11 @@ describe("KhoraClient", () => {
     expect(events[0]?.type).toBe("registration:completed");
   });
 
-  test("connectInbox emits inbox:notification and signs WS URL", async () => {
-    type EvListener = (ev: { data: string }) => void;
-    let messageHandler: EvListener | undefined;
+  test("connectInbox binds after hello and emits inbox:notification", async () => {
+    type EvListener = (ev: { data?: string } | Event) => void;
+    const listeners = new Map<string, EvListener[]>();
     let createdUrl = "";
+    const sent: string[] = [];
     class FakeWebSocket {
       static readonly CONNECTING = 0;
       static readonly OPEN = 1;
@@ -156,26 +157,40 @@ describe("KhoraClient", () => {
       constructor(public url: string) {
         createdUrl = url;
         queueMicrotask(() => {
-          messageHandler?.({
-            data: JSON.stringify({
-              type: "notification",
-              id: 42,
-              notification: {
-                kind: "inbox_post",
-                payload: {
-                  postId: "p",
-                  postKind: "post",
-                  subscriptionMatches: [{ subscriptionId: "sub-1", score: 1 }],
-                },
-              },
-            }),
-          });
+          for (const fn of listeners.get("open") ?? []) fn(new Event("open"));
+          for (const fn of listeners.get("message") ?? []) {
+            fn({ data: JSON.stringify({ type: "hello", connection_id: "conn-test" }) });
+          }
         });
       }
       addEventListener(type: string, fn: EvListener) {
-        if (type === "message") messageHandler = fn;
+        const list = listeners.get(type) ?? [];
+        list.push(fn);
+        listeners.set(type, list);
       }
       removeEventListener() {}
+      send(data: string) {
+        sent.push(data);
+        queueMicrotask(() => {
+          for (const fn of listeners.get("message") ?? []) {
+            fn({
+              data: JSON.stringify({
+                type: "notification",
+                did: "did:key:agent",
+                id: 42,
+                notification: {
+                  kind: "inbox_post",
+                  payload: {
+                    postId: "p",
+                    postKind: "post",
+                    subscriptionMatches: [{ subscriptionId: "sub-1", score: 1 }],
+                  },
+                },
+              }),
+            });
+          }
+        });
+      }
       close() {}
     }
     const signer = staticSigner("did:key:agent");
@@ -184,6 +199,8 @@ describe("KhoraClient", () => {
       signer,
       fetch: mock(async () => new Response(null, { status: 500 })),
       WebSocket: FakeWebSocket as unknown as typeof WebSocket,
+      nowMs: () => 1_700_000_000_000,
+      nonceFactory: () => "n-client-bind",
     });
     const events: KhoraClientEvent[] = [];
     c.subscribe((e) => events.push(e));
@@ -195,13 +212,14 @@ describe("KhoraClient", () => {
         legacyCalled = true;
       },
     });
-    await new Promise((r) => queueMicrotask(r));
+    for (let i = 0; i < 50 && (!legacyCalled || sent.length === 0); i++) {
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(sent.some((s) => s.includes('"type":"bind"'))).toBe(true);
     expect(legacyCalled).toBe(true);
     const u = new URL(createdUrl);
-    expect(u.searchParams.get("did")).toBe("did:key:agent");
-    expect(u.searchParams.get("ts")).not.toBeNull();
-    expect(u.searchParams.get("nonce")).not.toBeNull();
-    expect(u.searchParams.get("sig")).not.toBeNull();
+    expect(u.pathname).toBe("/v1/inbox/ws");
+    expect(u.searchParams.get("did")).toBeNull();
   });
 
   test("updateProfile PATCH /v1/profile signs request", async () => {

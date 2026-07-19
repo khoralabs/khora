@@ -40,11 +40,17 @@ export type {
   RegistrationVerifyContext,
 } from "./preflight";
 export {
+  INBOX_BIND_METHOD,
+  INBOX_WS_PATH,
+  inboxBindCanonicalPath,
+  inboxWebSocketUpgradeUrl,
   type SignAgentRequestInput,
   type SignedAgentRequest,
   type SignedInboxUrlInput,
+  type SignInboxBindInput,
   signAgentRequest,
   signedInboxUrl,
+  signInboxBind,
 } from "./signer";
 export { type AuthStrategy, AuthStrategyError } from "./strategy";
 export { createDidKeyEd25519Strategy } from "./strategy-did-key";

@@ -39,4 +39,7 @@ export {
 export type { DuplexUnixIngressHandle } from "./server/duplex-unix-listener";
 export { startDuplexUnixIngress } from "./server/duplex-unix-listener";
 export { startStdioUnaryIngress } from "./server/stdio-unary-listener";
-export { createInboxDrainWebSocketHandlers } from "./ws/inbox";
+export {
+  createInboxDrainWebSocketHandlers,
+  createInboxDrainWebSocketHandlersForDeps,
+} from "./ws/inbox";

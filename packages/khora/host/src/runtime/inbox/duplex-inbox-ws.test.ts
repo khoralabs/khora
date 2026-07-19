@@ -15,7 +15,7 @@ describe("runInboxDuplexAttachment", () => {
       decoded = new TextDecoder().decode(chunk);
       break;
     }
-    expect(decoded).toBe(JSON.stringify({ ping: 1 }));
+    expect(decoded).toBe(JSON.stringify({ ping: 1, did: "did:example:a" }));
 
     await serverHalf.close();
   });

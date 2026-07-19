@@ -54,9 +54,48 @@ export async function signAgentRequest(input: SignAgentRequestInput): Promise<Si
   };
 }
 
+/** Inbox multiplex WebSocket path (upgrade has no query auth; bind happens after `hello`). */
+export const INBOX_WS_PATH = "/v1/inbox/ws";
+
+/** HTTP-ish method string inside the canonical bind signature. */
+export const INBOX_BIND_METHOD = "BIND";
+
+/**
+ * Canonical PATH signed for an inbox multiplex bind, including the server-issued connection id.
+ * Example: `/v1/inbox/ws?connection_id=abc`.
+ */
+export function inboxBindCanonicalPath(connectionId: string): string {
+  const sp = new URLSearchParams();
+  sp.set("connection_id", connectionId);
+  return `${INBOX_WS_PATH}?${sp.toString()}`;
+}
+
+export type SignInboxBindInput = {
+  connectionId: string;
+  signer: Signer;
+  now?: () => number;
+  nonce?: () => string;
+};
+
+/**
+ * Sign a per-principal multiplex bind for `connectionId` (from the server `hello` frame).
+ * Returns the envelope fields clients send inside a `bind` frame.
+ */
+export async function signInboxBind(input: SignInboxBindInput): Promise<AgentRequestEnvelope> {
+  const signed = await signAgentRequest({
+    method: INBOX_BIND_METHOD,
+    path: inboxBindCanonicalPath(input.connectionId),
+    bodyText: "",
+    signer: input.signer,
+    ...(input.now !== undefined ? { now: input.now } : {}),
+    ...(input.nonce !== undefined ? { nonce: input.nonce } : {}),
+  });
+  return signed.envelope;
+}
+
 export type SignedInboxUrlInput = {
   baseUrl: string;
-  /** Defaults to `/v1/inbox/ws`. */
+  /** Defaults to {@link INBOX_WS_PATH}. */
   path?: string;
   signer: Signer;
   now?: () => number;
@@ -64,11 +103,11 @@ export type SignedInboxUrlInput = {
 };
 
 /**
- * Build a signed WebSocket URL for the inbox upgrade. Carries `did/ts/nonce/sig` query params
- * (the host has no headers available pre-upgrade).
+ * @deprecated Prefer unsigned upgrade + {@link signInboxBind} (multiplex stream).
+ * Build a signed WebSocket URL for legacy single-DID upgrade auth.
  */
 export async function signedInboxUrl(input: SignedInboxUrlInput): Promise<string> {
-  const path = input.path ?? "/v1/inbox/ws";
+  const path = input.path ?? INBOX_WS_PATH;
   const root = new URL(input.baseUrl.trim().replace(/\/$/, ""));
   const ws = new URL(path, root);
   ws.protocol = root.protocol === "https:" ? "wss:" : "ws:";
@@ -85,5 +124,13 @@ export async function signedInboxUrl(input: SignedInboxUrlInput): Promise<string
   ws.searchParams.set(AGENT_REQUEST_SEARCH.ts, String(signed.envelope.timestampMs));
   ws.searchParams.set(AGENT_REQUEST_SEARCH.nonce, signed.envelope.nonce);
   ws.searchParams.set(AGENT_REQUEST_SEARCH.sig, signed.envelope.signatureB64Url);
+  return ws.toString();
+}
+
+/** Unsigned inbox WebSocket URL (auth via post-upgrade bind). */
+export function inboxWebSocketUpgradeUrl(baseUrl: string, path = INBOX_WS_PATH): string {
+  const root = new URL(baseUrl.trim().replace(/\/$/, ""));
+  const ws = new URL(path, root);
+  ws.protocol = root.protocol === "https:" ? "wss:" : "ws:";
   return ws.toString();
 }

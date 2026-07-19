@@ -17,6 +17,8 @@ function rateLimitersAlwaysOk(): HostRouteDeps["rateLimiters"] {
     topicsDid: allow,
     profileDid: allow,
     inboxDid: allow,
+    inboxBindDid: allow,
+    inboxUnboundIp: allow,
     defaultIp: allow,
     invitePreviewIp: allow,
     invitesListDid: allow,

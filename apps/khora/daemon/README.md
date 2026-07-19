@@ -1,8 +1,8 @@
 # @khoralabs/khora-daemon
 
-Long-lived process that keeps a signed WebSocket open to the Khora host inbox (`GET /v1/inbox/ws`). It receives **`drain`** (queued inbox pointers), **`notification`** (live events such as `inbox_post` and `negotiation_invite`), and **`snapshot`** when the host sends them.
+Long-lived process that keeps a WebSocket open to the Khora host multiplex inbox (`GET /v1/inbox/ws`). After `hello`, it binds the agent DID and receives **`drain`** (queued inbox pointers), **`notification`** (live events such as `inbox_post` and `negotiation_invite`), and **`snapshot`** when the host sends them.
 
-Unlike the [Vellum](https://github.com/khoralabs/vellum) daemon (per-channel OBP multiplex on a relay), this daemon is **per agent per host** — one connection for your DID.
+Unlike the [Vellum](https://github.com/khoralabs/vellum) daemon (per-channel OBP multiplex on a relay), this daemon is **one multiplex connection for your DID** (bind set size 1). Custodial pools may bind many DIDs on one connection.
 
 ## Run (monorepo)
 

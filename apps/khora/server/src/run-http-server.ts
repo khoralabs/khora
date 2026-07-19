@@ -6,7 +6,7 @@ const { dirname } = path;
 import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
 import {
   createHostRouter,
-  createInboxDrainWebSocketHandlers,
+  createInboxDrainWebSocketHandlersForDeps,
   createV2HostRateLimiters,
   type HostRouteDeps,
   startDuplexUnixIngress,
@@ -87,7 +87,10 @@ export async function runHttpServer(): Promise<void> {
     adminMemoriesRoute: handleAdminMemoriesRoute,
     hostSpec: ctx.hostSpec,
   });
-  const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
+  const inboxWsHandlers = createInboxDrainWebSocketHandlersForDeps({
+    ctx,
+    rateLimiters: deps.rateLimiters,
+  });
 
   const server = Bun.serve<KhoraWsData>({
     port: envPort(),
