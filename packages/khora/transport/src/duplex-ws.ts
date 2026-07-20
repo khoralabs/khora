@@ -1,6 +1,11 @@
 import { Buffer } from "node:buffer";
 import { createWebSocketDuplexByteStream, type DuplexByteStream } from "./byte-stream/index";
-import { type ConnectInboxOptions, connectInbox, type InboxWsHandlers } from "./inbox-connect";
+import {
+  type ConnectInboxOptions,
+  connectInbox,
+  type InboxConnectionHandle,
+  type InboxWsHandlers,
+} from "./inbox-connect";
 
 export type WebSocketByteDuplexArgs = {
   webSocketUrl: string;
@@ -82,7 +87,10 @@ export async function openWebSocketByteDuplex(
 
 export interface KhoraDuplexTransport {
   openByteDuplex(args: WebSocketByteDuplexArgs): Promise<WebSocketByteDuplexHandle>;
-  connectInbox(opts: ConnectInboxOptions, handlers: InboxWsHandlers): Promise<{ close(): void }>;
+  connectInbox(
+    opts: ConnectInboxOptions,
+    handlers: InboxWsHandlers,
+  ): Promise<InboxConnectionHandle>;
 }
 
 /** Default duplex binding: WebSocket byte channel + inbox subscription. */
@@ -91,7 +99,10 @@ export class WsKhoraDuplexTransport implements KhoraDuplexTransport {
     return openWebSocketByteDuplex(args);
   }
 
-  connectInbox(opts: ConnectInboxOptions, handlers: InboxWsHandlers): Promise<{ close(): void }> {
+  connectInbox(
+    opts: ConnectInboxOptions,
+    handlers: InboxWsHandlers,
+  ): Promise<InboxConnectionHandle> {
     return connectInbox(opts, handlers);
   }
 }

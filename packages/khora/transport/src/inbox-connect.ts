@@ -20,7 +20,7 @@ export type InboxWsHandlers = {
 
 export type ConnectInboxOptions = {
   base: string;
-  /** One or more principals to bind on this multiplex stream (N=1 is the common case). */
+  /** Principals to bind immediately after `hello` (may be empty if you only call {@link InboxConnectionHandle.bind} later). */
   signers: readonly RelaySigner[];
   now: () => number;
   nonce: () => string;
@@ -28,37 +28,67 @@ export type ConnectInboxOptions = {
   emit: (event: KhoraClientEvent) => void;
 };
 
+const BIND_CHUNK = 128;
+
+export type InboxConnectionHandle = {
+  close(): void;
+  /** Sign and send additional principal binds (after hello). */
+  bind(signers: readonly RelaySigner[]): Promise<void>;
+  /** Ask the host to drop live delivery for these DIDs. */
+  unbind(dids: readonly string[]): Promise<void>;
+};
+
 /**
  * Subscribe to multiplex inbox WebSocket (`/v1/inbox/ws`):
- * open → `hello` → bind signed principals → `drain` / `notification` frames tagged with `did`.
+ * open → `hello` → optional initial bind → `drain` / `notification` frames tagged with `did`.
+ * Incremental {@link InboxConnectionHandle.bind} / {@link InboxConnectionHandle.unbind} after hello.
  */
 export async function connectInbox(
   opts: ConnectInboxOptions,
   handlers: InboxWsHandlers,
-): Promise<{ close(): void }> {
-  if (opts.signers.length === 0) {
-    throw new Error("connectInbox: at least one signer required");
-  }
+): Promise<InboxConnectionHandle> {
   const urlString = inboxWebSocketUpgradeUrl(opts.base);
   let ws: WebSocket;
   try {
     ws = new opts.WebSocketCtor(urlString);
   } catch (e) {
     handlers.onError?.(e);
-    return { close() {} };
+    return {
+      close() {},
+      async bind() {
+        throw new Error("connectInbox: WebSocket failed to construct");
+      },
+      async unbind() {
+        throw new Error("connectInbox: WebSocket failed to construct");
+      },
+    };
   }
 
   let closed = false;
-  let bindStarted = false;
+  let connectionId: string | undefined;
+  let resolveHello: (() => void) | undefined;
+  const helloReady = new Promise<void>((resolve) => {
+    resolveHello = resolve;
+  });
 
-  const runBind = async (connectionId: string) => {
-    if (bindStarted || closed) return;
-    bindStarted = true;
-    handlers.onHello?.(connectionId);
+  const waitHello = async (): Promise<string> => {
+    if (closed) throw new Error("connectInbox: connection closed");
+    if (connectionId !== undefined) return connectionId;
+    await helloReady;
+    if (closed || connectionId === undefined) {
+      throw new Error("connectInbox: connection closed before hello");
+    }
+    return connectionId;
+  };
+
+  const sendBindPrincipals = async (signers: readonly RelaySigner[]): Promise<void> => {
+    if (signers.length === 0) return;
+    const connId = await waitHello();
+    if (closed) return;
     const principals = await Promise.all(
-      opts.signers.map(async (signer) => {
+      signers.map(async (signer) => {
         const envelope = await signInboxBind({
-          connectionId,
+          connectionId: connId,
           signer,
           now: opts.now,
           nonce: opts.nonce,
@@ -71,12 +101,18 @@ export async function connectInbox(
         };
       }),
     );
-    // Chunk binds to avoid huge frames (128 principals per frame).
-    const CHUNK = 128;
-    for (let i = 0; i < principals.length; i += CHUNK) {
+    for (let i = 0; i < principals.length; i += BIND_CHUNK) {
       if (closed) return;
-      ws.send(JSON.stringify({ type: "bind", principals: principals.slice(i, i + CHUNK) }));
+      ws.send(JSON.stringify({ type: "bind", principals: principals.slice(i, i + BIND_CHUNK) }));
     }
+  };
+
+  const onHello = (id: string) => {
+    if (connectionId !== undefined) return;
+    connectionId = id;
+    handlers.onHello?.(id);
+    resolveHello?.();
+    void sendBindPrincipals(opts.signers).catch((e) => handlers.onError?.(e));
   };
 
   ws.addEventListener("open", () => {
@@ -84,6 +120,8 @@ export async function connectInbox(
   });
   ws.addEventListener("close", () => {
     closed = true;
+    connectionId = undefined;
+    resolveHello?.();
     handlers.onClose?.();
   });
   ws.addEventListener("error", (ev) => {
@@ -99,7 +137,7 @@ export async function connectInbox(
     const msg = parseInboxWebSocketMessage(text);
     if (msg === undefined) return;
     if (msg.type === "hello") {
-      void runBind(msg.connection_id).catch((e) => handlers.onError?.(e));
+      onHello(msg.connection_id);
       return;
     }
     if (msg.type === "bound") {
@@ -132,10 +170,21 @@ export async function connectInbox(
       notification: msg.notification,
     });
   });
+
   return {
     close() {
       closed = true;
+      resolveHello?.();
       ws.close();
+    },
+    bind(signers) {
+      return sendBindPrincipals(signers);
+    },
+    async unbind(dids) {
+      if (dids.length === 0) return;
+      await waitHello();
+      if (closed) return;
+      ws.send(JSON.stringify({ type: "unbind", dids: [...dids] }));
     },
   };
 }

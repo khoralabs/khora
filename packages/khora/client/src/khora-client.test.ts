@@ -222,6 +222,61 @@ describe("KhoraClient", () => {
     expect(u.searchParams.get("did")).toBeNull();
   });
 
+  test("connectInbox bind() attaches a second DID after hello", async () => {
+    type EvListener = (ev: { data?: string } | Event) => void;
+    const listeners = new Map<string, EvListener[]>();
+    const sent: string[] = [];
+    let nonceSeq = 0;
+    class FakeWebSocket {
+      static readonly CONNECTING = 0;
+      static readonly OPEN = 1;
+      static readonly CLOSING = 2;
+      static readonly CLOSED = 3;
+      constructor(public url: string) {
+        queueMicrotask(() => {
+          for (const fn of listeners.get("message") ?? []) {
+            fn({ data: JSON.stringify({ type: "hello", connection_id: "conn-inc" }) });
+          }
+        });
+      }
+      addEventListener(type: string, fn: EvListener) {
+        const list = listeners.get(type) ?? [];
+        list.push(fn);
+        listeners.set(type, list);
+      }
+      removeEventListener() {}
+      send(data: string) {
+        sent.push(data);
+      }
+      close() {}
+    }
+    const primary = staticSigner("did:key:primary");
+    const secondary = staticSigner("did:key:second");
+    const c = new KhoraClient({
+      baseUrl: "http://h",
+      signer: primary,
+      fetch: mock(async () => new Response(null, { status: 500 })),
+      WebSocket: FakeWebSocket as unknown as typeof WebSocket,
+      nowMs: () => 1_700_000_000_000,
+      nonceFactory: () => `n-inc-${nonceSeq++}`,
+    });
+    const handle = await c.connectInbox({}, [primary]);
+    for (let i = 0; i < 50 && sent.length === 0; i++) {
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(sent.some((s) => s.includes("did:key:primary"))).toBe(true);
+    const before = sent.length;
+    await handle.bind([secondary]);
+    expect(sent.length).toBeGreaterThan(before);
+    const last = sent[sent.length - 1] ?? "";
+    expect(last).toContain('"type":"bind"');
+    expect(last).toContain("did:key:second");
+    await handle.unbind(["did:key:second"]);
+    expect(sent[sent.length - 1]).toContain('"type":"unbind"');
+    expect(sent[sent.length - 1]).toContain("did:key:second");
+    handle.close();
+  });
+
   test("updateProfile PATCH /v1/profile signs request", async () => {
     const signer = staticSigner("did:key:me");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {

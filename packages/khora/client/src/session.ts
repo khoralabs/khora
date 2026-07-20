@@ -5,7 +5,7 @@ import type {
   KhoraProfile,
   KhoraRegistrationResult,
 } from "@khoralabs/khora-contracts";
-import type { InboxWsHandlers } from "@khoralabs/khora-transport";
+import type { InboxConnectionHandle, InboxWsHandlers } from "@khoralabs/khora-transport";
 import type { KhoraClient } from "./khora-client";
 
 export type KhoraSession = {
@@ -15,7 +15,7 @@ export type KhoraSession = {
   createPost(body: KhoraPostCreateContent): Promise<KhoraPost>;
   updatePost(id: string, patch: Omit<KhoraPostPatch, "authorSignature">): Promise<KhoraPost>;
   deletePost(id: string): Promise<void>;
-  connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }>;
+  connectInbox(handlers: InboxWsHandlers): Promise<InboxConnectionHandle>;
 };
 
 export function createKhoraSession(

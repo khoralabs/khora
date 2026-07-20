@@ -24,7 +24,7 @@ export {
   WsKhoraDuplexTransport,
 } from "./duplex-ws";
 export { formatThrownError, KhoraClientError } from "./errors";
-export type { ConnectInboxOptions, InboxWsHandlers } from "./inbox-connect";
+export type { ConnectInboxOptions, InboxConnectionHandle, InboxWsHandlers } from "./inbox-connect";
 export { connectInbox } from "./inbox-connect";
 export type {
   InboxNotificationRow,

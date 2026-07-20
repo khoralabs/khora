@@ -10,6 +10,7 @@ export type {
 } from "@khoralabs/khora-contracts";
 export * from "@khoralabs/khora-contracts";
 export type {
+  InboxConnectionHandle,
   InboxWsHandlers,
   KhoraFetch,
   KhoraTransportBundle,

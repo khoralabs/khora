@@ -15,6 +15,7 @@ import type {
 } from "@khoralabs/khora-contracts";
 import {
   createKhoraTransportBundleFromEnv,
+  type InboxConnectionHandle,
   type InboxWsHandlers,
   type KhoraClientEvent,
   type KhoraDuplexTransport,
@@ -213,7 +214,7 @@ export class KhoraClient {
   connectInbox(
     handlers: InboxWsHandlers,
     signers?: readonly RelaySigner[],
-  ): Promise<{ close(): void }> {
+  ): Promise<InboxConnectionHandle> {
     return this.duplex.connectInbox(
       {
         base: this.transport.base,
