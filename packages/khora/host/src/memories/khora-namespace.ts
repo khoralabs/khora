@@ -1,5 +1,5 @@
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
-import { type NamespacePath, namespaceFromSegments, namespacePath } from "@khoralabs/memories-core";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
+import { type NamespacePath, namespaceFromSegments, namespacePath } from "@khoralabs/memories-node";
 
 export const PROFILE_MEMORY_KEY = "self";
 

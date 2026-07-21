@@ -47,7 +47,7 @@ jobs:
       - name: init submodules
         env:
           # Fine-grained PAT (or classic repo-scoped) with Contents: Read on private
-          # khoralabs/* submodule remotes (libs, chat, memories, …).
+          # khoralabs/* submodule remotes (libs, chat, …).
           TOKEN: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
         run: |
           set -euo pipefail
@@ -64,7 +64,8 @@ jobs:
       - name: verify submodules
         run: |
           set -euo pipefail
-          test -f vendor/memories/package.json
+          test -d vendor/chat
+          test -d vendor/libs
 
       - uses: oven-sh/setup-bun@v2
         with:

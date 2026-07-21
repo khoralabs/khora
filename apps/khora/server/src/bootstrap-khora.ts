@@ -31,7 +31,7 @@ import {
   createMemoriesPersistenceAsync,
   ensureCustomSqliteForExtensions,
   openMemoriesDatabase,
-} from "@khoralabs/memories-sqlite";
+} from "@khoralabs/memories-node/sqlite";
 import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,

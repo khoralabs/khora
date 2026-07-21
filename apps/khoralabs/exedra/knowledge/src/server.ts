@@ -1,6 +1,6 @@
-import { createAuthStrategyFromEnv } from "@khoralabs/memories-service-auth";
-import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service-http";
-import { createLocalSqliteServiceStack } from "@khoralabs/memories-service-storage-sqlite";
+import { createAuthStrategyFromEnv } from "@khoralabs/memories-service/auth";
+import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service/http";
+import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { serve } from "bun";
 
 import {

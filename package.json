@@ -14,7 +14,13 @@
   },
   "private": true,
   "overrides": {
-    "kysely": "0.28.17"
+    "kysely": "0.28.17",
+    "@khoralabs/memories-node": "0.2.0",
+    "@khoralabs/memories-ontologies": "0.2.0",
+    "@khoralabs/memories-persistence-core": "0.2.0",
+    "@khoralabs/memories-agents": "0.2.0",
+    "@khoralabs/memories-service": "0.2.0",
+    "@khoralabs/memories-react-graph": "0.2.0"
   },
   "scripts": {
     "test:with-sqlite": "bash scripts/test-with-homebrew-sqlite.sh",
@@ -24,13 +30,15 @@
     "context": "bun run scripts/context.ts",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
     "submodules:init": "git submodule update --init --recursive",
-    "submodules:update": "git submodule update --remote --merge vendor/memories vendor/chat vendor/libs && bun install",
-    "submodules:update:memories": "git submodule update --remote --merge vendor/memories && bun install",
+    "submodules:update": "git submodule update --remote --merge vendor/chat vendor/libs && bun install",
     "submodules:update:chat": "git submodule update --remote --merge vendor/chat && bun install",
     "submodules:update:libs": "git submodule update --remote --merge vendor/libs && bun install",
     "prepare": "husky"
   },
   "type": "module",
+  "dependencies": {
+    "@khoralabs/memories-node": "^0.2.0"
+  },
   "workspaces": [
     "apps/*",
     "apps/khora/cli",
@@ -45,9 +53,8 @@
     "vendor/chat/*/**",
     "packages/khora/*/**",
     "packages/registry/*/**",
-    "vendor/*/**",
-    "vendor/memories/packages/*/**",
-    "vendor/memories/packages/memories-service/*/**",
+    "vendor/chat/**",
+    "vendor/libs/**",
     "study/**"
   ]
 }

@@ -1,10 +1,10 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import type { SearchHit } from "@khoralabs/memories-core";
-import type { EmbeddingResolutionPreset } from "@khoralabs/memories-core/helpers";
+import type { SearchHit } from "@khoralabs/memories-node";
+import type { EmbeddingResolutionPreset } from "@khoralabs/memories-node/helpers";
 import {
   buildNamespaceGraphLayoutFromUmapInput,
   qualifyMemoryKey,
-} from "@khoralabs/memories-projections";
+} from "@khoralabs/memories-node/projections";
 import { embedMany } from "ai";
 import { withSpan } from "../telemetry/spans.js";
 import type { ExedraMemoriesServiceAccess } from "./service-client.js";
@@ -213,7 +213,7 @@ export async function handleMemoriesSearch(
         if (!didWarnLexicalOnlySearch) didWarnLexicalOnlySearch = true;
       }
 
-      const hits = await access.client.search({
+      const { hits } = await access.client.search({
         namespace,
         content,
         options: {

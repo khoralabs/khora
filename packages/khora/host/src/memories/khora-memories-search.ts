@@ -9,9 +9,9 @@ import type {
   MemoriesClientAsync,
   MemoriesPersistenceAsync,
   SearchParams,
-} from "@khoralabs/memories-core";
-import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
-import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+} from "@khoralabs/memories-node";
+import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
+import { embedTextChunks } from "@khoralabs/memories-node/helpers";
 import { authorPrincipalIdFromPostId } from "../post-address-id";
 import { canReadPost } from "../post-visibility";
 import type { SocialRelationshipPersistence } from "../runtime";
@@ -81,7 +81,7 @@ export async function executeKhoraMemoriesSearch(deps: {
     content,
   } satisfies SearchParams;
 
-  const hits = await client.search(searchParams as Parameters<typeof client.search>[0]);
+  const { hits } = await client.search(searchParams as Parameters<typeof client.search>[0]);
   const enriched: KhoraSearchResponse["hits"] = [];
   for (const hit of hits) {
     const hydrated = await hydrateMemoryLabels(store, hit.labels, hit.memory._id, hit.source_key);

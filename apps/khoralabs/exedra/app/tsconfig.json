@@ -7,35 +7,29 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "types": ["bun"],
-
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/client/*"],
-      "@shared/*": ["./src/shared/*"],
-      "@khoralabs/memories-core": ["node_modules/@khoralabs/memories-core/src/index.ts"],
-      "@khoralabs/memories-core/helpers": [
-        "node_modules/@khoralabs/memories-core/src/helpers/index.ts"
+      "@/components/ui/*": [
+        "./src/client/components/ui/*",
+        "./node_modules/@khoralabs/memories-react-graph/src/components/ui/*"
       ],
-      "@khoralabs/memories-autolink": ["node_modules/@khoralabs/memories-autolink/src/index.ts"],
+      "@shared/*": ["./src/shared/*"],
       "zod": ["node_modules/zod/index.d.ts"]
     },
-
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-
   "include": ["./src/**/*", "./bun-env.d.ts", "./build.ts"],
   "exclude": ["dist", "node_modules"]
 }

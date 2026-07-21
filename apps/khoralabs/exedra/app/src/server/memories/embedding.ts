@@ -4,7 +4,7 @@ import {
   type EmbeddingModel,
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
-} from "@khoralabs/memories-core/helpers";
+} from "@khoralabs/memories-node/helpers";
 
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
 

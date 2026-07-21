@@ -5,7 +5,7 @@ import {
   isTextLikeMime,
   mergeResolutionAndProviderOptions,
   textToContent,
-} from "@khoralabs/memories-core/helpers";
+} from "@khoralabs/memories-node/helpers";
 import type { ProcessDocumentParams } from "./document-processing.ts";
 import { resolveDocumentMemoryKey } from "./document-processing.ts";
 import {

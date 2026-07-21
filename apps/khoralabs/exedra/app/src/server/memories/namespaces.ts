@@ -1,4 +1,4 @@
-import { type NamespacePath, namespaceFromSegments } from "@khoralabs/memories-core";
+import { type NamespacePath, namespaceFromSegments } from "@khoralabs/memories-node";
 
 import { encodePrincipalIdForMemories } from "./encode-principal-id.js";
 

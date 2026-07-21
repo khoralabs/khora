@@ -13,7 +13,7 @@ import {
   parseKhoraRegistrationMetadata,
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
-import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import { embedTextChunks } from "@khoralabs/memories-node/helpers";
 import type { StandingQuery } from "@khoralabs/percolator";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import { toPercolatorSearch } from "./percolator/adapter";

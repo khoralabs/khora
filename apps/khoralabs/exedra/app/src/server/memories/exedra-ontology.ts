@@ -1,6 +1,6 @@
-import { retrievalSimilarityOntology } from "@khoralabs/memories-autolink";
-import { defineOntology } from "@khoralabs/memories-core";
-import { mergeOntologies } from "@khoralabs/memories-core/helpers";
+import { defineOntology } from "@khoralabs/memories-node";
+import { retrievalSimilarityOntology } from "@khoralabs/memories-node/autolink";
+import { mergeOntologies } from "@khoralabs/memories-node/helpers";
 import z from "zod";
 
 /**

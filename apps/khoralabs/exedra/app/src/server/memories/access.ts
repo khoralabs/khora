@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { NamespacePath } from "@khoralabs/memories-core";
+import type { NamespacePath } from "@khoralabs/memories-node";
 
 import {
   accountScope,

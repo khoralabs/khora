@@ -10,7 +10,7 @@ import type {
   MemoriesPersistenceAsync,
   SourceMap,
   Store,
-} from "@khoralabs/memories-core";
+} from "@khoralabs/memories-node";
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
 import type { PostResolver } from "../ports";
 import type { HostPersistenceClient } from "../runtime";

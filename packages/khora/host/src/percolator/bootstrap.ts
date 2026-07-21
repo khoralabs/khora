@@ -1,5 +1,5 @@
-import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
-import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
+import { embedTextChunks } from "@khoralabs/memories-node/helpers";
 import {
   createPercolator,
   type Percolator,

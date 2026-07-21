@@ -20,12 +20,12 @@ import {
   profileMemoryNamespace,
   topicScope,
 } from "@khoralabs/khora-host";
-import { MemoriesClientAsync } from "@khoralabs/memories-core";
+import { MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesPersistenceAsync,
   memoriesSqliteVecAvailable,
   openMemoriesDatabase,
-} from "@khoralabs/memories-sqlite";
+} from "@khoralabs/memories-node/sqlite";
 
 function memoriesTest(name: string, fn: () => Promise<void>): void {
   test.skipIf(!memoriesSqliteVecAvailable())(name, fn);
@@ -175,14 +175,14 @@ describe("khora memories indexer", () => {
 
     await indexer.indexPost(post);
 
-    const globalHits = await client.search({
+    const { hits: globalHits } = await client.search({
       namespace: root,
       content: { text: "developer tools" },
       options: { topK: 5 },
     });
     expect(globalHits.some((h) => h.memory.key === post.id)).toBe(true);
 
-    const topicHits = await client.search({
+    const { hits: topicHits } = await client.search({
       namespace: topicScope(root, profile.id, "design"),
       content: { text: "developer tools" },
       searchScopeMode: "scopeDag",
@@ -190,7 +190,7 @@ describe("khora memories indexer", () => {
     });
     expect(topicHits.some((h) => h.memory.key === post.id)).toBe(true);
 
-    const profHits = await client.search({
+    const { hits: profHits } = await client.search({
       namespace: agentScope(root, profile.id),
       content: { text: "Alice" },
       options: { topK: 5 },
@@ -198,7 +198,7 @@ describe("khora memories indexer", () => {
     expect(profHits.some((h) => h.memory.key === PROFILE_MEMORY_KEY)).toBe(true);
 
     await indexer.deletePost(post);
-    const afterDelete = await client.search({
+    const { hits: afterDelete } = await client.search({
       namespace: postsMemoryNamespace(root, profile.id),
       content: { text: "developer" },
       options: { topK: 5 },
@@ -269,14 +269,14 @@ describe("khora memories indexer", () => {
 
     await indexer.deleteProfile(profile.id);
 
-    const profileHits = await client.search({
+    const { hits: profileHits } = await client.search({
       namespace: profileMemoryNamespace(root, profile.id),
       content: { text: "Dana" },
       options: { topK: 5 },
     });
     expect(profileHits.some((h) => h.memory.key === PROFILE_MEMORY_KEY)).toBe(false);
 
-    const postHits = await client.search({
+    const { hits: postHits } = await client.search({
       namespace: postsMemoryNamespace(root, profile.id),
       content: { text: "delete" },
       options: { topK: 5 },
@@ -353,7 +353,7 @@ describe("khora memories indexer", () => {
 
     await indexer.indexPost(subscription);
 
-    const subscriptionHits = await client.search({
+    const { hits: subscriptionHits } = await client.search({
       namespace: root,
       content: { text: "platform" },
       options: { topK: 5, labels: { some: ["khora_subscription"] } },
@@ -363,7 +363,7 @@ describe("khora memories indexer", () => {
       subscriptionHits.every((h) => h.labels.some((l) => l.kind === "khora_subscription")),
     ).toBe(true);
 
-    const postOnlyHits = await client.search({
+    const { hits: postOnlyHits } = await client.search({
       namespace: root,
       content: { text: "platform" },
       options: { topK: 5, labels: { some: ["khora_post"] } },

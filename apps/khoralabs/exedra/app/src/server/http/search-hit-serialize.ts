@@ -3,7 +3,7 @@ import type {
   SearchHitWire,
   SearchNeighborHitWire,
 } from "@khoralabs/exedra-workflows-shared/memories/search-hit-wire";
-import type { SearchHit } from "@khoralabs/memories-core";
+import type { SearchHit } from "@khoralabs/memories-node";
 
 const MAX_NEIGHBORS_PER_HIT = 8;
 

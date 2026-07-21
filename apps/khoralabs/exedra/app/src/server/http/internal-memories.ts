@@ -11,21 +11,21 @@ import type {
   SearchHitWire,
   SearchParamsWire,
 } from "@khoralabs/exedra-workflows-shared/memories/search-hit-wire";
+import type { IntegratorPlanWire } from "@khoralabs/memories-agents/integrator";
+import { integratorWireToMergeSlice } from "@khoralabs/memories-agents/integrator";
+import type { MergeMemoryParamsNode, SearchHit } from "@khoralabs/memories-node";
 import {
   computeLexicalLinkMergeSlice,
   type LexicalLinkMergePatch,
   normalizeSearchConfigSnapshot,
-} from "@khoralabs/memories-autolink";
-import type { MergeMemoryParamsNode, SearchHit } from "@khoralabs/memories-core";
+} from "@khoralabs/memories-node/autolink";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
   mergeLogicalMemoryWithMergeSlice,
   type ProcessedLogicalMemory,
-} from "@khoralabs/memories-core/helpers";
-import type { IntegratorPlanWire } from "@khoralabs/memories-integrator";
-import { integratorWireToMergeSlice } from "@khoralabs/memories-integrator";
-import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service-client";
+} from "@khoralabs/memories-node/helpers";
+import type { RemoteMemoriesClientAsync } from "@khoralabs/memories-service/client";
 import { embedMany } from "ai";
 import { getDb } from "../db/index.js";
 import { logger } from "../logger.js";
@@ -202,7 +202,7 @@ async function applyAutolinkToSlice(
   const { content, arms } = await buildHybridSearchContent(plaintext);
   const searchOptions = { topK: DEFAULT_AUTOLINK_SEARCH_TOP_K, neighbors: false as const, arms };
 
-  const hits = await client.search({
+  const { hits } = await client.search({
     namespace,
     content,
     options: searchOptions,
@@ -280,7 +280,7 @@ export async function runInternalSearch(
   const access = await openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
   const { content, arms } = await buildHybridSearchContent(query);
 
-  const rawHits = await access.client.search({
+  const { hits: rawHits } = await access.client.search({
     namespace,
     content,
     options: { topK, neighbors: false, arms },
@@ -350,7 +350,7 @@ async function runInternalAgentSearch(
     content,
   } as Parameters<RemoteMemoriesClientAsync["search"]>[0];
 
-  const rawHits = await access.client.search(params);
+  const { hits: rawHits } = await access.client.search(params);
 
   return { hits: rawHits.map((hit: SearchHit) => serializeSearchHit(hit)) };
 }

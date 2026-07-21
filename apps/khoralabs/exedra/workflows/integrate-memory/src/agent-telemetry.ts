@@ -1,5 +1,5 @@
 import { type AgentTelemetry, createAgentTelemetry } from "@khoralabs/agent-capabilities-otel";
-import { createMemoriesAgentTelemetry } from "@khoralabs/memories-tools";
+import { createMemoriesAgentTelemetry } from "@khoralabs/memories-agents/tools";
 import { createLogger } from "@khoralabs/observability/logger";
 
 import { meter, tracer } from "./otel.ts";

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { zNamespacePath } from "@khoralabs/memories-core";
+import { zNamespacePath } from "@khoralabs/memories-node";
 import {
   encodePrincipalIdForMemories,
   MEMORY_PRINCIPAL_SEGMENT_LENGTH,

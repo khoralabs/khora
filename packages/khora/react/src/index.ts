@@ -8,7 +8,6 @@ export type {
   AdminCellDetail,
   AdminCellShardSummary,
   AdminCellsStats,
-  AdminFramesStats,
   AdminInviteStats,
   AdminPrincipal,
   AdminSummary,

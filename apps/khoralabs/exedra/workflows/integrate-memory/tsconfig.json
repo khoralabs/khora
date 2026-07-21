@@ -10,11 +10,6 @@
     "rootDir": "../..",
     "baseUrl": ".",
     "paths": {
-      "@khoralabs/memories-core": ["node_modules/@khoralabs/memories-core/src/index.ts"],
-      "@khoralabs/memories-core/helpers": [
-        "node_modules/@khoralabs/memories-core/src/helpers/index.ts"
-      ],
-      "@khoralabs/memories-autolink": ["node_modules/@khoralabs/memories-autolink/src/index.ts"],
       "zod": ["node_modules/zod/index.d.ts"]
     },
     "strict": true,

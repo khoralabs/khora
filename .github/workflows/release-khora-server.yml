@@ -44,7 +44,8 @@ jobs:
       - name: verify submodules
         run: |
           set -euo pipefail
-          test -f vendor/memories/package.json
+          test -f vendor/chat/package.json || test -d vendor/chat
+          test -d vendor/libs
 
       - uses: oven-sh/setup-bun@v2
         with:

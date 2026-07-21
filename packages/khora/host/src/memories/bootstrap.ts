@@ -1,6 +1,6 @@
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
-import { MemoriesClientAsync } from "@khoralabs/memories-core";
-import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
+import { MemoriesClientAsync } from "@khoralabs/memories-node";
+import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
 import type { PostResolver } from "../ports";
 import type { HostPersistenceClient } from "../runtime";
 import { createKhoraMemoriesIndexer, type KhoraMemoriesIndexer } from "./indexer";

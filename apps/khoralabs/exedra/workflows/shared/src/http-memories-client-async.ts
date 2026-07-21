@@ -1,15 +1,15 @@
 import {
   type LabelSchemaMap,
   MemoriesClientAsync,
-  type SearchHit,
+  type SearchOutput,
   type SearchParams,
-} from "@khoralabs/memories-core";
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core/persistence";
+} from "@khoralabs/memories-node";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node/persistence";
 import {
   createBearerTokenAuthProvider,
   createRemoteMemoriesClientAsync,
   type RemoteMemoriesClientAsync,
-} from "@khoralabs/memories-service-client";
+} from "@khoralabs/memories-service/client";
 import { exedraMemoriesOntology } from "./exedra-memories-ontology.ts";
 
 export type ExedraHttpMemoriesClientConfig = {
@@ -51,7 +51,7 @@ export class ExedraHttpMemoriesClientAsync extends MemoriesClientAsync<
     return new ExedraHttpMemoriesClientAsync(delegate, delegate.persistence);
   }
 
-  override async search(params: SearchParams): Promise<SearchHit[]> {
+  override async search(params: SearchParams): Promise<SearchOutput> {
     return this.#delegate.search(params);
   }
 

@@ -14,12 +14,12 @@ import {
   khoraOntology,
   PROFILE_MEMORY_KEY,
 } from "@khoralabs/khora-host";
-import { MemoriesClientAsync } from "@khoralabs/memories-core";
+import { MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesPersistenceAsync,
   memoriesSqliteVecAvailable,
   openMemoriesDatabase,
-} from "@khoralabs/memories-sqlite";
+} from "@khoralabs/memories-node/sqlite";
 
 function memoriesTest(name: string, fn: () => Promise<void>): void {
   test.skipIf(!memoriesSqliteVecAvailable())(name, fn);
@@ -156,7 +156,7 @@ describe("executeKhoraMemoriesSearch", () => {
     await indexer.indexProfile(profile);
     removeProfile();
 
-    const before = await client.search({
+    const { hits: before } = await client.search({
       namespace: agentScope(root, profile.id),
       content: { text: "Zach" },
       options: { topK: 5 },
@@ -176,7 +176,7 @@ describe("executeKhoraMemoriesSearch", () => {
     });
     expect(result.hits).toHaveLength(0);
 
-    const after = await client.search({
+    const { hits: after } = await client.search({
       namespace: agentScope(root, profile.id),
       content: { text: "Zach" },
       options: { topK: 5 },

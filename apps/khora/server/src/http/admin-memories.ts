@@ -10,27 +10,25 @@ import {
 } from "@khoralabs/khora-host";
 import { NAMESPACE_ENTITY_PROFILE, ProjectionStore } from "@khoralabs/khora-host-sqlite";
 import { type HostRouteDeps, jsonError, withAdminTokenAuth } from "@khoralabs/khora-server-http";
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
-import { MemoriesClient, type SearchHit, searchAsync } from "@khoralabs/memories-core";
+import { MemoryInvestigatorClient } from "@khoralabs/memories-agents/investigator";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
+import { MemoriesClient, type SearchHit, searchAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesEmbeddingModel,
   type EmbeddingModel,
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
-} from "@khoralabs/memories-core/helpers";
-import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
-import { canonicalOntology } from "@khoralabs/memories-ontologies";
-import { qualifyMemoryKey } from "@khoralabs/memories-projections";
+} from "@khoralabs/memories-node/helpers";
+import { qualifyMemoryKey } from "@khoralabs/memories-node/projections";
 import {
   buildNamespaceGraphLayout,
   buildNamespaceSubtreeGraphLayout,
-  loadEdgePreview,
-  loadSourceMapTextPreview,
-} from "@khoralabs/memories-projections-sqlite";
-import {
   getMemoriesSyncPersistenceFromAsync,
   listMemoryNamespaces,
-} from "@khoralabs/memories-sqlite";
+  loadEdgePreview,
+  loadSourceMapTextPreview,
+} from "@khoralabs/memories-node/sqlite";
+import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envHostDbPath } from "../env";
@@ -381,7 +379,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
         }
       }
 
-      const hits = await searchAsync(
+      const { hits } = await searchAsync(
         { persistence },
         {
           namespace,

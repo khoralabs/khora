@@ -1,7 +1,8 @@
+import { getMemoriesSqliteDatabase } from "@khoralabs/memories-node/sqlite";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service";
-import { createNoneAuthStrategy } from "@khoralabs/memories-service-auth";
-import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service-http";
-import { createLocalSqliteServiceStack } from "@khoralabs/memories-service-storage-sqlite";
+import { createNoneAuthStrategy } from "@khoralabs/memories-service/auth";
+import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service/http";
+import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 
 export type TestKnowledgeService = {
   baseUrl: string;
@@ -11,10 +12,22 @@ export type TestKnowledgeService = {
 };
 
 export function startTestKnowledgeService(dataDir: string): TestKnowledgeService {
-  const stack = createLocalSqliteServiceStack({
-    dataDir,
-    sqlCipherKey: process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY?.trim() ?? "test-knowledge-key",
-  });
+  // Root test preload may load extension SQLite before SQLCipher configure; retry once
+  // (same race as openTestMemoriesDatabase in memories-node).
+  let stack: ReturnType<typeof createLocalSqliteServiceStack>;
+  try {
+    stack = createLocalSqliteServiceStack({
+      dataDir,
+      sqlCipherKey: process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY?.trim() ?? "test-knowledge-key",
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!/SQLite already loaded/i.test(msg)) throw e;
+    stack = createLocalSqliteServiceStack({
+      dataDir,
+      sqlCipherKey: process.env.EXEDRA_KNOWLEDGE_SQLCIPHER_KEY?.trim() ?? "test-knowledge-key",
+    });
+  }
   const server = Bun.serve({
     port: 0,
     fetch(req) {
@@ -42,9 +55,9 @@ export function startTestKnowledgeService(dataDir: string): TestKnowledgeService
     async listScopes(database) {
       await stack.service.open(database);
       const handle = await stack.service.getHandle(database);
-      const sqlite = handle.sqlite;
-      if (sqlite === undefined) throw new Error("expected sqlite");
-      return sqlite.db
+      const sync = handle.sync;
+      if (sync === undefined) throw new Error("expected sqlite sync persistence");
+      return getMemoriesSqliteDatabase(sync.syncPersistence)
         .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
         .all()
         .map((row) => row._id);

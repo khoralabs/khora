@@ -21,11 +21,8 @@
     "@khoralabs/agent-capabilities-otel": "^0.2.0",
     "@khoralabs/exedra-workflows-process-document": "workspace:*",
     "@khoralabs/exedra-workflows-shared": "workspace:*",
-    "@khoralabs/memories-adapter": "workspace:*",
-    "@khoralabs/memories-autolink": "workspace:*",
-    "@khoralabs/memories-core": "workspace:*",
-    "@khoralabs/memories-integrator": "workspace:*",
-    "@khoralabs/memories-tools": "workspace:*",
+    "@khoralabs/memories-agents": "^0.2.0",
+    "@khoralabs/memories-node": "^0.2.0",
     "@khoralabs/observability": "workspace:*",
     "@renderinc/sdk": "^0.6.0",
     "ai": "^6.0.205"

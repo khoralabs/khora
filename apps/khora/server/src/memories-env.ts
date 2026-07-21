@@ -4,7 +4,7 @@ import {
   type EmbeddingModel,
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
-} from "@khoralabs/memories-core/helpers";
+} from "@khoralabs/memories-node/helpers";
 import type { KhoraPersistencePaths } from "./persistence-paths";
 
 export const DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT = "global";

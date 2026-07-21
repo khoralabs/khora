@@ -5,7 +5,7 @@ import { createExedraHttpMemoriesClientAsync } from "@khoralabs/exedra-workflows
 import {
   createMemoriesEmbeddingModel,
   mergeResolutionAndProviderOptions,
-} from "@khoralabs/memories-core/helpers";
+} from "@khoralabs/memories-node/helpers";
 import type { LanguageModel } from "ai";
 
 let agentRegistry: AgentRegistry | undefined;

@@ -17,7 +17,6 @@
       "!!packages/memories",
       "!!packages/obp",
       "!!packages/chat",
-      "!!vendor/memories",
       "!!vendor/chat"
     ]
   },

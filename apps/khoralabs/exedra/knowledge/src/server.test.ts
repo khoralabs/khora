@@ -2,9 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createNoneAuthStrategy } from "@khoralabs/memories-service-auth";
-import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service-http";
-import { createLocalSqliteServiceStack } from "@khoralabs/memories-service-storage-sqlite";
+import { createNoneAuthStrategy } from "@khoralabs/memories-service/auth";
+import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service/http";
+import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 
 import { startTestKnowledgeService } from "./test-server";
 

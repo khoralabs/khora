@@ -1,4 +1,4 @@
-import { MemoryIntegratorClient } from "@khoralabs/memories-integrator";
+import { MemoryIntegratorClient } from "@khoralabs/memories-agents/integrator";
 import {
   createRemoteMemoriesClient,
   getAgentRegistry,

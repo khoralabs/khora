@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
-import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
-import { upsertMemorySearchMetaVectorAsync } from "@khoralabs/memories-core/persistence";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
+import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-node/helpers";
+import { upsertMemorySearchMetaVectorAsync } from "@khoralabs/memories-node/persistence";
 
 const DEFAULT_INTERVAL_MS = 30_000;
 const DEFAULT_BATCH_SIZE = 25;

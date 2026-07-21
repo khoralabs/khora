@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { isTextLikeMime } from "@khoralabs/memories-core/helpers";
+import { isTextLikeMime } from "@khoralabs/memories-node/helpers";
 import { generateText } from "ai";
 
 const CHUNK_MAX_CHARS = 12_000;

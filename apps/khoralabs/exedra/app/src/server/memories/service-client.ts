@@ -8,7 +8,7 @@ import {
   type RemoteMemoriesClientAsync,
   type RemoteMemoriesReadClient,
   storedOntologyFromDefinition,
-} from "@khoralabs/memories-service-client";
+} from "@khoralabs/memories-service/client";
 import { logger } from "../logger.js";
 import { exedraMemoriesOntology } from "./exedra-ontology.js";
 

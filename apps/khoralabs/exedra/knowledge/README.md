@@ -1,8 +1,8 @@
 # @khoralabs/exedra-knowledge
 
-Standalone Exedra service that hosts [`@khoralabs/memories-service`](../../../../vendor/memories/packages/memories-service/) over HTTP.
+Standalone Exedra service that hosts [`@khoralabs/memories-service`](https://www.npmjs.com/package/@khoralabs/memories-service) over HTTP.
 
-The app and workflows connect as clients via `EXEDRA_KNOWLEDGE_SERVICE_URL` and `@khoralabs/memories-service-client`. Namespace authorization, embeddings, and merge orchestration stay in the Exedra app.
+The app and workflows connect as clients via `EXEDRA_KNOWLEDGE_SERVICE_URL` and `@khoralabs/memories-service/client`. Namespace authorization, embeddings, and merge orchestration stay in the Exedra app.
 
 ## Local development
 

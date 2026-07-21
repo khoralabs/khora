@@ -166,7 +166,7 @@ Opened lazily by `createSqliteColonnadeCluster()` as `{cellsDir}/{stem}.sqlite`.
 
 ## 4. Memories search (default on)
 
-When `KHORA_MEMORIES` is enabled (default), the server opens `{KHORA_DATA_DIR}/khora-memories.sqlite` (`@khoralabs/memories-sqlite`), bootstraps `KhoraMemoriesHost` via `bootstrapKhoraMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
+When `KHORA_MEMORIES` is enabled (default), the server opens `{KHORA_DATA_DIR}/khora-memories.sqlite` (`@khoralabs/memories-node/sqlite`), bootstraps `KhoraMemoriesHost` via `bootstrapKhoraMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
 
 Embedding env (`KHORA_EMBEDDING_*`) is read in `apps/khora/server/src/memories-env.ts`, not in the host package.
 

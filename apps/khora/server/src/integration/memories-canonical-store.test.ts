@@ -19,12 +19,12 @@ import {
   postsMemoryNamespace,
   profileMemoryNamespace,
 } from "@khoralabs/khora-host";
-import { ids, MemoriesClientAsync } from "@khoralabs/memories-core";
+import { ids, MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesPersistenceAsync,
   memoriesSqliteVecAvailable,
   openMemoriesDatabase,
-} from "@khoralabs/memories-sqlite";
+} from "@khoralabs/memories-node/sqlite";
 
 function memoriesTest(name: string, fn: () => Promise<void>): void {
   test.skipIf(!memoriesSqliteVecAvailable())(name, fn);

@@ -5,10 +5,10 @@ import {
   khoraPostIndexableFeatures,
   khoraProfileLexicalText,
 } from "@khoralabs/khora-contracts";
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
-import { ids, type MemoriesClientAsync } from "@khoralabs/memories-core";
-import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
-import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
+import { ids, type MemoriesClientAsync } from "@khoralabs/memories-node";
+import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
+import { embedTextChunks } from "@khoralabs/memories-node/helpers";
 import { decodePostId } from "../post-address-id";
 import type { HostPersistenceClient } from "../runtime";
 import {
