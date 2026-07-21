@@ -4,14 +4,10 @@ import {
   dispatchChatRoute,
   requireInternalToken,
 } from "@khoralabs/chat-http/routes";
-import {
-  getChatService,
-  initChatStorage,
-  subscribeToChatThread,
-} from "@khoralabs/chat-http/service";
 import { type ServerWebSocket, serve } from "bun";
 
 import { applyExedraChatEnv, chatInternalToken } from "./config";
+import { getChatService, initChatStorage, subscribeToChatThread } from "./service";
 
 applyExedraChatEnv();
 const token = chatInternalToken();

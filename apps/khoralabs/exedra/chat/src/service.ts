@@ -1,41 +1,67 @@
 import type { ChatEvent, ChatService } from "@khoralabs/chat-core";
 import {
-  closeChatDb as closeChatHttpDb,
-  getChatDb as getChatHttpDb,
-  getChatService as getChatHttpService,
-  initChatStorage as initChatHttpStorage,
+  type ChatHttpRuntime,
+  type ChatStorage,
+  createChatHttpRuntime,
   isChatNotFound,
-  subscribeToChatThread as subscribeChatHttpThread,
 } from "@khoralabs/chat-http/service";
-import type { SqlDatabase } from "@khoralabs/chat-persistence-turso";
+import {
+  closeLocalSqliteDatabase,
+  createLocalSqliteDatabase,
+  createTursoChatPersistence,
+  type SqlDatabase,
+} from "@khoralabs/chat-persistence-turso";
 
 import { applyExedraChatEnv, resolveExedraChatDbPath } from "./config";
 
 export { isChatNotFound, resolveExedraChatDbPath };
 
-export async function initChatStorage(): Promise<void> {
+let db: SqlDatabase | undefined;
+let storage: ChatStorage | undefined;
+let runtime: ChatHttpRuntime | undefined;
+
+function ensureRuntime(): ChatHttpRuntime {
   applyExedraChatEnv();
-  await initChatHttpStorage();
+  if (runtime !== undefined) return runtime;
+
+  const opened = createLocalSqliteDatabase(resolveExedraChatDbPath());
+  db = opened;
+  storage = {
+    persistence: createTursoChatPersistence(opened),
+    close() {
+      closeLocalSqliteDatabase(opened);
+    },
+  };
+  runtime = createChatHttpRuntime({ persistence: storage.persistence });
+  return runtime;
+}
+
+/** Eager init for server startup (async for API parity with older chat-http). */
+export async function initChatStorage(): Promise<void> {
+  ensureRuntime();
 }
 
 export function getChatDb(): SqlDatabase {
-  applyExedraChatEnv();
-  return getChatHttpDb();
+  ensureRuntime();
+  if (db === undefined) throw new Error("chat db not initialized");
+  return db;
 }
 
 export function getChatService(): ChatService {
-  applyExedraChatEnv();
-  return getChatHttpService();
+  return ensureRuntime().service;
 }
 
 export function subscribeToChatThread(
   threadId: string,
   send: (event: ChatEvent) => void,
 ): () => void {
-  applyExedraChatEnv();
-  return subscribeChatHttpThread(threadId, send);
+  return ensureRuntime().subscribeToThread(threadId, send);
 }
 
 export function closeChatDb(): void {
-  closeChatHttpDb();
+  runtime?.close();
+  storage?.close();
+  runtime = undefined;
+  storage = undefined;
+  db = undefined;
 }

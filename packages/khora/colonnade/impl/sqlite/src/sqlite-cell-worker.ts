@@ -1,4 +1,6 @@
 /// <reference lib="WebWorker" />
+import { Database } from "bun:sqlite";
+import { existsSync } from "node:fs";
 import { createOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type {
   AckWriteLogAppliedInput,
@@ -36,6 +38,34 @@ type ReadyMsg = { readonly kind: "ready" };
 let strategy: SqliteCellPersistenceStrategy | undefined;
 
 declare const self: DedicatedWorkerGlobalScope;
+
+function softenSetCustomSqlite(): void {
+  const original = Database.setCustomSQLite.bind(Database);
+  Database.setCustomSQLite = ((path: string) => {
+    try {
+      original(path);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!/SQLite already loaded/i.test(msg)) throw e;
+    }
+  }) as typeof Database.setCustomSQLite;
+}
+
+/** Avoid `brew` from sqlite-crypto — `execFileSync("brew")` can hang in Bun Workers. */
+function ensureSqlCipherEnv(): void {
+  if (process.env.SQLCIPHER_CUSTOM_LIB?.trim()) return;
+  for (const p of [
+    "/opt/homebrew/opt/sqlcipher/lib/libsqlcipher.dylib",
+    "/usr/local/opt/sqlcipher/lib/libsqlcipher.dylib",
+    "/usr/lib/x86_64-linux-gnu/libsqlcipher.so.0",
+    "/usr/lib/aarch64-linux-gnu/libsqlcipher.so.0",
+  ]) {
+    if (existsSync(p)) {
+      process.env.SQLCIPHER_CUSTOM_LIB = p;
+      return;
+    }
+  }
+}
 
 async function dispatch(method: string, args: readonly unknown[]): Promise<unknown> {
   const s = strategy;
@@ -90,6 +120,9 @@ function outboxCodecFromHex(outboxKeyHex: string) {
 self.onmessage = (ev: MessageEvent<InitMsg | RpcReq>) => {
   const msg = ev.data;
   if (msg.kind === "init") {
+    // Catalog / preload may already load process-global SQLite before this worker runs.
+    softenSetCustomSqlite();
+    ensureSqlCipherEnv();
     const db = openEncryptedDatabaseSync(msg.dbPath, { create: true }, msg.sqlCipherKey);
     const outboxPayloadCodec = outboxCodecFromHex(msg.outboxKeyHex);
     strategy = new SqliteCellPersistenceStrategy(db, msg.cellId, { outboxPayloadCodec });

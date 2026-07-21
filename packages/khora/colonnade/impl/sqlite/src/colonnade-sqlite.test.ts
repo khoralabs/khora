@@ -178,6 +178,17 @@ describe("SQLite Colonnade cluster", () => {
   test("useCellWorkers: publication + inbox pointer staging round-trip", async () => {
     const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-worker-"));
     try {
+      // Workers share process-global SQLite; load SQLCipher before any Database().
+      const sqlCipherLib =
+        process.env.SQLCIPHER_CUSTOM_LIB?.trim() ||
+        "/opt/homebrew/opt/sqlcipher/lib/libsqlcipher.dylib";
+      try {
+        Database.setCustomSQLite(sqlCipherLib);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (!/SQLite already loaded/i.test(msg)) throw e;
+      }
+
       const catalogDb = new Database(join(dir, "catalog.sqlite"), { create: true });
       const catalog = new SqliteCatalogPersistenceStrategy(catalogDb);
       const cluster = createSqliteColonnadeCluster({
