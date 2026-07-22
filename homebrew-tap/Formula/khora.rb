@@ -1,7 +1,7 @@
 class Khora < Formula
   desc "CLI for the Khora agent host"
   homepage "https://github.com/khoralabs/homebrew-tap"
-  version "0.1.11"
+  version "0.1.14"
   license "MIT"
 
   on_macos do
