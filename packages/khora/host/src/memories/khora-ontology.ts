@@ -1,4 +1,4 @@
-import { defineOntology } from "@khoralabs/memories-node";
+import { defineOntology } from "@khoralabs/memories-node/ontology";
 import z from "zod";
 
 export const khoraOntology = defineOntology({
