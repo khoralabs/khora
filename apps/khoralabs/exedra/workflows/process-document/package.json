@@ -23,7 +23,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
     "@khoralabs/exedra-workflows-shared": "workspace:*",
-    "@khoralabs/memories-node": "^0.3.0",
+    "@khoralabs/memories-node": "^0.4.0",
     "@khoralabs/observability": "workspace:*",
     "@renderinc/sdk": "^0.6.0",
     "ai": "^6.0.205"
