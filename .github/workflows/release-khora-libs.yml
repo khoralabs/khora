@@ -124,6 +124,7 @@ jobs:
           fi
           HUSKY=0 git commit -m "release khora-client v${VERSION}"
           # Other release workflows may push to main concurrently; rebase and retry.
+          # --autostash: working tree may have unstaged noise that blocks rebase.
           branch="$(git rev-parse --abbrev-ref HEAD)"
           for attempt in 1 2 3 4 5; do
             if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
@@ -131,7 +132,7 @@ jobs:
             fi
             echo "push rejected (attempt ${attempt}); rebasing onto origin/${branch}..."
             git fetch origin "${branch}"
-            git rebase "origin/${branch}"
+            git rebase --autostash "origin/${branch}"
             sleep $((attempt * 2))
           done
           echo "::error::failed to push version bump after retries"

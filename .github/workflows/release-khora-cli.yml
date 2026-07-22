@@ -198,6 +198,7 @@ jobs:
           git add homebrew-tap/Formula/khora.rb
           git diff --staged --quiet || git commit -m "chore(homebrew): khora-cli@${VERSION}"
           # Other release workflows may push to main concurrently; rebase and retry.
+          # --autostash: release builds leave unstaged artifacts that block rebase.
           branch="$(git rev-parse --abbrev-ref HEAD)"
           for attempt in 1 2 3 4 5; do
             if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
@@ -205,7 +206,7 @@ jobs:
             fi
             echo "push rejected (attempt ${attempt}); rebasing onto origin/${branch}..."
             git fetch origin "${branch}"
-            git rebase "origin/${branch}"
+            git rebase --autostash "origin/${branch}"
             sleep $((attempt * 2))
           done
           echo "::error::failed to push homebrew formula after retries"
