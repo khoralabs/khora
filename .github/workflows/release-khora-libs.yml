@@ -114,12 +114,28 @@ jobs:
       - name: commit version bump
         if: ${{ inputs.dry_run == false }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/khora/client/package.json
-          git diff --cached --quiet && echo "::warning::version unchanged" && exit 0
+          if git diff --cached --quiet; then
+            echo "::warning::version unchanged"
+            exit 0
+          fi
           HUSKY=0 git commit -m "release khora-client v${VERSION}"
-          HUSKY=0 git push origin HEAD
+          # Other release workflows may push to main concurrently; rebase and retry.
+          branch="$(git rev-parse --abbrev-ref HEAD)"
+          for attempt in 1 2 3 4 5; do
+            if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
+              exit 0
+            fi
+            echo "push rejected (attempt ${attempt}); rebasing onto origin/${branch}..."
+            git fetch origin "${branch}"
+            git rebase "origin/${branch}"
+            sleep $((attempt * 2))
+          done
+          echo "::error::failed to push version bump after retries"
+          exit 1
 
       - name: tag and push
         if: ${{ inputs.dry_run == false }}
