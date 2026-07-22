@@ -15,8 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/memories-node": "^0.2.0",
-    "@khoralabs/memories-service": "^0.2.0",
+    "@khoralabs/memories-node": "^0.3.0",
+    "@khoralabs/memories-service": "^0.3.0",
     "@khoralabs/sqlite-crypto": "^0.1.0",
     "@khoralabs/sqlite-migrate": "^0.1.0",
     "ajv": "^8",
