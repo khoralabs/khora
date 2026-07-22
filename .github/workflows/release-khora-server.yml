@@ -23,7 +23,7 @@ jobs:
       VERSION: ${{ inputs.version }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
