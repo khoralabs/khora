@@ -19,6 +19,7 @@ import {
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-node/helpers";
+import { canonicalOntology } from "@khoralabs/memories-node/ontology";
 import { qualifyMemoryKey } from "@khoralabs/memories-node/projections";
 import {
   buildNamespaceGraphLayout,
@@ -28,7 +29,6 @@ import {
   loadEdgePreview,
   loadSourceMapTextPreview,
 } from "@khoralabs/memories-node/sqlite";
-import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envHostDbPath } from "../env";

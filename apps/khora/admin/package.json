@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@khoralabs/khora-react": "workspace:*",
-    "@khoralabs/memories-react-graph": "^0.4.0",
+    "@khoralabs/memories-react-graph": "^0.5.0",
     "@khoralabs/registry-catalog-contracts": "workspace:*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
