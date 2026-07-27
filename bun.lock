@@ -5,7 +5,7 @@
     "": {
       "name": "@khoralabs/agent-kernel",
       "dependencies": {
-        "@khoralabs/memories-node": "^0.5.0",
+        "@khoralabs/memories-node": "^0.5.10",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.4.10",
@@ -25,7 +25,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/khora-react": "workspace:*",
-        "@khoralabs/memories-react-graph": "^0.5.0",
+        "@khoralabs/memories-react-graph": "^0.5.10",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
@@ -144,8 +144,8 @@
         "@khoralabs/khora-invites-sqlite": "workspace:*",
         "@khoralabs/khora-server-http": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
-        "@khoralabs/memories-agents": "^0.5.0",
-        "@khoralabs/memories-node": "^0.5.0",
+        "@khoralabs/memories-agents": "^0.5.10",
+        "@khoralabs/memories-node": "^0.5.10",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
@@ -191,10 +191,10 @@
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/memories-agents": "^0.5.0",
-        "@khoralabs/memories-node": "^0.5.0",
-        "@khoralabs/memories-react-graph": "^0.5.0",
-        "@khoralabs/memories-service": "^0.5.0",
+        "@khoralabs/memories-agents": "^0.5.10",
+        "@khoralabs/memories-node": "^0.5.10",
+        "@khoralabs/memories-react-graph": "^0.5.10",
+        "@khoralabs/memories-service": "^0.5.10",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts-react": "workspace:*",
         "@khoralabs/registry-auth": "workspace:*",
@@ -283,8 +283,8 @@
     "apps/khoralabs/exedra/knowledge": {
       "name": "@khoralabs/exedra-knowledge",
       "dependencies": {
-        "@khoralabs/memories-node": "^0.5.0",
-        "@khoralabs/memories-service": "^0.5.0",
+        "@khoralabs/memories-node": "^0.5.10",
+        "@khoralabs/memories-service": "^0.5.10",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@khoralabs/sqlite-migrate": "^0.1.0",
         "ajv": "^8",
@@ -325,8 +325,8 @@
         "@khoralabs/agent-capabilities-otel": "^0.2.0",
         "@khoralabs/exedra-workflows-process-document": "workspace:*",
         "@khoralabs/exedra-workflows-shared": "workspace:*",
-        "@khoralabs/memories-agents": "^0.5.0",
-        "@khoralabs/memories-node": "^0.5.0",
+        "@khoralabs/memories-agents": "^0.5.10",
+        "@khoralabs/memories-node": "^0.5.10",
         "@khoralabs/observability": "workspace:*",
         "@renderinc/sdk": "^0.6.0",
         "ai": "^6.0.205",
@@ -341,7 +341,7 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/exedra-workflows-shared": "workspace:*",
-        "@khoralabs/memories-node": "^0.5.0",
+        "@khoralabs/memories-node": "^0.5.10",
         "@khoralabs/observability": "workspace:*",
         "@renderinc/sdk": "^0.6.0",
         "ai": "^6.0.205",
@@ -355,8 +355,8 @@
       "version": "1.0.0",
       "dependencies": {
         "@khoralabs/exedra-authz": "workspace:*",
-        "@khoralabs/memories-node": "^0.5.0",
-        "@khoralabs/memories-service": "^0.5.0",
+        "@khoralabs/memories-node": "^0.5.10",
+        "@khoralabs/memories-service": "^0.5.10",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -427,7 +427,7 @@
     },
     "packages/khora/client": {
       "name": "@khoralabs/khora-client",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "dependencies": {
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
@@ -529,7 +529,7 @@
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-invites": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
-        "@khoralabs/memories-node": "^0.5.0",
+        "@khoralabs/memories-node": "^0.5.10",
         "@khoralabs/percolator": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
         "zod": "^4",
@@ -1154,10 +1154,10 @@
     },
   },
   "overrides": {
-    "@khoralabs/memories-agents": "0.5.0",
-    "@khoralabs/memories-node": "0.5.0",
-    "@khoralabs/memories-react-graph": "0.5.0",
-    "@khoralabs/memories-service": "0.5.0",
+    "@khoralabs/memories-agents": "0.5.10",
+    "@khoralabs/memories-node": "0.5.10",
+    "@khoralabs/memories-react-graph": "0.5.10",
+    "@khoralabs/memories-service": "0.5.10",
     "kysely": "0.28.17",
   },
   "packages": {
@@ -1515,13 +1515,13 @@
 
     "@khoralabs/libs": ["@khoralabs/libs@workspace:vendor/libs"],
 
-    "@khoralabs/memories-agents": ["@khoralabs/memories-agents@0.5.0", "", { "dependencies": { "@ai-sdk/provider-utils": "^5.0.2", "@khoralabs/agent-capabilities": "^0.2.0", "@khoralabs/agent-capabilities-ai-sdk": "^0.2.0", "@khoralabs/agent-capabilities-otel": "^0.2.0", "@khoralabs/memories-node": "0.4.0", "ai": "^7.0.9", "zod": "^4" }, "peerDependencies": { "typescript": "^5" } }, "sha512-0DkJEiPcpp6wxAktQeSVW2pmv71zWJIJB7IeLBP+AHOOHdqb3jfgpshkrFoktRN2VpGF9n3MXXO5POKhn3CRXA=="],
+    "@khoralabs/memories-agents": ["@khoralabs/memories-agents@0.5.10", "", { "dependencies": { "@ai-sdk/provider-utils": "^5.0.2", "@khoralabs/agent-capabilities": "^0.2.0", "@khoralabs/agent-capabilities-ai-sdk": "^0.2.0", "@khoralabs/agent-capabilities-otel": "^0.2.0", "@khoralabs/memories-node": "0.5.2", "ai": "^7.0.9", "zod": "^4" }, "peerDependencies": { "typescript": "^5" } }, "sha512-C0ecWOqmHDsodIkU77atZJonklIDu4N5XGZkGPi94o6wsG1ZKs2YCCviZaHzsVB+6temoqggPqZbTFhEGchHHg=="],
 
-    "@khoralabs/memories-node": ["@khoralabs/memories-node@0.5.0", "", { "dependencies": { "@ai-sdk/provider-utils": "^5.0.2", "@khoralabs/sourcemaps": "^0.1.0", "@standard-schema/spec": "^1.1.0", "ai": "^7.0.9", "js-sha256": "^0.11.0", "zod": "^4" }, "peerDependencies": { "@khoralabs/sqlite-crypto": "^0.1.0", "@khoralabs/sqlite-migrate": "^0.1.0", "@libsql/client": "^0.17.4", "@tursodatabase/serverless": "^0.2.0", "ajv": "^8", "sqlite-vec": "^0.1.10-alpha.4", "typescript": "^5", "umap-js": "^1.4.0", "workflow": "^4.5.0" }, "optionalPeers": ["@khoralabs/sqlite-crypto", "@khoralabs/sqlite-migrate", "@libsql/client", "@tursodatabase/serverless", "ajv", "sqlite-vec", "umap-js", "workflow"] }, "sha512-dnhxMPywwwhxMJv8uWJD4Mg47/2rF7w7AaiGKWKZDoC+HF6t9cNZu8sxpO1jgeK8XROgfS2lv32Le34TN1u/ug=="],
+    "@khoralabs/memories-node": ["@khoralabs/memories-node@0.5.10", "", { "dependencies": { "@ai-sdk/provider-utils": "^5.0.2", "@khoralabs/sourcemaps": "^0.1.0", "@standard-schema/spec": "^1.1.0", "ai": "^7.0.9", "js-sha256": "^0.11.0", "zod": "^4" }, "peerDependencies": { "@khoralabs/sqlite-crypto": "^0.1.0", "@khoralabs/sqlite-migrate": "^0.1.0", "@libsql/client": "^0.17.4", "@tursodatabase/serverless": "^0.2.0", "ajv": "^8", "sqlite-vec": "^0.1.10-alpha.4", "typescript": "^5", "umap-js": "^1.4.0", "workflow": "^4.5.0" }, "optionalPeers": ["@khoralabs/sqlite-crypto", "@khoralabs/sqlite-migrate", "@libsql/client", "@tursodatabase/serverless", "ajv", "sqlite-vec", "umap-js", "workflow"] }, "sha512-MraYpUrcXtGfnT8DHmLPSj0a+nytVp4/JOQmbnegGLO4y9eE7EqyKJLxcHnZ5K1alVltMny7/2lnqTgNPCsFgQ=="],
 
-    "@khoralabs/memories-react-graph": ["@khoralabs/memories-react-graph@0.5.0", "", { "dependencies": { "@chenglou/pretext": "^0.0.6", "@radix-ui/react-slot": "^1.2.3", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "lucide-react": "^0.545.0", "radix-ui": "^1.4.3", "react-textarea-autosize": "^8.5.6", "rehype-react": "^8.0.0", "remark-parse": "^11.0.0", "remark-rehype": "^11.1.2", "tailwind-merge": "^3.3.1", "unified": "^11.0.5" }, "peerDependencies": { "@react-three/drei": "^10", "@react-three/fiber": "^9", "react": "^19", "react-dom": "^19", "three": "^0.183", "typescript": "^5" } }, "sha512-Ll/30VrCcC1awr37Xcjf9ZdTbTckbTJxaocOgb2g6U8qYpRMh5fLk4YeMZylCasRBRhSTwsRLixlIqEJaf+dWQ=="],
+    "@khoralabs/memories-react-graph": ["@khoralabs/memories-react-graph@0.5.10", "", { "dependencies": { "@chenglou/pretext": "^0.0.6", "@radix-ui/react-slot": "^1.2.3", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "lucide-react": "^0.545.0", "radix-ui": "^1.4.3", "react-textarea-autosize": "^8.5.6", "rehype-react": "^8.0.0", "remark-parse": "^11.0.0", "remark-rehype": "^11.1.2", "tailwind-merge": "^3.3.1", "unified": "^11.0.5" }, "peerDependencies": { "@react-three/drei": "^10", "@react-three/fiber": "^9", "react": "^19", "react-dom": "^19", "three": "^0.183", "typescript": "^5" } }, "sha512-hCWCMl+XASDX4Og/7gYJXvSzX2ZaWAKUU73xuJ6bp0NqdQsEnZOgBlQn2sc7D3ylBigNQ+7QkoK35ouvatWeWg=="],
 
-    "@khoralabs/memories-service": ["@khoralabs/memories-service@0.5.0", "", { "dependencies": { "@khoralabs/memories-node": "0.4.0", "lru-cache": "^11.5.1" }, "peerDependencies": { "@khoralabs/sqlite-crypto": "^0.1.0", "typescript": "^5" }, "optionalPeers": ["@khoralabs/sqlite-crypto"] }, "sha512-TKkn9Ra2FOwKgoS/fyDrPHu2BVFx/WYPGC7qNxouNxF8R8Tazo/fBdaxBEgqc047RJ/DSTVq76s/sb+B0cP+1g=="],
+    "@khoralabs/memories-service": ["@khoralabs/memories-service@0.5.10", "", { "dependencies": { "@khoralabs/memories-node": "0.5.2", "ajv": "^8", "lru-cache": "^11.5.1" }, "peerDependencies": { "@khoralabs/sqlite-crypto": "^0.1.0", "typescript": "^5" }, "optionalPeers": ["@khoralabs/sqlite-crypto"] }, "sha512-LTJheHVmKsHP4stoVbDNetUT9928i+rKacciZAv9kFh2PaVNJ3draYn5565s00pe+5CuYnFEsIUXTbtCe+mC6g=="],
 
     "@khoralabs/observability": ["@khoralabs/observability@workspace:vendor/libs/packages/observability"],
 
@@ -1993,7 +1993,7 @@
 
     "@tsconfig/node20": ["@tsconfig/node20@20.1.8", "", {}, "sha512-Em+IdPfByIzWRRpqWL4Z7ArLHZGxmc36BxE3jCz9nBFSm+5aLaPMZyjwu4yetvyKXeogWcxik4L1jB5JTWfw7A=="],
 
-    "@tursodatabase/serverless": ["@tursodatabase/serverless@1.3.1", "", {}, "sha512-z9ZG7vogknUKhMa/vHUZOnAdxdnpz/Najd5HfPI9yDgN1tkesTEk7tV9daUwY3cBPq7jzHYhgSe079Flll4Xvg=="],
+    "@tursodatabase/serverless": ["@tursodatabase/serverless@1.4.0", "", {}, "sha512-ZU3T76NG/E0NTKULqJ9TggJfbdPgRaChOS4HDOu3Srds7w7fSPie7jbPHzz+CLGrxs2TtMYtYB1lH5Bh6q1w7A=="],
 
     "@tweenjs/tween.js": ["@tweenjs/tween.js@23.1.3", "", {}, "sha512-vJmvvwFxYuGnF2axRtPYocag6Clbb5YS7kLL+SO/TeVFzHqDIWrNKYtcsPMibjDx9O+bu+psAy9NKfWklassUA=="],
 
