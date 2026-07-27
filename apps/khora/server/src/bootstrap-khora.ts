@@ -77,6 +77,12 @@ export type KhoraHostBootstrap = {
 export async function bootstrapKhoraHost(
   opts: BootstrapKhoraHostOpts,
 ): Promise<KhoraHostBootstrap> {
+  // Must run before any bun:sqlite open. Host/side DBs otherwise load Bun's
+  // bundled SQLite first, and setCustomSQLite becomes a no-op — breaking sqlite-vec.
+  if (opts.memories !== undefined) {
+    ensureCustomSqliteForExtensions();
+  }
+
   const cellPoolCount = opts.cellPoolCount;
   const useCellWorkers = opts.useCellWorkers;
   const encryption = opts.encryption;
@@ -159,7 +165,6 @@ export async function bootstrapKhoraHost(
 
   let memoriesSqliteDb: Database | undefined;
   if (opts.memories !== undefined) {
-    ensureCustomSqliteForExtensions();
     memoriesSqliteDb = openMemoriesDatabase(
       opts.memories.dbPath,
       encryption.sqlCipherKey !== undefined ? { sqlCipherKey: encryption.sqlCipherKey } : {},
