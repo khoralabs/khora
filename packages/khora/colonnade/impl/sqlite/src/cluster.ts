@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
+import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade-crypto";
 import type {
   CatalogPersistenceStrategy,
   CellPersistenceStrategy,
@@ -14,7 +15,6 @@ import {
   derivePoolHomeCell,
   perPrincipalCellId,
 } from "@khoralabs/colonnade-persistence";
-import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { ensureCellPoolManifest } from "./cell-pool-manifest";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy";
 import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy";
@@ -22,7 +22,8 @@ import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy";
 export type SqliteColonnadeClusterMode = ColonnadeClusterMode;
 
 export type SqliteColonnadeClusterEncryptionOptions = {
-  readonly sqlCipherKey: string;
+  /** When set, encrypt cell DBs with SQLCipher; omit for plaintext. */
+  readonly sqlCipherKey?: string;
   readonly outboxPayloadCodec: OutboxPayloadCodec;
   /** Hex-encoded 32-byte outbox key for worker init. */
   readonly outboxKeyHex: string;
@@ -88,7 +89,7 @@ export function createSqliteColonnadeCluster(
     if (db === undefined) {
       const stem = cellDbFilenameStem(cellId);
       const path = join(opts.cellsDirectory, `${stem}.sqlite`);
-      db = openEncryptedDatabaseSync(path, { create: true }, opts.encryption.sqlCipherKey);
+      db = openMaybeEncryptedDatabaseSync(path, { create: true }, opts.encryption.sqlCipherKey);
       cellDbById.set(cellId, db);
       cellStrategyById.set(cellId, new SqliteCellPersistenceStrategy(db, cellId, cellStrategyOpts));
     }

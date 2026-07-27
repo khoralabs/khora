@@ -1,7 +1,10 @@
 /// <reference lib="WebWorker" />
 import { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
-import { createOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
+import {
+  createOutboxPayloadCodec,
+  openMaybeEncryptedDatabaseSync,
+} from "@khoralabs/colonnade-crypto";
 import type {
   AckWriteLogAppliedInput,
   AppendOutboxRecordInput,
@@ -15,14 +18,13 @@ import type {
   ListPendingInboxEntriesInput,
   VerifyAndDrainInboxBatchInput,
 } from "@khoralabs/colonnade-persistence";
-import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy";
 
 type InitMsg = {
   readonly kind: "init";
   readonly cellId: string;
   readonly dbPath: string;
-  readonly sqlCipherKey: string;
+  readonly sqlCipherKey?: string;
   readonly outboxKeyHex: string;
 };
 type RpcReq = {
@@ -122,8 +124,10 @@ self.onmessage = (ev: MessageEvent<InitMsg | RpcReq>) => {
   if (msg.kind === "init") {
     // Catalog / preload may already load process-global SQLite before this worker runs.
     softenSetCustomSqlite();
-    ensureSqlCipherEnv();
-    const db = openEncryptedDatabaseSync(msg.dbPath, { create: true }, msg.sqlCipherKey);
+    if (typeof msg.sqlCipherKey === "string" && msg.sqlCipherKey.length > 0) {
+      ensureSqlCipherEnv();
+    }
+    const db = openMaybeEncryptedDatabaseSync(msg.dbPath, { create: true }, msg.sqlCipherKey);
     const outboxPayloadCodec = outboxCodecFromHex(msg.outboxKeyHex);
     strategy = new SqliteCellPersistenceStrategy(db, msg.cellId, { outboxPayloadCodec });
     const ready: ReadyMsg = { kind: "ready" };

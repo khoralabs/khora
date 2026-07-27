@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade-crypto";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type {
   KhoraAdminCellDetailResult,
@@ -16,7 +17,6 @@ import {
   countRegisteredPrincipals,
   NAMESPACE_REG_BY_PRINCIPAL,
 } from "@khoralabs/khora-host-sqlite";
-import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
 const REG_BY_PRINCIPAL = NAMESPACE_REG_BY_PRINCIPAL;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -46,11 +46,11 @@ function tableExists(db: Database, name: string): boolean {
 function openCellDbReadonly(
   cellsDir: string,
   cellId: string,
-  sqlCipherKey: string,
+  sqlCipherKey?: string,
 ): Database | undefined {
   const path = cellDbPath(cellsDir, cellId);
   if (!existsSync(path)) return undefined;
-  return openEncryptedDatabaseSync(path, { readonly: true }, sqlCipherKey);
+  return openMaybeEncryptedDatabaseSync(path, { readonly: true }, sqlCipherKey);
 }
 
 function countOutboxForPrincipal(
@@ -58,7 +58,7 @@ function countOutboxForPrincipal(
   cellId: string,
   tenantKey: string,
   principalId: string,
-  sqlCipherKey: string,
+  sqlCipherKey?: string,
 ): number {
   const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
   if (db === undefined) return 0;
@@ -77,7 +77,7 @@ function cellTableCounts(
   cellsDir: string,
   cellId: string,
   tenantKey: string,
-  sqlCipherKey: string,
+  sqlCipherKey?: string,
 ): { provisioned: boolean; outboxCount: number; inboxCount: number } {
   const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
   if (db === undefined) {
@@ -165,7 +165,7 @@ function mergePrincipalActivity(
 function scanOutboxActivity(
   cellsDir: string,
   tenantKey: string,
-  sqlCipherKey: string,
+  sqlCipherKey: string | undefined,
   cellPoolCount: number,
 ): Map<string, PrincipalActivity> {
   const activity = new Map<string, PrincipalActivity>();
@@ -202,7 +202,7 @@ function scanOutboxActivity(
 function countSubscriptionsSince(
   cellsDir: string,
   tenantKey: string,
-  sqlCipherKey: string,
+  sqlCipherKey: string | undefined,
   cellPoolCount: number,
   sinceMs: number,
 ): number {
@@ -323,7 +323,7 @@ export function createKhoraAdminStatsPort(deps: {
   cellPoolCount: number;
   cluster: KhoraColonnadeCluster;
   lookupNormalizedUsernameForPrincipal: (principalId: string) => string | undefined;
-  sqlCipherKey: string;
+  sqlCipherKey?: string;
 }): KhoraAdminStatsPort {
   const {
     hostDb,

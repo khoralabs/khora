@@ -1,5 +1,4 @@
 import type { Database } from "bun:sqlite";
-import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
 import type { KhoraHostPersistence } from "@khoralabs/khora-host";
 import { createAgentAccountStatusPort } from "./agent-account-status";
 import { createEntityAdapter } from "./entity-adapter";
@@ -62,9 +61,10 @@ export function createKhoraHostSqlitePersistence(
 export async function openKhoraHostSqlitePersistence(opts: {
   hostDbPath: string;
   tenantKey?: string;
-  encryptionProvider: EncryptionKeyProvider;
+  /** When set, encrypt host DB with SQLCipher; omit for plaintext. */
+  sqlCipherKey?: string;
 }): Promise<{ persistence: KhoraHostPersistence; hostDb: Database }> {
-  const hostDb = await openKhoraHostDb(opts.hostDbPath, opts.encryptionProvider);
+  const hostDb = await openKhoraHostDb(opts.hostDbPath, opts.sqlCipherKey);
   const persistence = createKhoraHostSqlitePersistence(hostDb, {
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });

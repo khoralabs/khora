@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
-import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
+import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./teardown-queue";
 
 export function ensureKhoraHostProjectionsSchema(db: Database): void {
@@ -44,12 +43,9 @@ export function applyKhoraSqlitePragmas(db: Database): void {
   `);
 }
 
-/** Open encrypted host DB and ensure host-owned schemas (not percolator). */
-export async function openKhoraHostDb(
-  path: string,
-  provider: EncryptionKeyProvider,
-): Promise<Database> {
-  const db = await openEncryptedDatabase(path, { create: true }, "khora", provider);
+/** Open host DB (SQLCipher when `sqlCipherKey` is set) and ensure host-owned schemas. */
+export async function openKhoraHostDb(path: string, sqlCipherKey?: string): Promise<Database> {
+  const db = openMaybeEncryptedDatabaseSync(path, { create: true }, sqlCipherKey);
   applyKhoraSqlitePragmas(db);
   ensureKhoraHostProjectionsSchema(db);
   ensurePrincipalTeardownJobsSchema(db);

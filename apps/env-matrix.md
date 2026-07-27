@@ -153,7 +153,7 @@ Local: `docker build -t khora-otel-collector -f apps/otel/Dockerfile .` then `do
 
 | Variable | R | K | KH | E | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `KHORA_SQLCIPHER_KEY` | · | + | · | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
+| `KHORA_SQLCIPHER_KEY` | · | + | · | · | S | **Optional.** When set (≥16 chars), SQLCipher for host, cells, memories SQLite. Omit for plaintext local DBs. Same key required for Litestream restore of encrypted files. |
 | `KHORA_OUTBOX_ENCRYPTION_KEY` | · | + | · | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
 | `REGISTRY_SQLCIPHER_KEY` | + | · | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
 

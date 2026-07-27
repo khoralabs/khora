@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { EnvKeyProvider } from "./key-provider";
+import { EnvKeyProvider, tryGetSqlCipherKey } from "./key-provider";
+import { openMaybeEncryptedDatabaseSync } from "./open-maybe-encrypted";
 import {
   createOutboxPayloadCodec,
   decryptOutboxPayload,
@@ -59,6 +60,32 @@ describe("EnvKeyProvider", () => {
     } finally {
       if (prev === undefined) delete process.env.KHORA_OUTBOX_ENCRYPTION_KEY;
       else process.env.KHORA_OUTBOX_ENCRYPTION_KEY = prev;
+    }
+  });
+});
+
+describe("SQLCipher opt-in", () => {
+  test("tryGetSqlCipherKey returns undefined when env unset", async () => {
+    const prev = process.env.KHORA_SQLCIPHER_KEY;
+    delete process.env.KHORA_SQLCIPHER_KEY;
+    try {
+      const key = await tryGetSqlCipherKey(new EnvKeyProvider(), "khora");
+      expect(key).toBeUndefined();
+    } finally {
+      if (prev === undefined) delete process.env.KHORA_SQLCIPHER_KEY;
+      else process.env.KHORA_SQLCIPHER_KEY = prev;
+    }
+  });
+
+  test("openMaybeEncryptedDatabaseSync opens plaintext without key", () => {
+    const db = openMaybeEncryptedDatabaseSync(":memory:", { create: true });
+    try {
+      db.run("CREATE TABLE t (id INTEGER PRIMARY KEY)");
+      db.run("INSERT INTO t (id) VALUES (1)");
+      const row = db.query("SELECT id FROM t").get() as { id: number };
+      expect(row.id).toBe(1);
+    } finally {
+      db.close();
     }
   });
 });

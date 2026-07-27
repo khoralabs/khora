@@ -47,6 +47,23 @@ function decodeOutboxKey(raw: string): Uint8Array {
   return bytes;
 }
 
+export function isSqlCipherEnvSet(scope: SqlCipherScope): boolean {
+  const v = process.env[SQLCIPHER_ENV_BY_SCOPE[scope]]?.trim();
+  return v !== undefined && v.length > 0;
+}
+
+/**
+ * Resolve a SQLCipher key when the scoped env var is set; otherwise `undefined` (plaintext).
+ * When set, still validates via {@link EncryptionKeyProvider.getSqlCipherKey}.
+ */
+export async function tryGetSqlCipherKey(
+  provider: EncryptionKeyProvider,
+  scope: SqlCipherScope,
+): Promise<string | undefined> {
+  if (!isSqlCipherEnvSet(scope)) return undefined;
+  return provider.getSqlCipherKey(scope);
+}
+
 /** Read Khora Host / registry keys from environment variables. */
 export class EnvKeyProvider implements EncryptionKeyProvider {
   static readonly KHORA_SQLCIPHER_ENV = SQLCIPHER_ENV_BY_SCOPE.khora;
@@ -64,14 +81,21 @@ export class EnvKeyProvider implements EncryptionKeyProvider {
   }
 }
 
+/**
+ * Validate encryption env for a scope.
+ * - `registry`: SQLCipher key required
+ * - `khora`: SQLCipher key optional (validated only when set); outbox key required
+ */
 export async function assertEncryptionKeys(
   provider: EncryptionKeyProvider,
   scope: SqlCipherScope,
 ): Promise<void> {
-  await provider.getSqlCipherKey(scope);
-  if (scope === "khora") {
-    await provider.getOutboxFieldKey();
+  if (scope === "registry") {
+    await provider.getSqlCipherKey(scope);
+    return;
   }
+  await tryGetSqlCipherKey(provider, scope);
+  await provider.getOutboxFieldKey();
 }
 
 /** Future: AWS KMS envelope decryption. Not implemented in v1. */

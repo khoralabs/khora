@@ -2,9 +2,12 @@ export {
   assertEncryptionKeys,
   type EncryptionKeyProvider,
   EnvKeyProvider,
+  isSqlCipherEnvSet,
   KmsEnvelopeKeyProvider,
   type SqlCipherScope,
+  tryGetSqlCipherKey,
 } from "./key-provider";
+export { openMaybeEncryptedDatabaseSync } from "./open-maybe-encrypted";
 export {
   createOutboxPayloadCodec,
   decryptOutboxPayload,

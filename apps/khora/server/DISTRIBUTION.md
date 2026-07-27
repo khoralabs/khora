@@ -56,8 +56,9 @@ brew install sqlcipher sqlite
 # Debian/Ubuntu
 # sudo apt-get install -y libsqlcipher1 libsqlite3-0
 
-export KHORA_SQLCIPHER_KEY='your-key-at-least-16-chars'
 export KHORA_OUTBOX_ENCRYPTION_KEY='64-char-hex-or-32+-byte-string'
+# Optional: SQLCipher for at-rest SQLite (omit for plaintext local DBs)
+# export KHORA_SQLCIPHER_KEY='your-key-at-least-16-chars'
 export KHORA_DATA_DIR=./data
 
 khora-server

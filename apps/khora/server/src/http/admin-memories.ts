@@ -1,7 +1,11 @@
 import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-capabilities";
-import { EnvKeyProvider } from "@khoralabs/colonnade-crypto";
+import {
+  EnvKeyProvider,
+  openMaybeEncryptedDatabaseSync,
+  tryGetSqlCipherKey,
+} from "@khoralabs/colonnade-crypto";
 import {
   purgeEmptyPendingEmbeddings,
   readPendingEmbeddingQueueSummary,
@@ -29,7 +33,6 @@ import {
   loadEdgePreview,
   loadSourceMapTextPreview,
 } from "@khoralabs/memories-node/sqlite";
-import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envHostDbPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
@@ -112,12 +115,8 @@ function parseProfileUsername(bodyJson: string): string | undefined {
 async function listHostProfiles(
   tenantKey: string,
 ): Promise<Array<{ profileId: string; username?: string }>> {
-  const hostDb = await openEncryptedDatabase(
-    envHostDbPath(),
-    { readonly: true },
-    "khora",
-    new EnvKeyProvider(),
-  );
+  const sqlCipherKey = await tryGetSqlCipherKey(new EnvKeyProvider(), "khora");
+  const hostDb = openMaybeEncryptedDatabaseSync(envHostDbPath(), { readonly: true }, sqlCipherKey);
   try {
     const store = new ProjectionStore(hostDb);
     const rows = store.listByPrefix(tenantKey, NAMESPACE_ENTITY_PROFILE, "");

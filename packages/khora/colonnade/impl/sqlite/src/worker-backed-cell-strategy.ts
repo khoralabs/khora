@@ -35,7 +35,7 @@ type RpcErr = { readonly kind: "rpc_err"; readonly id: number; readonly error: s
 function spawnCellWorker(
   cellId: string,
   dbPath: string,
-  init: { sqlCipherKey: string; outboxKeyHex: string },
+  init: { sqlCipherKey?: string; outboxKeyHex: string },
 ): Promise<Worker> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./sqlite-cell-worker.ts", import.meta.url));
@@ -83,7 +83,7 @@ export class WorkerBackedCellStrategy implements CellPersistenceStrategy, Sqlite
   static async create(
     cellId: string,
     dbPath: string,
-    init: { sqlCipherKey: string; outboxKeyHex: string },
+    init: { sqlCipherKey?: string; outboxKeyHex: string },
   ): Promise<WorkerBackedCellStrategy> {
     const worker = await spawnCellWorker(cellId, dbPath, init);
     return new WorkerBackedCellStrategy(worker);
@@ -182,7 +182,7 @@ export class LazyWorkerBackedCellStrategy
   constructor(
     cellId: string,
     dbPath: string,
-    init: { sqlCipherKey: string; outboxKeyHex: string },
+    init: { sqlCipherKey?: string; outboxKeyHex: string },
   ) {
     this.boot = WorkerBackedCellStrategy.create(cellId, dbPath, init).then((s) => {
       this.inner = s;

@@ -42,8 +42,13 @@ Docker: run a second container/process for `@khoralabs/khora-admin` with `KHORA_
 
 | Variable | Description |
 |----------|-------------|
-| `KHORA_SQLCIPHER_KEY` | SQLCipher key for catalog, cells, memories DBs |
 | `KHORA_OUTBOX_ENCRYPTION_KEY` | AES-GCM key for post outbox payloads (see `.env.example`) |
+
+## Optional environment
+
+| Variable | Description |
+|----------|-------------|
+| `KHORA_SQLCIPHER_KEY` | When set (≥16 chars), SQLCipher for host, cells, memories DBs; omit for plaintext |
 
 ## Linux container defaults (image)
 

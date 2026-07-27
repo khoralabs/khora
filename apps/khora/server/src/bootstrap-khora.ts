@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
-import { EnvKeyProvider, outboxKeyBytesToHex } from "@khoralabs/colonnade-crypto";
+import {
+  EnvKeyProvider,
+  openMaybeEncryptedDatabaseSync,
+  outboxKeyBytesToHex,
+} from "@khoralabs/colonnade-crypto";
 import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
 import { createKhoraDidAuth } from "@khoralabs/khora-auth";
@@ -36,7 +40,6 @@ import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,
 } from "@khoralabs/percolator-sqlite";
-import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
@@ -59,11 +62,8 @@ export type BootstrapKhoraHostOpts = {
   startPrincipalTeardownWorker?: boolean;
 };
 
-async function openEncryptedSideDb(
-  path: string,
-  encryptionProvider: EnvKeyProvider,
-): Promise<Database> {
-  const db = await openEncryptedDatabase(path, { create: true }, "khora", encryptionProvider);
+function openSideDb(path: string, sqlCipherKey?: string): Database {
+  const db = openMaybeEncryptedDatabaseSync(path, { create: true }, sqlCipherKey);
   applyKhoraSqlitePragmas(db);
   return db;
 }
@@ -84,11 +84,11 @@ export async function bootstrapKhoraHost(
   const outboxKey = await encryptionProvider.getOutboxFieldKey();
   const { persistence, hostDb } = await openKhoraHostSqlitePersistence({
     hostDbPath: opts.hostDbPath,
-    encryptionProvider,
+    sqlCipherKey: encryption.sqlCipherKey,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
-  const authNoncesDb = await openEncryptedSideDb(opts.authNoncesDbPath, encryptionProvider);
-  const percolatorDb = await openEncryptedSideDb(opts.percolatorDbPath, encryptionProvider);
+  const authNoncesDb = openSideDb(opts.authNoncesDbPath, encryption.sqlCipherKey);
+  const percolatorDb = openSideDb(opts.percolatorDbPath, encryption.sqlCipherKey);
   ensurePercolatorSchema(percolatorDb);
   const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
@@ -160,9 +160,10 @@ export async function bootstrapKhoraHost(
   let memoriesSqliteDb: Database | undefined;
   if (opts.memories !== undefined) {
     ensureCustomSqliteForExtensions();
-    memoriesSqliteDb = openMemoriesDatabase(opts.memories.dbPath, {
-      sqlCipherKey: encryption.sqlCipherKey,
-    });
+    memoriesSqliteDb = openMemoriesDatabase(
+      opts.memories.dbPath,
+      encryption.sqlCipherKey !== undefined ? { sqlCipherKey: encryption.sqlCipherKey } : {},
+    );
     const memoriesPersistence = createMemoriesPersistenceAsync(memoriesSqliteDb);
     ensurePendingEmbeddingsTable(memoriesSqliteDb);
 
