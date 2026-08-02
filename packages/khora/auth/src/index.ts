@@ -19,6 +19,8 @@ export {
   createKhoraDidAuth,
   KhoraDidAuth,
   type KhoraDidAuthOptions,
+  type VerifySignedAgentRequestOptions,
+  verifySignedAgentRequest,
 } from "./auth";
 export { defaultIdentityPath } from "./identity-path";
 export type { NonceStore } from "./nonce-store";

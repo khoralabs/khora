@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { zKhoraSearchResponse } from "./khora-search";
+import { zKhoraSearchRequest, zKhoraSearchResponse } from "./khora-search";
 
 const SIG = "dGVzdC1zaWduYXR1cmU";
 // A valid atp0-encoded post id with authorPrincipalId "did:key:abc"
@@ -84,5 +84,33 @@ describe("zKhoraSearchResponse", () => {
       ],
     });
     expect(parsed.hits[0]?.original?.kind).toBe("subscription");
+  });
+});
+
+describe("zKhoraSearchRequest asOf", () => {
+  test("accepts asOf.lte", () => {
+    const parsed = zKhoraSearchRequest.parse({
+      content: { text: "hello" },
+      asOf: { lte: 1_700_000_000_000 },
+    });
+    expect(parsed.asOf).toEqual({ lte: 1_700_000_000_000 });
+  });
+
+  test("accepts deprecated asOfTimestampMs", () => {
+    const parsed = zKhoraSearchRequest.parse({
+      content: { text: "hello" },
+      asOfTimestampMs: 1_700_000_000_000,
+    });
+    expect(parsed.asOfTimestampMs).toBe(1_700_000_000_000);
+  });
+
+  test("rejects conflicting asOf.lte and asOfTimestampMs", () => {
+    expect(() =>
+      zKhoraSearchRequest.parse({
+        content: { text: "hello" },
+        asOf: { lte: 1 },
+        asOfTimestampMs: 2,
+      }),
+    ).toThrow(/conflict/);
   });
 });

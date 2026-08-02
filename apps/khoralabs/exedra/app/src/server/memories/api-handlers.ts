@@ -2,7 +2,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { SearchHit } from "@khoralabs/memories-node";
 import type { EmbeddingResolutionPreset } from "@khoralabs/memories-node/helpers";
 import {
-  buildNamespaceGraphLayoutFromUmapInput,
+  buildNamespaceGraphLayoutFromProjectionInput,
   qualifyMemoryKey,
 } from "@khoralabs/memories-node/projections";
 import { embedMany } from "ai";
@@ -87,10 +87,12 @@ export async function handleMemoriesNamespaces(
 ): Promise<Response> {
   try {
     const allNamespaces = await access.reads.listNamespaces();
-    const namespaces =
+    const filtered =
       allowedNamespaces === undefined
         ? allNamespaces
-        : allNamespaces.filter((namespace) => allowedNamespaces.includes(namespace));
+        : allNamespaces.filter((entry) => allowedNamespaces.includes(entry.namespace));
+    // memories-react-graph expects path strings, not DatabaseNamespaceMetadata.
+    const namespaces = filtered.map((entry) => entry.namespace);
     return jsonResponse({ namespaces, profiles: [], namespaceRoot: NAMESPACE_ROOT });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
@@ -108,8 +110,8 @@ export async function handleMemoriesGraph(
   }
   const scope = parseGraphScope(url.searchParams.get("scope"));
   try {
-    const umapInput = await access.reads.fetchUmapInput({ namespace, scope });
-    const layout = buildNamespaceGraphLayoutFromUmapInput(umapInput);
+    const projectionInput = await access.reads.fetchProjectionInput({ namespace, scope });
+    const layout = buildNamespaceGraphLayoutFromProjectionInput(projectionInput);
     return jsonResponse(layout);
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);

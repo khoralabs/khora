@@ -8,6 +8,7 @@ import type {
 import type {
   MemoriesClientAsync,
   MemoriesPersistenceAsync,
+  SearchAsOf,
   SearchParams,
 } from "@khoralabs/memories-node";
 import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
@@ -27,6 +28,20 @@ export type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
+
+/** Map khora wire `asOf` / deprecated `asOfTimestampMs` to memories `SearchAsOf`. */
+export function resolveKhoraSearchAsOf(params: {
+  asOf?: SearchAsOf;
+  asOfTimestampMs?: number;
+}): SearchAsOf | undefined {
+  const { asOf, asOfTimestampMs } = params;
+  if (asOf === undefined && asOfTimestampMs === undefined) return undefined;
+  if (asOfTimestampMs !== undefined && asOf?.lte !== undefined && asOf.lte !== asOfTimestampMs) {
+    throw new Error("asOf.lte and asOfTimestampMs conflict (must be equal when both set)");
+  }
+  if (asOf === undefined) return { lte: asOfTimestampMs };
+  return asOfTimestampMs !== undefined ? { ...asOf, lte: asOfTimestampMs } : asOf;
+}
 
 export async function executeKhoraMemoriesSearch(deps: {
   client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
@@ -67,6 +82,7 @@ export async function executeKhoraMemoriesSearch(deps: {
     return { hits: [] };
   }
 
+  const asOf = resolveKhoraSearchAsOf(params);
   const searchParams = {
     ...(params.additionalNamespaces !== undefined
       ? { additionalNamespaces: params.additionalNamespaces }
@@ -74,7 +90,7 @@ export async function executeKhoraMemoriesSearch(deps: {
     ...(params.searchEntireDatabase !== undefined
       ? { searchEntireDatabase: params.searchEntireDatabase }
       : {}),
-    ...(params.asOfTimestampMs !== undefined ? { asOfTimestampMs: params.asOfTimestampMs } : {}),
+    ...(asOf !== undefined ? { asOf } : {}),
     ...(params.options !== undefined ? { options: params.options } : {}),
     namespace: params.namespace ?? namespaceRoot,
     searchScopeMode: params.searchScopeMode ?? "pathSubtree",

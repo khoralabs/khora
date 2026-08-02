@@ -38,6 +38,27 @@ const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
 
 `KhoraDidAuth` checks envelope shape, DID alignment, freshness, nonce replay, and signature verification. Failures throw `AuthError(message, status)`.
 
+### Injecting into memories-service (no package coupling)
+
+`@khoralabs/memories-service` defines `PrincipalProofVerifier` and must not depend on this package. Hosts glue them:
+
+```ts
+import { createKhoraDidAuth, verifySignedAgentRequest } from "@khoralabs/khora-auth";
+import { createDidPrincipalAuthStrategy } from "@khoralabs/memories-service/auth";
+import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
+
+const khora = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db) });
+const memoriesAuth = createDidPrincipalAuthStrategy({
+  verify: {
+    async verify({ request }) {
+      return verifySignedAgentRequest(khora, request);
+    },
+  },
+});
+```
+
+`verifySignedAgentRequest` reads the body via `req.clone()` by default so the host can still consume the original `Request`.
+
 ## Public surface (quick map)
 
 | Module | Exports |
@@ -49,4 +70,4 @@ const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
 | `@khoralabs/khora-auth-sqlite` | `createSqliteNonceStore`. |
 | `strategy.ts` | `AuthStrategy`, `AuthStrategyError`. |
 | `strategy-did-key.ts` | `createDidKeyEd25519Strategy` (default). |
-| `auth.ts` | `KhoraDidAuth`, `createKhoraDidAuth`, `AuthError`. |
+| `auth.ts` | `KhoraDidAuth`, `createKhoraDidAuth`, `AuthError`, `verifySignedAgentRequest`. |

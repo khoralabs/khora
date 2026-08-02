@@ -27,16 +27,47 @@ const zSearchOptions = z.object({
   maxVectorDistance: z.number().optional(),
 });
 
+/** Bounds on memory `_ts_created` for hybrid search (mirrors memories `SearchAsOf`). */
+export const zKhoraSearchAsOf = z
+  .object({
+    gt: z.number().optional(),
+    gte: z.number().optional(),
+    lt: z.number().optional(),
+    lte: z.number().optional(),
+  })
+  .refine(
+    (v) => v.gt !== undefined || v.gte !== undefined || v.lt !== undefined || v.lte !== undefined,
+    { message: "asOf must include at least one of gt, gte, lt, lte" },
+  );
+
+export type KhoraSearchAsOf = z.infer<typeof zKhoraSearchAsOf>;
+
 /** POST /v1/search JSON body. */
-export const zKhoraSearchRequest = z.object({
-  namespace: z.string().optional(),
-  additionalNamespaces: z.array(z.string()).optional(),
-  searchEntireDatabase: z.literal(true).optional(),
-  searchScopeMode: z.enum(["pathSubtree", "scopeDag", "exactScope"]).optional(),
-  content: zSearchContent,
-  options: zSearchOptions.optional(),
-  asOfTimestampMs: z.number().optional(),
-});
+export const zKhoraSearchRequest = z
+  .object({
+    namespace: z.string().optional(),
+    additionalNamespaces: z.array(z.string()).optional(),
+    searchEntireDatabase: z.literal(true).optional(),
+    searchScopeMode: z.enum(["pathSubtree", "scopeDag", "exactScope"]).optional(),
+    content: zSearchContent,
+    options: zSearchOptions.optional(),
+    asOf: zKhoraSearchAsOf.optional(),
+    /** @deprecated Prefer `asOf: { lte }`. */
+    asOfTimestampMs: z.number().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (
+      val.asOfTimestampMs !== undefined &&
+      val.asOf?.lte !== undefined &&
+      val.asOf.lte !== val.asOfTimestampMs
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "asOf.lte and asOfTimestampMs conflict (must be equal when both set)",
+        path: ["asOfTimestampMs"],
+      });
+    }
+  });
 
 export type KhoraSearchRequest = z.infer<typeof zKhoraSearchRequest>;
 

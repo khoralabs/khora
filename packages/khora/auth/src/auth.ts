@@ -301,3 +301,31 @@ export function createKhoraDidAuth(opts: CreateKhoraDidAuthOptions): KhoraDidAut
     ...(opts.sweepIntervalMs !== undefined ? { sweepIntervalMs: opts.sweepIntervalMs } : {}),
   });
 }
+
+export type VerifySignedAgentRequestOptions = {
+  /** Pre-read body; defaults to `await req.clone().text()` so the original body stays readable. */
+  bodyText?: string;
+  signedQueryKeys?: readonly string[];
+};
+
+/**
+ * Request-level verify for hosts that inject a proof callback into other services
+ * (e.g. memories-service `PrincipalProofVerifier`). Does not import memories.
+ *
+ * @example
+ * ```ts
+ * const khora = createKhoraDidAuth({ nonceStore });
+ * // memories createDidPrincipalAuthStrategy({
+ * //   verify: { verify: ({ request }) => verifySignedAgentRequest(khora, request) },
+ * // })
+ * ```
+ */
+export async function verifySignedAgentRequest(
+  auth: KhoraDidAuth,
+  req: Request,
+  opts: VerifySignedAgentRequestOptions = {},
+): Promise<{ did: string }> {
+  const url = new URL(req.url);
+  const bodyText = opts.bodyText ?? (await req.clone().text());
+  return auth.requireAuthenticatedRequest(req, url, bodyText, opts.signedQueryKeys ?? []);
+}

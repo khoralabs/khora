@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { generateIdentity, type Signer as RelaySigner } from "@khoralabs/did-key-identity";
 import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
-import { createKhoraDidAuth } from "./auth";
+import { createKhoraDidAuth, verifySignedAgentRequest } from "./auth";
 import { INBOX_BIND_METHOD, inboxBindCanonicalPath, signInboxBind } from "./signer";
 import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, signatureBytesToB64Url } from "./wire";
 
@@ -347,5 +347,40 @@ describe("KhoraDidAuth.verifyInboxBind", () => {
   test("inboxBindCanonicalPath is stable", () => {
     expect(inboxBindCanonicalPath("abc")).toBe("/v1/inbox/ws?connection_id=abc");
     expect(INBOX_BIND_METHOD).toBe("BIND");
+  });
+});
+
+describe("verifySignedAgentRequest", () => {
+  test("verifies a signed Request and returns did", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db), now: () => now });
+    const signer = await generateIdentity();
+    const bodyText = '{"ok":true}';
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "POST",
+      path: "/databases/open",
+      bodyText,
+      timestampMs: now,
+      nonce: "memories-1",
+    });
+    const req = new Request("http://localhost/databases/open", {
+      method: "POST",
+      headers,
+      body: bodyText,
+    });
+    const out = await verifySignedAgentRequest(auth, req);
+    expect(out.did).toBe(signer.did);
+    // original body still readable after clone-based verify
+    expect(await req.text()).toBe(bodyText);
+  });
+
+  test("rejects missing signature headers", async () => {
+    const db = freshDb();
+    const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db) });
+    await expect(
+      verifySignedAgentRequest(auth, new Request("http://localhost/databases")),
+    ).rejects.toThrow();
   });
 });

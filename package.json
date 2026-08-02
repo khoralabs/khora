@@ -15,10 +15,10 @@
   "private": true,
   "overrides": {
     "kysely": "0.28.17",
-    "@khoralabs/memories-node": "0.5.15",
-    "@khoralabs/memories-agents": "0.5.15",
-    "@khoralabs/memories-service": "0.5.15",
-    "@khoralabs/memories-react-graph": "0.5.15"
+    "@khoralabs/memories-node": "0.6.1",
+    "@khoralabs/memories-agents": "0.6.1",
+    "@khoralabs/memories-service": "0.6.1",
+    "@khoralabs/memories-react-graph": "0.6.1"
   },
   "scripts": {
     "test:with-sqlite": "bash scripts/test-with-homebrew-sqlite.sh",
@@ -35,7 +35,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@khoralabs/memories-node": "^0.5.15"
+    "@khoralabs/memories-node": "^0.6.1"
   },
   "workspaces": [
     "apps/*",
