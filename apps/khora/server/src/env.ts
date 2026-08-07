@@ -1,5 +1,5 @@
-import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { assertKhoraMemoriesDbPathUnset } from "./memories-domus-legacy";
+import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { resolvePersistenceCwd } from "./packaged-runtime";
 import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
 
