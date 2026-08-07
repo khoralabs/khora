@@ -32,16 +32,25 @@ import {
 } from "@khoralabs/khora-invites";
 import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-invites-sqlite";
 import {
-  createMemoriesPersistenceAsync,
   ensureCustomSqliteForExtensions,
-  openMemoriesDatabase,
+  getMemoriesSqliteDatabase,
 } from "@khoralabs/memories-node/sqlite";
+import type {
+  MemoriesDatabaseCatalogStore,
+  MemoriesDatabaseOntologyStore,
+  MemoriesDatabaseService,
+} from "@khoralabs/memories-service";
+import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,
 } from "@khoralabs/percolator-sqlite";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
+import {
+  assertKhoraMemoriesDbPathUnset,
+  migrateBareMemoriesSqliteIfNeeded,
+} from "./memories-domus-legacy";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
 import { createKhoraHostHealthPort } from "./ops/health-port";
@@ -70,8 +79,11 @@ function openSideDb(path: string, sqlCipherKey?: string): Database {
 
 export type KhoraHostBootstrap = {
   ctx: KhoraHostContext;
-  /** SQLite memories DB for server admin routes and embedding retry (sqlite backend only). */
+  /** Shared Domus SQLite handle (same connection as memories-service / indexer). */
   memoriesSqliteDb?: Database;
+  memoriesService?: MemoriesDatabaseService;
+  memoriesOntology?: MemoriesDatabaseOntologyStore;
+  memoriesCatalog?: MemoriesDatabaseCatalogStore;
 };
 
 export async function bootstrapKhoraHost(
@@ -164,17 +176,41 @@ export async function bootstrapKhoraHost(
   }
 
   let memoriesSqliteDb: Database | undefined;
+  let memoriesService: MemoriesDatabaseService | undefined;
+  let memoriesOntology: MemoriesDatabaseOntologyStore | undefined;
+  let memoriesCatalog: MemoriesDatabaseCatalogStore | undefined;
+
   if (opts.memories !== undefined) {
-    memoriesSqliteDb = openMemoriesDatabase(
-      opts.memories.dbPath,
-      encryption.sqlCipherKey !== undefined ? { sqlCipherKey: encryption.sqlCipherKey } : {},
-    );
-    const memoriesPersistence = createMemoriesPersistenceAsync(memoriesSqliteDb);
+    assertKhoraMemoriesDbPathUnset();
+
+    migrateBareMemoriesSqliteIfNeeded({
+      memoriesDataDir: opts.memories.memoriesDataDir,
+      legacyDbPath: opts.memories.legacyDbPath,
+      databaseId: opts.memories.databaseId,
+      log: (msg, extra) => logger.info(extra ?? {}, msg),
+    });
+
+    const stack = createLocalSqliteServiceStack({
+      dataDir: opts.memories.memoriesDataDir,
+      ...(encryption.sqlCipherKey !== undefined ? { sqlCipherKey: encryption.sqlCipherKey } : {}),
+    });
+    memoriesService = stack.service;
+    memoriesOntology = stack.ontology;
+    memoriesCatalog = stack.catalog;
+
+    const handle = await stack.service.getHandle(opts.memories.databaseId);
+    const syncPersistence = handle.sync?.syncPersistence;
+    if (syncPersistence === undefined) {
+      throw new Error("Domus memories handle is missing sync SQLite persistence");
+    }
+    memoriesSqliteDb = getMemoriesSqliteDatabase(syncPersistence);
     ensurePendingEmbeddingsTable(memoriesSqliteDb);
 
     memories = bootstrapKhoraMemories({
-      persistence: memoriesPersistence,
-      close: () => memoriesSqliteDb?.close(),
+      persistence: handle.persistence,
+      close: () => {
+        void handle.close();
+      },
       persistenceClient,
       postResolver,
       embeddingModel: opts.memories.embeddingModel,
@@ -186,7 +222,7 @@ export async function bootstrapKhoraHost(
     });
     startEmbeddingRetryWorker({
       db: memoriesSqliteDb,
-      persistence: memoriesPersistence,
+      persistence: handle.persistence,
       embeddingModel: opts.memories.embeddingModel,
     });
   }
@@ -211,5 +247,11 @@ export async function bootstrapKhoraHost(
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
   });
-  return { ctx, ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}) };
+  return {
+    ctx,
+    ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
+    ...(memoriesService !== undefined ? { memoriesService } : {}),
+    ...(memoriesOntology !== undefined ? { memoriesOntology } : {}),
+    ...(memoriesCatalog !== undefined ? { memoriesCatalog } : {}),
+  };
 }

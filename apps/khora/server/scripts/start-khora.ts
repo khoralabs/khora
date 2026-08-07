@@ -45,9 +45,9 @@ async function ensurePersistenceDirs(): Promise<void> {
   if (envMemoriesEnabled()) {
     const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
     if (memoriesConfig === undefined) {
-      throw new Error("KHORA_MEMORIES_DB_PATH is required when KHORA_MEMORIES_ENABLED is true");
+      throw new Error("Memories bootstrap config missing while KHORA_MEMORIES is enabled");
     }
-    mkdirSync(path.dirname(memoriesConfig.dbPath), { recursive: true });
+    mkdirSync(memoriesConfig.memoriesDataDir, { recursive: true });
   }
 }
 
@@ -78,6 +78,13 @@ async function startLitestream(): Promise<{
         pattern: "*.sqlite",
         watch: true,
         replicaSuffix: "cells",
+      },
+      {
+        kind: "dir",
+        dir: persistencePaths.memoriesDataDir,
+        pattern: "v1/*/database.db",
+        watch: true,
+        replicaSuffix: "memories",
       },
     ],
   });

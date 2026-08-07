@@ -1,4 +1,5 @@
 import path from "node:path";
+import { resolveLegacyBareMemoriesDbPath } from "./memories-domus-legacy";
 
 /** Relative paths under `KHORA_DATA_DIR` (default layout). */
 export const KHORA_PERSISTENCE_REL = {
@@ -6,7 +7,8 @@ export const KHORA_PERSISTENCE_REL = {
   authNoncesDb: "khora-auth-nonces.sqlite",
   percolatorDb: "khora-percolator.sqlite",
   cellsDir: "cells",
-  memories: "khora-memories.sqlite",
+  /** memories-service `dataDir` (encoded Domus DB under `v1/…/database.db`). */
+  memoriesDir: "memories",
 } as const;
 
 export const DEFAULT_KHORA_DATA_DIR = "./data";
@@ -17,7 +19,15 @@ export type KhoraPersistencePaths = {
   authNoncesDbPath: string;
   percolatorDbPath: string;
   cellsDir: string;
-  memoriesDbPath: string;
+  /**
+   * Fixed bare Domus sqlite path used only as a one-shot migration source into
+   * {@link KhoraPersistencePaths.memoriesDataDir}.
+   *
+   * @deprecated Remove with `memories-domus-legacy.ts` in the next minor version.
+   */
+  legacyMemoriesDbPath: string;
+  /** memories-service local SQLite `dataDir`. */
+  memoriesDataDir: string;
 };
 
 function trimEnv(env: NodeJS.ProcessEnv, key: string): string | undefined {
@@ -42,7 +52,8 @@ function joinUnderDataDir(
  * Resolve host persistence paths from env.
  * Primary: `KHORA_DATA_DIR` (defaults to `./data` when unset).
  * Per-component overrides: `KHORA_HOST_DB_PATH`, `KHORA_AUTH_NONCES_DB_PATH`,
- * `KHORA_PERCOLATOR_DB_PATH`, `KHORA_CELLS_DIR`, `KHORA_MEMORIES_DB_PATH`.
+ * `KHORA_PERCOLATOR_DB_PATH`, `KHORA_CELLS_DIR`.
+ * Domus lives under `{KHORA_DATA_DIR}/memories` (id `host`/`khora`).
  * Legacy: if `KHORA_DATA_DIR` is unset and host DB + cells paths are set, use those only.
  */
 export function resolveKhoraPersistencePaths(
@@ -54,7 +65,6 @@ export function resolveKhoraPersistencePaths(
   const authNoncesOverride = trimEnv(env, "KHORA_AUTH_NONCES_DB_PATH");
   const percolatorOverride = trimEnv(env, "KHORA_PERCOLATOR_DB_PATH");
   const cellsOverride = trimEnv(env, "KHORA_CELLS_DIR");
-  const memoriesOverride = trimEnv(env, "KHORA_MEMORIES_DB_PATH");
 
   const useLegacyOnly =
     dataDirRaw === undefined && hostDbOverride !== undefined && cellsOverride !== undefined;
@@ -78,12 +88,8 @@ export function resolveKhoraPersistencePaths(
         KHORA_PERSISTENCE_REL.percolatorDb,
       ),
       cellsDir: resolvePath(cwd, cellsOverride),
-      memoriesDbPath: joinUnderDataDir(
-        dataDir,
-        cwd,
-        memoriesOverride,
-        KHORA_PERSISTENCE_REL.memories,
-      ),
+      legacyMemoriesDbPath: resolveLegacyBareMemoriesDbPath(dataDir),
+      memoriesDataDir: path.join(dataDir, KHORA_PERSISTENCE_REL.memoriesDir),
     };
   }
 
@@ -104,11 +110,7 @@ export function resolveKhoraPersistencePaths(
       KHORA_PERSISTENCE_REL.percolatorDb,
     ),
     cellsDir: joinUnderDataDir(dataDir, cwd, cellsOverride, KHORA_PERSISTENCE_REL.cellsDir),
-    memoriesDbPath: joinUnderDataDir(
-      dataDir,
-      cwd,
-      memoriesOverride,
-      KHORA_PERSISTENCE_REL.memories,
-    ),
+    legacyMemoriesDbPath: resolveLegacyBareMemoriesDbPath(dataDir),
+    memoriesDataDir: path.join(dataDir, KHORA_PERSISTENCE_REL.memoriesDir),
   };
 }

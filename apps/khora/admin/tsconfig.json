@@ -18,13 +18,9 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@/components/ui/*": [
-        "./src/components/ui/*",
-        "./node_modules/@khoralabs/memories-react-graph/src/components/ui/*"
-      ]
+      "@/components/ui/*": ["./src/components/ui/*"]
     },
 
     "noUnusedLocals": false,

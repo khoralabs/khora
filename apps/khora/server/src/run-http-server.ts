@@ -53,22 +53,23 @@ export async function runHttpServer(): Promise<void> {
   mkdirSync(dirname(percolatorDbPath), { recursive: true });
   mkdirSync(cellsDir, { recursive: true });
   if (memoriesConfig !== undefined) {
-    mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
+    mkdirSync(memoriesConfig.memoriesDataDir, { recursive: true });
   }
 
   const tenantKey = envTenantKey();
   const encryption = await bootstrapKhoraEncryption();
-  const { ctx, memoriesSqliteDb } = await bootstrapKhoraHost({
-    hostDbPath,
-    authNoncesDbPath,
-    percolatorDbPath,
-    cellsDir,
-    cellPoolCount,
-    useCellWorkers: envColonnadeUseCellWorkers(),
-    encryption,
-    ...(tenantKey !== undefined ? { tenantKey } : {}),
-    ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
-  });
+  const { ctx, memoriesSqliteDb, memoriesService, memoriesOntology, memoriesCatalog } =
+    await bootstrapKhoraHost({
+      hostDbPath,
+      authNoncesDbPath,
+      percolatorDbPath,
+      cellsDir,
+      cellPoolCount,
+      useCellWorkers: envColonnadeUseCellWorkers(),
+      encryption,
+      ...(tenantKey !== undefined ? { tenantKey } : {}),
+      ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
+    });
 
   const adminTokenAuth = createAdminTokenAuthFromEnv();
   if (adminTokenAuth === null) {
@@ -80,6 +81,9 @@ export async function runHttpServer(): Promise<void> {
   const deps: HostRouteDeps = {
     ctx,
     ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
+    ...(memoriesService !== undefined ? { memoriesService } : {}),
+    ...(memoriesOntology !== undefined ? { memoriesOntology } : {}),
+    ...(memoriesCatalog !== undefined ? { memoriesCatalog } : {}),
     rateLimiters: createV2HostRateLimiters(),
     adminTokenAuth,
   };

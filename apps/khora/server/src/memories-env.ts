@@ -5,12 +5,23 @@ import {
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-node/helpers";
+import {
+  KHORA_DOMUS_MEMORIES_DATABASE_ID,
+  type KhoraDomusMemoriesDatabaseId,
+} from "./memories-domus";
 import type { KhoraPersistencePaths } from "./persistence-paths";
 
 export const DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT = "global";
 
 export type KhoraMemoriesBootstrapConfig = {
-  dbPath: string;
+  /** memories-service local SQLite dataDir (`{KHORA_DATA_DIR}/memories`). */
+  memoriesDataDir: string;
+  /**
+   * Legacy bare sqlite path used as one-shot migration source.
+   * @deprecated Remove with `memories-domus-legacy.ts` in the next minor version.
+   */
+  legacyDbPath: string;
+  databaseId: KhoraDomusMemoriesDatabaseId;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;
 };
@@ -78,14 +89,16 @@ export function readKhoraMemoriesNamespaceRoot(env: NodeJS.ProcessEnv = process.
 }
 
 export function envMemoriesBootstrapConfig(
-  paths: Pick<KhoraPersistencePaths, "memoriesDbPath">,
+  paths: Pick<KhoraPersistencePaths, "legacyMemoriesDbPath" | "memoriesDataDir">,
   env: NodeJS.ProcessEnv = process.env,
 ): KhoraMemoriesBootstrapConfig | undefined {
   if (!envMemoriesEnabled(env)) {
     return undefined;
   }
   return {
-    dbPath: paths.memoriesDbPath,
+    memoriesDataDir: paths.memoriesDataDir,
+    legacyDbPath: paths.legacyMemoriesDbPath,
+    databaseId: KHORA_DOMUS_MEMORIES_DATABASE_ID,
     namespaceRoot: readKhoraMemoriesNamespaceRoot(env),
     embeddingModel: createKhoraEmbeddingModelFromEnv(readKhoraEmbeddingEnv(env)),
   };

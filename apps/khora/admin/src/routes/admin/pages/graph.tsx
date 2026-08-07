@@ -1,26 +1,28 @@
 import {
-  createSyncInvestigatorClient,
+  createServiceReactMemoriesClient,
   GraphCameraReframeHint,
   GraphFetchError,
-  GraphInvestigatorAnswerOverlay,
-  GraphInvestigatorProvider,
   GraphLoading,
-  GraphNamespaceSelector,
+  GraphNamespaceSearch,
+  GraphNamespaceTree,
   GraphOverlayContainer,
   GraphPinnedEscHint,
   GraphPreviewDock,
   GraphProjectionProvider,
   GraphScene,
   GraphSearch,
+  MemoriesClientProvider,
+  MemoriesMemoryProvider,
+  MemoriesNamespacesProvider,
 } from "@khoralabs/memories-react-graph";
-import { useCallback, useEffect, useState } from "react";
+import type { MemoriesDatabaseId } from "@khoralabs/memories-service/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const MEMORIES_API_BASE = "/admin/api/memories";
 const EMBEDDING_QUEUE_POLL_MS = 10_000;
 
-const investigatorClient = createSyncInvestigatorClient({
-  investigateUrl: `${MEMORIES_API_BASE}/investigate`,
-});
+/** Stable Domus database id — must match server `KHORA_DOMUS_MEMORIES_DATABASE_ID`. */
+const DOMUS_DATABASE = { kind: "host", ownerKey: "khora" } as const;
 
 type EmbeddingQueueStatus = {
   pending: number;
@@ -35,13 +37,23 @@ type EmbeddingQueueStatus = {
   }>;
 };
 
-function defaultNamespace(): string {
+function readNamespaceRoot(): string {
   if (typeof window === "undefined") return "global";
-  const q = new URLSearchParams(window.location.search).get("namespace");
+  const q = new URLSearchParams(window.location.search).get("namespaceRoot");
   return q?.trim() || "global";
 }
 
 export function GraphPage() {
+  const namespaceRoot = useMemo(() => readNamespaceRoot(), []);
+  const createClient = useCallback(
+    (database: MemoriesDatabaseId) =>
+      createServiceReactMemoriesClient({
+        baseUrl: MEMORIES_API_BASE,
+        database,
+        namespaceRoot,
+      }),
+    [namespaceRoot],
+  );
   const [memoriesAvailable, setMemoriesAvailable] = useState<boolean | null>(null);
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
   const [embeddingQueue, setEmbeddingQueue] = useState<EmbeddingQueueStatus | null>(null);
@@ -106,25 +118,24 @@ export function GraphPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const res = await fetch(`${MEMORIES_API_BASE}/namespaces`);
-        if (res.status === 503) {
-          setMemoriesAvailable(false);
-          setUnavailableMessage("Memories database is not configured on this host.");
-          return;
-        }
-        if (!res.ok) {
-          setMemoriesAvailable(false);
-          const json = (await res.json()) as { error?: string };
-          setUnavailableMessage(json.error ?? res.statusText);
-          return;
-        }
+        const client = createServiceReactMemoriesClient({
+          baseUrl: MEMORIES_API_BASE,
+          database: DOMUS_DATABASE,
+          namespaceRoot,
+        });
+        await client.listNamespaces();
         setMemoriesAvailable(true);
       } catch (e) {
         setMemoriesAvailable(false);
-        setUnavailableMessage(String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        if (/503|not configured/i.test(message)) {
+          setUnavailableMessage("Memories database is not configured on this host.");
+        } else {
+          setUnavailableMessage(message);
+        }
       }
     })();
-  }, []);
+  }, [namespaceRoot]);
 
   if (memoriesAvailable === null) {
     return <p className="text-sm text-muted-foreground">Loading graph…</p>;
@@ -147,60 +158,69 @@ export function GraphPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground">
-      <GraphProjectionProvider
-        apiBase={MEMORIES_API_BASE}
-        namespace={defaultNamespace()}
-        scope="subtree"
-        focusDelay={200}
+      <MemoriesClientProvider
+        createClient={createClient}
+        database={DOMUS_DATABASE}
+        baseUrl={MEMORIES_API_BASE}
+        openOnFocus
       >
-        <GraphInvestigatorProvider client={investigatorClient}>
-          <GraphScene
-            edgeRenderMode="activeOnly"
-            overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}
-          >
-            <GraphScene.TopLeft>
-              <div className="flex w-sm flex-col gap-4">
-                <GraphOverlayContainer>
-                  <GraphNamespaceSelector />
-                  <GraphSearch />
-                  {embeddingQueue !== null ? (
-                    <div className="rounded border p-2 text-xs text-muted-foreground">
-                      <div className="font-medium text-foreground">Embedding queue</div>
-                      <div>{embeddingQueue.pending} pending</div>
-                      <div>{embeddingQueue.failed} failed</div>
-                      <button
-                        type="button"
-                        className="mt-2 rounded border px-2 py-1 text-xs text-foreground disabled:opacity-50"
-                        onClick={() => void retryNow()}
-                        disabled={retryingQueue}
-                      >
-                        {retryingQueue ? "Retrying..." : "Retry now"}
-                      </button>
-                      {lastRetryResult !== null ? (
-                        <div className="mt-1 text-[10px] text-foreground">{lastRetryResult}</div>
+        <MemoriesNamespacesProvider namespaceRoot={namespaceRoot}>
+          <MemoriesMemoryProvider>
+            <GraphProjectionProvider focusDelay={200}>
+              <GraphScene
+                edgeRenderMode="activeOnly"
+                overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}
+              >
+                <GraphScene.TopLeft>
+                  <div className="flex w-sm flex-col gap-4">
+                    <GraphOverlayContainer>
+                      <GraphNamespaceSearch />
+                      <GraphNamespaceTree>
+                        <GraphNamespaceTree.Label>Namespaces</GraphNamespaceTree.Label>
+                        <GraphNamespaceTree.Hierarchy />
+                      </GraphNamespaceTree>
+                      <GraphSearch />
+                      {embeddingQueue !== null ? (
+                        <div className="rounded border p-2 text-xs text-muted-foreground">
+                          <div className="font-medium text-foreground">Embedding queue</div>
+                          <div>{embeddingQueue.pending} pending</div>
+                          <div>{embeddingQueue.failed} failed</div>
+                          <button
+                            type="button"
+                            className="mt-2 rounded border px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                            onClick={() => void retryNow()}
+                            disabled={retryingQueue}
+                          >
+                            {retryingQueue ? "Retrying..." : "Retry now"}
+                          </button>
+                          {lastRetryResult !== null ? (
+                            <div className="mt-1 text-[10px] text-foreground">
+                              {lastRetryResult}
+                            </div>
+                          ) : null}
+                        </div>
                       ) : null}
-                    </div>
-                  ) : null}
-                  <GraphFetchError />
-                </GraphOverlayContainer>
-                <GraphInvestigatorAnswerOverlay className="max-h-72 overflow-y-auto" />
-              </div>
-            </GraphScene.TopLeft>
-            <GraphScene.Center>
-              <GraphLoading />
-            </GraphScene.Center>
-            <GraphScene.TopRight>
-              <div className="flex items-center justify-end gap-2">
-                <GraphCameraReframeHint />
-                <GraphPinnedEscHint />
-              </div>
-            </GraphScene.TopRight>
-            <GraphScene.BottomRight>
-              <GraphPreviewDock />
-            </GraphScene.BottomRight>
-          </GraphScene>
-        </GraphInvestigatorProvider>
-      </GraphProjectionProvider>
+                      <GraphFetchError />
+                    </GraphOverlayContainer>
+                  </div>
+                </GraphScene.TopLeft>
+                <GraphScene.Center>
+                  <GraphLoading />
+                </GraphScene.Center>
+                <GraphScene.TopRight>
+                  <div className="flex items-center justify-end gap-2">
+                    <GraphCameraReframeHint />
+                    <GraphPinnedEscHint />
+                  </div>
+                </GraphScene.TopRight>
+                <GraphScene.BottomRight>
+                  <GraphPreviewDock />
+                </GraphScene.BottomRight>
+              </GraphScene>
+            </GraphProjectionProvider>
+          </MemoriesMemoryProvider>
+        </MemoriesNamespacesProvider>
+      </MemoriesClientProvider>
     </div>
   );
 }

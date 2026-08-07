@@ -1,4 +1,5 @@
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
+import { assertKhoraMemoriesDbPathUnset } from "./memories-domus-legacy";
 import { resolvePersistenceCwd } from "./packaged-runtime";
 import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
 
@@ -71,10 +72,6 @@ export function envCellsDir(): string {
   return persistencePaths().cellsDir;
 }
 
-export function envMemoriesDbPath(): string {
-  return persistencePaths().memoriesDbPath;
-}
-
 export { type KhoraPersistencePaths, resolveKhoraPersistencePaths };
 
 export function envCellPoolCount(): number {
@@ -139,6 +136,7 @@ export function envPopulationLimit(): number | undefined {
 }
 
 export function validateEnv(appRoot?: string): void {
+  assertKhoraMemoriesDbPathUnset();
   resolveKhoraPersistencePaths(process.env, appRoot ?? process.cwd());
   envPort();
   envHostUnaryIngress();

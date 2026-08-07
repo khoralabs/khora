@@ -52,7 +52,7 @@ Every `@khoralabs/khora-*` package is private to the workspace and targets Bun (
 | `khora-host.sqlite` | Projections, invites, social graph, teardown |
 | `khora-auth-nonces.sqlite` | Agent-request nonce replay store |
 | `khora-percolator.sqlite` | Standing queries |
-| `khora-memories.sqlite` | Memories index (when `KHORA_MEMORIES` enabled) |
+| `memories/` | Domus memories-service dataDir (`v1/…/database.db`, id `host`/`khora`) when `KHORA_MEMORIES` enabled |
 | `cells/` | Colonnade shard SQLite files (inbox/outbox) |
 
 Litestream (when enabled via the start script) watches `data/*.sqlite` and `cells/*.sqlite`. See [`server/.env.example`](server/.env.example).

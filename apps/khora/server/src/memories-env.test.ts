@@ -33,14 +33,16 @@ describe("envMemoriesEnabled", () => {
 });
 
 describe("envMemoriesBootstrapConfig", () => {
-  test("returns config with derived dbPath when enabled", () => {
+  test("returns config with memoriesDataDir when enabled", () => {
     const prev = process.env[MEM_ENV];
     delete process.env[MEM_ENV];
     try {
       const paths = resolveKhoraPersistencePaths({ KHORA_DATA_DIR: "./data" }, "/w");
       const cfg = envMemoriesBootstrapConfig(paths);
       expect(cfg).toBeDefined();
-      expect(cfg?.dbPath).toBe(path.join("/w", "data", "khora-memories.sqlite"));
+      expect(cfg?.memoriesDataDir).toBe(path.join("/w", "data", "memories"));
+      expect(cfg?.legacyDbPath).toBe(path.join("/w", "data", "khora-memories.sqlite"));
+      expect(cfg?.databaseId).toEqual({ kind: "host", ownerKey: "khora" });
     } finally {
       restoreMem(prev);
     }
