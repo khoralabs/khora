@@ -1,8 +1,0 @@
-{
-  "name": "@khoralabs/exedra-stack",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "bun scripts/dev.ts"
-  }
-}
