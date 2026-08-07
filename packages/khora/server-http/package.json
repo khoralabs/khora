@@ -22,7 +22,7 @@
     "@khoralabs/khora-host": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
-    "@khoralabs/memories-service": "^0.7.2",
+    "@khoralabs/memories-service": "^0.7.3",
     "@khoralabs/observability": "workspace:*",
     "@khoralabs/registry-client": "workspace:*",
     "zod": "^4"

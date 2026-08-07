@@ -20,7 +20,7 @@
     "@khoralabs/khora-invites": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
-    "@khoralabs/memories-node": "^0.7.2",
+    "@khoralabs/memories-node": "^0.7.3",
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
     "@khoralabs/sourcemaps": "^0.1.0",
