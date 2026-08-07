@@ -12,7 +12,7 @@ import {
   GraphScene,
   GraphSearch,
   MemoriesClientProvider,
-  MemoriesMemoryProvider,
+  MemoriesNamespaceMemoriesProvider,
   MemoriesNamespacesProvider,
 } from "@khoralabs/memories-react-graph";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service/client";
@@ -165,7 +165,7 @@ export function GraphPage() {
         openOnFocus
       >
         <MemoriesNamespacesProvider namespaceRoot={namespaceRoot}>
-          <MemoriesMemoryProvider>
+          <MemoriesNamespaceMemoriesProvider>
             <GraphProjectionProvider focusDelay={200}>
               <GraphScene
                 edgeRenderMode="activeOnly"
@@ -218,7 +218,7 @@ export function GraphPage() {
                 </GraphScene.BottomRight>
               </GraphScene>
             </GraphProjectionProvider>
-          </MemoriesMemoryProvider>
+          </MemoriesNamespaceMemoriesProvider>
         </MemoriesNamespacesProvider>
       </MemoriesClientProvider>
     </div>
