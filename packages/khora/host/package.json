@@ -8,6 +8,16 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./sqlite": {
+      "types": "./src/sqlite/index.ts",
+      "import": "./src/sqlite/index.ts",
+      "default": "./src/sqlite/index.ts"
+    },
+    "./http": {
+      "types": "./src/http/index.ts",
+      "import": "./src/http/index.ts",
+      "default": "./src/http/index.ts"
     }
   },
   "scripts": {
@@ -15,15 +25,18 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@khoralabs/admin-token": "workspace:*",
+    "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
+    "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
-    "@khoralabs/khora-invites": "workspace:*",
-    "@khoralabs/khora-transport": "workspace:*",
-    "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/memories-node": "^0.7.6",
-    "@khoralabs/colonnade-crypto": "workspace:*",
+    "@khoralabs/memories-service": "^0.7.6",
+    "@khoralabs/observability": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
+    "@khoralabs/registry-client": "workspace:*",
     "@khoralabs/sourcemaps": "^0.1.0",
+    "@khoralabs/sqlite-crypto": "^0.1.0",
     "zod": "^4"
   },
   "peerDependencies": {

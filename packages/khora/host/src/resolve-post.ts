@@ -1,9 +1,5 @@
-import type { OutboxListedRecord, ResolvedSource } from "@khoralabs/colonnade-persistence";
-import {
-  createOutboxLocatorStore,
-  OutboxGhostError,
-  resolveSourcemap,
-} from "@khoralabs/colonnade-persistence";
+import type { OutboxListedRecord, ResolvedSource } from "@khoralabs/colonnade";
+import { createOutboxLocatorStore, OutboxGhostError, resolveSourcemap } from "@khoralabs/colonnade";
 import type { KhoraPost } from "@khoralabs/khora-contracts";
 import { zKhoraPost } from "@khoralabs/khora-contracts";
 import type { KhoraColonnadeCluster, PostResolver } from "./ports";

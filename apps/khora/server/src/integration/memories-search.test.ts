@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
+import { createTestEncryptionMaterial } from "@khoralabs/colonnade/crypto";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 import type { KhoraProfile } from "@khoralabs/khora-contracts";
 import {
   agentScope,

@@ -7,7 +7,7 @@ import {
   type ResolvedPayload,
   resolveSourcemap,
   sha256HexLower,
-} from "@khoralabs/colonnade-persistence";
+} from "@khoralabs/colonnade";
 import type { KhoraHostContext } from "./context";
 
 export type RelayInboxDrainItem = {

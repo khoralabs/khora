@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade-crypto";
-import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { poolShardCellId } from "@khoralabs/colonnade";
+import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade/crypto";
 import type {
   KhoraAdminCellDetailResult,
   KhoraAdminInactiveMember,
@@ -16,7 +16,7 @@ import type {
 import {
   countRegisteredPrincipals,
   NAMESPACE_REG_BY_PRINCIPAL,
-} from "@khoralabs/khora-host-sqlite";
+} from "@khoralabs/khora-host/sqlite";
 
 const REG_BY_PRINCIPAL = NAMESPACE_REG_BY_PRINCIPAL;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

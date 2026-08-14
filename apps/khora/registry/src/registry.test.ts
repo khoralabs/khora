@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
 import { subscribeMarketing } from "@khoralabs/registry-accounts";
 import {
   ensureRegistrySchema,

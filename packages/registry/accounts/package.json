@@ -18,10 +18,10 @@
   "dependencies": {
     "@khoralabs/registry-accounts-contracts": "workspace:*",
     "@khoralabs/registry-catalog-contracts": "workspace:*",
-    "@khoralabs/registry-persistence": "workspace:*"
+    "@khoralabs/registry-persistence": "workspace:*",
+    "@khoralabs/colonnade": "workspace:*"
   },
   "devDependencies": {
-    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/registry-catalog": "workspace:*",
     "@khoralabs/registry-sqlite": "workspace:*",
     "@types/bun": "latest",

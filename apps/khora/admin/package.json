@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/khora-react": "workspace:*",
+    "@khoralabs/khora-host": "workspace:*",
     "@khoralabs/memories-react-graph": "^0.7.6",
     "@khoralabs/memories-service": "^0.7.6",
     "@khoralabs/registry-catalog-contracts": "workspace:*",
@@ -27,8 +27,6 @@
   },
   "devDependencies": {
     "@khoralabs/admin-token": "workspace:*",
-    "@khoralabs/khora-host": "workspace:*",
-    "@khoralabs/khora-server-http": "workspace:*",
     "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",

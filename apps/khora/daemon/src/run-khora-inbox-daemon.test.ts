@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { PersistableSigner } from "@khoralabs/did-key-identity";
-import type { KhoraClientEvent } from "@khoralabs/khora-transport";
+import type { KhoraClientEvent } from "@khoralabs/khora-client/transport";
 import type { InboxEventSink } from "./inbox-event-sink";
 import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon";
 

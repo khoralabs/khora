@@ -1,8 +1,8 @@
-import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
-import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
+import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
+import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
-import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
+import type { KhoraInvitesRepo } from "./invites";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
 import type {

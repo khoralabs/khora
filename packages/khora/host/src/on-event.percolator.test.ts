@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, mock, test } from "bun:test";
-import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade-crypto";
-import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
+import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
+import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
 import {
   authorSubscriptionSearch,
   KHORA_EVENT_KIND,

@@ -1,9 +1,5 @@
-import {
-  KhoraClientError,
-  type KhoraUnaryTransport,
-  readErrorMessage,
-} from "@khoralabs/khora-transport";
 import z from "zod";
+import { KhoraClientError, type KhoraUnaryTransport, readErrorMessage } from "../transport";
 
 const zHealth = z.object({ ok: z.literal(true) });
 

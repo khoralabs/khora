@@ -33,6 +33,16 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./transport": {
+      "types": "./src/transport/index.ts",
+      "import": "./src/transport/index.ts",
+      "default": "./src/transport/index.ts"
+    },
+    "./transport/byte-stream": {
+      "types": "./src/transport/byte-stream/index.ts",
+      "import": "./src/transport/byte-stream/index.ts",
+      "default": "./src/transport/byte-stream/index.ts"
+    },
     "./khora-config.schema.json": "./khora-config.schema.json"
   },
   "scripts": {
@@ -45,7 +55,6 @@
     "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
-    "@khoralabs/khora-transport": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

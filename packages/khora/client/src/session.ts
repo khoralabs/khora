@@ -5,8 +5,8 @@ import type {
   KhoraProfile,
   KhoraRegistrationResult,
 } from "@khoralabs/khora-contracts";
-import type { InboxConnectionHandle, InboxWsHandlers } from "@khoralabs/khora-transport";
 import type { KhoraClient } from "./khora-client";
+import type { InboxConnectionHandle, InboxWsHandlers } from "./transport";
 
 export type KhoraSession = {
   readonly did: string;

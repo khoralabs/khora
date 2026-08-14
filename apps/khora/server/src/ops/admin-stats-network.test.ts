@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { poolShardCellId } from "@khoralabs/colonnade";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "./admin-stats-port";
 

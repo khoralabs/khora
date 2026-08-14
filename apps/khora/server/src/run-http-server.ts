@@ -4,6 +4,7 @@ import path from "node:path";
 const { dirname } = path;
 
 import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
+import type { KhoraWsData } from "@khoralabs/khora-client/transport";
 import {
   createHostRouter,
   createInboxDrainWebSocketHandlersForDeps,
@@ -11,8 +12,7 @@ import {
   type HostRouteDeps,
   startDuplexUnixIngress,
   startStdioUnaryIngress,
-} from "@khoralabs/khora-server-http";
-import type { KhoraWsData } from "@khoralabs/khora-transport";
+} from "@khoralabs/khora-host/http";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap";

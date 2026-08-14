@@ -11,7 +11,7 @@ import {
   mergeKhoraPostPatch,
   zKhoraPost,
 } from "@khoralabs/khora-contracts";
-import type { KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import type { KhoraUnaryTransport } from "../transport";
 
 export type KhoraSubscriptionCreateInput = Omit<
   KhoraSubscriptionCreate,

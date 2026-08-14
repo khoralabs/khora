@@ -1,5 +1,5 @@
-import { AdminStats } from "@khoralabs/khora-react";
 import { useState } from "react";
+import { AdminStats } from "../../khora-react";
 import { renderRoute } from "../../render-route";
 import { AdminRouter } from "./router";
 import { AdminShell } from "./shell";

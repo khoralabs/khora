@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
-import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { poolShardCellId } from "@khoralabs/colonnade";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import {
   type HostRouteDeps,
@@ -12,7 +12,7 @@ import {
   handleAdminStatsInactiveMembers,
   handleAdminStatsPrincipal,
   handleAdminStatsSummary,
-} from "@khoralabs/khora-server-http";
+} from "@khoralabs/khora-host/http";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "../ops/admin-stats-port";
 

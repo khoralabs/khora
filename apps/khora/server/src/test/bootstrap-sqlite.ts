@@ -1,12 +1,12 @@
 import path from "node:path";
+import { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import {
   createTestEncryptionMaterial,
   openMaybeEncryptedDatabaseSync,
-} from "@khoralabs/colonnade-crypto";
-import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
+} from "@khoralabs/colonnade/crypto";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 import { createKhoraDidAuth } from "@khoralabs/khora-auth";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
+import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
   bootstrapKhoraPercolator,
@@ -21,11 +21,11 @@ import {
 import {
   applyKhoraSqlitePragmas,
   openKhoraHostSqlitePersistence,
-} from "@khoralabs/khora-host-sqlite";
+} from "@khoralabs/khora-host/sqlite";
 import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,
-} from "@khoralabs/percolator-sqlite";
+} from "@khoralabs/percolator/sqlite";
 
 export type CreateTestKhoraHostOpts = {
   hostDbPath: string;

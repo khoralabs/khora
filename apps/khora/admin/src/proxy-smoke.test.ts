@@ -5,7 +5,7 @@ import {
   createHostRouter,
   createV2HostRateLimiters,
   type HostRouteDeps,
-} from "@khoralabs/khora-server-http";
+} from "@khoralabs/khora-host/http";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 

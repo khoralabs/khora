@@ -6,6 +6,22 @@ export type {
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
 export type { KhoraHostContext } from "./context";
+export type {
+  InvitePreviewResult,
+  KhoraInviteAdminListRow,
+  KhoraInviteListRow,
+  KhoraInvitesRepo,
+} from "./invites";
+export {
+  generateInvitePlaintext,
+  hashInviteToken,
+  inviteRequiredFromEnv,
+  invitesPerRegistrationFromEnv,
+  KHORA_HOST_ADMIN_MINTER_DID,
+  parseInviteSeedTokens,
+  readInvitePepper,
+  validateInviteEnvConfig,
+} from "./invites";
 export { createKhoraHost } from "./khora-host";
 export type { KhoraHostDeps } from "./khora-host-deps";
 export {

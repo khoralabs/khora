@@ -1,5 +1,5 @@
 import { type KhoraPost, zAgentStatusResponse } from "@khoralabs/khora-contracts";
-import type { KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import type { KhoraUnaryTransport } from "../transport";
 
 export type AgentStatusSnapshot = ReturnType<typeof zAgentStatusResponse.parse>;
 

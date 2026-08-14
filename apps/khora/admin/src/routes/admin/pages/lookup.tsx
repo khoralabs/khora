@@ -1,9 +1,9 @@
-import { AdminStats, useAdminStats } from "@khoralabs/khora-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AdminStats, useAdminStats } from "../../../khora-react";
 
 function PrincipalLookupForm() {
   const { principalDid, setPrincipalDid, lookupPrincipal, principalLoading } = useAdminStats();

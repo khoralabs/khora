@@ -1,4 +1,4 @@
-import type { KhoraClientEvent } from "@khoralabs/khora-transport";
+import type { KhoraClientEvent } from "@khoralabs/khora-client/transport";
 
 export type InboxEventSink = {
   onClientEvent(event: KhoraClientEvent): void;

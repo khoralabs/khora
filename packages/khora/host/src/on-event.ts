@@ -1,8 +1,5 @@
-import type {
-  ColonnadePublicationClient,
-  PostOperationOutput,
-} from "@khoralabs/colonnade-persistence";
-import { randomId } from "@khoralabs/colonnade-persistence";
+import type { ColonnadePublicationClient, PostOperationOutput } from "@khoralabs/colonnade";
+import { randomId } from "@khoralabs/colonnade";
 import {
   type InboxSubscriptionMatch,
   KHORA_EVENT_KIND,

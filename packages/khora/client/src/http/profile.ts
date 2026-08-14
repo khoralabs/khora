@@ -5,7 +5,7 @@ import {
   zKhoraProfile,
   zKhoraProfilePatch,
 } from "@khoralabs/khora-contracts";
-import { KhoraClientError, type KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import { KhoraClientError, type KhoraUnaryTransport } from "../transport";
 
 export function updateProfile(
   t: KhoraUnaryTransport,

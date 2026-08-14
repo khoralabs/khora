@@ -2,7 +2,7 @@ import {
   type KhoraUnregisterRequestBody,
   zKhoraUnregisterRequestBody,
 } from "@khoralabs/khora-contracts";
-import type { KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import type { KhoraUnaryTransport } from "../transport";
 
 export type UnregisterBody = Omit<KhoraUnregisterRequestBody, "did"> & {
   did?: string;

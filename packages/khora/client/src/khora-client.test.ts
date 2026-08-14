@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { generateIdentity, type PersistableSigner, type RelaySigner } from "@khoralabs/khora-auth";
-import { KhoraClientError, type KhoraClientEvent } from "@khoralabs/khora-transport";
 import { KhoraClient } from "./khora-client";
+import { KhoraClientError, type KhoraClientEvent } from "./transport";
 
 const TEST_AUTHOR_SIGNATURE = "test-post-author-signature";
 

@@ -1,4 +1,4 @@
-import { OutboxGhostError } from "@khoralabs/colonnade-persistence";
+import { OutboxGhostError } from "@khoralabs/colonnade";
 import {
   type KhoraPost,
   type KhoraProfile,

@@ -1,13 +1,13 @@
 import type { Database } from "bun:sqlite";
+import { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import {
   EnvKeyProvider,
   openMaybeEncryptedDatabaseSync,
   outboxKeyBytesToHex,
-} from "@khoralabs/colonnade-crypto";
-import { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
+} from "@khoralabs/colonnade/crypto";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 import { createKhoraDidAuth } from "@khoralabs/khora-auth";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
+import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
 import {
   bootstrapKhoraMemories,
   bootstrapKhoraPercolator,
@@ -19,18 +19,16 @@ import {
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
   type KhoraHostContext,
+  parseInviteSeedTokens,
+  readInvitePepper,
   startEmbeddingRetryWorker,
+  validateInviteEnvConfig,
 } from "@khoralabs/khora-host";
 import {
   applyKhoraSqlitePragmas,
+  createKhoraInvitesSqliteRepo,
   openKhoraHostSqlitePersistence,
-} from "@khoralabs/khora-host-sqlite";
-import {
-  parseInviteSeedTokens,
-  readInvitePepper,
-  validateInviteEnvConfig,
-} from "@khoralabs/khora-invites";
-import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-invites-sqlite";
+} from "@khoralabs/khora-host/sqlite";
 import {
   ensureCustomSqliteForExtensions,
   getMemoriesSqliteDatabase,
@@ -44,7 +42,7 @@ import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/stora
 import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,
-} from "@khoralabs/percolator-sqlite";
+} from "@khoralabs/percolator/sqlite";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
 import {

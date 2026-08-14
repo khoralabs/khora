@@ -4,7 +4,7 @@ import {
   zKhoraInviteListResponse,
   zKhoraInvitePreviewResponse,
 } from "@khoralabs/khora-contracts";
-import type { KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import type { KhoraUnaryTransport } from "../transport";
 
 export function listInvites(t: KhoraUnaryTransport): Promise<KhoraInviteListResponse> {
   return t.requestJson("GET", "/v1/invites", {

@@ -1,5 +1,5 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { formatThrownError, KhoraClientError } from "@khoralabs/khora-transport";
+import { formatThrownError, KhoraClientError } from "@khoralabs/khora-client/transport";
 
 import { cliBaseUrl } from "../flows/context";
 

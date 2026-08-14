@@ -1,5 +1,5 @@
 import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
-import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade-crypto";
+import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade/crypto";
 import {
   createBetterAuthRegistryIdentity,
   createBetterAuthRegistryRoutes,

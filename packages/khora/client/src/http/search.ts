@@ -4,7 +4,7 @@ import {
   type KhoraSearchResponse,
   zKhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
-import type { KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import type { KhoraUnaryTransport } from "../transport";
 
 export function searchGet(
   t: KhoraUnaryTransport,

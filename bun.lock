@@ -24,7 +24,7 @@
       "name": "@khoralabs/khora-admin",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/khora-react": "workspace:*",
+        "@khoralabs/khora-host": "workspace:*",
         "@khoralabs/memories-react-graph": "^0.7.6",
         "@khoralabs/memories-service": "^0.7.6",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
@@ -42,8 +42,6 @@
       },
       "devDependencies": {
         "@khoralabs/admin-token": "workspace:*",
-        "@khoralabs/khora-host": "workspace:*",
-        "@khoralabs/khora-server-http": "workspace:*",
         "@types/bun": "latest",
         "@types/react": "^19",
         "@types/react-dom": "^19",
@@ -65,7 +63,6 @@
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-daemon": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -82,8 +79,6 @@
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/khora-plugin-inbox-buffer": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -96,7 +91,7 @@
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
         "@khoralabs/admin-token": "workspace:*",
-        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
@@ -133,23 +128,16 @@
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/admin-token": "workspace:*",
         "@khoralabs/agent-capabilities": "^0.2.0",
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
-        "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-auth-sqlite": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-host": "workspace:*",
-        "@khoralabs/khora-host-sqlite": "workspace:*",
-        "@khoralabs/khora-invites": "workspace:*",
-        "@khoralabs/khora-invites-sqlite": "workspace:*",
-        "@khoralabs/khora-server-http": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
         "@khoralabs/memories-agents": "^0.7.6",
         "@khoralabs/memories-node": "^0.7.6",
         "@khoralabs/memories-service": "^0.7.6",
         "@khoralabs/observability": "workspace:*",
-        "@khoralabs/percolator-sqlite": "workspace:*",
+        "@khoralabs/percolator": "workspace:*",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@khoralabs/sqlite-migrate": "^0.1.0",
@@ -207,21 +195,6 @@
         "lru-cache": "^11.5.1",
       },
       "devDependencies": {
-        "@khoralabs/khora-auth-sqlite": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/auth/sqlite": {
-      "name": "@khoralabs/khora-auth-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/khora-auth": "workspace:*",
-      },
-      "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -236,7 +209,6 @@
         "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -248,57 +220,12 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/colonnade/crypto": {
-      "name": "@khoralabs/colonnade-crypto",
+    "packages/khora/colonnade": {
+      "name": "@khoralabs/colonnade",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/colonnade/impl/sqlite": {
-      "name": "@khoralabs/colonnade-persistence-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/colonnade/impl/ts": {
-      "name": "@khoralabs/colonnade-persistence",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
-      },
-      "devDependencies": {
-        "@khoralabs/colonnade-persistence-sqlite": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/colonnade/impl/turso-serverless": {
-      "name": "@khoralabs/colonnade-persistence-turso-serverless",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
         "@tursodatabase/serverless": "^1.2.3",
       },
       "devDependencies": {
@@ -327,58 +254,19 @@
       "name": "@khoralabs/khora-host",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/admin-token": "workspace:*",
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/khora-invites": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
         "@khoralabs/memories-node": "^0.7.6",
+        "@khoralabs/memories-service": "^0.7.6",
+        "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
+        "@khoralabs/registry-client": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/host/sqlite": {
-      "name": "@khoralabs/khora-host-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/khora-host": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/invites": {
-      "name": "@khoralabs/khora-invites",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/invites/sqlite": {
-      "name": "@khoralabs/khora-invites-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/khora-invites": "workspace:*",
+        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -392,102 +280,7 @@
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
       "dependencies": {
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/percolator/sqlite": {
-      "name": "@khoralabs/percolator-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/percolator": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/percolator/turso-serverless": {
-      "name": "@khoralabs/percolator-turso-serverless",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/percolator": "workspace:*",
         "@tursodatabase/serverless": "^1.2.3",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/plugins/inbox-buffer": {
-      "name": "@khoralabs/khora-plugin-inbox-buffer",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/react": {
-      "name": "@khoralabs/khora-react",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/server-http": {
-      "name": "@khoralabs/khora-server-http",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/admin-token": "workspace:*",
-        "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-contracts": "workspace:*",
-        "@khoralabs/khora-host": "workspace:*",
-        "@khoralabs/khora-invites": "workspace:*",
-        "@khoralabs/khora-transport": "workspace:*",
-        "@khoralabs/memories-service": "^0.7.6",
-        "@khoralabs/observability": "workspace:*",
-        "@khoralabs/registry-client": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khora/transport": {
-      "name": "@khoralabs/khora-transport",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-contracts": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -502,12 +295,12 @@
       "name": "@khoralabs/registry-accounts",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/registry-accounts-contracts": "workspace:*",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
         "@khoralabs/registry-persistence": "workspace:*",
       },
       "devDependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/registry-catalog": "workspace:*",
         "@khoralabs/registry-sqlite": "workspace:*",
         "@types/bun": "latest",
@@ -552,6 +345,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-catalog": "workspace:*",
@@ -564,7 +358,6 @@
         "kysely": "^0.28.8",
       },
       "devDependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -577,13 +370,13 @@
       "name": "@khoralabs/registry-catalog",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-accounts-contracts": "workspace:*",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
         "@khoralabs/registry-persistence": "workspace:*",
       },
       "devDependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/registry-sqlite": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
@@ -643,6 +436,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/admin-token": "workspace:*",
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts": "workspace:*",
@@ -652,7 +446,6 @@
         "@opentelemetry/api": "^1.9.0",
       },
       "devDependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/registry-auth": "workspace:*",
         "@khoralabs/registry-sqlite": "workspace:*",
         "@types/bun": "latest",
@@ -677,7 +470,7 @@
       "name": "@khoralabs/registry-sqlite",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/registry-persistence": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
       },
@@ -1244,21 +1037,13 @@
 
     "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:vendor/libs/packages/cli-kit"],
 
-    "@khoralabs/colonnade-crypto": ["@khoralabs/colonnade-crypto@workspace:packages/khora/colonnade/crypto"],
-
-    "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/khora/colonnade/impl/ts"],
-
-    "@khoralabs/colonnade-persistence-sqlite": ["@khoralabs/colonnade-persistence-sqlite@workspace:packages/khora/colonnade/impl/sqlite"],
-
-    "@khoralabs/colonnade-persistence-turso-serverless": ["@khoralabs/colonnade-persistence-turso-serverless@workspace:packages/khora/colonnade/impl/turso-serverless"],
+    "@khoralabs/colonnade": ["@khoralabs/colonnade@workspace:packages/khora/colonnade"],
 
     "@khoralabs/did-key-identity": ["@khoralabs/did-key-identity@0.1.0", "", { "dependencies": { "@noble/ed25519": "^3.1.0", "@noble/hashes": "^2.2.0", "iso-base": "^4.2.1", "iso-signatures": "^0.5.1" }, "peerDependencies": { "typescript": "^5" } }, "sha512-ALGgj7L6iTBuEvQ0hnu1FLArd/69rjUKXBfUx1ZhN8JmOPU7NM+XK9HnbLBeg65/5q+CHaNl+KMdDq0i9uW/oA=="],
 
     "@khoralabs/khora-admin": ["@khoralabs/khora-admin@workspace:apps/khora/admin"],
 
     "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/khora/auth"],
-
-    "@khoralabs/khora-auth-sqlite": ["@khoralabs/khora-auth-sqlite@workspace:packages/khora/auth/sqlite"],
 
     "@khoralabs/khora-cli": ["@khoralabs/khora-cli@workspace:apps/khora/cli"],
 
@@ -1270,23 +1055,9 @@
 
     "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/khora/host"],
 
-    "@khoralabs/khora-host-sqlite": ["@khoralabs/khora-host-sqlite@workspace:packages/khora/host/sqlite"],
-
-    "@khoralabs/khora-invites": ["@khoralabs/khora-invites@workspace:packages/khora/invites"],
-
-    "@khoralabs/khora-invites-sqlite": ["@khoralabs/khora-invites-sqlite@workspace:packages/khora/invites/sqlite"],
-
-    "@khoralabs/khora-plugin-inbox-buffer": ["@khoralabs/khora-plugin-inbox-buffer@workspace:packages/khora/plugins/inbox-buffer"],
-
-    "@khoralabs/khora-react": ["@khoralabs/khora-react@workspace:packages/khora/react"],
-
     "@khoralabs/khora-registry": ["@khoralabs/khora-registry@workspace:apps/khora/registry"],
 
     "@khoralabs/khora-server": ["@khoralabs/khora-server@workspace:apps/khora/server"],
-
-    "@khoralabs/khora-server-http": ["@khoralabs/khora-server-http@workspace:packages/khora/server-http"],
-
-    "@khoralabs/khora-transport": ["@khoralabs/khora-transport@workspace:packages/khora/transport"],
 
     "@khoralabs/khoralabs-homepage": ["@khoralabs/khoralabs-homepage@workspace:apps/khoralabs/homepage"],
 
@@ -1303,10 +1074,6 @@
     "@khoralabs/observability": ["@khoralabs/observability@workspace:vendor/libs/packages/observability"],
 
     "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator"],
-
-    "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/khora/percolator/sqlite"],
-
-    "@khoralabs/percolator-turso-serverless": ["@khoralabs/percolator-turso-serverless@workspace:packages/khora/percolator/turso-serverless"],
 
     "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/registry/accounts"],
 

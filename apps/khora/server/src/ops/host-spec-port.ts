@@ -6,7 +6,7 @@ import {
   zKhoraHostSpec,
 } from "@khoralabs/khora-contracts";
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
-import { NAMESPACE_HOST_SPEC, ProjectionStore } from "@khoralabs/khora-host-sqlite";
+import { NAMESPACE_HOST_SPEC, ProjectionStore } from "@khoralabs/khora-host/sqlite";
 import {
   envHostDisplayName,
   envHostSlug,

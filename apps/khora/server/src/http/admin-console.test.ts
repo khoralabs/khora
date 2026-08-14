@@ -5,7 +5,7 @@ import {
   adminStatsSummaryResponse,
   type HostRouteDeps,
   handleAdminStatsSummary,
-} from "@khoralabs/khora-server-http";
+} from "@khoralabs/khora-host/http";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 

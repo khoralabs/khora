@@ -1,0 +1,59 @@
+{
+  "name": "@khoralabs/colonnade",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./persistence": {
+      "types": "./src/persistence/index.ts",
+      "import": "./src/persistence/index.ts",
+      "default": "./src/persistence/index.ts"
+    },
+    "./crypto": {
+      "types": "./src/crypto/index.ts",
+      "import": "./src/crypto/index.ts",
+      "default": "./src/crypto/index.ts"
+    },
+    "./sqlite": {
+      "types": "./src/sqlite/index.ts",
+      "import": "./src/sqlite/index.ts",
+      "default": "./src/sqlite/index.ts"
+    },
+    "./turso-serverless": {
+      "types": "./src/turso-serverless/index.ts",
+      "import": "./src/turso-serverless/index.ts",
+      "default": "./src/turso-serverless/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/index.ts",
+      "import": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test src",
+    "typecheck": "tsc --noEmit",
+    "bench": "bun run src/core/bench/run.ts",
+    "bench:sweep-json": "bun run src/core/bench/sweep-json.ts"
+  },
+  "dependencies": {
+    "@khoralabs/sourcemaps": "^0.1.0",
+    "@khoralabs/sqlite-crypto": "^0.1.0",
+    "@tursodatabase/serverless": "^1.2.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "optionalPeerDependencies": {
+    "@tursodatabase/serverless": "^1.2.3"
+  }
+}

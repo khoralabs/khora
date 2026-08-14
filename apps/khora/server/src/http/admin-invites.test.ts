@@ -2,8 +2,8 @@ import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-invites-sqlite";
-import { type HostRouteDeps, handleAdminInvitesMint } from "@khoralabs/khora-server-http";
+import { type HostRouteDeps, handleAdminInvitesMint } from "@khoralabs/khora-host/http";
+import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-host/sqlite";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 const INVITE_PEPPER = "test-invite-pepper-32chars-xxxx";

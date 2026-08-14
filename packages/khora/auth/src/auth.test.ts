@@ -1,9 +1,9 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { generateIdentity, type Signer as RelaySigner } from "@khoralabs/did-key-identity";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth-sqlite";
 import { createKhoraDidAuth, verifySignedAgentRequest } from "./auth";
 import { INBOX_BIND_METHOD, inboxBindCanonicalPath, signInboxBind } from "./signer";
+import { createSqliteNonceStore } from "./sqlite";
 import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, signatureBytesToB64Url } from "./wire";
 
 function freshDb(): Database {

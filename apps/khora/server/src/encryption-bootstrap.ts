@@ -3,7 +3,7 @@ import {
   createOutboxPayloadCodec,
   EnvKeyProvider,
   tryGetSqlCipherKey,
-} from "@khoralabs/colonnade-crypto";
+} from "@khoralabs/colonnade/crypto";
 import type { KhoraEncryptionContext } from "./encryption-context";
 
 export async function bootstrapKhoraEncryption(): Promise<KhoraEncryptionContext> {

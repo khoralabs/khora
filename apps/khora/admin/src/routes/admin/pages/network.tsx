@@ -1,5 +1,5 @@
-import { AdminStats } from "@khoralabs/khora-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminStats } from "../../../khora-react";
 
 export function NetworkPage() {
   return (

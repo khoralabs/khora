@@ -1,4 +1,4 @@
-import type { CellPersistenceStrategy, OutboxListedRecord } from "@khoralabs/colonnade-persistence";
+import type { CellPersistence, OutboxListedRecord } from "@khoralabs/colonnade";
 import type {
   EffectiveKhoraHostSpec,
   KhoraHostSpec,
@@ -32,7 +32,7 @@ export type {
 
 export type KhoraColonnadeCluster = {
   readonly cellPoolCount: number | undefined;
-  resolveCell(cellId: string): CellPersistenceStrategy;
+  resolveCell(cellId: string): CellPersistence;
   assignPrincipalToCell(principalId: string): string;
   close(): void;
 };

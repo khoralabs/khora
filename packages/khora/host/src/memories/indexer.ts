@@ -1,4 +1,4 @@
-import { sha256HexLower } from "@khoralabs/colonnade-persistence";
+import { sha256HexLower } from "@khoralabs/colonnade";
 import {
   type KhoraPost,
   type KhoraProfile,

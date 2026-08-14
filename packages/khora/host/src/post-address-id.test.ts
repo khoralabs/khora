@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { derivePoolHomeCell } from "@khoralabs/colonnade-persistence";
+import { derivePoolHomeCell } from "@khoralabs/colonnade";
 import { decodePostId, encodePostId } from "./post-address-id";
 
 const goldenAddress = {

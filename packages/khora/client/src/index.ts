@@ -9,25 +9,6 @@ export type {
   PrincipalRegistrationResult,
 } from "@khoralabs/khora-contracts";
 export * from "@khoralabs/khora-contracts";
-export type {
-  InboxConnectionHandle,
-  InboxWsHandlers,
-  KhoraFetch,
-  KhoraTransportBundle,
-  KhoraUnaryTransport,
-} from "@khoralabs/khora-transport";
-export {
-  type InboxNotificationRow,
-  type InboxWsNotificationMessage,
-  type InboxWsSnapshotMessage,
-  inboxWebSocketUrl,
-  isDerivedInboxKindEvent,
-  isInboxNotificationEvent,
-  KhoraClientError,
-  type KhoraClientEvent,
-  type KhoraDerivedInboxEvent,
-  parseInboxWebSocketMessage,
-} from "@khoralabs/khora-transport";
 export {
   type CachedProfileSnapshot,
   loadCachedProfile,
@@ -71,3 +52,22 @@ export {
   mergeLabeledKhoraPluginLayers,
 } from "./khora-plugins";
 export { createKhoraSession, type KhoraSession } from "./session";
+export type {
+  InboxConnectionHandle,
+  InboxWsHandlers,
+  KhoraFetch,
+  KhoraTransportBundle,
+  KhoraUnaryTransport,
+} from "./transport";
+export {
+  type InboxNotificationRow,
+  type InboxWsNotificationMessage,
+  type InboxWsSnapshotMessage,
+  inboxWebSocketUrl,
+  isDerivedInboxKindEvent,
+  isInboxNotificationEvent,
+  KhoraClientError,
+  type KhoraClientEvent,
+  type KhoraDerivedInboxEvent,
+  parseInboxWebSocketMessage,
+} from "./transport";

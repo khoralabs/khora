@@ -1,5 +1,5 @@
-import { useAdminStats } from "@khoralabs/khora-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAdminStats } from "../../../khora-react";
 import { navigateAdmin } from "../use-pathname";
 
 function OverviewKpi({

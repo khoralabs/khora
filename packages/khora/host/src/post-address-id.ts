@@ -3,7 +3,7 @@
  * See packages/khora/host/id-conventions.md
  */
 
-import { derivePoolHomeCell } from "@khoralabs/colonnade-persistence";
+import { derivePoolHomeCell } from "@khoralabs/colonnade";
 
 export type PostAddressInput = {
   readonly authorPrincipalId: string;

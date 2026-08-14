@@ -2,69 +2,48 @@
 
 **Colonnade** specifies a federated persistence architecture: a **central catalog** for discovery and selective indexing, **cells** (sharded stores) each with an authoritative **outbox** and a **drainable inbox**, plus a **router** that feeds **per-cell write logs** for serialized writers.
 
-This package holds the **Smithy model** (`spec/model/`) and TypeScript persistence packages under `impl/`:
+This package (`@khoralabs/colonnade`) holds the **Smithy model** (`spec/model/`) and TypeScript implementation under `src/`:
 
-| Package | Path | Role |
-|---------|------|------|
-| `@khoralabs/colonnade-persistence` | [`impl/ts`](impl/ts) | Core strategies, clients, routing, shared DDL |
-| `@khoralabs/colonnade-persistence-sqlite` | [`impl/sqlite`](impl/sqlite) | Local SQLCipher cell files + catalog SQLite |
-| `@khoralabs/colonnade-persistence-turso-serverless` | [`impl/turso-serverless`](impl/turso-serverless) | Turso Cloud (one DB per cell shard) |
+| Export | Path | Role |
+|--------|------|------|
+| `@khoralabs/colonnade` | [`src/core`](src/core) | Router, clients, routing, shared DDL, in-memory fakes |
+| `@khoralabs/colonnade/persistence` | [`src/persistence`](src/persistence) | `CatalogPersistence`, `CellPersistence` contracts |
+| `@khoralabs/colonnade/crypto` | [`src/crypto`](src/crypto) | DB open / payload codec helpers |
+| `@khoralabs/colonnade/sqlite` | [`src/sqlite`](src/sqlite) | Local SQLCipher cell files + catalog SQLite |
+| `@khoralabs/colonnade/turso-serverless` | [`src/turso-serverless`](src/turso-serverless) | Turso Cloud (one DB per cell shard) |
+| `@khoralabs/colonnade/testing` | [`src/testing`](src/testing) | Contract test helpers |
 
-## TypeScript implementation
+See [`src/IMPLEMENTORS.md`](src/IMPLEMENTORS.md) for the adapter contract.
 
-[`impl/ts`](impl/ts) defines **`@khoralabs/colonnade-persistence`**: `CatalogPersistenceStrategy`, `CellPersistenceStrategy`, `ColonnadeRouter`, `ColonnadePublicationClient`, plus in-memory strategies for tests.
+## TypeScript usage
 
-[`impl/sqlite`](impl/sqlite) defines **`@khoralabs/colonnade-persistence-sqlite`**: `createSqliteColonnadeCluster`, `SqliteCellPersistenceStrategy`, optional Bun Workers per cell.
+```ts
+import { ColonnadePublicationClient } from "@khoralabs/colonnade";
+import type { CatalogPersistence, CellPersistence } from "@khoralabs/colonnade/persistence";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
+```
 
-[`impl/turso-serverless`](impl/turso-serverless) defines **`@khoralabs/colonnade-persistence-turso-serverless`**: `createTursoColonnadeCluster`, `TursoCellPersistenceStrategy`, URL-template shard routing.
+**SQLite topology:** `createSqliteColonnadeCluster` opens lazy cell DBs at `{cellsDirectory}/{stem}.sqlite`. Pool routing uses **`derivePoolHomeCell(principal_id, cellCount)`**. Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`**.
 
-**Durable roles:** the **catalog** holds indexing / read-model rows (pointers, discovery metadata keyed per tenant, source-map projections). Each **cell** owns the authoritative **outbox** (payload bytes) and **inbox** staging. Fan-out recipient lists are **not** stored as catalog manifests—**`PublicationRouting.fan_out_targets`** is filled by application code; proof of delivery is **inbox rows** across cells.
-
-**SQLite topology:** `createSqliteColonnadeCluster` (from `@khoralabs/colonnade-persistence-sqlite`) opens lazy cell DBs at `{cellsDirectory}/{stem}.sqlite`. Pool routing uses **`derivePoolHomeCell(principal_id, cellCount)`** (deterministic hash; no catalog assignment rows). Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`**.
-
-**Turso topology:** `createTursoColonnadeCluster` (from `@khoralabs/colonnade-persistence-turso-serverless`) opens one Turso database per cell shard via **`cells.urlTemplate`** placeholders `{cellId}`, `{shardIndex}`, or `{shard}`.
+**Turso topology:** `createTursoColonnadeCluster` opens one Turso database per cell shard via **`cells.urlTemplate`**.
 
 ```bash
-cd packages/colonnade/impl/ts && bun test && bun run typecheck
-cd packages/colonnade/impl/sqlite && bun test
-cd packages/colonnade/impl/turso-serverless && bun test
+cd packages/khora/colonnade && bun test && bun run typecheck
 ```
 
 ### Benchmarks
 
-Micro-benchmarks exercise publication, routing, and inbox drain paths against injectable persistence factories (`BenchmarkStrategies` in [`impl/ts/src/bench/strategies.ts`](impl/ts/src/bench/strategies.ts)). Built-ins: **`default`** (in-memory) and **`sqlite`** (temp catalog + cell DBs per run). For SQLite concurrency experiments, pass **`--cell-workers`** so each cell DB runs in a Bun **`Worker`** (same as cluster **`useCellWorkers`**). Use **`registerBenchmarkStrategies`** for custom backends.
-
-Canonical defaults (SQLite, **`post_catalog_fanout`**, 3000 iterations / 200 warmup, etc.) live in [`impl/ts/src/bench/bench-defaults.ts`](impl/ts/src/bench/bench-defaults.ts). With no flags, **`bun run bench`** uses those defaults.
-
 ```bash
-cd packages/colonnade/impl/ts && bun run bench
-cd packages/colonnade/impl/ts && bun run bench -- --json
-cd packages/colonnade/impl/ts && bun run bench:sweep-json -- -o sweep.json
+cd packages/khora/colonnade && bun run bench
+cd packages/khora/colonnade && bun run bench -- --json
 ```
-
-`--json` prints an object with a **`config`** field (the resolved CLI args) plus the usual result metrics. See the header comment in [`impl/ts/src/bench/run.ts`](impl/ts/src/bench/run.ts) for flags and interpreting throughput vs per-op latency.
 
 ## Spec layout
 
 | Path | Role |
 | --- | --- |
 | [`spec/model/shapes.smithy`](spec/model/shapes.smithy) | Shared identifiers, content hashes, pointer/inbox unions |
-| [`spec/model/catalog.smithy`](spec/model/catalog.smithy) | `CatalogIndex` — discovery metadata, percolation predicates, pointers, source-map row upserts |
-| [`spec/model/catalog-read.smithy`](spec/model/catalog-read.smithy) | `CatalogRead` — fan-out resolution, source-map pointer lookups, canonical row hashing |
-| [`spec/model/cell.smithy`](spec/model/cell.smithy) | `CellStore` — outbox append, inbox enqueue/drain/resolve |
-| [`spec/model/routing.smithy`](spec/model/routing.smithy) | `ColonnadeRouter`, `CellWriteLog` — routed writes and queues |
-| [`spec/model/post.smithy`](spec/model/post.smithy) | `PostOperation` — publication orchestration (catalog vs fan-out) |
-
-## Validation
-
-With [Smithy CLI](https://smithy.io/2.0/guides/cli-model-validation.html) installed:
-
-```bash
-smithy validate packages/colonnade/spec/model
-```
-
-(Exact CLI invocation depends on whether you use a `smithy-build.json`; this repo often validates models ad hoc.)
-
-## Narrative source
-
-Architecture prose and security goals also appear in [`packages/colonnade/.idea/spec.md`](.idea/spec.md). The Smithy files are the normative API-oriented view.
+| [`spec/model/catalog.smithy`](spec/model/catalog.smithy) | `CatalogIndex` |
+| [`spec/model/cell.smithy`](spec/model/cell.smithy) | `CellStore` |
+| [`spec/model/routing.smithy`](spec/model/routing.smithy) | `ColonnadeRouter`, `CellWriteLog` |
+| [`spec/model/post.smithy`](spec/model/post.smithy) | `PostOperation` |

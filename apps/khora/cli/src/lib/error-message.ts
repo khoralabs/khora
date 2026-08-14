@@ -1,1 +1,1 @@
-export { formatThrownError as errorMessage } from "@khoralabs/khora-transport";
+export { formatThrownError as errorMessage } from "@khoralabs/khora-client/transport";

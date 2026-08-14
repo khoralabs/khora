@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host-sqlite";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
 import { createKhoraHostSpecPort } from "./host-spec-port";
 
 describe("host spec port", () => {

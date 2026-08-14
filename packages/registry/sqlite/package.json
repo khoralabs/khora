@@ -15,9 +15,9 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/registry-persistence": "workspace:*",
-    "@khoralabs/sqlite-crypto": "^0.1.0"
+    "@khoralabs/sqlite-crypto": "^0.1.0",
+    "@khoralabs/colonnade": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import {
   createTestEncryptionMaterial,
   TEST_POST_AUTHOR_SIGNATURE,
-} from "@khoralabs/colonnade-crypto";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence-sqlite";
+} from "@khoralabs/colonnade/crypto";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import {
   agentScope,

@@ -1,5 +1,5 @@
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
-import { buildKhoraHostDiscovery as buildDiscovery } from "@khoralabs/khora-server-http";
+import { buildKhoraHostDiscovery as buildDiscovery } from "@khoralabs/khora-host/http";
 
 import { envRegistryUrl } from "../env";
 

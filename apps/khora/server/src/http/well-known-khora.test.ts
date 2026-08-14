@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host-sqlite";
-import { type HostRouteDeps, handleWellKnownKhora } from "@khoralabs/khora-server-http";
+import { type HostRouteDeps, handleWellKnownKhora } from "@khoralabs/khora-host/http";
+import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
 import { buildKhoraHostDiscovery } from "../ops/build-host-discovery";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 

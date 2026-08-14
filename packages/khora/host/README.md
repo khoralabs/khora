@@ -19,7 +19,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | `cluster` | `KhoraColonnadeCluster` — cell shards, post resolution |
 | `publicationClient` | Colonnade publish/fan-out |
 | `auth` | `KhoraDidAuth` |
-| `invitesRepo?` | `KhoraInvitesRepo` from `@khoralabs/khora-invites` |
+| `invitesRepo?` | `KhoraInvitesRepo` from `@khoralabs/khora-host` |
 | `memories?` | `KhoraMemoriesHost` from `bootstrapKhoraMemories({ persistence, postResolver, … })` |
 | `health` | `KhoraHostHealthPort` — readiness ping |
 | `adminStats` | `KhoraAdminStatsPort` — internal admin stats |
@@ -28,7 +28,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 SQLite handles and catalog/social persistence adapters are wired in the server bootstrap (health/admin ports, `createKhoraRegistrationApi`) — not passed to `createKhoraHost`.
 
 **Invite env** (read in server bootstrap, not inside host):
-- `@khoralabs/khora-invites` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
+- `@khoralabs/khora-host` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
 - `apps/khora/server/.env.example`
 
 ### Server env (maps to `bootstrapKhoraHost`)
@@ -83,7 +83,7 @@ apps/khora/server/src/index.ts
     createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
     createRelayPrincipalLifecycle()
-    createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-invites)
+    createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-host)
     createKhoraDidAuth({ db: catalogDb })
     bootstrapKhoraMemories()        → if KHORA_MEMORIES enabled (default on)
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
@@ -369,8 +369,8 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 |---------|------|------|
 | `@khoralabs/khora-host` | `packages/khora/host/` | Host composition, posts, inbox drain |
 | `@khoralabs/khora-server` | `apps/khora/server/` | HTTP/WS server, catalog/social persistence |
-| `@khoralabs/colonnade-persistence` | `packages/colonnade/impl/ts/` | Cell cluster, outbox/inbox, PostOperation |
+| `@khoralabs/colonnade` | `packages/colonnade/impl/ts/` | Cell cluster, outbox/inbox, PostOperation |
 | `@khoralabs/khora-auth` | `packages/khora/auth/` | DID auth + nonce store |
-| `@khoralabs/khora-invites` | `packages/khora/invites/` | Invite tokens repo + env |
+| `@khoralabs/khora-host` | `packages/khora/invites/` | Invite tokens repo + env |
 | `@khoralabs/khora-contracts` | `packages/khora/contracts/` | Profile/post Zod schemas |
-| `@khoralabs/khora-transport` | `packages/khora/transport/` | Inbox WS, unary HTTP |
+| `@khoralabs/khora-client/transport` | `packages/khora/transport/` | Inbox WS, unary HTTP |

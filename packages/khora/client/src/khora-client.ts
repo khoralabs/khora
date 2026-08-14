@@ -13,16 +13,6 @@ import type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
-import {
-  createKhoraTransportBundleFromEnv,
-  type InboxConnectionHandle,
-  type InboxWsHandlers,
-  type KhoraClientEvent,
-  type KhoraDuplexTransport,
-  type KhoraFetch,
-  type KhoraTransportBundle,
-  type KhoraUnaryTransport,
-} from "@khoralabs/khora-transport";
 import { getAgentStatus } from "./http/agent";
 import {
   type AuthorSubscriptionsSnapshot,
@@ -52,6 +42,16 @@ import {
   type KhoraPluginHandle,
   type KhoraPluginInstaller,
 } from "./khora-plugins";
+import {
+  createKhoraTransportBundleFromEnv,
+  type InboxConnectionHandle,
+  type InboxWsHandlers,
+  type KhoraClientEvent,
+  type KhoraDuplexTransport,
+  type KhoraFetch,
+  type KhoraTransportBundle,
+  type KhoraUnaryTransport,
+} from "./transport";
 
 export type { AuthorSubscriptionsSnapshot } from "./http/authors";
 export type { PublicProfileResult } from "./http/profile";

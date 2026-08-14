@@ -3,7 +3,7 @@ import {
   type SubscriptionPredicate,
   zAuthorSubscriptionsSnapshot,
 } from "@khoralabs/khora-contracts";
-import type { KhoraUnaryTransport } from "@khoralabs/khora-transport";
+import type { KhoraUnaryTransport } from "../transport";
 
 export type { AuthorSubscriptionsSnapshot, SubscriptionPredicate };
 

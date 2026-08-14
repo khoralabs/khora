@@ -9,6 +9,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./sqlite": {
+      "types": "./src/sqlite/index.ts",
+      "import": "./src/sqlite/index.ts",
+      "default": "./src/sqlite/index.ts"
     }
   },
   "scripts": {
@@ -23,7 +28,6 @@
     "lru-cache": "^11.5.1"
   },
   "devDependencies": {
-    "@khoralabs/khora-auth-sqlite": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   },

@@ -1,6 +1,6 @@
 import type { KhoraAppConfigBase, KhoraPluginInstaller } from "@khoralabs/khora-client";
 import { KHORA_BUILTIN_PLUGIN_ID } from "@khoralabs/khora-client";
-import { createInboxBufferPlugin } from "@khoralabs/khora-plugin-inbox-buffer";
+import { createInboxBufferPlugin } from "./plugins/inbox-buffer";
 
 export function pluginsFromDaemonConfig(cfg: KhoraAppConfigBase): KhoraPluginInstaller[] {
   const plugins: KhoraPluginInstaller[] = [];

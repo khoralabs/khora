@@ -4,7 +4,7 @@ import {
   resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
 } from "@khoralabs/khora-host";
-import { type HostRouteDeps, jsonError, withAdminTokenAuth } from "@khoralabs/khora-server-http";
+import { type HostRouteDeps, jsonError, withAdminTokenAuth } from "@khoralabs/khora-host/http";
 import {
   createSqliteGraphProjectionSource,
   getMemoriesSqliteDatabase,
