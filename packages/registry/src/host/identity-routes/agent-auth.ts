@@ -1,7 +1,6 @@
 import {
   consumeClaimToken,
   createAgentAuthRegistration,
-  deviceSessionCookie,
   expireAgentAuthIfNeeded,
   findAgentAuthByClaimToken,
   findBlockedEmail,
@@ -10,6 +9,7 @@ import {
   verifyAgentAuthOtp,
 } from "@khoralabs/registry/accounts";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryAuthHttpPort } from "../ports/identity";
 
 const AGENT_AUTH_SCOPES = ["registry.session", "link.agent"] as const;
 
@@ -22,7 +22,7 @@ export type AgentAuthRouteDeps = {
   publicUrl: () => string;
   authMdUrl: string;
   resourceName: string;
-  callAuthEndpoint: (path: string, body: unknown) => Promise<Response>;
+  authHttp: RegistryAuthHttpPort;
 };
 
 function clientKey(req: Request, email?: string): string {
@@ -45,19 +45,16 @@ function checkRateLimit(key: string): boolean {
   return true;
 }
 
-function sessionCookieFromAuthResponse(res: Response): string | null {
-  const cookies = res.headers.getSetCookie?.() ?? [];
-  for (const raw of cookies) {
-    const part = raw.split(";")[0]?.trim();
-    if (
-      part !== undefined &&
-      (part.startsWith("better-auth.session_token=") ||
-        part.startsWith("__Secure-better-auth.session_token="))
-    ) {
-      return part;
-    }
-  }
-  return null;
+async function callAuthJson(
+  authHttp: RegistryAuthHttpPort,
+  path: string,
+  body: unknown,
+): Promise<Response> {
+  return authHttp.callAuthEndpoint(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 export async function handleOAuthProtectedResourceMetadata(
@@ -139,7 +136,7 @@ export async function handleAgentAuthRegister(
 
   const { registration, claimToken } = await createAgentAuthRegistration(deps.db, { email });
 
-  const sendRes = await deps.callAuthEndpoint("/email-otp/send-verification-otp", {
+  const sendRes = await callAuthJson(deps.authHttp, "/email-otp/send-verification-otp", {
     email,
     type: "sign-in",
   });
@@ -198,7 +195,7 @@ export async function handleAgentAuthClaimComplete(
     return Response.json({ error: "invalid otp" }, { status: 401 });
   }
 
-  const signInRes = await deps.callAuthEndpoint("/sign-in/email-otp", {
+  const signInRes = await callAuthJson(deps.authHttp, "/sign-in/email-otp", {
     email: registration.email,
     otp,
   });
@@ -206,11 +203,11 @@ export async function handleAgentAuthClaimComplete(
     return Response.json({ error: "invalid otp" }, { status: 401 });
   }
 
-  let sessionCookie = sessionCookieFromAuthResponse(signInRes);
+  let sessionCookie = deps.authHttp.extractSessionCookie(signInRes);
   if (sessionCookie === null) {
     const json = (await signInRes.json()) as { token?: string };
     if (typeof json.token === "string" && json.token.length > 0) {
-      sessionCookie = deviceSessionCookie(json.token);
+      sessionCookie = deps.authHttp.formatSessionCookie(json.token);
     }
   }
   if (sessionCookie === null) {

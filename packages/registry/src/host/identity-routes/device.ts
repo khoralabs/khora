@@ -2,16 +2,16 @@ import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
   createDeviceAuthorization,
-  deviceSessionCookie,
   expireDeviceIfNeeded,
   hashDeviceCode,
 } from "@khoralabs/registry/accounts";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
-import type { RegistryIdentityPort } from "../../host/ports/identity";
+import type { RegistryAuthHttpPort, RegistryIdentityPort } from "../ports/identity";
 
 export type DeviceRouteDeps = {
   db: RegistryDatabase;
   identity: RegistryIdentityPort;
+  authHttp: RegistryAuthHttpPort;
   publicUrl: () => string;
   deviceVerificationPath: string;
   defaultSourceApp: string;
@@ -156,6 +156,6 @@ export async function handleDeviceToken(req: Request, deps: DeviceRouteDeps): Pr
 
   return Response.json({
     status: "approved",
-    session_cookie: deviceSessionCookie(consumed.sessionToken),
+    session_cookie: deps.authHttp.formatSessionCookie(consumed.sessionToken),
   });
 }

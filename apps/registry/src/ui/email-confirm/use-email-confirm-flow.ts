@@ -2,7 +2,7 @@ import type {
   EmailConfirmApi,
   EmailConfirmPurpose,
   EmailConfirmSession,
-} from "@khoralabs/registry/auth/client";
+} from "@khoralabs/registry/email-confirm";
 import { useCallback, useRef, useState } from "react";
 import { useLocalStorage } from "usehooks-ts";
 

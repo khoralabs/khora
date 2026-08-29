@@ -1,4 +1,5 @@
-import { getRegistryDatabase } from "@khoralabs/registry/auth";
+import { registryHostRuntime } from "@khoralabs/registry/host";
+import { getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 
 export function handleHealth(): Response {
   return Response.json({ ok: true });
@@ -8,14 +9,19 @@ export function handleReady(): Response {
   const issues: string[] = [];
 
   try {
-    const db = getRegistryDatabase();
-    db.query("SELECT 1").run();
+    if (process.env.REGISTRY_BACKEND?.trim().toLowerCase() === "turso") {
+      void registryHostRuntime().db.queryOne("SELECT 1");
+    } else {
+      getRegistrySqliteDatabase().query("SELECT 1").run();
+    }
   } catch {
     issues.push("db");
   }
 
   if ((process.env.REGISTRY_SQLCIPHER_KEY?.trim() ?? "").length === 0) {
-    issues.push("REGISTRY_SQLCIPHER_KEY");
+    if (process.env.REGISTRY_BACKEND?.trim().toLowerCase() !== "turso") {
+      issues.push("REGISTRY_SQLCIPHER_KEY");
+    }
   }
 
   if ((process.env.BETTER_AUTH_SECRET?.trim() ?? "").length < 32) {

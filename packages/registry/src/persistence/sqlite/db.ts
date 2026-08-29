@@ -54,7 +54,7 @@ export function getRegistrySqliteBundle(): RegistrySqliteBundle {
   return bundle;
 }
 
-/** Raw bun:sqlite handle for Better Auth. */
+/** Raw bun:sqlite handle (shared file with domain tables; app uses for Better Auth on sqlite). */
 export function getRegistrySqliteDatabase(): Database {
   return getRegistrySqliteBundle().db;
 }

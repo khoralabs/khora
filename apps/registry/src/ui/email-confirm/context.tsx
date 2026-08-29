@@ -2,7 +2,7 @@ import type {
   EmailConfirmApi,
   EmailConfirmPurpose,
   EmailConfirmSession,
-} from "@khoralabs/registry/auth/client";
+} from "@khoralabs/registry/email-confirm";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { type EmailConfirmMarketingConfig, useEmailConfirmFlow } from "./use-email-confirm-flow.ts";
 

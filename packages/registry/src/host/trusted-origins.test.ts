@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
-import { ensureRegistrySchema } from "@khoralabs/registry/auth";
 import {
   activateKhoraHost,
   registerKhoraHost,
@@ -8,6 +7,7 @@ import {
   requestHostTrustedOrigin,
   setHostRegistryParticipation,
 } from "@khoralabs/registry/catalog";
+import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
 import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import { corsHeadersForTrustedOrigins } from "./cors";
 import { readRegistryTrustedOrigins } from "./trusted-origins";
@@ -18,7 +18,7 @@ describe("readRegistryTrustedOrigins", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     process.env.REGISTRY_URL = "http://localhost:4000";
     applyTestEncryptionEnv();
-    await ensureRegistrySchema();
+    await initRegistryDomainSchema(getRegistrySqliteBundle().registry);
   });
 
   afterEach(() => {

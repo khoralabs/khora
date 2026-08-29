@@ -2,11 +2,11 @@ import type { Database } from "bun:sqlite";
 import { createLogger } from "@khoralabs/observability/logger";
 import { findBlockedEmail, linkBetterAuthUser } from "@khoralabs/registry/accounts";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import { getRegistrySqliteBundle, getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 import type { RegistryAuthKysely } from "./auth-database-schema";
 import { isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
-import { getRegistryDomainDatabase, getRegistrySqliteDatabase } from "./db";
 import { sendOtpEmail } from "./ses";
 
 const logger = createLogger({ name: "registry-auth" });
@@ -95,12 +95,12 @@ function isSqliteAuthDatabase(db: RegistryAuthDatabase): db is Database {
 
 function resolveAuthDatabase(opts: RegistryAuthOptions): RegistryAuthDatabase {
   if (opts.database !== undefined) return opts.database;
-  // Turso/libsql auth DBs must be injected by the composition root (see apps/registry bootstrap).
+  // Turso/libsql auth DBs must be injected by the composition root.
   return getRegistrySqliteDatabase();
 }
 
 function resolveDomainDatabase(opts: RegistryAuthOptions): RegistryDatabase {
-  return opts.domainDatabase ?? getRegistryDomainDatabase();
+  return opts.domainDatabase ?? getRegistrySqliteBundle().registry;
 }
 
 async function readAuthUserById(

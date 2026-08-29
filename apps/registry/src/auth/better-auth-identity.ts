@@ -1,7 +1,7 @@
-import type { RegistryIdentityPort } from "../host/ports/identity";
+import type { RegistryIdentityPort } from "@khoralabs/registry/host";
 import { reloadRegistryAuth } from "./auth";
 import { getRegistrySession } from "./session";
-import { getRegistrySessionCookieHeader } from "./session-token";
+import { getBetterAuthSessionCookieHeader } from "./session-cookie";
 
 export function createBetterAuthRegistryIdentity(
   opts: { resolveTrustedOrigins?: () => string[] | Promise<string[]> } = {},
@@ -11,7 +11,7 @@ export function createBetterAuthRegistryIdentity(
   }
   return {
     getSession: getRegistrySession,
-    getSessionCookieHeader: getRegistrySessionCookieHeader,
+    getSessionCookieHeader: getBetterAuthSessionCookieHeader,
     reloadTrustedOrigins() {
       if (opts.resolveTrustedOrigins !== undefined) {
         reloadRegistryAuth({ resolveTrustedOrigins: opts.resolveTrustedOrigins });

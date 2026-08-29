@@ -8,15 +8,15 @@ Layout mirrors [`memories-node` persistence](https://github.com/khoralabs/memori
 | ---- | ---- | ------------- |
 | [`./core`](./core) | `RegistryDatabase` port, shared domain DDL (`initRegistryDomainSchema`) | `@khoralabs/registry/persistence` |
 | [`./sqlite`](./sqlite) | Bun `bun:sqlite` (+ SQLCipher) adapter | `@khoralabs/registry/sqlite` |
-| [`./turso-serverless`](./turso-serverless) | Turso / libsql adapter + Better Auth Kysely DB | `@khoralabs/registry/turso-serverless` |
+| [`./turso-serverless`](./turso-serverless) | Turso / `@tursodatabase/serverless` domain adapter | `@khoralabs/registry/turso-serverless` |
 
 ## Rules
 
-- Domain / auth / host code imports types and schema helpers from `@khoralabs/registry/persistence` only.
-- Composition roots open a store via `@khoralabs/registry/sqlite` or `@khoralabs/registry/turso-serverless` and inject `RegistryDatabase` (+ auth DB) into schema init / Better Auth.
-- Driver packages are optional dependencies; importing `./persistence` must not require Turso/libsql.
+- Domain / host code imports types and schema helpers from `@khoralabs/registry/persistence` only.
+- Composition roots open a domain store via `@khoralabs/registry/sqlite` or `@khoralabs/registry/turso-serverless` and inject `RegistryDatabase` into the host. Better Auth (and its auth DB) live in `apps/registry`.
+- Driver packages are optional dependencies; importing `./persistence` must not require Turso.
 - Each adapter owns connection + schema application for its driver; shared domain SQL stays in `core/`.
 
 ## App wiring
 
-See [`apps/registry/src/bootstrap-registry.ts`](../../../apps/registry/src/bootstrap-registry.ts): chooses sqlite vs turso from `REGISTRY_BACKEND`, then `initRegistrySchema` + `createRegistryHost`.
+See [`apps/registry/src/bootstrap-registry.ts`](../../../apps/registry/src/bootstrap-registry.ts): chooses sqlite vs turso from `REGISTRY_BACKEND`, opens domain + auth DBs, runs `initRegistryDomainSchema` + Better Auth migrations, then wires identity/authHttp ports into `createRegistryHost`.

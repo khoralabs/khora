@@ -4,14 +4,22 @@ import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
 } from "@khoralabs/registry/accounts";
-import { ensureRegistrySchema } from "@khoralabs/registry/auth";
 import { seedDefaultHost } from "@khoralabs/registry/catalog";
+import type { RegistryAuthHttpPort } from "@khoralabs/registry/host";
+import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
 import {
   type createRegistrySqliteDatabase,
   getRegistrySqliteBundle,
   resetRegistrySqliteDatabase,
 } from "@khoralabs/registry/sqlite";
 import { type DeviceRouteDeps, handleDeviceAuthorize, handleDeviceToken } from "./device";
+
+const stubAuthHttp: RegistryAuthHttpPort = {
+  handleAuthApi: async () => new Response(null, { status: 404 }),
+  callAuthEndpoint: async () => new Response(null, { status: 404 }),
+  formatSessionCookie: (token) => `session=${token}`,
+  extractSessionCookie: () => null,
+};
 
 function deviceRouteDeps(db: ReturnType<typeof createRegistrySqliteDatabase>): DeviceRouteDeps {
   return {
@@ -20,6 +28,7 @@ function deviceRouteDeps(db: ReturnType<typeof createRegistrySqliteDatabase>): D
       getSession: async () => null,
       getSessionCookieHeader: () => null,
     },
+    authHttp: stubAuthHttp,
     publicUrl: () => "http://localhost:4000",
     deviceVerificationPath: "/cli/link",
     defaultSourceApp: "khora-cli",
@@ -31,7 +40,7 @@ describe("registry device flow", () => {
     resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
-    await ensureRegistrySchema();
+    await initRegistryDomainSchema(getRegistrySqliteBundle().registry);
     const db = getRegistrySqliteBundle().registry;
     await seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
   });
@@ -88,7 +97,7 @@ describe("registry device flow", () => {
     expect(tokenRes.status).toBe(200);
     const tokenJson = (await tokenRes.json()) as { status: string; session_cookie: string };
     expect(tokenJson.status).toBe("approved");
-    expect(tokenJson.session_cookie).toContain("better-auth.session_token=");
+    expect(tokenJson.session_cookie).toBe("session=test-session-token-abc");
 
     const second = await handleDeviceToken(
       new Request("http://localhost/v1/device/token", {

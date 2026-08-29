@@ -1,4 +1,4 @@
-import type { RegistrySession } from "./session";
+import type { RegistrySession } from "@khoralabs/registry/host";
 
 export async function verifyRegistrySession(
   req: Request,

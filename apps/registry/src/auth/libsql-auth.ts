@@ -1,7 +1,7 @@
-import type { RegistryAuthDatabaseSchema, RegistryAuthKysely } from "@khoralabs/registry/auth";
 import { createClient } from "@libsql/client";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { Kysely } from "kysely";
+import type { RegistryAuthDatabaseSchema, RegistryAuthKysely } from "./auth-database-schema";
 
 export function createRegistryLibsqlAuthDatabase(opts: {
   url: string;

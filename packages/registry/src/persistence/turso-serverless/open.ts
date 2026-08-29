@@ -1,14 +1,11 @@
-import type { RegistryAuthKysely } from "@khoralabs/registry/auth";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
 import { createTursoClients, type TursoClients } from "./client";
-import { createRegistryLibsqlAuthDatabase } from "./libsql-auth";
 import { createRegistryTursoDatabase } from "./turso-database";
 
 export type RegistryTursoBundle = {
   clients: TursoClients;
   registry: RegistryDatabase;
-  authDatabase: RegistryAuthKysely;
   close(): Promise<void>;
 };
 
@@ -31,17 +28,11 @@ export async function openRegistryTursoDatabase(
     });
   const registry = createRegistryTursoDatabase(clients);
   await initRegistryDomainSchema(registry);
-  const authDatabase = createRegistryLibsqlAuthDatabase({
-    url: opts.url,
-    authToken: opts.authToken,
-  });
   return {
     clients,
     registry,
-    authDatabase,
     async close() {
       await registry.close();
-      await authDatabase.destroy();
     },
   };
 }

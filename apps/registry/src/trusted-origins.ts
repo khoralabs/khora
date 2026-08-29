@@ -1,5 +1,7 @@
-import { getRegistryDomainDatabase } from "@khoralabs/registry/auth";
-import { readRegistryTrustedOrigins as readHostTrustedOrigins } from "@khoralabs/registry/host";
+import {
+  readRegistryTrustedOrigins as readHostTrustedOrigins,
+  registryHostRuntime,
+} from "@khoralabs/registry/host";
 
 export function readRegistrySelfOrigins(): string[] {
   const port = process.env.PORT?.trim() ?? "4000";
@@ -10,5 +12,5 @@ export function readRegistrySelfOrigins(): string[] {
 
 /** Registry + trusted host origins (see @khoralabs/registry/host readRegistryTrustedOrigins). */
 export async function readRegistryTrustedOrigins(): Promise<string[]> {
-  return readHostTrustedOrigins(getRegistryDomainDatabase());
+  return readHostTrustedOrigins(registryHostRuntime().db);
 }

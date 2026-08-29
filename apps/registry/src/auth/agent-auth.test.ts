@@ -1,40 +1,33 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
-import {
-  ensureRegistrySchema,
-  getRegistryAuth,
-  reloadRegistryAuth,
-} from "@khoralabs/registry/auth";
 import { seedDefaultHost } from "@khoralabs/registry/catalog";
+import type { AgentAuthRouteDeps, RegistryAuthHttpPort } from "@khoralabs/registry/host";
+import {
+  handleAgentAuthClaimComplete,
+  handleAgentAuthRegister,
+  handleOAuthAuthorizationServerMetadata,
+  handleOAuthProtectedResourceMetadata,
+} from "@khoralabs/registry/host";
 import {
   type createRegistrySqliteDatabase,
   getRegistrySqliteBundle,
   resetRegistrySqliteDatabase,
 } from "@khoralabs/registry/sqlite";
-import {
-  type AgentAuthRouteDeps,
-  handleAgentAuthClaimComplete,
-  handleAgentAuthRegister,
-  handleOAuthAuthorizationServerMetadata,
-  handleOAuthProtectedResourceMetadata,
-} from "./routes/agent-auth";
+import { getRegistryAuth, reloadRegistryAuth } from "./auth";
+import { createBetterAuthHttpPort } from "./better-auth-http";
+import { initRegistryAppSchema } from "./schema";
 import { setCaptureOtpForTests } from "./ses";
 
-function agentAuthDeps(db: ReturnType<typeof createRegistrySqliteDatabase>): AgentAuthRouteDeps {
+function agentAuthDeps(
+  db: ReturnType<typeof createRegistrySqliteDatabase>,
+  authHttp: RegistryAuthHttpPort,
+): AgentAuthRouteDeps {
   return {
     db,
     publicUrl: () => "http://localhost:4000",
     authMdUrl: "https://khoralabs.com/auth.md",
     resourceName: "Khora Registry",
-    callAuthEndpoint: async (path: string, body: unknown) => {
-      return getRegistryAuth().handler(
-        new Request(`http://localhost:4000/api/auth${path}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }),
-      );
-    },
+    authHttp,
   };
 }
 
@@ -50,12 +43,13 @@ describe("registry agent auth", () => {
     process.env.BETTER_AUTH_SECRET = "test-secret-with-at-least-32-characters-long";
     process.env.REGISTRY_AUTH_OTP_LOG = "1";
     applyTestEncryptionEnv();
-    await ensureRegistrySchema();
-    reloadRegistryAuth();
+    const { db, registry } = getRegistrySqliteBundle();
+    await initRegistryAppSchema(registry, db);
+    reloadRegistryAuth({ database: db, domainDatabase: registry });
     getRegistryAuth();
-    const db = getRegistrySqliteBundle().registry;
-    deps = agentAuthDeps(db);
-    await seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    const authHttp = createBetterAuthHttpPort({ publicUrl: () => "http://localhost:4000" });
+    deps = agentAuthDeps(registry, authHttp);
+    await seedDefaultHost(registry, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     capturedOtps.clear();
     setCaptureOtpForTests(({ email, otp }) => {
       capturedOtps.set(email, otp);

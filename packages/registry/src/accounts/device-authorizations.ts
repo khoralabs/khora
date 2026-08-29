@@ -158,9 +158,10 @@ export async function consumeDeviceAuthorization(
   return findDeviceByCodeHash(db, hash);
 }
 
-export function deviceSessionCookie(sessionToken: string): string {
-  if (sessionToken.includes("session_token=")) {
+/** Format a raw session token as `cookieName=value`, or pass through if already `name=value`. */
+export function deviceSessionCookie(sessionToken: string, cookieName: string): string {
+  if (sessionToken.includes("=")) {
     return sessionToken;
   }
-  return `better-auth.session_token=${sessionToken}`;
+  return `${cookieName}=${sessionToken}`;
 }

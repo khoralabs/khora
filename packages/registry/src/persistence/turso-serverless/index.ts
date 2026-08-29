@@ -9,7 +9,6 @@ export {
   type TursoClients,
   type TursoCredentials,
 } from "./client";
-export { createRegistryLibsqlAuthDatabase } from "./libsql-auth";
 export {
   type OpenRegistryTursoOptions,
   openRegistryTursoDatabase,

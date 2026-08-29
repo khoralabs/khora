@@ -1,19 +1,25 @@
 import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade/crypto";
-import {
-  createBetterAuthRegistryIdentity,
-  createBetterAuthRegistryRoutes,
-  initRegistrySchema,
-  reloadRegistryAuth,
-} from "@khoralabs/registry/auth";
 import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/registry/host";
-import { createRegistryHost, readRegistryTrustedOrigins } from "@khoralabs/registry/host";
+import {
+  createRegistryHost,
+  createRegistryIdentityRoutes,
+  readRegistryTrustedOrigins,
+} from "@khoralabs/registry/host";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 import { openRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import {
   openRegistryTursoDatabase,
   registryTursoCredentialsFromEnv,
 } from "@khoralabs/registry/turso-serverless";
+import {
+  createBetterAuthHttpPort,
+  createBetterAuthRegistryIdentity,
+  createRegistryLibsqlAuthDatabase,
+  initRegistryAppSchema,
+  type RegistryAuthDatabase,
+  reloadRegistryAuth,
+} from "./auth";
 
 function registryPublicUrl(): string {
   const port = process.env.PORT?.trim() ?? "4000";
@@ -29,11 +35,13 @@ function isTursoBackend(): boolean {
 
 async function openRegistryStore(): Promise<{
   registry: RegistryDatabase;
-  authDatabase: import("@khoralabs/registry/auth").RegistryAuthDatabase;
+  authDatabase: RegistryAuthDatabase;
 }> {
   if (isTursoBackend()) {
-    const bundle = await openRegistryTursoDatabase(registryTursoCredentialsFromEnv());
-    return { registry: bundle.registry, authDatabase: bundle.authDatabase };
+    const creds = registryTursoCredentialsFromEnv();
+    const bundle = await openRegistryTursoDatabase(creds);
+    const authDatabase = createRegistryLibsqlAuthDatabase(creds);
+    return { registry: bundle.registry, authDatabase };
   }
   const bundle = await openRegistrySqliteDatabase();
   return { registry: bundle.registry, authDatabase: bundle.db };
@@ -48,7 +56,7 @@ export async function bootstrapRegistryHost(): Promise<{
   }
 
   const store = await openRegistryStore();
-  await initRegistrySchema(store.registry, store.authDatabase);
+  await initRegistryAppSchema(store.registry, store.authDatabase);
   reloadRegistryAuth({ database: store.authDatabase, domainDatabase: store.registry });
 
   const { registry } = store;
@@ -56,9 +64,11 @@ export async function bootstrapRegistryHost(): Promise<{
   const publicUrl = registryPublicUrl;
 
   const identity = createBetterAuthRegistryIdentity({ resolveTrustedOrigins });
-  const identityRoutes = createBetterAuthRegistryRoutes({
+  const authHttp = createBetterAuthHttpPort({ publicUrl });
+  const identityRoutes = createRegistryIdentityRoutes({
     db: registry,
     identity,
+    authHttp,
     publicUrl,
     authMdUrl: process.env.KHORA_AUTH_MD_URL?.trim() || "https://khoralabs.com/auth.md",
     resourceName: "Khora Registry",

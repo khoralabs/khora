@@ -1,4 +1,3 @@
-import { createUsersAuthClient } from "../browser-auth-client";
 import type {
   EmailConfirmApi,
   EmailConfirmResult,
@@ -6,7 +5,8 @@ import type {
   SendOtpParams,
   SubscribeMarketingParams,
   VerifyOtpParams,
-} from "./types";
+} from "@khoralabs/registry/email-confirm";
+import { createUsersAuthClient } from "../browser-auth-client";
 
 async function readJsonError(res: Response): Promise<string> {
   try {

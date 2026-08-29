@@ -1,5 +1,3 @@
-export { createUsersAuthClient } from "./browser-auth-client";
-export { createRegistryEmailConfirmApi } from "./email-confirm/registry-api";
 export type {
   EmailConfirmApi,
   EmailConfirmPurpose,
@@ -9,4 +7,6 @@ export type {
   SendOtpParams,
   SubscribeMarketingParams,
   VerifyOtpParams,
-} from "./email-confirm/types";
+} from "@khoralabs/registry/email-confirm";
+export { createUsersAuthClient } from "./browser-auth-client";
+export { createRegistryEmailConfirmApi } from "./email-confirm/registry-api";
