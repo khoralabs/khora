@@ -1,8 +1,0 @@
-preload = ["./src/bun-preload.ts"]
-
-[serve.static]
-plugins = ["bun-plugin-tailwind", "@khoralabs/blog/plugin"]
-env = "BUN_PUBLIC_*"
-
-[test]
-preload = ["./src/bun-preload.ts"]
