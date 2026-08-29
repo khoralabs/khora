@@ -18,17 +18,8 @@ import {
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
-async function loginCookie(auth: ReturnType<typeof createRootTokenAdminAuth>): Promise<string> {
-  const loginRes = await auth.route?.(
-    new Request("http://x/admin/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: ROOT_TOKEN }),
-    }),
-    new URL("http://x/admin/api/login"),
-  );
-  const setCookie = loginRes?.headers.get("set-cookie") ?? "";
-  return setCookie.split(";")[0] ?? "";
+function bearerHeaders(): HeadersInit {
+  return { Authorization: `Bearer ${ROOT_TOKEN}` };
 }
 
 describe("operator origin requests", () => {
@@ -59,10 +50,9 @@ describe("operator origin requests", () => {
     ).host;
     const pending = await requestHostTrustedOrigin(db, host.id, "https://app.example.com");
     const rejected = await requestHostTrustedOrigin(db, host.id, "https://other.example.com");
-    const cookie = await loginCookie(auth);
 
     const listRes = await handleAdminHostOriginRequests(
-      new Request("http://localhost/admin/api/hosts/x/origin-requests", { headers: { cookie } }),
+      new Request("http://localhost/v1/ops/hosts/x/origin-requests", { headers: bearerHeaders() }),
       auth,
       host.id,
     );
@@ -71,9 +61,9 @@ describe("operator origin requests", () => {
     expect(listJson.pending).toHaveLength(2);
 
     const rejectRes = await handleAdminHostOriginRequestReject(
-      new Request("http://localhost/admin/api/hosts/x/origin-requests/y/reject", {
+      new Request("http://localhost/v1/ops/hosts/x/origin-requests/y/reject", {
         method: "POST",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       host.id,
@@ -82,9 +72,9 @@ describe("operator origin requests", () => {
     expect(rejectRes.status).toBe(200);
 
     const approveRes = await handleAdminHostOriginRequestApprove(
-      new Request("http://localhost/admin/api/hosts/x/origin-requests/y/approve", {
+      new Request("http://localhost/v1/ops/hosts/x/origin-requests/y/approve", {
         method: "POST",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       host.id,

@@ -19,4 +19,4 @@ Multi-entrypoint registry package: contracts, accounts/catalog domain, Better Au
 
 Persistence layout: [`src/persistence/IMPLEMENTORS.md`](src/persistence/IMPLEMENTORS.md).
 
-React admin / EmailConfirm UI lives in [`apps/registry`](../../apps/registry), not this package.
+EmailConfirm + `/cli/link` UI live in [`apps/registry`](../../apps/registry). Operator APIs are headless at `/v1/ops` (Bearer root token).

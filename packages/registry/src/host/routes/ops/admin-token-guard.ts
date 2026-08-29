@@ -15,11 +15,17 @@ export async function withAdminTokenAuth(
   return handler();
 }
 
-export async function routeAdminTokenAuth(
+/** Require configured root-token Bearer auth for /v1/ops. */
+export async function requireAdminToken(
   req: Request,
-  url: URL,
   adminTokenAuth: AdminTokenAuth | null,
-): Promise<Response | undefined> {
-  if (adminTokenAuth?.route === undefined) return undefined;
-  return adminTokenAuth.route(req, url);
+): Promise<Response | null> {
+  if (adminTokenAuth === null) {
+    return Response.json({ error: "Admin token auth is not configured" }, { status: 503 });
+  }
+  const principal = await adminTokenAuth.authenticate(req);
+  if (principal === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
 }

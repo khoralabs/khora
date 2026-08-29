@@ -4,27 +4,18 @@ import { createRootTokenAdminAuth } from "@khoralabs/khora-auth";
 import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
 import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import { initTestRegistryHostRuntime } from "../test-helpers";
+import { handleHostGet, handleHostRegister, handleHostsList } from "./hosts";
 import {
   handleAdminHostActivate,
   handleAdminHostDelete,
   handleAdminHostReactivate,
   handleAdminHostSuspend,
-} from "./admin/hosts";
-import { handleHostGet, handleHostRegister, handleHostsList } from "./hosts";
+} from "./ops/hosts";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
-async function loginCookie(auth: ReturnType<typeof createRootTokenAdminAuth>): Promise<string> {
-  const loginRes = await auth.route?.(
-    new Request("http://localhost/admin/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: ROOT_TOKEN }),
-    }),
-    new URL("http://localhost/admin/api/login"),
-  );
-  const setCookie = loginRes?.headers.get("set-cookie") ?? "";
-  return setCookie.split(";")[0] ?? "";
+function bearerHeaders(): HeadersInit {
+  return { Authorization: `Bearer ${ROOT_TOKEN}` };
 }
 
 describe("host registry API", () => {
@@ -61,11 +52,10 @@ describe("host registry API", () => {
     expect((await listBefore.json()) as { hosts: unknown[] }).toMatchObject({ hosts: [] });
 
     const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
-    const cookie = await loginCookie(auth);
     const activate = await handleAdminHostActivate(
-      new Request(`http://localhost/admin/api/hosts/${regJson.host.id}/activate`, {
+      new Request(`http://localhost/v1/ops/hosts/${regJson.host.id}/activate`, {
         method: "POST",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       regJson.host.id,
@@ -91,13 +81,12 @@ describe("host registry API", () => {
     );
     const regJson = (await reg.json()) as { host: { id: string } };
     const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
-    const cookie = await loginCookie(auth);
     const hostId = regJson.host.id;
 
     const activate = await handleAdminHostActivate(
-      new Request(`http://localhost/admin/api/hosts/${hostId}/activate`, {
+      new Request(`http://localhost/v1/ops/hosts/${hostId}/activate`, {
         method: "POST",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       hostId,
@@ -105,9 +94,9 @@ describe("host registry API", () => {
     expect(activate.status).toBe(200);
 
     const suspend = await handleAdminHostSuspend(
-      new Request(`http://localhost/admin/api/hosts/${hostId}/suspend`, {
+      new Request(`http://localhost/v1/ops/hosts/${hostId}/suspend`, {
         method: "POST",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       hostId,
@@ -118,9 +107,9 @@ describe("host registry API", () => {
     expect((await await handleHostGet("lifecycle")).status).toBe(404);
 
     const reactivate = await handleAdminHostReactivate(
-      new Request(`http://localhost/admin/api/hosts/${hostId}/reactivate`, {
+      new Request(`http://localhost/v1/ops/hosts/${hostId}/reactivate`, {
         method: "POST",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       hostId,
@@ -130,9 +119,9 @@ describe("host registry API", () => {
     expect(listActive.hosts).toHaveLength(1);
 
     const del = await handleAdminHostDelete(
-      new Request(`http://localhost/admin/api/hosts/${hostId}`, {
+      new Request(`http://localhost/v1/ops/hosts/${hostId}`, {
         method: "DELETE",
-        headers: { cookie },
+        headers: bearerHeaders(),
       }),
       auth,
       hostId,

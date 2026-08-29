@@ -1,26 +1,4 @@
 import { handleOptions, withCors } from "./cors";
-import {
-  handleAdminAccountDelete,
-  handleAdminAccountReactivate,
-  handleAdminAccountReactivateByEmail,
-  handleAdminAccountSuspend,
-} from "./routes/admin/accounts";
-import { routeAdminTokenAuth } from "./routes/admin/admin-token-guard";
-import {
-  handleAdminHostActivate,
-  handleAdminHostDelete,
-  handleAdminHostOriginRequestApprove,
-  handleAdminHostOriginRequestReject,
-  handleAdminHostOriginRequests,
-  handleAdminHostQuotaRequestApprove,
-  handleAdminHostQuotaRequestReject,
-  handleAdminHostQuotaRequests,
-  handleAdminHostReactivate,
-  handleAdminHostRegistry,
-  handleAdminHostSuspend,
-} from "./routes/admin/hosts";
-import { handleLookupAccount, handleLookupEmail } from "./routes/admin/lookup";
-import { handleAdminStatsSummary } from "./routes/admin/stats";
 import { handleHostRegistrationClaim, handleHostRegistrationGet } from "./routes/host-registration";
 import {
   handleHostRegistryGet,
@@ -39,7 +17,29 @@ import {
   handleLinkUnlink,
 } from "./routes/link";
 import { handleMe } from "./routes/me";
+import {
+  handleAdminAccountDelete,
+  handleAdminAccountReactivate,
+  handleAdminAccountReactivateByEmail,
+  handleAdminAccountSuspend,
+} from "./routes/ops/accounts";
+import {
+  handleAdminHostActivate,
+  handleAdminHostDelete,
+  handleAdminHostOriginRequestApprove,
+  handleAdminHostOriginRequestReject,
+  handleAdminHostOriginRequests,
+  handleAdminHostQuotaRequestApprove,
+  handleAdminHostQuotaRequestReject,
+  handleAdminHostQuotaRequests,
+  handleAdminHostReactivate,
+  handleAdminHostRegistry,
+  handleAdminHostSuspend,
+} from "./routes/ops/hosts";
+import { handleLookupAccount, handleLookupEmail } from "./routes/ops/lookup";
 import type { RegistryHostRuntime } from "./runtime";
+
+const OPS = "/v1/ops";
 
 export async function dispatchRegistryHostFetch(
   runtime: RegistryHostRuntime,
@@ -51,98 +51,81 @@ export async function dispatchRegistryHostFetch(
   const url = new URL(req.url);
   const path = url.pathname;
 
-  const consoleRoute = await routeAdminTokenAuth(req, url, runtime.adminTokenAuth);
-  if (consoleRoute !== undefined) {
-    return withCors(req, consoleRoute);
-  }
-
   if (path === "/health") {
     return withCors(req, Response.json({ ok: true }));
   }
 
-  if (path === "/admin/api/stats/summary" && req.method === "GET") {
-    return withCors(req, await handleAdminStatsSummary(req, runtime.adminTokenAuth));
-  }
-
-  if (path === "/admin/api/lookup/email" && req.method === "GET") {
+  if (path === `${OPS}/lookup/email` && req.method === "GET") {
     return withCors(req, await handleLookupEmail(req, url, runtime.adminTokenAuth));
   }
 
-  if (path === "/admin/api/lookup/account" && req.method === "GET") {
+  if (path === `${OPS}/lookup/account` && req.method === "GET") {
     return withCors(req, await handleLookupAccount(req, url, runtime.adminTokenAuth));
   }
 
-  if (
-    path.startsWith("/admin/api/accounts/") &&
-    path.endsWith("/suspend") &&
-    req.method === "POST"
-  ) {
-    const id = path.slice("/admin/api/accounts/".length, -"/suspend".length);
+  if (path.startsWith(`${OPS}/accounts/`) && path.endsWith("/suspend") && req.method === "POST") {
+    const id = path.slice(`${OPS}/accounts/`.length, -"/suspend".length);
     return withCors(req, await handleAdminAccountSuspend(req, runtime.adminTokenAuth, id));
   }
 
   if (
-    path.startsWith("/admin/api/accounts/") &&
+    path.startsWith(`${OPS}/accounts/`) &&
     path.endsWith("/reactivate") &&
     req.method === "POST"
   ) {
-    const id = path.slice("/admin/api/accounts/".length, -"/reactivate".length);
+    const id = path.slice(`${OPS}/accounts/`.length, -"/reactivate".length);
     return withCors(req, await handleAdminAccountReactivate(req, runtime.adminTokenAuth, id));
   }
 
-  if (path === "/admin/api/accounts/reactivate-by-email" && req.method === "POST") {
+  if (path === `${OPS}/accounts/reactivate-by-email` && req.method === "POST") {
     return withCors(req, await handleAdminAccountReactivateByEmail(req, runtime.adminTokenAuth));
   }
 
-  if (path.startsWith("/admin/api/accounts/") && req.method === "DELETE") {
-    const id = path.slice("/admin/api/accounts/".length);
+  if (path.startsWith(`${OPS}/accounts/`) && req.method === "DELETE") {
+    const id = path.slice(`${OPS}/accounts/`.length);
     if (id.length > 0 && !id.includes("/")) {
       return withCors(req, await handleAdminAccountDelete(req, runtime.adminTokenAuth, id));
     }
   }
 
-  if (path.startsWith("/admin/api/hosts/") && path.endsWith("/suspend") && req.method === "POST") {
-    const id = path.slice("/admin/api/hosts/".length, -"/suspend".length);
+  if (path.startsWith(`${OPS}/hosts/`) && path.endsWith("/suspend") && req.method === "POST") {
+    const id = path.slice(`${OPS}/hosts/`.length, -"/suspend".length);
     return withCors(req, await handleAdminHostSuspend(req, runtime.adminTokenAuth, id));
   }
 
-  if (
-    path.startsWith("/admin/api/hosts/") &&
-    path.endsWith("/reactivate") &&
-    req.method === "POST"
-  ) {
-    const id = path.slice("/admin/api/hosts/".length, -"/reactivate".length);
+  if (path.startsWith(`${OPS}/hosts/`) && path.endsWith("/reactivate") && req.method === "POST") {
+    const id = path.slice(`${OPS}/hosts/`.length, -"/reactivate".length);
     return withCors(req, await handleAdminHostReactivate(req, runtime.adminTokenAuth, id));
   }
 
-  if (path.startsWith("/admin/api/hosts/") && req.method === "DELETE") {
-    const id = path.slice("/admin/api/hosts/".length);
+  if (path.startsWith(`${OPS}/hosts/`) && req.method === "DELETE") {
+    const id = path.slice(`${OPS}/hosts/`.length);
     if (id.length > 0 && !id.includes("/")) {
       return withCors(req, await handleAdminHostDelete(req, runtime.adminTokenAuth, id));
     }
   }
 
-  if (path.startsWith("/admin/api/hosts/") && path.endsWith("/activate") && req.method === "POST") {
-    const id = path.slice("/admin/api/hosts/".length, -"/activate".length);
+  if (path.startsWith(`${OPS}/hosts/`) && path.endsWith("/activate") && req.method === "POST") {
+    const id = path.slice(`${OPS}/hosts/`.length, -"/activate".length);
     return withCors(req, await handleAdminHostActivate(req, runtime.adminTokenAuth, id));
   }
 
   if (
-    path.startsWith("/admin/api/hosts/") &&
+    path.startsWith(`${OPS}/hosts/`) &&
     path.endsWith("/origin-requests") &&
     req.method === "GET"
   ) {
-    const id = path.slice("/admin/api/hosts/".length, -"/origin-requests".length);
+    const id = path.slice(`${OPS}/hosts/`.length, -"/origin-requests".length);
     return withCors(req, await handleAdminHostOriginRequests(req, runtime.adminTokenAuth, id));
   }
 
   if (
-    path.startsWith("/admin/api/hosts/") &&
+    path.startsWith(`${OPS}/hosts/`) &&
     path.includes("/origin-requests/") &&
     path.endsWith("/approve") &&
     req.method === "POST"
   ) {
-    const middle = path.slice("/admin/api/hosts/".length, -"/approve".length);
+    const middle = path.slice(`${OPS}/hosts/`.length, -"/approve".length);
     const slash = middle.lastIndexOf("/origin-requests/");
     if (slash > 0) {
       const id = middle.slice(0, slash);
@@ -155,12 +138,12 @@ export async function dispatchRegistryHostFetch(
   }
 
   if (
-    path.startsWith("/admin/api/hosts/") &&
+    path.startsWith(`${OPS}/hosts/`) &&
     path.includes("/origin-requests/") &&
     path.endsWith("/reject") &&
     req.method === "POST"
   ) {
-    const middle = path.slice("/admin/api/hosts/".length, -"/reject".length);
+    const middle = path.slice(`${OPS}/hosts/`.length, -"/reject".length);
     const slash = middle.lastIndexOf("/origin-requests/");
     if (slash > 0) {
       const id = middle.slice(0, slash);
@@ -173,21 +156,21 @@ export async function dispatchRegistryHostFetch(
   }
 
   if (
-    path.startsWith("/admin/api/hosts/") &&
+    path.startsWith(`${OPS}/hosts/`) &&
     path.endsWith("/quota-requests") &&
     req.method === "GET"
   ) {
-    const id = path.slice("/admin/api/hosts/".length, -"/quota-requests".length);
+    const id = path.slice(`${OPS}/hosts/`.length, -"/quota-requests".length);
     return withCors(req, await handleAdminHostQuotaRequests(req, runtime.adminTokenAuth, id));
   }
 
   if (
-    path.startsWith("/admin/api/hosts/") &&
+    path.startsWith(`${OPS}/hosts/`) &&
     path.includes("/quota-requests/") &&
     path.endsWith("/approve") &&
     req.method === "POST"
   ) {
-    const middle = path.slice("/admin/api/hosts/".length, -"/approve".length);
+    const middle = path.slice(`${OPS}/hosts/`.length, -"/approve".length);
     const slash = middle.lastIndexOf("/quota-requests/");
     if (slash > 0) {
       const id = middle.slice(0, slash);
@@ -200,12 +183,12 @@ export async function dispatchRegistryHostFetch(
   }
 
   if (
-    path.startsWith("/admin/api/hosts/") &&
+    path.startsWith(`${OPS}/hosts/`) &&
     path.includes("/quota-requests/") &&
     path.endsWith("/reject") &&
     req.method === "POST"
   ) {
-    const middle = path.slice("/admin/api/hosts/".length, -"/reject".length);
+    const middle = path.slice(`${OPS}/hosts/`.length, -"/reject".length);
     const slash = middle.lastIndexOf("/quota-requests/");
     if (slash > 0) {
       const id = middle.slice(0, slash);
@@ -217,12 +200,8 @@ export async function dispatchRegistryHostFetch(
     }
   }
 
-  if (
-    path.startsWith("/admin/api/hosts/") &&
-    path.endsWith("/registry") &&
-    req.method === "PATCH"
-  ) {
-    const id = path.slice("/admin/api/hosts/".length, -"/registry".length);
+  if (path.startsWith(`${OPS}/hosts/`) && path.endsWith("/registry") && req.method === "PATCH") {
+    const id = path.slice(`${OPS}/hosts/`.length, -"/registry".length);
     return withCors(req, await handleAdminHostRegistry(req, runtime.adminTokenAuth, id));
   }
 

@@ -1,10 +1,4 @@
-import {
-  clientIpFromRequest,
-  createRateLimiter,
-  type RateLimitRule,
-} from "../rate-limit/sliding-window";
 import { extractBearerToken, tokensEqual } from "./bearer";
-import { clearSessionCookie, issueSessionCookie, readSessionPrincipal } from "./session-cookie";
 
 export type AdminPrincipal = {
   id: string;
@@ -14,20 +8,14 @@ export type AdminPrincipal = {
 export type AdminTokenAuth = {
   /** null = unauthenticated */
   authenticate(req: Request): Promise<AdminPrincipal | null>;
-  /** login / logout / session routes under /admin/api/* */
-  route?(req: Request, url: URL): Promise<Response | undefined>;
 };
 
 export type RootTokenAdminAuthOptions = {
   rootToken: string;
-  secureCookies?: boolean;
-  loginRateLimit?: RateLimitRule | null;
 };
 
 export function createRootTokenAdminAuth(options: RootTokenAdminAuthOptions): AdminTokenAuth {
-  const { rootToken, secureCookies = false, loginRateLimit = null } = options;
-  const cookieOptions = { secure: secureCookies };
-  const loginRateLimiter = createRateLimiter(loginRateLimit ?? null);
+  const { rootToken } = options;
 
   return {
     async authenticate(req: Request): Promise<AdminPrincipal | null> {
@@ -35,61 +23,7 @@ export function createRootTokenAdminAuth(options: RootTokenAdminAuthOptions): Ad
       if (bearer.length > 0 && tokensEqual(bearer, rootToken)) {
         return { id: "root", role: "root" };
       }
-      return readSessionPrincipal(req, rootToken);
-    },
-
-    async route(req: Request, url: URL): Promise<Response | undefined> {
-      if (url.pathname === "/admin/api/login" && req.method === "POST") {
-        const ip = clientIpFromRequest(req);
-        const rl = loginRateLimiter(`login:ip:${ip}`);
-        if (!rl.ok) {
-          return Response.json(
-            { error: "Too many requests", code: "rate_limited" },
-            {
-              status: 429,
-              headers: { "Retry-After": String(rl.retryAfterSec) },
-            },
-          );
-        }
-
-        let body: { token?: string };
-        try {
-          body = (await req.json()) as { token?: string };
-        } catch {
-          return Response.json({ error: "Invalid JSON body" }, { status: 400 });
-        }
-        const token = typeof body.token === "string" ? body.token : "";
-        if (token.length === 0 || !tokensEqual(token, rootToken)) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
-        }
-        return new Response(JSON.stringify({ ok: true }), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Set-Cookie": issueSessionCookie(rootToken, cookieOptions),
-          },
-        });
-      }
-
-      if (url.pathname === "/admin/api/logout" && req.method === "POST") {
-        return new Response(JSON.stringify({ ok: true }), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Set-Cookie": clearSessionCookie(cookieOptions),
-          },
-        });
-      }
-
-      if (url.pathname === "/admin/api/session" && req.method === "GET") {
-        const principal = readSessionPrincipal(req, rootToken);
-        if (principal === null) {
-          return Response.json({ authenticated: false }, { status: 401 });
-        }
-        return Response.json({ authenticated: true, principal });
-      }
-
-      return undefined;
+      return null;
     },
   };
 }
@@ -115,15 +49,9 @@ export function readSecureCookies(): boolean {
   return publicUrl?.startsWith("https://") ?? false;
 }
 
-/** Max admin login attempts per IP per minute; 0 or invalid disables. */
-export function readAdminTokenLoginRateLimit(): RateLimitRule | null {
-  const raw =
-    process.env.ADMIN_TOKEN_LOGIN_RL_PER_MIN?.trim() ??
-    process.env.KHORA_CONSOLE_LOGIN_RL_PER_MIN?.trim();
-  if (raw === undefined || raw === "") return { windowMs: 60_000, max: 10 };
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return { windowMs: 60_000, max: Math.floor(n) };
+/** @deprecated Cookie login removed; kept for env compatibility. Always null. */
+export function readAdminTokenLoginRateLimit(): null {
+  return null;
 }
 
 export function readAdminTokenAuthKind(): "root-token" {
@@ -142,9 +70,5 @@ export function createAdminTokenAuthFromEnv(): AdminTokenAuth | null {
   const rootToken = readAdminRootToken();
   if (rootToken === undefined) return null;
   readAdminTokenAuthKind();
-  return createRootTokenAdminAuth({
-    rootToken,
-    secureCookies: readSecureCookies(),
-    loginRateLimit: readAdminTokenLoginRateLimit(),
-  });
+  return createRootTokenAdminAuth({ rootToken });
 }
