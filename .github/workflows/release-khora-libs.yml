@@ -41,7 +41,7 @@ jobs:
       - name: init submodules
         env:
           # Fine-grained PAT (or classic repo-scoped) with Contents: Read on private
-          # khoralabs/* submodule remotes (libs, chat, memories, …).
+          # khoralabs/* submodule remotes (libs, …).
           TOKEN: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
         run: |
           set -euo pipefail

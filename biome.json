@@ -16,8 +16,7 @@
       "!apps/khoralabs/exedra/app/src/client/components/ai-elements",
       "!!packages/memories",
       "!!packages/obp",
-      "!!packages/chat",
-      "!!vendor/chat"
+      "!!packages/chat"
     ]
   },
   "formatter": {
