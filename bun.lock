@@ -147,7 +147,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/auth": {
+    "packages/auth": {
       "name": "@khoralabs/khora-auth",
       "version": "0.0.0",
       "dependencies": {
@@ -165,7 +165,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/client": {
+    "packages/client": {
       "name": "@khoralabs/khora-client",
       "version": "0.1.6",
       "dependencies": {
@@ -183,7 +183,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/colonnade": {
+    "packages/colonnade": {
       "name": "@khoralabs/colonnade",
       "version": "0.0.0",
       "dependencies": {
@@ -199,7 +199,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/contracts": {
+    "packages/contracts": {
       "name": "@khoralabs/khora-contracts",
       "version": "0.0.0",
       "dependencies": {
@@ -213,7 +213,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/host": {
+    "packages/host": {
       "name": "@khoralabs/khora-host",
       "version": "0.0.0",
       "dependencies": {
@@ -239,7 +239,7 @@
         "typescript": "^5",
       },
     },
-    "packages/khora/percolator": {
+    "packages/percolator": {
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
       "dependencies": {
@@ -427,15 +427,6 @@
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "vendor/libs": {
-      "name": "@khoralabs/libs",
-      "devDependencies": {
-        "@types/bun": "latest",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -815,29 +806,27 @@
 
     "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:vendor/libs/packages/cli-kit"],
 
-    "@khoralabs/colonnade": ["@khoralabs/colonnade@workspace:packages/khora/colonnade"],
+    "@khoralabs/colonnade": ["@khoralabs/colonnade@workspace:packages/colonnade"],
 
     "@khoralabs/did-key-identity": ["@khoralabs/did-key-identity@0.1.0", "", { "dependencies": { "@noble/ed25519": "^3.1.0", "@noble/hashes": "^2.2.0", "iso-base": "^4.2.1", "iso-signatures": "^0.5.1" }, "peerDependencies": { "typescript": "^5" } }, "sha512-ALGgj7L6iTBuEvQ0hnu1FLArd/69rjUKXBfUx1ZhN8JmOPU7NM+XK9HnbLBeg65/5q+CHaNl+KMdDq0i9uW/oA=="],
 
     "@khoralabs/khora-admin": ["@khoralabs/khora-admin@workspace:apps/admin"],
 
-    "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/khora/auth"],
+    "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/auth"],
 
     "@khoralabs/khora-cli": ["@khoralabs/khora-cli@workspace:apps/cli"],
 
-    "@khoralabs/khora-client": ["@khoralabs/khora-client@workspace:packages/khora/client"],
+    "@khoralabs/khora-client": ["@khoralabs/khora-client@workspace:packages/client"],
 
-    "@khoralabs/khora-contracts": ["@khoralabs/khora-contracts@workspace:packages/khora/contracts"],
+    "@khoralabs/khora-contracts": ["@khoralabs/khora-contracts@workspace:packages/contracts"],
 
     "@khoralabs/khora-daemon": ["@khoralabs/khora-daemon@workspace:apps/daemon"],
 
-    "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/khora/host"],
+    "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/host"],
 
     "@khoralabs/khora-registry": ["@khoralabs/khora-registry@workspace:apps/registry"],
 
     "@khoralabs/khora-server": ["@khoralabs/khora-server@workspace:apps/server"],
-
-    "@khoralabs/libs": ["@khoralabs/libs@workspace:vendor/libs"],
 
     "@khoralabs/memories-agents": ["@khoralabs/memories-agents@0.7.6", "", { "dependencies": { "@ai-sdk/provider-utils": "^5.0.2", "@khoralabs/agent-capabilities": "^0.2.0", "@khoralabs/agent-capabilities-ai-sdk": "^0.2.0", "@khoralabs/agent-capabilities-otel": "^0.2.0", "@khoralabs/memories-node": "0.7.6", "ai": "^7.0.9", "zod": "^4" }, "peerDependencies": { "typescript": "^5" } }, "sha512-aLvtrEaUvmJs2br7bPBtT5EssRw2BCns7thxmmknO3hwLTGQox+C+rc2ESnK0dqHNQ9fP6MeKt8YapZ218txgQ=="],
 
@@ -849,7 +838,7 @@
 
     "@khoralabs/observability": ["@khoralabs/observability@workspace:vendor/libs/packages/observability"],
 
-    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator"],
+    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/percolator"],
 
     "@khoralabs/registry": ["@khoralabs/registry@workspace:packages/registry"],
 

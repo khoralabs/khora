@@ -39,10 +39,7 @@
     "apps/*",
     "packages/*",
     "vendor/libs/packages/*/**",
-    "vendor/chat/*/**",
-    "packages/khora/*/**",
     "vendor/chat/**",
-    "vendor/libs/**",
     "study/**"
   ]
 }
