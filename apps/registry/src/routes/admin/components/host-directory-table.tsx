@@ -1,8 +1,5 @@
-import {
-  type RegistryHostSummaryItem,
-  useUsersStats,
-} from "@khoralabs/registry-catalog-react/admin";
 import { Badge } from "@/components/ui/badge";
+import { type RegistryHostSummaryItem, useUsersStats } from "@/routes/admin/ui";
 import { navigateAdmin } from "../use-pathname.ts";
 
 export function HostDirectoryTable() {

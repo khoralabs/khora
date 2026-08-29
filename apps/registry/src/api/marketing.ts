@@ -1,5 +1,5 @@
-import { subscribeMarketing, unsubscribeMarketing } from "@khoralabs/registry-accounts";
-import { getRegistryDomainDatabase } from "@khoralabs/registry-auth";
+import { subscribeMarketing, unsubscribeMarketing } from "@khoralabs/registry/accounts";
+import { getRegistryDomainDatabase } from "@khoralabs/registry/auth";
 
 export async function handleMarketingSubscribe(req: Request): Promise<Response> {
   let body: unknown;

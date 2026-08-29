@@ -1,6 +1,6 @@
-import { UsersStats, useUsersStats } from "@khoralabs/registry-catalog-react/admin";
 import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UsersStats, useUsersStats } from "@/routes/admin/ui";
 import { navigateAdmin } from "../use-pathname.ts";
 
 function OverviewKpi({

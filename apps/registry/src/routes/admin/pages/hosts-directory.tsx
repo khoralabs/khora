@@ -1,8 +1,5 @@
-import {
-  type RegistryHostSummaryItem,
-  useUsersStats,
-} from "@khoralabs/registry-catalog-react/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { type RegistryHostSummaryItem, useUsersStats } from "@/routes/admin/ui";
 import { HostDirectoryTable } from "../components/host-directory-table.tsx";
 import { navigateAdmin } from "../use-pathname.ts";
 

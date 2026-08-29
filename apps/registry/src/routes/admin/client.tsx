@@ -1,4 +1,4 @@
-import { UsersStats } from "@khoralabs/registry-catalog-react/admin";
+import { UsersStats } from "@/routes/admin/ui";
 import { renderRoute } from "../../render-route.tsx";
 import { AdminRouter } from "./router.tsx";
 import { AdminShell } from "./shell.tsx";

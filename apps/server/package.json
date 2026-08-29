@@ -22,7 +22,7 @@
     "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",
-    "@khoralabs/registry-catalog-contracts": "workspace:*",
+    "@khoralabs/registry": "workspace:*",
     "@khoralabs/memories-agents": "^0.7.6",
     "@khoralabs/memories-node": "^0.7.6",
     "@khoralabs/memories-service": "^0.7.6",

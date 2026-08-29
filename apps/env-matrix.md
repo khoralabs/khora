@@ -255,7 +255,7 @@ Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`.
 
 | App | Path |
 | --- | --- |
-| Registry | `apps/khora/registry/.env.example` |
+| Registry | `apps/registry/.env.example` |
 | Khora server | `apps/khora/server/.env.example` |
 | Khora admin | `apps/khora/admin/.env.example` |
 

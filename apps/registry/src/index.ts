@@ -1,7 +1,7 @@
 import "./otel.js";
 
 import { createLogger } from "@khoralabs/observability/logger";
-import { handleOptions, withCors } from "@khoralabs/registry-host";
+import { handleOptions, withCors } from "@khoralabs/registry/host";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { serve } from "bun";
 import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";

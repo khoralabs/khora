@@ -1,11 +1,11 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   type RegistrationRequirementState,
   type RegistryHostSummaryItem,
   registrationRequirementsWithoutHealth,
   useUsersStats,
-} from "@khoralabs/registry-catalog-react/admin";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+} from "@/routes/admin/ui";
 import { RegistrationRequirementsList } from "./registration-requirements.tsx";
 
 type ActivateResult = {

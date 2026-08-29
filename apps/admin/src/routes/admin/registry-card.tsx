@@ -1,4 +1,4 @@
-import type { RegistrationRequirementState } from "@khoralabs/registry-catalog-contracts";
+import type { RegistrationRequirementState } from "@khoralabs/registry/contracts";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

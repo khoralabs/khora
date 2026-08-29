@@ -1,12 +1,9 @@
-import {
-  type RegistryHostSummaryItem,
-  useUsersStats,
-} from "@khoralabs/registry-catalog-react/admin";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { type RegistryHostSummaryItem, useUsersStats } from "@/routes/admin/ui";
 
 type OriginRequest = {
   id: string;

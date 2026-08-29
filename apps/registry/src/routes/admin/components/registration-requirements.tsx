@@ -1,4 +1,4 @@
-import type { RegistrationRequirementState } from "@khoralabs/registry-catalog-react/admin";
+import type { RegistrationRequirementState } from "@/routes/admin/ui";
 
 function requirementLabel(id: RegistrationRequirementState["id"]): string {
   if (id === "health_check") return "Health check";

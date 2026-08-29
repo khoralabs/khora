@@ -1,4 +1,4 @@
-import { useUsersStats } from "@khoralabs/registry-catalog-react/admin";
+import { useUsersStats } from "@/routes/admin/ui";
 
 export type PendingHostsBadge = {
   label: string;

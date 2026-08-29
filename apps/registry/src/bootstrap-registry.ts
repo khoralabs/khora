@@ -5,15 +5,15 @@ import {
   createBetterAuthRegistryRoutes,
   initRegistrySchema,
   reloadRegistryAuth,
-} from "@khoralabs/registry-auth";
-import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/registry-host";
-import { createRegistryHost, readRegistryTrustedOrigins } from "@khoralabs/registry-host";
-import type { RegistryDatabase } from "@khoralabs/registry-persistence";
-import { openRegistrySqliteDatabase } from "@khoralabs/registry-sqlite";
+} from "@khoralabs/registry/auth";
+import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/registry/host";
+import { createRegistryHost, readRegistryTrustedOrigins } from "@khoralabs/registry/host";
+import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import { openRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import {
   openRegistryTursoDatabase,
   registryTursoCredentialsFromEnv,
-} from "@khoralabs/registry-turso-serverless";
+} from "@khoralabs/registry/turso-serverless";
 
 function registryPublicUrl(): string {
   const port = process.env.PORT?.trim() ?? "4000";
@@ -29,7 +29,7 @@ function isTursoBackend(): boolean {
 
 async function openRegistryStore(): Promise<{
   registry: RegistryDatabase;
-  authDatabase: import("@khoralabs/registry-auth").RegistryAuthDatabase;
+  authDatabase: import("@khoralabs/registry/auth").RegistryAuthDatabase;
 }> {
   if (isTursoBackend()) {
     const bundle = await openRegistryTursoDatabase(registryTursoCredentialsFromEnv());

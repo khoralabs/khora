@@ -1,10 +1,7 @@
-import {
-  type RegistryHostSummaryItem,
-  useUsersStats,
-} from "@khoralabs/registry-catalog-react/admin";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { type RegistryHostSummaryItem, useUsersStats } from "@/routes/admin/ui";
 import { navigateAdmin } from "../use-pathname.ts";
 
 export function HostLifecycleActions({ host }: { host: RegistryHostSummaryItem }) {

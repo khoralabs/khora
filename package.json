@@ -41,7 +41,6 @@
     "vendor/libs/packages/*/**",
     "vendor/chat/*/**",
     "packages/khora/*/**",
-    "packages/registry/*/**",
     "vendor/chat/**",
     "vendor/libs/**",
     "study/**"

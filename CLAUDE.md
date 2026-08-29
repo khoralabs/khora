@@ -48,11 +48,13 @@ Optional AOT bundling via [`@khoralabs/bun-web`](vendor/libs/packages/bun-web/RE
 
 ## Registry packages
 
-Registry system uses layered packages (no legacy `@khoralabs/users*`):
+Single multi-entrypoint package `@khoralabs/registry`:
 
-- `@khoralabs/registry-catalog-contracts` / `@khoralabs/registry-accounts-contracts` — types only
-- `@khoralabs/registry-catalog` / `@khoralabs/registry-accounts` / `@khoralabs/registry-auth` — server (SQLite)
-- `@khoralabs/registry-catalog-react` / `@khoralabs/registry-accounts-react` — browser (contracts only)
+- `./contracts` — wire / DTO types
+- `./persistence` — `RegistryDatabase` port (no drivers); `./sqlite` / `./turso-serverless` adapters
+- `./accounts` / `./catalog` / `./auth` / `./host` / `./client` — domain, IdP, HTTP host, outbound client
+
+React admin / EmailConfirm UI lives in `apps/registry` (not a separate package). See `packages/registry/README.md`.
 
 ## Frontend
 

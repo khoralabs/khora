@@ -5,7 +5,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { buildOtelServerEnv } from "@khoralabs/observability/otel-env";
-import { registryDatabasePath } from "@khoralabs/registry-auth";
+import { registryDatabasePath } from "@khoralabs/registry/sqlite";
 import {
   assertLitestreamCredentials,
   buildLitestreamYaml,

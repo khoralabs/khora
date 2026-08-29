@@ -12,19 +12,12 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
-    "@khoralabs/observability": "workspace:*",
-    "@opentelemetry/api": "^1.9.0",
-    "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/admin-token": "workspace:*",
-    "@khoralabs/registry-accounts": "workspace:*",
-    "@khoralabs/registry-accounts-react": "workspace:*",
-    "@khoralabs/registry-auth": "workspace:*",
-    "@khoralabs/registry-host": "workspace:*",
-    "@khoralabs/registry-persistence": "workspace:*",
-    "@khoralabs/registry-sqlite": "workspace:*",
-    "@khoralabs/registry-turso-serverless": "workspace:*",
-    "@khoralabs/registry-catalog": "workspace:*",
-    "@khoralabs/registry-catalog-react": "workspace:*",
+    "@khoralabs/colonnade": "workspace:*",
+    "@khoralabs/khora-auth": "workspace:*",
+    "@khoralabs/observability": "workspace:*",
+    "@khoralabs/registry": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
     "bun-plugin-tailwind": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -33,7 +26,7 @@
     "react": "^19",
     "react-dom": "^19",
     "tailwind-merge": "^3.3.1",
-    "@khoralabs/colonnade": "workspace:*"
+    "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

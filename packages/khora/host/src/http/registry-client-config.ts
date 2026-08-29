@@ -1,4 +1,4 @@
-import type { RegistryClientConfig } from "@khoralabs/registry-client";
+import type { RegistryClientConfig } from "@khoralabs/registry/client";
 
 function envRegistryTrustBaseUrlOrigin(): boolean {
   const v = process.env.KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN?.trim().toLowerCase();

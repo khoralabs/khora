@@ -5,8 +5,8 @@ import {
   type KhoraHost,
   listHostsForHealthPoll,
   probeHostHealth,
-} from "@khoralabs/registry-catalog";
-import type { RegistryDatabase } from "@khoralabs/registry-persistence";
+} from "@khoralabs/registry/catalog";
+import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 
 export type { HostHealthProbeResult };
 export { probeHostHealth };

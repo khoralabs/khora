@@ -27,7 +27,7 @@
         "@khoralabs/khora-host": "workspace:*",
         "@khoralabs/memories-react-graph": "^0.7.6",
         "@khoralabs/memories-service": "^0.7.6",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
+        "@khoralabs/registry": "workspace:*",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
         "bun-plugin-tailwind": "^0.1.2",
@@ -94,15 +94,7 @@
         "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/observability": "workspace:*",
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@khoralabs/registry-accounts-react": "workspace:*",
-        "@khoralabs/registry-auth": "workspace:*",
-        "@khoralabs/registry-catalog": "workspace:*",
-        "@khoralabs/registry-catalog-react": "workspace:*",
-        "@khoralabs/registry-host": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
-        "@khoralabs/registry-sqlite": "workspace:*",
-        "@khoralabs/registry-turso-serverless": "workspace:*",
+        "@khoralabs/registry": "workspace:*",
         "@opentelemetry/api": "^1.9.0",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
@@ -112,6 +104,7 @@
         "react": "^19",
         "react-dom": "^19",
         "tailwind-merge": "^3.3.1",
+        "usehooks-ts": "^3.1.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -138,7 +131,7 @@
         "@khoralabs/memories-service": "^0.7.6",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
+        "@khoralabs/registry": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@khoralabs/sqlite-migrate": "^0.1.0",
         "@opentelemetry/api": "^1.9.0",
@@ -233,7 +226,7 @@
         "@khoralabs/memories-service": "^0.7.6",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
-        "@khoralabs/registry-client": "workspace:*",
+        "@khoralabs/registry": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "zod": "^4",
@@ -251,7 +244,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@tursodatabase/serverless": "^1.2.3",
-        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -261,69 +253,17 @@
         "typescript": "^5",
       },
     },
-    "packages/registry/accounts": {
-      "name": "@khoralabs/registry-accounts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade": "workspace:*",
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
-      },
-      "devDependencies": {
-        "@khoralabs/registry-catalog": "workspace:*",
-        "@khoralabs/registry-sqlite": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/accounts-contracts": {
-      "name": "@khoralabs/registry-accounts-contracts",
-      "version": "0.0.0",
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/accounts-react": {
-      "name": "@khoralabs/registry-accounts-react",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-        "@khoralabs/registry-auth": "workspace:*",
-        "clsx": "^2.1.1",
-        "tailwind-merge": "^3.3.1",
-        "usehooks-ts": "^3.1.1",
-      },
-      "devDependencies": {
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/auth": {
-      "name": "@khoralabs/registry-auth",
+    "packages/registry": {
+      "name": "@khoralabs/registry",
       "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
+        "@khoralabs/admin-token": "workspace:*",
         "@khoralabs/colonnade": "workspace:*",
+        "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/observability": "workspace:*",
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@khoralabs/registry-catalog": "workspace:*",
-        "@khoralabs/registry-host": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
-        "@khoralabs/registry-sqlite": "workspace:*",
-        "@libsql/client": "^0.15.15",
-        "@libsql/kysely-libsql": "^0.4.0",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+        "@opentelemetry/api": "^1.9.0",
         "better-auth": "^1.6.11",
         "kysely": "^0.28.8",
       },
@@ -331,142 +271,10 @@
         "@types/bun": "latest",
         "typescript": "^5",
       },
-      "peerDependencies": {
-        "react": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/catalog": {
-      "name": "@khoralabs/registry-catalog",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade": "workspace:*",
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
-      },
-      "devDependencies": {
-        "@khoralabs/registry-sqlite": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/catalog-contracts": {
-      "name": "@khoralabs/registry-catalog-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/catalog-react": {
-      "name": "@khoralabs/registry-catalog-react",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "clsx": "^2.1.1",
-        "tailwind-merge": "^3.3.1",
-        "usehooks-ts": "^3.1.1",
-      },
-      "devDependencies": {
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/client": {
-      "name": "@khoralabs/registry-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/host": {
-      "name": "@khoralabs/registry-host",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/admin-token": "workspace:*",
-        "@khoralabs/colonnade": "workspace:*",
-        "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/observability": "workspace:*",
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@khoralabs/registry-catalog": "workspace:*",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
-        "@opentelemetry/api": "^1.9.0",
-      },
-      "devDependencies": {
-        "@khoralabs/registry-auth": "workspace:*",
-        "@khoralabs/registry-sqlite": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/persistence": {
-      "name": "@khoralabs/registry-persistence",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/sqlite": {
-      "name": "@khoralabs/registry-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/registry/turso-serverless": {
-      "name": "@khoralabs/registry-turso-serverless",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-auth": "workspace:*",
-        "@khoralabs/registry-persistence": "workspace:*",
+      "optionalDependencies": {
         "@libsql/client": "^0.15.15",
         "@libsql/kysely-libsql": "^0.4.0",
         "@tursodatabase/serverless": "^1.2.3",
-        "kysely": "^0.28.8",
-      },
-      "devDependencies": {
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -1043,29 +851,7 @@
 
     "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/khora/percolator"],
 
-    "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/registry/accounts"],
-
-    "@khoralabs/registry-accounts-contracts": ["@khoralabs/registry-accounts-contracts@workspace:packages/registry/accounts-contracts"],
-
-    "@khoralabs/registry-accounts-react": ["@khoralabs/registry-accounts-react@workspace:packages/registry/accounts-react"],
-
-    "@khoralabs/registry-auth": ["@khoralabs/registry-auth@workspace:packages/registry/auth"],
-
-    "@khoralabs/registry-catalog": ["@khoralabs/registry-catalog@workspace:packages/registry/catalog"],
-
-    "@khoralabs/registry-catalog-contracts": ["@khoralabs/registry-catalog-contracts@workspace:packages/registry/catalog-contracts"],
-
-    "@khoralabs/registry-catalog-react": ["@khoralabs/registry-catalog-react@workspace:packages/registry/catalog-react"],
-
-    "@khoralabs/registry-client": ["@khoralabs/registry-client@workspace:packages/registry/client"],
-
-    "@khoralabs/registry-host": ["@khoralabs/registry-host@workspace:packages/registry/host"],
-
-    "@khoralabs/registry-persistence": ["@khoralabs/registry-persistence@workspace:packages/registry/persistence"],
-
-    "@khoralabs/registry-sqlite": ["@khoralabs/registry-sqlite@workspace:packages/registry/sqlite"],
-
-    "@khoralabs/registry-turso-serverless": ["@khoralabs/registry-turso-serverless@workspace:packages/registry/turso-serverless"],
+    "@khoralabs/registry": ["@khoralabs/registry@workspace:packages/registry"],
 
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-9eXXrtxYeOCGpKdcEWoGtLVzHfi3zF+6s//LPv4SFWoy9tJtGu1hLdW9gGFhtbRfTHDxMb1/RHblk7NREqQdwQ=="],
 
@@ -3089,21 +2875,7 @@
 
     "@khoralabs/percolator/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
-    "@khoralabs/registry-accounts/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-auth/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-catalog/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-client/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-host/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-persistence/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-sqlite/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/registry-turso-serverless/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+    "@khoralabs/registry/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
     "@libsql/kysely-libsql/@libsql/client": ["@libsql/client@0.8.1", "", { "dependencies": { "@libsql/core": "^0.8.1", "@libsql/hrana-client": "^0.6.2", "js-base64": "^3.7.5", "libsql": "^0.3.10", "promise-limit": "^2.7.0" } }, "sha512-xGg0F4iTDFpeBZ0r4pA6icGsYa5rG6RAG+i/iLDnpCAnSuTqEWMDdPlVseiq4Z/91lWI9jvvKKiKpovqJ1kZWA=="],
 
@@ -3353,21 +3125,7 @@
 
     "@khoralabs/percolator/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
-    "@khoralabs/registry-accounts/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-auth/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-catalog/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-client/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-host/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-persistence/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-sqlite/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/registry-turso-serverless/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+    "@khoralabs/registry/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@libsql/kysely-libsql/@libsql/client/@libsql/core": ["@libsql/core@0.8.1", "", { "dependencies": { "js-base64": "^3.7.5" } }, "sha512-u6nrj6HZMTPsgJ9EBhLzO2uhqhlHQJQmVHV+0yFLvfGf3oSP8w7TjZCNUgu1G8jHISx6KFi7bmcrdXW9lRt++A=="],
 

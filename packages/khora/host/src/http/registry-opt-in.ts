@@ -2,7 +2,7 @@ import {
   fetchHostRegistrationStatus,
   registerHostWithRegistryRemote,
   syncHostRegistryOnStartup,
-} from "@khoralabs/registry-client";
+} from "@khoralabs/registry/client";
 import type { KhoraHostSpecPort } from "..";
 import { logger } from "./logger";
 import { toRegistryClientConfig } from "./registry-client-config";

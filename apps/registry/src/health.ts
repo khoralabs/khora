@@ -1,4 +1,4 @@
-import { getRegistryDatabase } from "@khoralabs/registry-auth";
+import { getRegistryDatabase } from "@khoralabs/registry/auth";
 
 export function handleHealth(): Response {
   return Response.json({ ok: true });
