@@ -13,8 +13,8 @@
   "analystConcurrency": 4,
   "includeWorkstream": false,
   "workstreams": {
-    "autoCommit": false,
+    "autoCommit": true,
     "autoLink": true
   },
-  "skip": false
+  "skip": true
 }

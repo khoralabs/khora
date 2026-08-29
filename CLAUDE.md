@@ -54,7 +54,7 @@ Single multi-entrypoint package `@khoralabs/registry`:
 - `./persistence` — `RegistryDatabase` port (no drivers); `./sqlite` / `./turso-serverless` adapters
 - `./accounts` / `./catalog` / `./auth` / `./host` / `./client` — domain, IdP, HTTP host, outbound client
 
-React admin / EmailConfirm UI lives in `apps/registry` (not a separate package). See `packages/registry/README.md`.
+EmailConfirm + `/cli/link` UI live in `apps/registry` (not a separate package). Operator APIs are headless at `/v1/ops` (Bearer `REGISTRY_CONSOLE_ROOT_TOKEN`). See `packages/registry/README.md`.
 
 ## Frontend
 

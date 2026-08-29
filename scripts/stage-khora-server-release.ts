@@ -154,7 +154,7 @@ async function ensureLitestreamForTarget(
 export function serverPackageReadme(version: string): string {
   return `# khora-server ${version}
 
-Headless Khora host (HTTP + WebSocket). Admin UI is a separate app (\`@khoralabs/khora-admin\`).
+Headless Khora host (HTTP + WebSocket). Operator APIs use Bearer root token at \`/v1/ops\` and \`/v1/host/registry\`.
 
 ## Layout
 

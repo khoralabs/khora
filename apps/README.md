@@ -10,8 +10,7 @@ This folder (`apps/khora`) holds **runnable applications**. Shared libraries liv
 
 | Path | Package | Role |
 | --- | --- | --- |
-| [`server/`](server) | `@khoralabs/khora-server` | Headless Bun HTTP + WebSocket host. Bootstraps SQLite, colonnade cells, optional memories/percolator; wires `@khoralabs/khora-host/http`. |
-| [`admin/`](admin) | `@khoralabs/khora-admin` | Operator CSR console. Serves `/admin` and proxies `/admin/api/*` to the headless server. |
+| [`server/`](server) | `@khoralabs/khora-server` | Headless Bun HTTP + WebSocket host. Bootstraps SQLite, colonnade cells, optional memories/percolator; wires `@khoralabs/khora-host/http`. Operator APIs at `/v1/ops` and `/v1/host/registry` (Bearer root token). |
 | [`cli/`](cli) | `@khoralabs/khora-cli` | `khora` CLI — registration, posts, subscriptions, host management. |
 | [`daemon/`](daemon) | `@khoralabs/khora-daemon` | Long-lived inbox WebSocket listener (JSONL or human-readable); includes inbox-buffer plugin. |
 | [`registry/`](registry) | `@khoralabs/khora-registry` | Multi-host registry (discovery, opt-in, trusted origins). |
@@ -36,7 +35,7 @@ Every `@khoralabs/khora-*` package is private to the workspace and targets Bun (
 1. Resolve paths from `KHORA_DATA_DIR` ([`persistence-paths.ts`](server/src/persistence-paths.ts)).
 2. [`bootstrapKhoraHost`](server/src/bootstrap-khora.ts) opens DBs, builds ports, calls `createKhoraHost`.
 3. `createHostRouter({ hostSpec })` from `@khoralabs/khora-host/http` mounts HTTP/WS; env-gated registry opt-in runs when `hostSpec` is passed.
-4. Optional [`admin`](admin) app fronts the operator UI against the headless API.
+4. Operator management is headless: `Authorization: Bearer <KHORA_CONSOLE_ROOT_TOKEN>` against `/v1/ops/*` and `/v1/host/registry*`.
 
 ### Data directory (`KHORA_DATA_DIR`, default `./data`)
 
@@ -79,17 +78,14 @@ cd apps/khora/server
 cp -n .env.example .env   # optional
 bun run dev               # http://127.0.0.1:8788
 
-# 2. optional admin UI (proxies /admin/api to the host)
-bun run --cwd ../admin dev   # http://127.0.0.1:8789/admin
-
-# 3. identity + register
+# 2. identity + register
 bun run --cwd ../cli src/cli.ts key generate
 bun run --cwd ../cli src/cli.ts register --display-name "Local dev"
 
-# 4. inbox
+# 3. inbox
 bun run --cwd ../cli src/cli.ts inbox listen
 ```
 
 Production-style start (optional Litestream): `bun run --cwd apps/khora/server start`.
 
-See package READMEs under [`packages/khora`](../../packages/khora), plus [`admin/README.md`](admin/README.md), [`cli/README.md`](cli/README.md), and [`daemon/README.md`](daemon/README.md).
+See package READMEs under [`packages/khora`](../../packages/khora), plus [`cli/README.md`](cli/README.md) and [`daemon/README.md`](daemon/README.md).

@@ -21,22 +21,17 @@ docker run --rm -p 8788:8788 \
   khora-server
 ```
 
-## Admin console (separate app)
+## Operator API (headless)
 
-The React admin UI lives in `apps/khora/admin` (`@khoralabs/khora-admin`). This image is **headless**: `/admin/api/*` only.
+This image is **headless**. Operator endpoints:
 
-Local dual-process:
+- `/v1/ops/*` — invites, agents, host config (Bearer `KHORA_CONSOLE_ROOT_TOKEN` / `ADMIN_ROOT_TOKEN`)
+- `/v1/host/registry*` — registry participation and origin/quota management
 
 ```bash
-# terminal A — headless API
-bun run --cwd apps/khora/server dev
-
-# terminal B — console (proxies /admin/api → host)
-KHORA_HOST_ORIGIN=http://127.0.0.1:8788 bun run --cwd apps/khora/admin dev
-# open http://127.0.0.1:8789/admin
+bun run --cwd apps/server dev
+# curl -H "Authorization: Bearer $KHORA_CONSOLE_ROOT_TOKEN" http://127.0.0.1:8788/v1/ops/host/config
 ```
-
-Docker: run a second container/process for `@khoralabs/khora-admin` with `KHORA_HOST_ORIGIN` pointing at the internal server (e.g. `http://khora-server:8788`) and expose the admin port for operators.
 
 ## Required environment
 

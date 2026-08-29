@@ -7,7 +7,7 @@ Two supported ways to run the headless host:
 | **Platform tarball / Homebrew** | Laptop + VPS self-host | SQLCipher + libsqlite3 (system) |
 | **Docker** ([DOCKER.md](./DOCKER.md)) | PaaS / zero host libs | None (image includes libs + Litestream) |
 
-Admin UI remains a separate process (`apps/khora/admin`).
+Operator management is headless (`/v1/ops`, `/v1/host/registry` with Bearer root token). No separate admin UI process.
 
 ## Platform package (`khora-server`)
 
