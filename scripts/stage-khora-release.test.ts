@@ -79,14 +79,14 @@ describe("stageKhoraRelease", () => {
 
   beforeEach(() => {
     workspace = mkdtempSync(path.join(tmpdir(), "khora-stage-"));
-    releaseDir = path.join(workspace, "apps/khora/release");
+    releaseDir = path.join(workspace, "apps/release");
 
-    mkdirSync(path.join(workspace, "apps/khora/cli/assets/configs"), { recursive: true });
+    mkdirSync(path.join(workspace, "apps/cli/assets/configs"), { recursive: true });
     mkdirSync(path.join(workspace, "packages/khora/client"), { recursive: true });
 
     for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
       writeFileSync(
-        path.join(workspace, "apps/khora/cli/assets/configs", name),
+        path.join(workspace, "apps/cli/assets/configs", name),
         `{ "name": "${name}" }`,
       );
     }
@@ -113,7 +113,7 @@ describe("stageKhoraRelease", () => {
 
   test("writes registryUrl into staged base.config.json", async () => {
     writeFileSync(
-      path.join(workspace, "apps/khora/cli/assets/configs/base.config.json"),
+      path.join(workspace, "apps/cli/assets/configs/base.config.json"),
       JSON.stringify({ baseUrl: "http://127.0.0.1:8787" }),
     );
     await stageKhoraRelease({

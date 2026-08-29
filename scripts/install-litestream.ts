@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Download the pinned Litestream binary into `apps/khora/server/.bin/litestream` by default.
+ * Download the pinned Litestream binary into `apps/server/.bin/litestream` by default.
  *
- *     bun run ../../../scripts/install-litestream.ts
- *     bun run ../../../scripts/install-litestream.ts --output ./.bin/litestream
+ *     bun run ../../scripts/install-litestream.ts
+ *     bun run ../../scripts/install-litestream.ts --output ./.bin/litestream
  *
  * From the Khora server package (preinstall):
  *
@@ -20,15 +20,7 @@ import path from "node:path";
 
 const LITESTREAM_VERSION = "0.5.11";
 
-const DEFAULT_BIN_PATH = path.resolve(
-  import.meta.dir,
-  "..",
-  "apps",
-  "khora",
-  "server",
-  ".bin",
-  "litestream",
-);
+const DEFAULT_BIN_PATH = path.resolve(import.meta.dir, "..", "apps", "server", ".bin", "litestream");
 
 function parseOutputArg(): string | undefined {
   const argv = process.argv.slice(2);

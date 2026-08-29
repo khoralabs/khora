@@ -43,12 +43,3 @@ docker run --rm -p 4000:4000 \
 | `INSTALL_LITESTREAM` | `1` | Download Litestream binary into `.bin/` (set `0` for faster dev builds) |
 
 Use `DOCKER_BUILDKIT=0` if your Docker daemon lacks buildx.
-
-## Local smoke test
-
-Requires a running Docker daemon. From the repo root:
-
-```bash
-./scripts/docker-smoke.sh          # INSTALL_LITESTREAM=0 by default in script
-SKIP_BUILD=1 ./scripts/docker-smoke.sh   # re-run health checks only
-```

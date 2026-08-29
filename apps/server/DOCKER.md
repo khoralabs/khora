@@ -74,12 +74,3 @@ Memories (sqlite-vec) is **on** by default. Disable with `KHORA_MEMORIES=0`.
 | `INSTALL_LITESTREAM` | `1` | Download Litestream binary (set `0` for faster dev builds) |
 
 Use `DOCKER_BUILDKIT=0` if your Docker daemon lacks buildx.
-
-## Local smoke test
-
-Requires a running Docker daemon. From the repo root:
-
-```bash
-./scripts/docker-smoke.sh
-SKIP_BUILD=1 ./scripts/docker-smoke.sh
-```

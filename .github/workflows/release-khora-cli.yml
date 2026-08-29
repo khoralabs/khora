@@ -76,7 +76,7 @@ jobs:
 
       - name: test
         run: |
-          bun test apps/khora/cli apps/khora/daemon apps/khora/plugins/inbox-buffer scripts/stage-khora-release.test.ts scripts/homebrew-khora.test.ts
+          bun test apps/cli apps/daemon scripts/stage-khora-release.test.ts scripts/homebrew-formula.test.ts
           bun test packages/khora/client
 
       - name: build json schema
@@ -87,21 +87,21 @@ jobs:
           set -euo pipefail
           for slug in darwin-arm64 linux-x64 linux-arm64; do
             echo "::group::cli bun-$slug"
-            bun run apps/khora/cli/scripts/build.ts "bun-$slug"
+            bun run apps/cli/scripts/build.ts "bun-$slug"
             echo "::endgroup::"
             echo "::group::daemon bun-$slug"
-            bun run apps/khora/daemon/scripts/build.ts "bun-$slug"
+            bun run apps/daemon/scripts/build.ts "bun-$slug"
             echo "::endgroup::"
           done
 
       - name: smoke-test compiled binaries
-        run: bun run scripts/verify-khora-release-binaries.ts
+        run: bun run scripts/verify-release-binaries.ts cli
 
       - name: stage release packages
         run: bun run scripts/stage-khora-release.ts "$VERSION" --registry-url="$KHORA_RELEASE_REGISTRY_URL"
 
       - name: package release tarballs
-        run: bun run scripts/package-khora-release-tarballs.ts "$VERSION"
+        run: bun run scripts/package-release-tarballs.ts cli "$VERSION"
 
       - name: configure npm auth
         env:
@@ -118,7 +118,7 @@ jobs:
           set -euo pipefail
           echo "npm user: $(npm whoami)"
           echo "Dry-run first platform package (404 here = no publish rights on @khoralabs scope)..."
-          (cd apps/khora/release/cli-darwin-arm64 && npm publish --access public --tag "$NPM_TAG" --dry-run)
+          (cd apps/release/cli-darwin-arm64 && npm publish --access public --tag "$NPM_TAG" --dry-run)
 
       - name: publish platform packages
         run: |
@@ -129,12 +129,12 @@ jobs:
             cli-darwin-arm64 cli-linux-x64 cli-linux-arm64 \
             daemon-darwin-arm64 daemon-linux-x64 daemon-linux-arm64; do
             echo "::group::publish $slug"
-            (cd "apps/khora/release/$slug" && npm publish --access public --tag "$NPM_TAG" $DRY_FLAG)
+            (cd "apps/release/$slug" && npm publish --access public --tag "$NPM_TAG" $DRY_FLAG)
             echo "::endgroup::"
           done
 
       - name: publish daemon meta
-        working-directory: apps/khora/release/daemon
+        working-directory: apps/release/daemon
         run: |
           if [ "$DRY_RUN" = "true" ]; then
             npm publish --access public --tag "$NPM_TAG" --dry-run
@@ -143,7 +143,7 @@ jobs:
           fi
 
       - name: publish cli meta
-        working-directory: apps/khora/release/cli
+        working-directory: apps/release/cli
         run: |
           if [ "$DRY_RUN" = "true" ]; then
             npm publish --access public --tag "$NPM_TAG" --dry-run
@@ -178,7 +178,7 @@ jobs:
             exit 1
           fi
           gh release create "khora-cli-v${VERSION}" \
-            apps/khora/release/tarballs/*.tar.gz \
+            apps/release/tarballs/*.tar.gz \
             --repo khoralabs/homebrew-tap \
             --title "khora-cli v${VERSION}" \
             --generate-notes
@@ -187,7 +187,7 @@ jobs:
         if: ${{ inputs.dry_run == false }}
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: bun run scripts/bump-homebrew-khora-formula.ts "$VERSION"
+        run: bun run scripts/bump-homebrew-formula.ts cli "$VERSION"
 
       - name: commit homebrew formula
         if: ${{ inputs.dry_run == false }}

@@ -71,22 +71,21 @@ jobs:
       # ── khora-cli ──────────────────────────────────────────────────────────
       - name: typecheck khora-cli
         run: |
-          bun run --cwd apps/khora/cli typecheck
-          bun run --cwd apps/khora/daemon typecheck
+          bun run --cwd apps/cli typecheck
+          bun run --cwd apps/daemon typecheck
 
       - name: test khora-cli
         run: |
           bun test \
-            apps/khora/cli \
-            apps/khora/daemon \
-            apps/khora/plugins/inbox-buffer \
+            apps/cli \
+            apps/daemon \
             scripts/stage-khora-release.test.ts \
-            scripts/homebrew-khora.test.ts
+            scripts/homebrew-formula.test.ts
 
       - name: build khora-cli linux-x64 smoke
         run: |
-          bun run apps/khora/cli/scripts/build.ts bun-linux-x64
-          bun run apps/khora/daemon/scripts/build.ts bun-linux-x64
+          bun run apps/cli/scripts/build.ts bun-linux-x64
+          bun run apps/daemon/scripts/build.ts bun-linux-x64
 
       # ── khora-server ───────────────────────────────────────────────────────
       - name: install system sqlite libs
@@ -97,8 +96,8 @@ jobs:
       - name: test khora-server packaging
         run: |
           bun test \
-            scripts/homebrew-khora-server.test.ts \
+            scripts/homebrew-formula.test.ts \
             scripts/stage-khora-server-release.test.ts
 
       - name: build khora-server linux-x64 smoke
-        run: bun run apps/khora/server/scripts/build.ts bun-linux-x64
+        run: bun run apps/server/scripts/build.ts bun-linux-x64

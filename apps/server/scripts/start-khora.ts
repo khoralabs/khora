@@ -12,7 +12,7 @@ import {
   isTruthyEnv,
   readLitestreamS3Env,
   resolveLitestreamBin,
-} from "../../../../scripts/litestream-config";
+} from "../../../scripts/litestream-config";
 import { resolveKhoraPersistencePaths, validateEnv } from "../src/env";
 import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env";
 import {

@@ -21,11 +21,9 @@
     "@khoralabs/memories-react-graph": "0.7.6"
   },
   "scripts": {
-    "test:with-sqlite": "bash scripts/test-with-homebrew-sqlite.sh",
     "clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",
     "format": "biome check --write .",
     "format:check": "biome check .",
-    "context": "bun run scripts/context.ts",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
     "submodules:init": "git submodule update --init --recursive",
     "submodules:update": "git submodule update --remote --merge vendor/chat vendor/libs && bun install",
@@ -39,13 +37,6 @@
   },
   "workspaces": [
     "apps/*",
-    "apps/khora/cli",
-    "apps/khora/daemon",
-    "apps/khora/plugins/*",
-    "apps/khora/admin",
-    "apps/khora/registry",
-    "apps/khora/server",
-    "apps/khoralabs/*/**",
     "packages/*",
     "vendor/libs/packages/*/**",
     "vendor/chat/*/**",

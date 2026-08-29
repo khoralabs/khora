@@ -1,5 +1,4 @@
 [test]
 preload = [
   "./scripts/preload-sqlite-for-tests.ts",
-  "./apps/khoralabs/homepage/src/bun-preload.ts",
 ]

@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 /**
- * Stage per-platform khora-server release directories under `apps/khora/release/server-<slug>/`.
+ * Stage per-platform khora-server release directories under `apps/release/server-<slug>/`.
  *
  * Inputs:
- *   apps/khora/server/dist/<bun-target>/khora-server
- *   apps/khora/server/.bin/litestream (host arch; cross-downloaded for other targets)
+ *   apps/server/dist/<bun-target>/khora-server
+ *   apps/server/.bin/litestream (host arch; cross-downloaded for other targets)
  *   sqlite-vec platform package vec0.*
  *
  * Layout:
@@ -92,7 +92,7 @@ export async function ensureSqliteVecLoadable(
   if (!res.ok) {
     throw new Error(`sqlite-vec download failed for ${target.slug}: ${res.status} ${url}`);
   }
-  const tmpDir = path.join(workspaceRoot, "apps/khora/release", `.sqlite-vec-${target.slug}`);
+  const tmpDir = path.join(workspaceRoot, "apps/release", `.sqlite-vec-${target.slug}`);
   mkdirSync(tmpDir, { recursive: true });
   try {
     const tarPath = path.join(tmpDir, "pkg.tgz");
@@ -123,7 +123,7 @@ async function ensureLitestreamForTarget(
     (process.arch === "x64" && target.cpu === "x64");
 
   if (hostMatches && archMatches) {
-    const local = path.join(workspaceRoot, "apps/khora/server/.bin/litestream");
+    const local = path.join(workspaceRoot, "apps/server/.bin/litestream");
     if (existsSync(local)) {
       cpSync(local, destPath);
       chmodSync(destPath, 0o755);
@@ -141,7 +141,7 @@ async function ensureLitestreamForTarget(
   if (!res.ok) {
     throw new Error(`litestream download failed for ${target.slug}: ${res.status}`);
   }
-  const tmpDir = path.join(workspaceRoot, "apps/khora/release", `.litestream-${target.slug}`);
+  const tmpDir = path.join(workspaceRoot, "apps/release", `.litestream-${target.slug}`);
   mkdirSync(tmpDir, { recursive: true });
   const tarPath = path.join(tmpDir, "litestream.tar.gz");
   await Bun.write(tarPath, await res.arrayBuffer());
@@ -193,7 +193,7 @@ Cell Bun Workers default **off** in this package (\`KHORA_COLONNADE_CELL_WORKERS
 export KHORA_LITESTREAM=1
 export LITESTREAM_S3_BUCKET=...
 export LITESTREAM_S3_KEY_PREFIX=hosts/my-host/litestream
-# see apps/khora/server/.env.example for MinIO / AWS details
+# see apps/server/.env.example for MinIO / AWS details
 ./bin/khora-server
 \`\`\`
 
@@ -221,7 +221,7 @@ export async function stageKhoraServerRelease(opts: StageServerOptions): Promise
     if (copyBinaries) {
       const src = path.join(
         workspaceRoot,
-        "apps/khora/server/dist",
+        "apps/server/dist",
         target.bunTarget,
         "khora-server",
       );
@@ -258,7 +258,7 @@ if (import.meta.main) {
     process.exit(1);
   }
   const workspaceRoot = path.resolve(import.meta.dir, "..");
-  const releaseDir = path.join(workspaceRoot, "apps/khora/release");
+  const releaseDir = path.join(workspaceRoot, "apps/release");
   mkdirSync(releaseDir, { recursive: true });
   const result = await stageKhoraServerRelease({ workspaceRoot, releaseDir, version });
   console.log(

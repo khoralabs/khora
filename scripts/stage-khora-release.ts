@@ -3,10 +3,10 @@
  * Stage the 8 npm packages that ship as one khora release.
  *
  * Inputs (in `workspaceRoot`):
- *   apps/khora/cli/dist/<bun-target>/khora
- *   apps/khora/daemon/dist/<bun-target>/khora-daemon
- *   apps/khora/cli/assets/configs/{base,cli,daemon}.config.json
- *   apps/khora/cli/assets/skills/khora-cli/
+ *   apps/cli/dist/<bun-target>/khora
+ *   apps/daemon/dist/<bun-target>/khora-daemon
+ *   apps/cli/assets/configs/{base,cli,daemon}.config.json
+ *   apps/cli/assets/skills/khora-cli/
  *   packages/khora/client/khora-config.schema.json
  *
  * Output tree: `<releaseDir>/{cli,daemon,cli-<slug>,daemon-<slug>}/...`
@@ -74,8 +74,8 @@ export function cliMetaPkgJson({
       "CLI for the Khora agent host. Register, profile, search, posts, and subscriptions. Signs requests with a local Ed25519 identity. Native binaries; no runtime required.",
     license: "MIT",
     author: "Khora Labs",
-    homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/khora/cli",
-    repository: { type: "git", url: repoUrl, directory: "apps/khora/cli" },
+    homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/cli",
+    repository: { type: "git", url: repoUrl, directory: "apps/cli" },
     keywords: ["khora", "agent", "cli", "khoralabs"],
     type: "module",
     bin: { khora: "./bin/khora.cjs" },
@@ -124,8 +124,8 @@ export function daemonMetaPkgJson({
       "Long-lived inbox WebSocket listener for Khora agents. Native binaries; no runtime required.",
     license: "MIT",
     author: "Khora Labs",
-    homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/khora/daemon",
-    repository: { type: "git", url: repoUrl, directory: "apps/khora/daemon" },
+    homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/daemon",
+    repository: { type: "git", url: repoUrl, directory: "apps/daemon" },
     keywords: ["khora", "agent", "daemon", "inbox", "khoralabs"],
     type: "module",
     bin: { "khora-daemon": "./bin/khora-daemon.cjs" },
@@ -155,7 +155,7 @@ export function platformPkgJson({
     description: `Khora ${kind} native binary for ${target.os}-${target.cpu}.`,
     license: "MIT",
     author: "Khora Labs",
-    repository: { type: "git", url: repoUrl, directory: `apps/khora/${kind}` },
+    repository: { type: "git", url: repoUrl, directory: `apps/${kind}` },
     os: [target.os],
     cpu: [target.cpu],
     files: [binName],
@@ -224,7 +224,7 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
       mkdirSync(pkgDir, { recursive: true });
       const binName = kind === "cli" ? "khora" : "khora-daemon";
       if (copyBinaries) {
-        const src = path.join(workspaceRoot, "apps/khora", kind, "dist", target.bunTarget, binName);
+        const src = path.join(workspaceRoot, "apps", kind, "dist", target.bunTarget, binName);
         if (!existsSync(src)) {
           throw new Error(`missing compiled binary: ${src}`);
         }
@@ -245,7 +245,7 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
   await Bun.write(path.join(daemonMetaDir, "bin", "khora-daemon.cjs"), daemonLauncherSource());
   await Bun.$`chmod +x ${path.join(daemonMetaDir, "bin", "khora-daemon.cjs")}`.quiet();
   await writeJson(path.join(daemonMetaDir, "package.json"), daemonMetaPkgJson({ version }));
-  const daemonReadme = path.join(workspaceRoot, "apps/khora/daemon/README.md");
+  const daemonReadme = path.join(workspaceRoot, "apps/daemon/README.md");
   if (existsSync(daemonReadme)) {
     await Bun.write(path.join(daemonMetaDir, "README.md"), Bun.file(daemonReadme));
   }
@@ -259,7 +259,7 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
   await Bun.$`chmod +x ${path.join(cliMetaDir, "bin", "khora.cjs")}`.quiet();
 
   // canonical configs
-  const configsSrc = path.join(workspaceRoot, "apps/khora/cli/assets/configs");
+  const configsSrc = path.join(workspaceRoot, "apps/cli/assets/configs");
   for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
     const srcPath = path.join(configsSrc, name);
     if (name === "base.config.json" && opts.registryUrl !== undefined) {
@@ -280,13 +280,13 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
   }
   await Bun.write(path.join(cliMetaDir, "khora-config.schema.json"), Bun.file(schemaSrc));
 
-  const skillsSrc = path.join(workspaceRoot, "apps/khora/cli/assets/skills");
+  const skillsSrc = path.join(workspaceRoot, "apps/cli/assets/skills");
   if (existsSync(skillsSrc)) {
     await Bun.$`cp -R ${skillsSrc} ${path.join(cliMetaDir, "skills")}`.quiet();
   }
 
   await writeJson(path.join(cliMetaDir, "package.json"), cliMetaPkgJson({ version }));
-  const cliReadme = path.join(workspaceRoot, "apps/khora/cli/README.md");
+  const cliReadme = path.join(workspaceRoot, "apps/cli/README.md");
   if (existsSync(cliReadme)) {
     await Bun.write(path.join(cliMetaDir, "README.md"), Bun.file(cliReadme));
   }
@@ -311,7 +311,7 @@ if (import.meta.main) {
     registryUrl = normalizeRegistryUrl(process.env.KHORA_RELEASE_REGISTRY_URL);
   }
   const workspaceRoot = path.resolve(import.meta.dir, "..");
-  const releaseDir = path.join(workspaceRoot, "apps/khora/release");
+  const releaseDir = path.join(workspaceRoot, "apps/release");
   const result = await stageKhoraRelease({ workspaceRoot, releaseDir, version, registryUrl });
   console.log(
     `staged ${result.packages.length} khora release packages under ${path.relative(process.cwd(), result.releaseDir)}`,
