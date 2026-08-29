@@ -17,7 +17,6 @@ import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap";
 import {
-  envCellPoolCount,
   envColonnadeUseCellWorkers,
   envHostDuplexIngress,
   envHostDuplexUnixPath,
@@ -45,7 +44,6 @@ export async function runHttpServer(): Promise<void> {
 
   const persistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
   const { hostDbPath, authNoncesDbPath, percolatorDbPath, cellsDir, dataDir } = persistencePaths;
-  const cellPoolCount = envCellPoolCount();
   const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(dirname(hostDbPath), { recursive: true });
@@ -64,7 +62,6 @@ export async function runHttpServer(): Promise<void> {
       authNoncesDbPath,
       percolatorDbPath,
       cellsDir,
-      cellPoolCount,
       useCellWorkers: envColonnadeUseCellWorkers(),
       encryption,
       ...(tenantKey !== undefined ? { tenantKey } : {}),

@@ -2,8 +2,12 @@ import { Database } from "bun:sqlite";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { poolShardCellId } from "@khoralabs/colonnade";
+import { dirname, join } from "node:path";
+import {
+  decodeCellId,
+  principalHomeCellId,
+  resolveEncodedDatabasePath,
+} from "@khoralabs/colonnade";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "./admin-stats-port";
 
@@ -46,7 +50,7 @@ function registerPrincipal(did: string, username?: string): void {
 }
 
 function seedOutbox(
-  shardIndex: number,
+  principalId: string,
   rows: Array<{
     recordKey: string;
     principalId: string;
@@ -54,8 +58,9 @@ function seedOutbox(
     committedAtMs: number;
   }>,
 ): void {
-  const cellId = poolShardCellId(shardIndex);
-  const path = join(cellsDir, `${cellId}.sqlite`);
+  const cellId = principalHomeCellId(principalId);
+  const path = resolveEncodedDatabasePath(cellsDir, decodeCellId(cellId));
+  mkdirSync(dirname(path), { recursive: true });
   rmSync(path, { force: true });
   const db = openEncryptedDatabaseSync(path, { create: true }, TEST_SQLCIPHER_KEY);
   db.run(`
@@ -94,11 +99,9 @@ function makePort(lookup?: (did: string) => string | undefined) {
     percolatorDb,
     cellsDir,
     tenantKey: "relay",
-    cellPoolCount: 2,
     cluster: {
-      cellPoolCount: 2,
-      assignPrincipalToCell: (did) =>
-        did === "did:key:active" ? poolShardCellId(0) : poolShardCellId(1),
+      cellPoolCount: 1,
+      assignPrincipalToCell: (did) => principalHomeCellId(did),
       resolveCell: () => {
         throw new Error("not used");
       },
@@ -127,7 +130,7 @@ describe("admin network activity", () => {
     registerPrincipal("did:key:active", "active");
     registerPrincipal("did:key:quiet", "quiet");
 
-    seedOutbox(0, [
+    seedOutbox("did:key:active", [
       {
         recordKey: "probe-1",
         principalId: "did:key:active",
@@ -147,7 +150,7 @@ describe("admin network activity", () => {
         committedAtMs: now - 60_000,
       },
     ]);
-    seedOutbox(1, [
+    seedOutbox("did:key:quiet", [
       {
         recordKey: "post-old",
         principalId: "did:key:quiet",
@@ -172,7 +175,7 @@ describe("admin network activity", () => {
     registerPrincipal("did:key:active", "active");
     registerPrincipal("did:key:quiet", "quiet");
 
-    seedOutbox(0, [
+    seedOutbox("did:key:active", [
       {
         recordKey: "status-recent",
         principalId: "did:key:active",
@@ -180,7 +183,7 @@ describe("admin network activity", () => {
         committedAtMs: now - 60_000,
       },
     ]);
-    seedOutbox(1, [
+    seedOutbox("did:key:quiet", [
       {
         recordKey: "post-old",
         principalId: "did:key:quiet",

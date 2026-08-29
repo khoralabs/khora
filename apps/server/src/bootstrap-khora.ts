@@ -61,7 +61,6 @@ export type BootstrapKhoraHostOpts = {
   /** Percolator standing_queries (separate from host meta). */
   percolatorDbPath: string;
   cellsDir: string;
-  cellPoolCount: number;
   useCellWorkers: boolean;
   tenantKey?: string;
   memories?: KhoraMemoriesBootstrapConfig;
@@ -93,7 +92,6 @@ export async function bootstrapKhoraHost(
     ensureCustomSqliteForExtensions();
   }
 
-  const cellPoolCount = opts.cellPoolCount;
   const useCellWorkers = opts.useCellWorkers;
   const encryption = opts.encryption;
   const encryptionProvider = new EnvKeyProvider();
@@ -109,7 +107,6 @@ export async function bootstrapKhoraHost(
   const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
-    mode: { kind: "pool", cellCount: cellPoolCount },
     useCellWorkers,
     encryption: {
       sqlCipherKey: encryption.sqlCipherKey,
@@ -117,7 +114,11 @@ export async function bootstrapKhoraHost(
       outboxKeyHex: outboxKeyBytesToHex(outboxKey),
     },
   });
-  const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
+  const cellPoolCount = cluster.cellPoolCount;
+  const publicationClient = new ColonnadePublicationClient(
+    cluster.resolveCell,
+    cluster.inboxDelivery,
+  );
   const postResolver = createColonnadePostResolver(cluster);
   const percolator = bootstrapHostSubscriptions({
     persistence: createPercolatorSqlitePersistence(percolatorDb),
@@ -151,7 +152,6 @@ export async function bootstrapKhoraHost(
     percolatorDb,
     cellsDir: opts.cellsDir,
     tenantKey,
-    cellPoolCount,
     cluster,
     lookupNormalizedUsernameForPrincipal: registration.lookupNormalizedUsernameForPrincipal,
     sqlCipherKey: encryption.sqlCipherKey,

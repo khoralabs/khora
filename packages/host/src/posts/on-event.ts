@@ -75,7 +75,7 @@ async function publishPost(params: {
   if (address === undefined) {
     throw new Error("publishPost: post.id is not a valid address-encoded id");
   }
-  if (cluster.cellPoolCount !== undefined && address.cellPoolCount !== cluster.cellPoolCount) {
+  if (address.cellPoolCount !== cluster.cellPoolCount) {
     throw new Error("publishPost: post id cell pool count does not match cluster");
   }
 
@@ -317,12 +317,8 @@ export function assignPostAddress(params: {
   cluster: KhoraColonnadeCluster;
   authorPrincipalId: string;
 }): { recordKey: string; cellPoolCount: number } {
-  const cellPoolCount = params.cluster.cellPoolCount;
-  if (cellPoolCount === undefined) {
-    throw new Error("assignPostAddress requires a pool-mode Colonnade cluster");
-  }
   const recordKey = randomId("ob");
-  return { recordKey, cellPoolCount };
+  return { recordKey, cellPoolCount: params.cluster.cellPoolCount };
 }
 
 export { encodePostId } from "../lib/post-address-id";

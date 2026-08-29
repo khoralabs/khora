@@ -2,8 +2,12 @@ import { Database } from "bun:sqlite";
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { poolShardCellId } from "@khoralabs/colonnade";
+import { dirname, join } from "node:path";
+import {
+  decodeCellId,
+  principalHomeCellId,
+  resolveEncodedDatabasePath,
+} from "@khoralabs/colonnade";
 import { createRootTokenAdminAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import {
@@ -73,14 +77,15 @@ function seedCatalog(): void {
     .run("sub-1", "did:key:alice", Date.now(), Date.now());
 }
 
-function seedCellShard(
-  shardIndex: number,
+function seedCellForPrincipal(
+  principalId: string,
   outboxRows: number,
   inboxRows: number,
   committedAtMs = Date.now(),
 ): void {
-  const cellId = poolShardCellId(shardIndex);
-  const path = join(cellsDir, `${cellId}.sqlite`);
+  const cellId = principalHomeCellId(principalId);
+  const path = resolveEncodedDatabasePath(cellsDir, decodeCellId(cellId));
+  mkdirSync(dirname(path), { recursive: true });
   rmSync(path, { force: true });
   const db = openEncryptedDatabaseSync(path, { create: true }, TEST_SQLCIPHER_KEY);
   db.run(`
@@ -108,8 +113,8 @@ function seedCellShard(
   );
   for (let i = 0; i < outboxRows; i++) {
     insertOutbox.run(
-      `out-${shardIndex}-${i}`,
-      i % 2 === 0 ? "did:key:alice" : "did:key:bob",
+      `out-${principalId}-${i}`,
+      i % 2 === 0 ? principalId : "did:key:bob",
       "relay",
       new Uint8Array([1]),
       "{}",
@@ -123,9 +128,9 @@ function seedCellShard(
   );
   for (let i = 0; i < inboxRows; i++) {
     insertInbox.run(
-      `in-${shardIndex}-${i}`,
+      `in-${principalId}-${i}`,
       "relay",
-      "did:key:alice",
+      principalId,
       new Uint8Array([1]),
       Date.now(),
       "corr",
@@ -139,9 +144,8 @@ function deps(
   overrides?: Partial<KhoraHostContext>,
 ): HostRouteDeps {
   const cluster = {
-    cellPoolCount: 2 as number | undefined,
-    assignPrincipalToCell: (principalId: string) =>
-      principalId === "did:key:alice" ? poolShardCellId(0) : poolShardCellId(1),
+    cellPoolCount: 1,
+    assignPrincipalToCell: (principalId: string) => principalHomeCellId(principalId),
     resolveCell: () => {
       throw new Error("resolveCell not used in admin stats tests");
     },
@@ -155,7 +159,6 @@ function deps(
     percolatorDb,
     cellsDir,
     tenantKey: "relay",
-    cellPoolCount: 2,
     cluster,
     lookupNormalizedUsernameForPrincipal,
     sqlCipherKey: TEST_SQLCIPHER_KEY,
@@ -163,7 +166,7 @@ function deps(
   return {
     ctx: {
       tenantKey: "relay",
-      cellPoolCount: 2,
+      cellPoolCount: 1,
       cluster,
       adminStats,
       health: { ping() {} },
@@ -225,8 +228,7 @@ describe("admin stats", () => {
 
   test("summary includes catalog and cell aggregates", async () => {
     seedCatalog();
-    seedCellShard(0, 2, 1);
-    seedCellShard(1, 0, 0);
+    seedCellForPrincipal("did:key:alice", 2, 1);
 
     const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
@@ -259,22 +261,15 @@ describe("admin stats", () => {
       expect(body.catalog.projectionRows).toBe(2);
       expect(body.catalog.standingQueries).toBe(1);
       expect(body.catalog.registeredUsers).toBe(1);
-      expect(body.cells.poolCount).toBe(2);
+      expect(body.cells.poolCount).toBe(1);
       expect(body.cells.inUseCount).toBe(1);
-      expect(body.cells.shards).toHaveLength(2);
+      expect(body.cells.shards).toHaveLength(1);
       expect(body.cells.shards[0]).toMatchObject({
-        cellId: poolShardCellId(0),
+        cellId: principalHomeCellId("did:key:alice"),
         provisioned: true,
         outboxCount: 2,
         inboxCount: 1,
         homePrincipals: 1,
-      });
-      expect(body.cells.shards[1]).toMatchObject({
-        cellId: poolShardCellId(1),
-        provisioned: true,
-        outboxCount: 0,
-        inboxCount: 0,
-        homePrincipals: 0,
       });
       expect(body.networkActivity).toBeDefined();
       expect(body.networkActivity.heartbeat.registeredAgents).toBe(1);
@@ -284,7 +279,7 @@ describe("admin stats", () => {
   test("inactive-members returns registered stale principals", async () => {
     seedCatalog();
     const staleMs = Date.now() - 10 * 24 * 60 * 60 * 1000;
-    seedCellShard(0, 1, 0, staleMs);
+    seedCellForPrincipal("did:key:alice", 1, 0, staleMs);
 
     const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
@@ -303,7 +298,9 @@ describe("admin stats", () => {
 
   test("cell returns 401 without session", async () => {
     const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
-    const url = new URL(`http://x/admin/api/stats/cell?cellId=${poolShardCellId(0)}`);
+    const url = new URL(
+      `http://x/admin/api/stats/cell?cellId=${principalHomeCellId("did:key:alice")}`,
+    );
     const res = await handleAdminStatsCell(new Request(url), url, deps(auth));
     expect(res.status).toBe(401);
   });
@@ -334,12 +331,12 @@ describe("admin stats", () => {
 
   test("cell returns detail for a provisioned shard", async () => {
     seedCatalog();
-    seedCellShard(0, 3, 2);
+    seedCellForPrincipal("did:key:alice", 3, 2);
 
     const auth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
     const cookie = await loginCookie(auth);
     await withCellsDir(async () => {
-      const cellId = poolShardCellId(0);
+      const cellId = principalHomeCellId("did:key:alice");
       const url = new URL(`http://x/admin/api/stats/cell?cellId=${cellId}`);
       const res = await handleAdminStatsCell(
         new Request(url, { headers: { cookie } }),

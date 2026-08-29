@@ -133,7 +133,6 @@ describe("executeHostSearch", () => {
     const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/khora-search-orphan-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
       encryption: {
         sqlCipherKey: encryption.sqlCipherKey,

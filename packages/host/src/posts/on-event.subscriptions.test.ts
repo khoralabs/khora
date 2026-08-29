@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, mock, test } from "bun:test";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
+import { principalHomeCellId } from "@khoralabs/colonnade";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
 import {
   authorSubscriptionSearch,
@@ -18,16 +19,14 @@ import type { SocialRelationshipPersistence } from "../persistence/core/port";
 import type { KhoraColonnadeCluster } from "../ports";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 
-function stubCluster(cellPoolCount = 2): KhoraColonnadeCluster {
+function stubCluster(cellPoolCount = 1): KhoraColonnadeCluster {
   return {
     cellPoolCount,
     resolveCell() {
       throw new Error("stubCluster: resolveCell not used in percolator tests");
     },
     assignPrincipalToCell(principalId: string) {
-      let h = 0;
-      for (let i = 0; i < principalId.length; i++) h = (h * 31 + principalId.charCodeAt(i)) >>> 0;
-      return `cell-${h % cellPoolCount}`;
+      return principalHomeCellId(principalId);
     },
     close() {},
   };

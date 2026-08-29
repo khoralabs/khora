@@ -3,11 +3,12 @@
  * See packages/khora/host/id-conventions.md
  */
 
-import { derivePoolHomeCell } from "@khoralabs/colonnade";
+import { principalHomeCellId } from "@khoralabs/colonnade";
 
 export type PostAddressInput = {
   readonly authorPrincipalId: string;
   readonly recordKey: string;
+  /** Topology pin for pointer wire format (always `1` under placement isolation). */
   readonly cellPoolCount: number;
 };
 
@@ -26,6 +27,7 @@ export function encodePostId(address: PostAddressInput): string {
   return PREFIX + Buffer.from(payload, "utf8").toString("base64url");
 }
 
+/** Decode post id; author home is always the encoded `{ kind, ownerKey }` principal cell. */
 export function decodePostId(id: string): DecodedPostAddress | undefined {
   if (!id.startsWith(PREFIX)) {
     return undefined;
@@ -43,7 +45,7 @@ export function decodePostId(id: string): DecodedPostAddress | undefined {
       authorPrincipalId: o.p,
       recordKey: o.r,
       cellPoolCount: o.n,
-      authorCellId: derivePoolHomeCell(o.p, o.n),
+      authorCellId: principalHomeCellId(o.p),
     };
   } catch {
     return undefined;

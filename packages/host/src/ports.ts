@@ -108,7 +108,8 @@ export type KhoraAdminPrincipalDetailResult =
   | { error: "not_registered" };
 
 export type KhoraColonnadeCluster = {
-  readonly cellPoolCount: number | undefined;
+  /** Topology pin for pointer `cell_pool_count` (always `1` under placement isolation). */
+  readonly cellPoolCount: number;
   resolveCell(cellId: string): CellPersistence;
   assignPrincipalToCell(principalId: string): string;
   close(): void;

@@ -123,7 +123,6 @@ describe("khora memories indexer", () => {
     const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/khora-mem-test-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
       encryption: {
         sqlCipherKey: encryption.sqlCipherKey,
@@ -151,7 +150,7 @@ describe("khora memories indexer", () => {
       id: encodePostId({
         authorPrincipalId,
         recordKey,
-        cellPoolCount: 2,
+        cellPoolCount: 1,
       }),
       authorProfileId: profile.id,
       kind: "post",
@@ -221,7 +220,6 @@ describe("khora memories indexer", () => {
     const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/khora-mem-delete-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
       encryption: {
         sqlCipherKey: encryption.sqlCipherKey,
@@ -248,7 +246,7 @@ describe("khora memories indexer", () => {
       id: encodePostId({
         authorPrincipalId,
         recordKey,
-        cellPoolCount: 2,
+        cellPoolCount: 1,
       }),
       authorProfileId: profile.id,
       kind: "post",
@@ -298,7 +296,6 @@ describe("khora memories indexer", () => {
     const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/khora-mem-probe-${crypto.randomUUID()}`,
-      mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
       encryption: {
         sqlCipherKey: encryption.sqlCipherKey,
@@ -326,7 +323,7 @@ describe("khora memories indexer", () => {
       id: encodePostId({
         authorPrincipalId,
         recordKey,
-        cellPoolCount: 2,
+        cellPoolCount: 1,
       }),
       authorProfileId: profile.id,
       kind: "subscription",

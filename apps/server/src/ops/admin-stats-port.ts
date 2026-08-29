@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { poolShardCellId } from "@khoralabs/colonnade";
+import { decodeCellId, resolveEncodedDatabasePath } from "@khoralabs/colonnade";
 import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade/crypto";
 import type {
   KhoraAdminCellDetailResult,
@@ -28,12 +28,12 @@ type PrincipalActivity = {
   lastStatusAtMs: number | null;
 };
 
-function cellDbFilenameStem(cellId: string): string {
-  return cellId.replace(/[^a-zA-Z0-9._-]+/g, "_");
-}
-
 function cellDbPath(cellsDir: string, cellId: string): string {
-  return join(cellsDir, `${cellDbFilenameStem(cellId)}.sqlite`);
+  try {
+    return resolveEncodedDatabasePath(cellsDir, decodeCellId(cellId));
+  } catch {
+    return join(cellsDir, `${cellId.replace(/[^a-zA-Z0-9._-]+/g, "_")}.sqlite`);
+  }
 }
 
 function tableExists(db: Database, name: string): boolean {
@@ -128,11 +128,24 @@ function homePrincipalCountsByCell(
   return counts;
 }
 
-function isValidPoolCellId(cellId: string, poolCount: number): boolean {
-  const match = /^colonnade-shard-(\d+)$/.exec(cellId);
-  if (match === null) return false;
-  const index = Number.parseInt(match[1] ?? "", 10);
-  return Number.isInteger(index) && index >= 0 && index < poolCount;
+function isValidPlacementCellId(cellId: string): boolean {
+  try {
+    decodeCellId(cellId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function uniqueHomeCells(
+  cluster: KhoraColonnadeCluster,
+  principalIds: readonly string[],
+): string[] {
+  const ids = new Set<string>();
+  for (const principalId of principalIds) {
+    ids.add(cluster.assignPrincipalToCell(principalId));
+  }
+  return [...ids];
 }
 
 function mergePrincipalActivity(
@@ -166,11 +179,10 @@ function scanOutboxActivity(
   cellsDir: string,
   tenantKey: string,
   sqlCipherKey: string | undefined,
-  cellPoolCount: number,
+  cellIds: readonly string[],
 ): Map<string, PrincipalActivity> {
   const activity = new Map<string, PrincipalActivity>();
-  for (let i = 0; i < cellPoolCount; i++) {
-    const cellId = poolShardCellId(i);
+  for (const cellId of cellIds) {
     const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
     if (db === undefined) continue;
     try {
@@ -203,12 +215,11 @@ function countSubscriptionsSince(
   cellsDir: string,
   tenantKey: string,
   sqlCipherKey: string | undefined,
-  cellPoolCount: number,
+  cellIds: readonly string[],
   sinceMs: number,
 ): number {
   let total = 0;
-  for (let i = 0; i < cellPoolCount; i++) {
-    const cellId = poolShardCellId(i);
+  for (const cellId of cellIds) {
     const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
     if (db === undefined) continue;
     try {
@@ -320,7 +331,6 @@ export function createKhoraAdminStatsPort(deps: {
   percolatorDb: Database;
   cellsDir: string;
   tenantKey: string;
-  cellPoolCount: number;
   cluster: KhoraColonnadeCluster;
   lookupNormalizedUsernameForPrincipal: (principalId: string) => string | undefined;
   sqlCipherKey?: string;
@@ -330,7 +340,6 @@ export function createKhoraAdminStatsPort(deps: {
     percolatorDb,
     cellsDir,
     tenantKey,
-    cellPoolCount,
     cluster,
     lookupNormalizedUsernameForPrincipal,
     sqlCipherKey,
@@ -393,12 +402,10 @@ export function createKhoraAdminStatsPort(deps: {
   }
 
   function buildCellShardsSummary(): KhoraAdminStatsSummary["cells"] {
-    const homeCounts = homePrincipalCountsByCell(
-      cluster,
-      listRegisteredPrincipalIds(hostDb, tenantKey),
-    );
-    const shards = Array.from({ length: cellPoolCount }, (_, i) => {
-      const cellId = poolShardCellId(i);
+    const principalIds = listRegisteredPrincipalIds(hostDb, tenantKey);
+    const homeCounts = homePrincipalCountsByCell(cluster, principalIds);
+    const cellIds = uniqueHomeCells(cluster, principalIds);
+    const shards = cellIds.map((cellId) => {
       const counts = cellTableCounts(cellsDir, cellId, tenantKey, sqlCipherKey);
       return {
         cellId,
@@ -409,7 +416,7 @@ export function createKhoraAdminStatsPort(deps: {
     const inUseCount = shards.filter(
       (s) => s.provisioned && (s.outboxCount > 0 || s.inboxCount > 0),
     ).length;
-    return { poolCount: cellPoolCount, inUseCount, shards };
+    return { poolCount: cellIds.length, inUseCount, shards };
   }
 
   return {
@@ -420,9 +427,10 @@ export function createKhoraAdminStatsPort(deps: {
     summary(): KhoraAdminStatsSummary {
       const registeredUsers = registeredUsersCount();
       const principalIds = listRegisteredPrincipalIds(hostDb, tenantKey);
+      const cellIds = uniqueHomeCells(cluster, principalIds);
       const nowMs = Date.now();
       const weekStart = nowMs - WEEK_MS;
-      const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellPoolCount);
+      const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellIds);
       return {
         registeredUsers,
         invites: inviteStats(),
@@ -433,14 +441,14 @@ export function createKhoraAdminStatsPort(deps: {
           registeredUsers,
           principalIds,
           activity,
-          countSubscriptionsSince(cellsDir, tenantKey, sqlCipherKey, cellPoolCount, weekStart),
+          countSubscriptionsSince(cellsDir, tenantKey, sqlCipherKey, cellIds, weekStart),
           nowMs,
         ),
       };
     },
 
     cellDetail(cellId: string): KhoraAdminCellDetailResult {
-      if (!isValidPoolCellId(cellId, cellPoolCount)) {
+      if (!isValidPlacementCellId(cellId)) {
         return { error: "invalid_cell" };
       }
       const path = cellDbPath(cellsDir, cellId);
@@ -564,7 +572,12 @@ export function createKhoraAdminStatsPort(deps: {
       const inactiveDays = clampInactiveDays(opts?.inactiveDays);
       const asOfMs = Date.now();
       const principalIds = listRegisteredPrincipalIds(hostDb, tenantKey);
-      const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellPoolCount);
+      const activity = scanOutboxActivity(
+        cellsDir,
+        tenantKey,
+        sqlCipherKey,
+        uniqueHomeCells(cluster, listRegisteredPrincipalIds(hostDb, tenantKey)),
+      );
       return buildInactiveMembers(
         principalIds,
         activity,

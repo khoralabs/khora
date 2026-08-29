@@ -44,7 +44,6 @@ export type CreateTestKhoraHostOpts = {
 export async function createTestKhoraHost(
   opts: CreateTestKhoraHostOpts,
 ): Promise<KhoraHostContext> {
-  const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? false;
   const encryption = createTestEncryptionMaterial();
   const dataDir = path.dirname(opts.hostDbPath);
@@ -71,7 +70,6 @@ export async function createTestKhoraHost(
   const tenantKey = opts.tenantKey ?? "khora";
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
-    mode: { kind: "pool", cellCount: cellPoolCount },
     useCellWorkers,
     encryption: {
       sqlCipherKey: encryption.sqlCipherKey,
@@ -79,7 +77,11 @@ export async function createTestKhoraHost(
       outboxKeyHex: encryption.outboxKeyHex,
     },
   });
-  const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
+  const cellPoolCount = cluster.cellPoolCount;
+  const publicationClient = new ColonnadePublicationClient(
+    cluster.resolveCell,
+    cluster.inboxDelivery,
+  );
   const percolator = bootstrapHostSubscriptions({
     persistence: createPercolatorSqlitePersistence(percolatorDb),
   });

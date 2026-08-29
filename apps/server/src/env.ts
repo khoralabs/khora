@@ -74,13 +74,6 @@ export function envCellsDir(): string {
 
 export { type KhoraPersistencePaths, resolveKhoraPersistencePaths };
 
-export function envCellPoolCount(): number {
-  const raw = process.env.KHORA_CELL_POOL_COUNT?.trim();
-  if (raw === undefined || raw.length === 0) return 16;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 16;
-}
-
 export function envColonnadeUseCellWorkers(): boolean {
   const v = process.env.KHORA_COLONNADE_CELL_WORKERS?.trim().toLowerCase();
   if (v === undefined || v === "") return true;

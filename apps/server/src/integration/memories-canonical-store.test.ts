@@ -116,7 +116,6 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
   const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: `/tmp/khora-canonical-${crypto.randomUUID()}`,
-    mode: { kind: "pool", cellCount: 2 },
     useCellWorkers: false,
     encryption: {
       sqlCipherKey: encryption.sqlCipherKey,
@@ -166,7 +165,7 @@ describe("HostSearchCanonicalStore", () => {
       id: encodePostId({
         authorPrincipalId: "did:test:author",
         recordKey,
-        cellPoolCount: 2,
+        cellPoolCount: 1,
       }),
       authorProfileId: profile.id,
       kind: "post",
@@ -229,7 +228,7 @@ describe("HostSearchCanonicalStore", () => {
       id: encodePostId({
         authorPrincipalId: "did:test:author",
         recordKey,
-        cellPoolCount: 2,
+        cellPoolCount: 1,
       }),
       authorProfileId: profile.id,
       kind: "subscription",
