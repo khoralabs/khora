@@ -26,8 +26,7 @@
     "format:check": "biome check .",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
     "submodules:init": "git submodule update --init --recursive",
-    "submodules:update": "git submodule update --remote --merge vendor/chat vendor/libs && bun install",
-    "submodules:update:chat": "git submodule update --remote --merge vendor/chat && bun install",
+    "submodules:update": "git submodule update --remote --merge vendor/libs && bun install",
     "submodules:update:libs": "git submodule update --remote --merge vendor/libs && bun install",
     "prepare": "husky"
   },
