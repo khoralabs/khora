@@ -12,7 +12,7 @@ import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
-describe("host admin config", () => {
+describe("host ops config", () => {
   let hostDb: Database;
   let hostSpec: ReturnType<typeof createKhoraHostSpecPort>;
   const adminTokenAuth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
@@ -50,24 +50,14 @@ describe("host admin config", () => {
     };
   }
 
-  async function loginCookie(): Promise<string> {
-    const loginRes = await adminTokenAuth.route?.(
-      new Request("http://x/admin/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: ROOT_TOKEN }),
-      }),
-      new URL("http://x/admin/api/login"),
-    );
-    const setCookie = loginRes?.headers.get("set-cookie") ?? "";
-    return setCookie.split(";")[0] ?? "";
+  function bearerHeaders(extra?: HeadersInit): HeadersInit {
+    return { Authorization: `Bearer ${ROOT_TOKEN}`, ...extra };
   }
 
   test("GET returns current count and limit", async () => {
     hostSpec.patch({ populationLimit: 10 });
-    const cookie = await loginCookie();
     const res = await handleAdminHostConfigGet(
-      new Request("http://x/admin/api/host/config", { headers: { cookie } }),
+      new Request("http://x/v1/ops/host/config", { headers: bearerHeaders() }),
       routeDeps(),
     );
     expect(res.status).toBe(200);
@@ -80,11 +70,10 @@ describe("host admin config", () => {
   });
 
   test("PATCH sets and clears population limit", async () => {
-    const cookie = await loginCookie();
     const setRes = await handleAdminHostConfigPatch(
-      new Request("http://x/admin/api/host/config", {
+      new Request("http://x/v1/ops/host/config", {
         method: "PATCH",
-        headers: { cookie, "Content-Type": "application/json" },
+        headers: bearerHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ populationLimit: 25 }),
       }),
       routeDeps(),
@@ -93,9 +82,9 @@ describe("host admin config", () => {
     expect(hostSpec.read()?.populationLimit).toBe(25);
 
     const clearRes = await handleAdminHostConfigPatch(
-      new Request("http://x/admin/api/host/config", {
+      new Request("http://x/v1/ops/host/config", {
         method: "PATCH",
-        headers: { cookie, "Content-Type": "application/json" },
+        headers: bearerHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ populationLimit: null }),
       }),
       routeDeps(),

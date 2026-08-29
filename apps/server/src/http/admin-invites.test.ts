@@ -8,7 +8,7 @@ import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-host/sqlite";
 const ROOT_TOKEN = "test-root-token-16chars";
 const INVITE_PEPPER = "test-invite-pepper-32chars-xxxx";
 
-describe("admin invites mint", () => {
+describe("ops invites mint", () => {
   let db: Database;
   const adminTokenAuth = createRootTokenAdminAuth({ rootToken: ROOT_TOKEN });
 
@@ -30,9 +30,9 @@ describe("admin invites mint", () => {
     };
   }
 
-  test("POST /admin/api/invites/mint with Bearer returns tokens", async () => {
+  test("POST /v1/ops/invites/mint with Bearer returns tokens", async () => {
     const res = await handleAdminInvitesMint(
-      new Request("http://x/admin/api/invites/mint", {
+      new Request("http://x/v1/ops/invites/mint", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${ROOT_TOKEN}`,
@@ -50,9 +50,9 @@ describe("admin invites mint", () => {
     expect(body.tokens[0]?.length).toBeGreaterThan(0);
   });
 
-  test("POST /admin/api/invites/mint rejects missing auth", async () => {
+  test("POST /v1/ops/invites/mint rejects missing auth", async () => {
     const res = await handleAdminInvitesMint(
-      new Request("http://x/admin/api/invites/mint", {
+      new Request("http://x/v1/ops/invites/mint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ count: 1 }),

@@ -4,20 +4,13 @@ import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { maybeRegistryOptInOnStartup } from "../registry-opt-in";
 import { handleInboxWsUpgrade } from "../ws/inbox";
-import { handleAdminAgentsRoute } from "./admin-agents";
-import { handleAdminInvitesList, handleAdminInvitesMint } from "./admin-invites";
-import {
-  handleAdminStatsCell,
-  handleAdminStatsInactiveMembers,
-  handleAdminStatsPrincipal,
-  handleAdminStatsSummary,
-} from "./admin-stats";
-import { routeAdminTokenAuth } from "./admin-token-guard";
 import { handleListAuthorSubscriptions } from "./authors";
 import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";
-import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./host-admin";
 import { handleInvitePreview, handleListInvites } from "./invites";
+import { handleAdminAgentsRoute } from "./ops-agents";
+import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./ops-host-config";
+import { handleAdminInvitesList, handleAdminInvitesMint } from "./ops-invites";
 import {
   handleAgentStatus,
   handleCreatePost,
@@ -37,21 +30,13 @@ import {
   handleAdminRegistryQuotaRequestDelete,
   handleAdminRegistryQuotaRequestPost,
   handleAdminRegistryRegisterPost,
-} from "./registry-admin";
+} from "./registry-ops";
 import { jsonError, rateLimitedResponse } from "./responses";
 import { handleSearchGet, handleSearchPost } from "./search";
 import { handleUnregister } from "./unregister";
 import { handleWellKnownKhora } from "./well-known-khora";
 
-export type AdminMemoriesRoute = (
-  req: Request,
-  url: URL,
-  deps: HostRouteDeps,
-) => Promise<Response | undefined>;
-
 export type CreateHostRouterOptions = {
-  /** App-provided; when omitted, /admin/api/memories returns 404. */
-  adminMemoriesRoute?: AdminMemoriesRoute;
   /**
    * When set, runs env-gated registry opt-in once at router creation
    * ({@link maybeRegistryOptInOnStartup}).
@@ -99,94 +84,65 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
       return jsonError("Not found", 404);
     }
 
-    const consoleRoute = await routeAdminTokenAuth(req, url, deps.adminTokenAuth);
-    if (consoleRoute !== undefined) return consoleRoute;
-
-    if (req.method === "GET" && url.pathname === "/admin/api/stats/summary") {
-      return handleAdminStatsSummary(req, deps);
-    }
-
-    if (req.method === "GET" && url.pathname === "/admin/api/stats/principal") {
-      return handleAdminStatsPrincipal(req, url, deps);
-    }
-
-    if (req.method === "GET" && url.pathname === "/admin/api/stats/cell") {
-      return handleAdminStatsCell(req, url, deps);
-    }
-
-    if (req.method === "GET" && url.pathname === "/admin/api/stats/inactive-members") {
-      return handleAdminStatsInactiveMembers(req, url, deps);
-    }
-
-    if (req.method === "GET" && url.pathname === "/admin/api/registry") {
+    if (req.method === "GET" && url.pathname === "/v1/host/registry") {
       return handleAdminRegistryGet(req, deps);
     }
 
-    if (req.method === "PUT" && url.pathname === "/admin/api/registry/config") {
+    if (req.method === "PUT" && url.pathname === "/v1/host/registry/config") {
       return handleAdminRegistryConfigPut(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/admin/api/registry/register") {
+    if (req.method === "POST" && url.pathname === "/v1/host/registry/register") {
       return handleAdminRegistryRegisterPost(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/admin/api/registry/claim") {
+    if (req.method === "POST" && url.pathname === "/v1/host/registry/claim") {
       return handleAdminRegistryClaimPost(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/admin/api/registry/origin-requests") {
+    if (req.method === "POST" && url.pathname === "/v1/host/registry/origin-requests") {
       return handleAdminRegistryOriginRequestPost(req, deps);
     }
 
-    if (
-      req.method === "DELETE" &&
-      url.pathname.startsWith("/admin/api/registry/origin-requests/")
-    ) {
-      const requestId = url.pathname.slice("/admin/api/registry/origin-requests/".length);
+    if (req.method === "DELETE" && url.pathname.startsWith("/v1/host/registry/origin-requests/")) {
+      const requestId = url.pathname.slice("/v1/host/registry/origin-requests/".length);
       if (requestId.length > 0) {
         return handleAdminRegistryOriginRequestDelete(req, deps, requestId);
       }
     }
 
-    if (req.method === "POST" && url.pathname === "/admin/api/registry/quota-requests") {
+    if (req.method === "POST" && url.pathname === "/v1/host/registry/quota-requests") {
       return handleAdminRegistryQuotaRequestPost(req, deps);
     }
 
-    if (req.method === "DELETE" && url.pathname.startsWith("/admin/api/registry/quota-requests/")) {
-      const requestId = url.pathname.slice("/admin/api/registry/quota-requests/".length);
+    if (req.method === "DELETE" && url.pathname.startsWith("/v1/host/registry/quota-requests/")) {
+      const requestId = url.pathname.slice("/v1/host/registry/quota-requests/".length);
       if (requestId.length > 0) {
         return handleAdminRegistryQuotaRequestDelete(req, deps, requestId);
       }
     }
 
-    if (req.method === "DELETE" && url.pathname === "/admin/api/registry/origins") {
+    if (req.method === "DELETE" && url.pathname === "/v1/host/registry/origins") {
       return handleAdminRegistryOriginDelete(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/admin/api/invites/mint") {
+    if (req.method === "POST" && url.pathname === "/v1/ops/invites/mint") {
       return handleAdminInvitesMint(req, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/admin/api/invites") {
+    if (req.method === "GET" && url.pathname === "/v1/ops/invites") {
       return handleAdminInvitesList(req, url, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/admin/api/host/config") {
+    if (req.method === "GET" && url.pathname === "/v1/ops/host/config") {
       return handleAdminHostConfigGet(req, deps);
     }
 
-    if (req.method === "PATCH" && url.pathname === "/admin/api/host/config") {
+    if (req.method === "PATCH" && url.pathname === "/v1/ops/host/config") {
       return handleAdminHostConfigPatch(req, deps);
     }
 
-    if (url.pathname.startsWith("/admin/api/memories")) {
-      if (opts.adminMemoriesRoute !== undefined) {
-        return opts.adminMemoriesRoute(req, url, deps);
-      }
-      return jsonError("Not found", 404);
-    }
-
-    if (url.pathname.startsWith("/admin/api/agents/")) {
+    if (url.pathname.startsWith("/v1/ops/agents/")) {
       return handleAdminAgentsRoute(req, url, deps);
     }
 
@@ -279,6 +235,6 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
 
 const defaultRouter = createHostRouter();
 
-/** Default router with no admin-memories handler (404). Prefer {@link createHostRouter}. */
+/** Default router. Prefer {@link createHostRouter}. */
 export const route = defaultRouter.route;
 export const routeUnary = defaultRouter.routeUnary;

@@ -1,4 +1,3 @@
-import type { AdminTokenAuth } from "@khoralabs/khora-auth";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
@@ -15,13 +14,4 @@ export async function withAdminTokenAuth(
     return jsonError("Unauthorized", 401);
   }
   return handler();
-}
-
-export async function routeAdminTokenAuth(
-  req: Request,
-  url: URL,
-  adminTokenAuth: AdminTokenAuth | null,
-): Promise<Response | undefined> {
-  if (adminTokenAuth?.route === undefined) return undefined;
-  return adminTokenAuth.route(req, url);
 }

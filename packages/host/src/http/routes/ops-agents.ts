@@ -5,8 +5,8 @@ import { jsonError } from "./responses";
 function parseDidFromPath(
   pathname: string,
 ): { did: string; action: string | undefined } | undefined {
-  if (!pathname.startsWith("/admin/api/agents/")) return undefined;
-  const suffix = pathname.slice("/admin/api/agents/".length);
+  if (!pathname.startsWith("/v1/ops/agents/")) return undefined;
+  const suffix = pathname.slice("/v1/ops/agents/".length);
   const parts = suffix.split("/").filter((part) => part.length > 0);
   const rawDid = parts[0];
   if (rawDid === undefined || rawDid.length === 0) return undefined;
