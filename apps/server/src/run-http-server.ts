@@ -10,6 +10,7 @@ import {
   createInboxDrainWebSocketHandlersForDeps,
   createV2HostRateLimiters,
   type HostRouteDeps,
+  runWithRequestPeerIp,
   startDuplexUnixIngress,
   startStdioUnaryIngress,
 } from "@khoralabs/khora-host/http";
@@ -26,7 +27,6 @@ import {
   resolveKhoraPersistencePaths,
   validateEnv,
 } from "./env";
-import { handleAdminMemoriesRoute } from "./http/admin-memories";
 import { logger } from "./logger";
 import { envMemoriesBootstrapConfig } from "./memories-env";
 import { tracer } from "./otel";
@@ -70,9 +70,11 @@ export async function runHttpServer(): Promise<void> {
 
   const adminTokenAuth = createAdminTokenAuthFromEnv();
   if (adminTokenAuth === null) {
-    logger.info("Admin token auth disabled (set ADMIN_ROOT_TOKEN to enable)");
+    logger.info(
+      "Operator API disabled (set ADMIN_ROOT_TOKEN / KHORA_CONSOLE_ROOT_TOKEN to enable)",
+    );
   } else {
-    logger.info("Admin API enabled at /admin/api (serve HTML via @khoralabs/khora-admin)");
+    logger.info("Operator API enabled at /v1/ops and /v1/host/registry (Bearer root token)");
   }
 
   const deps: HostRouteDeps = {
@@ -85,7 +87,6 @@ export async function runHttpServer(): Promise<void> {
     adminTokenAuth,
   };
   const { route } = createHostRouter({
-    adminMemoriesRoute: handleAdminMemoriesRoute,
     hostSpec: ctx.hostSpec,
   });
   const inboxWsHandlers = createInboxDrainWebSocketHandlersForDeps({
@@ -95,33 +96,36 @@ export async function runHttpServer(): Promise<void> {
 
   const server = Bun.serve<KhoraWsData>({
     port: envPort(),
-    async fetch(req) {
-      const startMs = Date.now();
-      const url = new URL(req.url);
-      const span = tracer.startSpan(`HTTP ${req.method}`, {
-        attributes: { "http.method": req.method, "http.target": url.pathname },
-      });
-      return context.with(trace.setSpan(context.active(), span), async () => {
-        let status = 200;
-        try {
-          const res = await route(req, url, server, deps);
-          status = res?.status ?? 404;
-          return res ?? new Response("Not found", { status: 404 });
-        } catch (err) {
-          status = 500;
-          span.recordException(err instanceof Error ? err : new Error(String(err)));
-          span.setStatus({ code: SpanStatusCode.ERROR });
-          logger.error({ err }, "unhandled fetch error");
-          return new Response("Internal server error", { status: 500 });
-        } finally {
-          span.setAttribute("http.status_code", status);
-          span.setStatus({ code: status >= 500 ? SpanStatusCode.ERROR : SpanStatusCode.OK });
-          span.end();
-          logger.info(
-            { method: req.method, path: url.pathname, status, durationMs: Date.now() - startMs },
-            "request",
-          );
-        }
+    async fetch(req, srv) {
+      const peerIp = srv.requestIP(req)?.address ?? null;
+      return runWithRequestPeerIp(peerIp, async () => {
+        const startMs = Date.now();
+        const url = new URL(req.url);
+        const span = tracer.startSpan(`HTTP ${req.method}`, {
+          attributes: { "http.method": req.method, "http.target": url.pathname },
+        });
+        return context.with(trace.setSpan(context.active(), span), async () => {
+          let status = 200;
+          try {
+            const res = await route(req, url, server, deps);
+            status = res?.status ?? 404;
+            return res ?? new Response("Not found", { status: 404 });
+          } catch (err) {
+            status = 500;
+            span.recordException(err instanceof Error ? err : new Error(String(err)));
+            span.setStatus({ code: SpanStatusCode.ERROR });
+            logger.error({ err }, "unhandled fetch error");
+            return new Response("Internal server error", { status: 500 });
+          } finally {
+            span.setAttribute("http.status_code", status);
+            span.setStatus({ code: status >= 500 ? SpanStatusCode.ERROR : SpanStatusCode.OK });
+            span.end();
+            logger.info(
+              { method: req.method, path: url.pathname, status, durationMs: Date.now() - startMs },
+              "request",
+            );
+          }
+        });
       });
     },
     websocket: inboxWsHandlers,

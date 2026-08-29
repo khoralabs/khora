@@ -5,6 +5,7 @@ export {
   createRateLimiter,
   envRatePerMinute,
   type RateLimitCheck,
+  runWithRequestPeerIp,
 } from "./rate-limit";
 export { createV2HostRateLimiters, type V2HostRateLimiters } from "./rate-limit-buckets";
 export { toRegistryClientConfig } from "./registry-client-config";
@@ -13,22 +14,14 @@ export {
   type RegistryOptInParams,
   registerHostWithRegistry,
 } from "./registry-opt-in";
-export { handleAdminAgentsRoute } from "./routes/admin-agents";
-export { handleAdminInvitesList, handleAdminInvitesMint } from "./routes/admin-invites";
-export {
-  handleAdminStatsCell,
-  handleAdminStatsInactiveMembers,
-  handleAdminStatsPrincipal,
-  handleAdminStatsSummary,
-} from "./routes/admin-stats";
 export { withAdminTokenAuth } from "./routes/admin-token-guard";
 export type { HostRouteDeps } from "./routes/deps";
-export { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./routes/host-admin";
-export { adminStatsSummaryResponse } from "./routes/internal-admin-stats";
+export { handleAdminAgentsRoute } from "./routes/ops-agents";
+export { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./routes/ops-host-config";
+export { handleAdminInvitesList, handleAdminInvitesMint } from "./routes/ops-invites";
 export { handleRegister } from "./routes/register";
 export { authErrorResponse, jsonError, rateLimitedResponse } from "./routes/responses";
 export {
-  type AdminMemoriesRoute,
   type CreateHostRouterOptions,
   createHostRouter,
   type HostRouter,

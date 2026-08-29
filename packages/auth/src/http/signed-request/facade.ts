@@ -70,6 +70,8 @@ export type SignedRequestAuthOptions = {
   now?: () => number;
   freshnessWindowMs?: number;
   sweepIntervalMs?: number;
+  /** After signature verify succeeds, reject principals that must not use signed APIs. */
+  assertPrincipalAllowed?: (did: string) => void | Promise<void>;
 };
 
 /** @deprecated Use {@link SignedRequestAuthOptions}. */
@@ -90,6 +92,7 @@ export class SignedRequestAuth {
   private readonly now: () => number;
   private readonly freshnessWindowMs: number;
   private readonly sweepIntervalMs: number;
+  private readonly assertPrincipalAllowed?: (did: string) => void | Promise<void>;
   private lastSweepMs = 0;
 
   constructor(opts: SignedRequestAuthOptions) {
@@ -98,6 +101,7 @@ export class SignedRequestAuth {
     this.now = opts.now ?? (() => Date.now());
     this.freshnessWindowMs = opts.freshnessWindowMs ?? AGENT_REQUEST_FRESHNESS_WINDOW_MS;
     this.sweepIntervalMs = opts.sweepIntervalMs ?? DEFAULT_SWEEP_INTERVAL_MS;
+    this.assertPrincipalAllowed = opts.assertPrincipalAllowed;
     this.preflight = {
       verifyRegistration: (ctx) => this.verifyRegistrationContext(ctx),
       verifyAuthenticatedPrincipal: (ctx) => this.verifyAuthenticatedContext(ctx),
@@ -124,6 +128,7 @@ export class SignedRequestAuth {
     }).catch((e) => {
       throw new AuthError(messageOf(e), 401);
     });
+    await this.runAssertPrincipalAllowed(did);
     return { did };
   }
 
@@ -144,6 +149,7 @@ export class SignedRequestAuth {
     }).catch((e) => {
       throw new AuthError(messageOf(e), 401);
     });
+    await this.runAssertPrincipalAllowed(did);
     return { did };
   }
 
@@ -166,6 +172,7 @@ export class SignedRequestAuth {
     } catch (e) {
       throw new AuthError(messageOf(e), 401);
     }
+    await this.runAssertPrincipalAllowed(opts.envelope.did);
     return { did: opts.envelope.did };
   }
 
@@ -286,6 +293,20 @@ export class SignedRequestAuth {
     this.lastSweepMs = t;
     await this.nonceStore.sweepExpired(t);
   }
+
+  private async runAssertPrincipalAllowed(did: string): Promise<void> {
+    if (this.assertPrincipalAllowed === undefined) return;
+    try {
+      await this.assertPrincipalAllowed(did);
+    } catch (e) {
+      if (e instanceof AuthError) throw e;
+      const msg = messageOf(e);
+      if (/forbidden|suspended|deleted/i.test(msg)) {
+        throw new AuthError(msg, 403);
+      }
+      throw e;
+    }
+  }
 }
 
 /** @deprecated Use {@link SignedRequestAuth}. */
@@ -308,6 +329,9 @@ export function createSignedRequestAuth(opts: SignedRequestAuthOptions): SignedR
     ...(opts.now !== undefined ? { now: opts.now } : {}),
     ...(opts.freshnessWindowMs !== undefined ? { freshnessWindowMs: opts.freshnessWindowMs } : {}),
     ...(opts.sweepIntervalMs !== undefined ? { sweepIntervalMs: opts.sweepIntervalMs } : {}),
+    ...(opts.assertPrincipalAllowed !== undefined
+      ? { assertPrincipalAllowed: opts.assertPrincipalAllowed }
+      : {}),
   });
 }
 

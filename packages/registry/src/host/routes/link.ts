@@ -123,6 +123,9 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
   if (account === null) {
     return Response.json({ error: "Account not found" }, { status: 404 });
   }
+  if (account.status !== "active") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const envelope = parseAgentRequestEnvelopeFromHeaders(req.headers);
   if (envelope === undefined) {
@@ -269,6 +272,9 @@ export async function handleLinkStatus(req: Request): Promise<Response> {
   if (account === null) {
     return Response.json({ links: [] });
   }
+  if (account.status !== "active") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const agentLinks = await listAgentLinksForAccount(db, account.id);
   const links = await Promise.all(
@@ -309,6 +315,9 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
   const account = await findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ error: "Account not found" }, { status: 404 });
+  }
+  if (account.status !== "active") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const host = await resolveRegistryHost(db, {

@@ -6,7 +6,7 @@ import {
   outboxKeyBytesToHex,
 } from "@khoralabs/colonnade/crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
-import { createSignedRequestAuth } from "@khoralabs/khora-auth";
+import { AuthError, createSignedRequestAuth } from "@khoralabs/khora-auth";
 import {
   bootstrapHostSearch,
   bootstrapHostSubscriptions,
@@ -156,7 +156,14 @@ export async function bootstrapKhoraHost(
     lookupNormalizedUsernameForPrincipal: registration.lookupNormalizedUsernameForPrincipal,
     sqlCipherKey: encryption.sqlCipherKey,
   });
-  const auth = createSignedRequestAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
+  const auth = createSignedRequestAuth({
+    nonceStore: createSqliteNonceStore(authNoncesDb),
+    assertPrincipalAllowed(did) {
+      const status = persistence.agentAccountStatus.getStatus(did);
+      if (status === "suspended") throw new AuthError("agent account suspended", 403);
+      if (status === "deleted") throw new AuthError("agent account deleted", 403);
+    },
+  });
   const persistenceClient = createHostPersistenceClient(persistence);
 
   const seedTokens = parseInviteSeedTokens(process.env.KHORA_INVITE_SEED_TOKENS);

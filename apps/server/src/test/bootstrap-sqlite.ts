@@ -5,7 +5,7 @@ import {
   openMaybeEncryptedDatabaseSync,
 } from "@khoralabs/colonnade/crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
-import { createSignedRequestAuth } from "@khoralabs/khora-auth";
+import { AuthError, createSignedRequestAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
   bootstrapHostSubscriptions,
@@ -153,7 +153,14 @@ export async function createTestKhoraHost(
     storeSecrets: (secrets) => ({ ...secrets, updatedAtMs: Date.now() }),
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };
-  const auth = createSignedRequestAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
+  const auth = createSignedRequestAuth({
+    nonceStore: createSqliteNonceStore(authNoncesDb),
+    assertPrincipalAllowed(did) {
+      const status = persistence.agentAccountStatus.getStatus(did);
+      if (status === "suspended") throw new AuthError("agent account suspended", 403);
+      if (status === "deleted") throw new AuthError("agent account deleted", 403);
+    },
+  });
   return createKhoraHost({
     persistence,
     tenantKey,

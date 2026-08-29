@@ -6,7 +6,7 @@ import {
   canonicalAgentRequestMessage,
   signatureBytesToB64Url,
 } from "./envelope";
-import { createSignedRequestAuth, verifySignedAgentRequest } from "./facade";
+import { AuthError, createSignedRequestAuth, verifySignedAgentRequest } from "./facade";
 import { INBOX_BIND_METHOD, inboxBindCanonicalPath, signInboxBind } from "./sign";
 
 async function buildSignedHeaders(p: {
@@ -217,6 +217,35 @@ describe("KhoraDidAuth.requireAuthenticatedRequest", () => {
     await expect(auth.requireAuthenticatedRequest(noDidReq, new URL(noDidReq.url))).rejects.toThrow(
       /header required/,
     );
+  });
+
+  test("rejects suspended principals via assertPrincipalAllowed", async () => {
+    const now = 1_700_000_000_000;
+    const auth = createSignedRequestAuth({
+      nonceStore: createMemoryNonceStore(),
+      now: () => now,
+      assertPrincipalAllowed() {
+        throw new AuthError("agent account suspended", 403);
+      },
+    });
+    const signer = await generateIdentity();
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "GET",
+      path: "/v1/agent/sync",
+      bodyText: "",
+      timestampMs: now,
+      nonce: "n-suspended",
+    });
+    const req = new Request("https://h.example/v1/agent/sync", { method: "GET", headers });
+    try {
+      await auth.requireAuthenticatedRequest(req, new URL(req.url));
+      expect.unreachable("expected AuthError");
+    } catch (e) {
+      expect(e).toBeInstanceOf(AuthError);
+      expect((e as AuthError).status).toBe(403);
+      expect((e as AuthError).message).toMatch(/suspended/);
+    }
   });
 });
 

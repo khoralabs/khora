@@ -64,7 +64,7 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
 
   const secret = process.env.BETTER_AUTH_SECRET?.trim();
   if (secret === undefined || secret.length < 32) {
-    logger.warn(
+    throw new Error(
       "BETTER_AUTH_SECRET missing or too short (<32 chars). Set it in the registry app environment.",
     );
   }
@@ -76,7 +76,7 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
   );
   return {
     baseURL,
-    secret: secret ?? "dev-only-insecure-secret-replace-me-32chars",
+    secret,
     cookieDomain,
   };
 }

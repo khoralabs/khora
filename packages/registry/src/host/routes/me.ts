@@ -17,6 +17,9 @@ export async function handleMe(req: Request): Promise<Response> {
 
   const db = registryHostRuntime().db;
   const account = await findAccountByAuthSubject(db, session.user.id);
+  if (account !== null && account.status !== "active") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
   const marketingConsents =
     account === null ? [] : await listMarketingConsentsForAccount(db, account.id);
   const membershipsCount = account === null ? 0 : await countMembershipsForAccount(db, account.id);
