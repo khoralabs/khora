@@ -1,5 +1,5 @@
-import type { ResolveCell } from "./cell-persistence";
-import { supportsCellBatch } from "./cell-persistence";
+import type { ResolveCell } from "../persistence/core/cell-persistence";
+import { supportsCellBatch } from "../persistence/core/cell-persistence";
 import type {
   RoutedWrite,
   SubmitRoutedWritesInput,

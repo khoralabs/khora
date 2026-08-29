@@ -204,7 +204,9 @@ async function bumpCli(workspaceRoot: string, version: string): Promise<void> {
       darwinArm64Sha256: shaFromManifest(manifest, "darwin-arm64"),
     }),
   );
-  console.log(`wrote ${path.relative(workspaceRoot, formulaPath)} (${releaseTagForVersion("cli", version)})`);
+  console.log(
+    `wrote ${path.relative(workspaceRoot, formulaPath)} (${releaseTagForVersion("cli", version)})`,
+  );
   await pushToTapRepo({
     files: [{ local: formulaPath, remote: "Formula/khora.rb" }],
     commitMessage: `khora-cli@${version}`,
@@ -257,7 +259,11 @@ async function bumpServer(workspaceRoot: string, version: string): Promise<void>
 if (import.meta.main) {
   const product = process.argv[2] as ReleaseProduct | undefined;
   const version = process.argv[3];
-  if ((product !== "cli" && product !== "server") || !version || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)) {
+  if (
+    (product !== "cli" && product !== "server") ||
+    !version ||
+    !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)
+  ) {
     console.error("usage: bump-homebrew-formula.ts <cli|server> <semver>");
     process.exit(1);
   }

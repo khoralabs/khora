@@ -135,7 +135,12 @@ async function smokeServer(label: string, binPath: string, packageRoot?: string)
 async function verifyCli(): Promise<void> {
   for (const target of SUPPORTED_TARGETS) {
     const cliPath = path.join(workspaceRoot, "apps/cli/dist", target.bunTarget, "khora");
-    const daemonPath = path.join(workspaceRoot, "apps/daemon/dist", target.bunTarget, "khora-daemon");
+    const daemonPath = path.join(
+      workspaceRoot,
+      "apps/daemon/dist",
+      target.bunTarget,
+      "khora-daemon",
+    );
     const cliLabel = `cli ${target.slug}`;
     const daemonLabel = `daemon ${target.slug}`;
 

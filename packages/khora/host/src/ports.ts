@@ -1,4 +1,5 @@
-import type { CellPersistence, OutboxListedRecord } from "@khoralabs/colonnade";
+import type { OutboxListedRecord } from "@khoralabs/colonnade";
+import type { CellPersistence } from "@khoralabs/colonnade/persistence";
 import type {
   EffectiveKhoraHostSpec,
   KhoraHostSpec,

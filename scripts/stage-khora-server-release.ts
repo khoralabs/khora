@@ -219,12 +219,7 @@ export async function stageKhoraServerRelease(opts: StageServerOptions): Promise
     mkdirSync(path.join(pkgDir, "lib"), { recursive: true });
 
     if (copyBinaries) {
-      const src = path.join(
-        workspaceRoot,
-        "apps/server/dist",
-        target.bunTarget,
-        "khora-server",
-      );
+      const src = path.join(workspaceRoot, "apps/server/dist", target.bunTarget, "khora-server");
       if (!existsSync(src)) {
         throw new Error(`missing compiled binary: ${src}`);
       }

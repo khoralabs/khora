@@ -1,7 +1,7 @@
 import type { ContentAddressedStore, ResolvedSource, Store } from "@khoralabs/sourcemaps";
 import { resolveSourcemap } from "@khoralabs/sourcemaps";
 
-import type { CellPersistence } from "./cell-persistence";
+import type { CellPersistence } from "../persistence/core/cell-persistence";
 import type {
   OutboxContentRef,
   OutboxLocators,

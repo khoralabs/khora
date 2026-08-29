@@ -6,14 +6,16 @@ This package (`@khoralabs/colonnade`) holds the **Smithy model** (`spec/model/`)
 
 | Export | Path | Role |
 |--------|------|------|
-| `@khoralabs/colonnade` | [`src/core`](src/core) | Router, clients, routing, shared DDL, in-memory fakes |
-| `@khoralabs/colonnade/persistence` | [`src/persistence`](src/persistence) | `CatalogPersistence`, `CellPersistence` contracts |
+| `@khoralabs/colonnade` | [`src/core`](src/core) | **Product API** — publication, router, pointer resolve, topology IDs, Smithy types |
+| `@khoralabs/colonnade/persistence` | [`src/persistence/core`](src/persistence/core) | Storage contracts, fakes, port facades, wire codecs |
 | `@khoralabs/colonnade/crypto` | [`src/crypto`](src/crypto) | DB open / payload codec helpers |
-| `@khoralabs/colonnade/sqlite` | [`src/sqlite`](src/sqlite) | Local SQLCipher cell files + catalog SQLite |
-| `@khoralabs/colonnade/turso-serverless` | [`src/turso-serverless`](src/turso-serverless) | Turso Cloud (one DB per cell shard) |
-| `@khoralabs/colonnade/testing` | [`src/testing`](src/testing) | Contract test helpers |
+| `@khoralabs/colonnade/sqlite` | [`src/persistence/sqlite`](src/persistence/sqlite) | Local SQLCipher cell files + catalog SQLite |
+| `@khoralabs/colonnade/turso-serverless` | [`src/persistence/turso-serverless`](src/persistence/turso-serverless) | Turso Cloud (one DB per cell shard) |
+| `@khoralabs/colonnade/testing` | [`src/persistence/testing`](src/persistence/testing) | Contract test helpers |
 
-See [`src/IMPLEMENTORS.md`](src/IMPLEMENTORS.md) for the adapter contract.
+Shared SQL DDL under `src/persistence/core/schema/` is **internal** to the sqlite/turso backends (not a package export).
+
+See [`src/persistence/IMPLEMENTORS.md`](src/persistence/IMPLEMENTORS.md) for the adapter contract.
 
 ## TypeScript usage
 

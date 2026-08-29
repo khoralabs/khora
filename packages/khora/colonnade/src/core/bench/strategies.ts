@@ -1,12 +1,12 @@
 import { createTestOutboxPayloadCodec } from "../../crypto";
+import type { CatalogPersistence } from "../../persistence/core/catalog-persistence";
+import type { CellPersistence, ResolveCell } from "../../persistence/core/cell-persistence";
+import { InMemoryCatalogPersistence } from "../../persistence/core/in-memory-catalog-persistence";
+import { InMemoryCellPersistence } from "../../persistence/core/in-memory-cell-persistence";
 import {
   createSqliteBenchmarkStrategies,
   type SqliteBenchmarkStrategiesOptions,
-} from "../../sqlite";
-import type { CatalogPersistence } from "../catalog-persistence";
-import type { CellPersistence, ResolveCell } from "../cell-persistence";
-import { InMemoryCatalogPersistence } from "../in-memory-catalog-persistence";
-import { InMemoryCellPersistence } from "../in-memory-cell-persistence";
+} from "../../persistence/sqlite";
 
 /**
  * Factories for comparing persistence backends under the same workloads.

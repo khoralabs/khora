@@ -10,9 +10,9 @@
       "default": "./src/index.ts"
     },
     "./persistence": {
-      "types": "./src/persistence/index.ts",
-      "import": "./src/persistence/index.ts",
-      "default": "./src/persistence/index.ts"
+      "types": "./src/persistence/core/index.ts",
+      "import": "./src/persistence/core/index.ts",
+      "default": "./src/persistence/core/index.ts"
     },
     "./crypto": {
       "types": "./src/crypto/index.ts",
@@ -20,19 +20,19 @@
       "default": "./src/crypto/index.ts"
     },
     "./sqlite": {
-      "types": "./src/sqlite/index.ts",
-      "import": "./src/sqlite/index.ts",
-      "default": "./src/sqlite/index.ts"
+      "types": "./src/persistence/sqlite/index.ts",
+      "import": "./src/persistence/sqlite/index.ts",
+      "default": "./src/persistence/sqlite/index.ts"
     },
     "./turso-serverless": {
-      "types": "./src/turso-serverless/index.ts",
-      "import": "./src/turso-serverless/index.ts",
-      "default": "./src/turso-serverless/index.ts"
+      "types": "./src/persistence/turso-serverless/index.ts",
+      "import": "./src/persistence/turso-serverless/index.ts",
+      "default": "./src/persistence/turso-serverless/index.ts"
     },
     "./testing": {
-      "types": "./src/testing/index.ts",
-      "import": "./src/testing/index.ts",
-      "default": "./src/testing/index.ts"
+      "types": "./src/persistence/testing/index.ts",
+      "import": "./src/persistence/testing/index.ts",
+      "default": "./src/persistence/testing/index.ts"
     }
   },
   "scripts": {

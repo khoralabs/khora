@@ -20,7 +20,14 @@ import path from "node:path";
 
 const LITESTREAM_VERSION = "0.5.11";
 
-const DEFAULT_BIN_PATH = path.resolve(import.meta.dir, "..", "apps", "server", ".bin", "litestream");
+const DEFAULT_BIN_PATH = path.resolve(
+  import.meta.dir,
+  "..",
+  "apps",
+  "server",
+  ".bin",
+  "litestream",
+);
 
 function parseOutputArg(): string | undefined {
   const argv = process.argv.slice(2);

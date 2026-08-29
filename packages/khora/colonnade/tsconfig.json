@@ -20,5 +20,5 @@
     "types": ["bun"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/turso-serverless/**"]
+  "exclude": ["src/persistence/turso-serverless/**"]
 }

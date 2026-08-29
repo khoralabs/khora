@@ -8,6 +8,10 @@ import {
   isOutboxEncryptedPayload,
   outboxMetadataIsPost,
 } from "./outbox-payload";
+import { TEST_KHORA_SQLCIPHER_KEY } from "./test-keys";
+
+// Configure SQLCipher before any plaintext Database() in this process (suite order).
+openMaybeEncryptedDatabaseSync(":memory:", { create: true }, TEST_KHORA_SQLCIPHER_KEY).close();
 
 const TEST_KEY_HEX = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 

@@ -1,6 +1,7 @@
-import type { CatalogPersistence } from "./catalog-persistence";
-import type { ResolveCell } from "./cell-persistence";
-import { supportsCellBatch } from "./cell-persistence";
+import type { CatalogPersistence } from "../persistence/core/catalog-persistence";
+import type { ResolveCell } from "../persistence/core/cell-persistence";
+import { supportsCellBatch } from "../persistence/core/cell-persistence";
+import { defaultNoopCatalogPersistence } from "../persistence/core/noop-catalog-persistence";
 import type {
   FanOutTarget,
   GeneratedInboxRef,
@@ -9,7 +10,6 @@ import type {
   PublicationRouting,
 } from "./colonnade-types";
 import { randomId } from "./hash";
-import { defaultNoopCatalogPersistence } from "./noop-catalog-persistence";
 
 function isResolveCell(value: CatalogPersistence | ResolveCell): value is ResolveCell {
   return typeof value === "function";
