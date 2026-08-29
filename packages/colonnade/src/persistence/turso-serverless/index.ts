@@ -7,7 +7,11 @@ export {
 } from "./cluster";
 export { migrateCatalogTursoServerless } from "./migrations/catalog-migrations";
 export { migrateCellTursoServerless } from "./migrations/cell-migrations";
-export { resolveTursoUrl, type TursoUrlTemplateOptions } from "./resolve-url";
+export {
+  resolveTursoCredentialsFromStrategy,
+  resolveTursoUrl,
+  type TursoUrlTemplateOptions,
+} from "./resolve-url";
 export {
   TursoCatalogPersistence,
   type TursoCatalogPersistenceOptions,

@@ -1,4 +1,3 @@
-import { Database } from "bun:sqlite";
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,9 +5,13 @@ import { join } from "node:path";
 import {
   ColonnadePublicationClient,
   catalogShardIndexForTenant,
-  derivePoolHomeCell,
+  createInMemoryPlacementStore,
+  decodeCellId,
+  encodeCellId,
   parseCatalogPointerShardIndex,
-  perPrincipalCellId,
+  principalHomeCellId,
+  principalHomeId,
+  resolveEncodedDatabasePath,
 } from "../../core";
 import { createTestEncryptionMaterial, openMaybeEncryptedDatabaseSync } from "../../crypto";
 import { ShardingCatalogPersistence } from "../core";
@@ -28,7 +31,6 @@ describe("SQLite Colonnade cluster", () => {
     };
   }
 
-  /** Open via SQLCipher path so stock `bun:sqlite` is not loaded first. */
   function openCatalogDb(path: string) {
     return openMaybeEncryptedDatabaseSync(path, { create: true }, testEncryption.sqlCipherKey);
   }
@@ -37,28 +39,32 @@ describe("SQLite Colonnade cluster", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  test("pool mode: deterministic home cells and publication fans out across cell files", async () => {
+  test("placement: deterministic homes and publication fans out across cell files", async () => {
     const catalogDb = openCatalogDb(catalogPath);
     const catalog = new SqliteCatalogPersistence(catalogDb);
     const cluster = createSqliteColonnadeCluster({
       catalog,
       cellsDirectory: cellsDir,
-      mode: { kind: "pool", cellCount: 2 },
       encryption: clusterEncryption(),
     });
     try {
       const aliceCell = cluster.assignPrincipalToCell("alice");
       const bobCell = cluster.assignPrincipalToCell("bob");
-      expect(aliceCell).toBe(derivePoolHomeCell("alice", 2));
-      expect(bobCell).toBe(derivePoolHomeCell("bob", 2));
+      expect(aliceCell).toBe(principalHomeCellId("alice"));
+      expect(bobCell).toBe(principalHomeCellId("bob"));
+      expect(cluster.cellPoolCount).toBe(1);
 
-      const pub = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
+      const pub = new ColonnadePublicationClient(
+        cluster.catalog,
+        cluster.resolveCell,
+        cluster.inboxDelivery,
+      );
       const body = new Uint8Array(2049).fill(3);
       const res = await pub.postOperation({
         author_principal_id: "alice",
         author_cell_id: aliceCell,
         tenant_key: "tenant",
-        cell_pool_count: 2,
+        cell_pool_count: 1,
         payload_bytes: body,
         payload_metadata: { kind: "sqlite-test" },
         routing: {
@@ -131,13 +137,16 @@ describe("SQLite Colonnade cluster", () => {
     const cluster = createSqliteColonnadeCluster({
       catalog,
       cellsDirectory: join(root, "cells-sharded"),
-      mode: { kind: "per_principal" },
       encryption: clusterEncryption(),
     });
     try {
       const authorCell = cluster.assignPrincipalToCell("author");
       const recipientCell = cluster.assignPrincipalToCell("recipient");
-      const pub = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
+      const pub = new ColonnadePublicationClient(
+        cluster.catalog,
+        cluster.resolveCell,
+        cluster.inboxDelivery,
+      );
       const body = new Uint8Array([1, 2, 3]);
       const tenant_key = "tenant-a";
 
@@ -184,7 +193,7 @@ describe("SQLite Colonnade cluster", () => {
     async () => {
       const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-worker-"));
       try {
-        // Workers share process-global SQLite; load SQLCipher before any Database().
+        const { Database } = await import("bun:sqlite");
         const sqlCipherLib =
           process.env.SQLCIPHER_CUSTOM_LIB?.trim() ||
           "/opt/homebrew/opt/sqlcipher/lib/libsqlcipher.dylib";
@@ -204,20 +213,23 @@ describe("SQLite Colonnade cluster", () => {
         const cluster = createSqliteColonnadeCluster({
           catalog,
           cellsDirectory: join(dir, "cells"),
-          mode: { kind: "pool", cellCount: 2 },
           useCellWorkers: true,
           encryption: clusterEncryption(),
         });
         try {
           const aliceCell = cluster.assignPrincipalToCell("alice");
           const bobCell = cluster.assignPrincipalToCell("bob");
-          const pub = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
+          const pub = new ColonnadePublicationClient(
+            cluster.catalog,
+            cluster.resolveCell,
+            cluster.inboxDelivery,
+          );
           const body = new Uint8Array(2049).fill(9);
           const res = await pub.postOperation({
             author_principal_id: "alice",
             author_cell_id: aliceCell,
             tenant_key: "tenant",
-            cell_pool_count: 2,
+            cell_pool_count: 1,
             payload_bytes: body,
             payload_metadata: {},
             routing: {
@@ -249,26 +261,97 @@ describe("SQLite Colonnade cluster", () => {
     { timeout: 30_000 },
   );
 
-  test("per_principal mode: deterministic dedicated cell id", () => {
-    const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-iso-"));
+  test("placement overrides route resolveCell to alternate dataDir", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-override-"));
     try {
-      const catalogDb = new Database(join(dir, "catalog.sqlite"), { create: true });
-      const catalog = new SqliteCatalogPersistence(catalogDb);
+      const defaultDir = join(dir, "default-cells");
+      const overrideDir = join(dir, "override-cells");
+      mkdirSync(defaultDir, { recursive: true });
+      mkdirSync(overrideDir, { recursive: true });
+      const placement = createInMemoryPlacementStore({
+        defaultStrategy: {
+          kind: "sqlite",
+          dataDir: defaultDir,
+          sqlCipherKey: testEncryption.sqlCipherKey,
+        },
+      });
+      const bobId = principalHomeId("bob");
+      await placement.setStrategy(bobId, {
+        kind: "sqlite",
+        dataDir: overrideDir,
+        sqlCipherKey: testEncryption.sqlCipherKey,
+      });
       const cluster = createSqliteColonnadeCluster({
-        catalog,
-        cellsDirectory: join(dir, "cells"),
-        mode: { kind: "per_principal" },
+        cellsDirectory: defaultDir,
+        placement,
         encryption: clusterEncryption(),
       });
       try {
-        const c1 = cluster.assignPrincipalToCell("user-a");
-        const c2 = cluster.assignPrincipalToCell("user-b");
-        expect(c1).toBe(perPrincipalCellId("user-a"));
-        expect(c2).toBe(perPrincipalCellId("user-b"));
-        expect(cluster.assignPrincipalToCell("user-a")).toBe(c1);
+        const bobCell = cluster.assignPrincipalToCell("bob");
+        cluster.resolveCell(bobCell);
+        const { existsSync } = await import("node:fs");
+        expect(existsSync(resolveEncodedDatabasePath(overrideDir, bobId))).toBe(true);
+        expect(existsSync(resolveEncodedDatabasePath(defaultDir, bobId))).toBe(false);
+        expect(decodeCellId(bobCell)).toEqual(bobId);
+        expect(encodeCellId(bobId)).toBe(bobCell);
       } finally {
         cluster.close();
-        catalogDb.close();
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("async placement: sync resolveCell throws; inboxDelivery uses resolver", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-async-place-"));
+    try {
+      const defaultDir = join(dir, "default-cells");
+      const overrideDir = join(dir, "override-cells");
+      mkdirSync(defaultDir, { recursive: true });
+      mkdirSync(overrideDir, { recursive: true });
+      const syncPlacement = createInMemoryPlacementStore({
+        defaultStrategy: {
+          kind: "sqlite",
+          dataDir: defaultDir,
+          sqlCipherKey: testEncryption.sqlCipherKey,
+        },
+      });
+      const bobId = principalHomeId("bob");
+      await syncPlacement.setStrategy(bobId, {
+        kind: "sqlite",
+        dataDir: overrideDir,
+        sqlCipherKey: testEncryption.sqlCipherKey,
+      });
+      const asyncPlacement = {
+        getDefaultStrategy: () => syncPlacement.getDefaultStrategy(),
+        setDefaultStrategy: (s: Parameters<typeof syncPlacement.setDefaultStrategy>[0]) =>
+          syncPlacement.setDefaultStrategy(s),
+        getStrategy: (id: Parameters<typeof syncPlacement.getStrategy>[0]) =>
+          syncPlacement.getStrategy(id),
+        setStrategy: (
+          id: Parameters<typeof syncPlacement.setStrategy>[0],
+          s: Parameters<typeof syncPlacement.setStrategy>[1],
+        ) => syncPlacement.setStrategy(id, s),
+        removeStrategy: (id: Parameters<typeof syncPlacement.removeStrategy>[0]) =>
+          syncPlacement.removeStrategy(id),
+        listOverrides: (filter?: Parameters<typeof syncPlacement.listOverrides>[0]) =>
+          syncPlacement.listOverrides(filter),
+      };
+      const cluster = createSqliteColonnadeCluster({
+        cellsDirectory: defaultDir,
+        placement: asyncPlacement,
+        encryption: clusterEncryption(),
+      });
+      try {
+        const bobCell = cluster.assignPrincipalToCell("bob");
+        expect(() => cluster.resolveCell(bobCell)).toThrow(/SyncColonnadePlacementStore/);
+        const cell = await cluster.resolver.open(bobId);
+        expect(cell).toBeDefined();
+        const { existsSync } = await import("node:fs");
+        expect(existsSync(resolveEncodedDatabasePath(overrideDir, bobId))).toBe(true);
+        expect(existsSync(resolveEncodedDatabasePath(defaultDir, bobId))).toBe(false);
+      } finally {
+        cluster.close();
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });

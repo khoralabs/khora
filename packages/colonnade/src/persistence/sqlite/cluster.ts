@@ -1,16 +1,25 @@
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
-import type { ColonnadeClusterMode } from "../../core";
-import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "../../core";
+
+import type {
+  ColonnadeCellBackendResolver,
+  ColonnadePlacementStore,
+  InboxDelivery,
+} from "../../core";
+import {
+  createCellBackendResolver,
+  createCompositeBackendFactory,
+  createInMemoryPlacementStore,
+  createLocalPlacementInboxDelivery,
+  decodeCellId,
+  encodeCellId,
+  isSyncPlacementStore,
+  principalHomeCellId,
+  strategyCacheKey,
+} from "../../core";
 import type { OutboxPayloadCodec } from "../../crypto";
-import { openMaybeEncryptedDatabaseSync } from "../../crypto";
 import type { CatalogPersistence, CellPersistence, ResolveCell } from "../core";
 import { defaultNoopCatalogPersistence } from "../core";
-import { ensureCellPoolManifest } from "./cell-pool-manifest";
-import { SqliteCellPersistence } from "./sqlite-cell-persistence";
-import { LazyWorkerBackedCellPersistence } from "./worker-backed-cell-persistence";
-
-export type SqliteColonnadeClusterMode = ColonnadeClusterMode;
+import { createSqliteCellBackendFactory } from "./sqlite-cell-backend-factory";
 
 export type SqliteColonnadeClusterEncryptionOptions = {
   /** When set, encrypt cell DBs with SQLCipher; omit for plaintext. */
@@ -24,7 +33,8 @@ export type SqliteColonnadeClusterOptions = {
   /** Colonnade publication replication catalog; defaults to noop when omitted. */
   readonly catalog?: CatalogPersistence;
   readonly cellsDirectory: string;
-  readonly mode: SqliteColonnadeClusterMode;
+  /** Override placement store (defaults to in-memory with sqlite strategy for `cellsDirectory`). */
+  readonly placement?: ColonnadePlacementStore;
   /** One Bun **`Worker`** per opened cell (SQLite runs off the main thread). */
   readonly useCellWorkers?: boolean;
   readonly encryption: SqliteColonnadeClusterEncryptionOptions;
@@ -33,88 +43,123 @@ export type SqliteColonnadeClusterOptions = {
 export type SqliteColonnadeCluster = {
   readonly catalog: CatalogPersistence;
   readonly resolveCell: ResolveCell;
-  /** Pool mode: fixed N from startup; undefined in per-principal mode. */
-  readonly cellPoolCount: number | undefined;
-  /** Pool mode: **`derivePoolHomeCell`**; per-principal: **`perPrincipalCellId`** (pure functions; no catalog rows). */
+  /**
+   * Fan-out delivery port (local placement adapter). Publication should use this
+   * rather than looping resolveCell; at scale, swap for multiplexed cell-node delivery.
+   */
+  readonly inboxDelivery: InboxDelivery;
+  readonly placement: ColonnadePlacementStore;
+  readonly resolver: ColonnadeCellBackendResolver;
+  /**
+   * Topology pin for pointer `cell_pool_count` (always `1` under placement isolation).
+   */
+  readonly cellPoolCount: number;
   assignPrincipalToCell(principalId: string): string;
   close(): void;
 };
 
 /**
- * SQLite-backed lazy-open cell DBs (`cellsDirectory/<stem>.sqlite`).
- * Catalog persistence is supplied by the caller.
+ * SQLite-backed lazy-open cell DBs at `{cellsDirectory}/v1/{encoded}/database.db`.
  */
 export function createSqliteColonnadeCluster(
   opts: SqliteColonnadeClusterOptions,
 ): SqliteColonnadeCluster {
   mkdirSync(opts.cellsDirectory, { recursive: true });
+  const catalog = opts.catalog ?? defaultNoopCatalogPersistence();
 
-  if (opts.mode.kind === "pool") {
-    ensureCellPoolManifest(opts.cellsDirectory, opts.mode.cellCount);
+  const defaultStrategy = {
+    kind: "sqlite" as const,
+    dataDir: opts.cellsDirectory,
+    ...(opts.encryption.sqlCipherKey !== undefined
+      ? { sqlCipherKey: opts.encryption.sqlCipherKey }
+      : {}),
+  };
+  const placement = opts.placement ?? createInMemoryPlacementStore({ defaultStrategy });
+
+  const sqliteFactory = createSqliteCellBackendFactory({
+    outboxPayloadCodec: opts.encryption.outboxPayloadCodec,
+    outboxKeyHex: opts.encryption.outboxKeyHex,
+    useCellWorkers: opts.useCellWorkers,
+  });
+  const factory = createCompositeBackendFactory({ sqlite: sqliteFactory });
+  const resolver = createCellBackendResolver({ placement, factory });
+
+  const openCache = new Map<string, CellPersistence>();
+  const backendByStrategyKey = new Map<string, ReturnType<typeof factory.create>>();
+
+  function backendForStrategySync(strategy: Parameters<typeof factory.create>[0]) {
+    const key = strategyCacheKey(strategy);
+    const cached = backendByStrategyKey.get(key);
+    if (cached !== undefined) return cached;
+    const backend = factory.create(strategy);
+    backendByStrategyKey.set(key, backend);
+    return backend;
   }
 
-  const cellDbById = new Map<string, import("bun:sqlite").Database>();
-  const cellStrategyById = new Map<string, SqliteCellPersistence>();
-  const lazyWorkersById = new Map<string, LazyWorkerBackedCellPersistence>();
+  function strategyForIdSync(id: ReturnType<typeof decodeCellId>) {
+    if (!isSyncPlacementStore(placement)) {
+      throw new Error(
+        "createSqliteColonnadeCluster: sync resolveCell requires a SyncColonnadePlacementStore; use inboxDelivery / resolver.open for async placement",
+      );
+    }
+    return placement.getStrategySync(id) ?? placement.getDefaultStrategySync();
+  }
 
-  const cellStrategyOpts = {
-    outboxPayloadCodec: opts.encryption.outboxPayloadCodec,
+  const resolveCell: ResolveCell = (cellId) => {
+    const cached = openCache.get(cellId);
+    if (cached !== undefined) return cached;
+    const id = decodeCellId(cellId);
+    const strategy = strategyForIdSync(id);
+    const cell = backendForStrategySync(strategy).open(id);
+    openCache.set(cellId, cell);
+    return cell;
   };
 
-  function resolveCell(cellId: string): CellPersistence {
-    if (opts.useCellWorkers === true) {
-      let w = lazyWorkersById.get(cellId);
-      if (w === undefined) {
-        const stem = cellDbFilenameStem(cellId);
-        const path = join(opts.cellsDirectory, `${stem}.sqlite`);
-        w = new LazyWorkerBackedCellPersistence(cellId, path, {
-          sqlCipherKey: opts.encryption.sqlCipherKey,
-          outboxKeyHex: opts.encryption.outboxKeyHex,
-        });
-        lazyWorkersById.set(cellId, w);
-      }
-      return w;
-    }
-
-    let db = cellDbById.get(cellId);
-    if (db === undefined) {
-      const stem = cellDbFilenameStem(cellId);
-      const path = join(opts.cellsDirectory, `${stem}.sqlite`);
-      db = openMaybeEncryptedDatabaseSync(path, { create: true }, opts.encryption.sqlCipherKey);
-      cellDbById.set(cellId, db);
-      cellStrategyById.set(cellId, new SqliteCellPersistence(db, cellId, cellStrategyOpts));
-    }
-    const strategy = cellStrategyById.get(cellId);
-    if (strategy === undefined) {
-      throw new Error(`createSqliteColonnadeCluster: failed to open cell ${cellId}`);
-    }
-    return strategy;
-  }
-
-  function assignPrincipalToCell(principalId: string): string {
-    if (opts.mode.kind === "pool") {
-      return derivePoolHomeCell(principalId, opts.mode.cellCount);
-    }
-    return perPrincipalCellId(principalId);
-  }
-
-  function close(): void {
-    for (const w of lazyWorkersById.values()) {
-      w.terminate();
-    }
-    lazyWorkersById.clear();
-    for (const db of cellDbById.values()) {
-      db.close();
-    }
-    cellDbById.clear();
-    cellStrategyById.clear();
-  }
+  const inboxDelivery = createLocalPlacementInboxDelivery({
+    resolver: {
+      resolveBackend: (id) => resolver.resolveBackend(id),
+      open: async (id) => {
+        const cellId = encodeCellId(id);
+        const cached = openCache.get(cellId);
+        if (cached !== undefined) return cached;
+        const cell = await resolver.open(id);
+        openCache.set(cellId, cell);
+        return cell;
+      },
+      openSync: (id, backend) => {
+        const cellId = encodeCellId(id);
+        const cached = openCache.get(cellId);
+        if (cached !== undefined) return cached;
+        const cell = backend.open(id);
+        openCache.set(cellId, cell);
+        return cell;
+      },
+      close: () => resolver.close(),
+    },
+    resolveOpenCell: (cellId) => {
+      // Only reuse sync-resolved cells; async placement must not inherit a defaultStrategy cache.
+      if (!isSyncPlacementStore(placement)) return undefined;
+      return openCache.get(cellId);
+    },
+  });
 
   return {
-    catalog: opts.catalog ?? defaultNoopCatalogPersistence(),
+    catalog,
     resolveCell,
-    cellPoolCount: opts.mode.kind === "pool" ? opts.mode.cellCount : undefined,
-    assignPrincipalToCell,
-    close,
+    inboxDelivery,
+    placement,
+    resolver,
+    cellPoolCount: 1,
+    assignPrincipalToCell(principalId) {
+      return principalHomeCellId(principalId);
+    },
+    close() {
+      for (const backend of backendByStrategyKey.values()) {
+        backend.close?.();
+      }
+      backendByStrategyKey.clear();
+      resolver.close();
+      openCache.clear();
+    },
   };
 }

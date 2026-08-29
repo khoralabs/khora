@@ -2,7 +2,6 @@ import { Database } from "bun:sqlite";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cellDbFilenameStem } from "../../../core";
 import { createTestOutboxPayloadCodec } from "../../../crypto";
 import type { CatalogPersistence, CellPersistence, ResolveCell } from "../../core";
 import { SqliteCatalogPersistence } from "../sqlite-catalog-persistence";
@@ -69,7 +68,7 @@ export function createSqliteBenchmarkStrategies(opts: SqliteBenchmarkStrategiesO
       const b = ensureBundle();
       const map = new Map<string, CellPersistence>();
       for (const id of cellIds) {
-        const path = join(b.cellsDir, `${cellDbFilenameStem(id)}.sqlite`);
+        const path = join(b.cellsDir, `${id.replace(/[^a-zA-Z0-9._-]+/g, "_")}.sqlite`);
         if (useCellWorkers) {
           const w = new LazyWorkerBackedCellPersistence(id, path, benchWorkerInit);
           b.lazyWorkers.push(w);

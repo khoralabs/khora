@@ -1,11 +1,18 @@
-import type { ColonnadeClusterMode } from "../../core";
-import { derivePoolHomeCell, perPrincipalCellId } from "../../core";
+import type { InboxDelivery } from "../../core";
+import {
+  type ColonnadePlacementStore,
+  type ColonnadeTursoServerlessBackendStrategy,
+  createInMemoryPlacementStore,
+  createResolveCellInboxDelivery,
+  decodeCellId,
+  principalHomeCellId,
+} from "../../core";
 import type { OutboxPayloadCodec } from "../../crypto";
 import type { CatalogPersistence, CellPersistence, ResolveCell } from "../core";
 import { defaultNoopCatalogPersistence, ShardingCatalogPersistence } from "../core";
 import { createTursoClients, type TursoClients } from "./client";
 import type { TursoUrlTemplateOptions } from "./resolve-url";
-import { resolveTursoUrl } from "./resolve-url";
+import { resolveTursoCredentialsFromStrategy, resolveTursoUrl } from "./resolve-url";
 import { TursoCatalogPersistence } from "./turso-catalog-persistence";
 import { TursoCellPersistence } from "./turso-cell-persistence";
 
@@ -17,7 +24,7 @@ export type TursoColonnadeClusterOptions = {
   readonly catalog?: CatalogPersistence;
   readonly catalogShards?: TursoUrlTemplateOptions & { readonly shardCount: number };
   readonly cells: TursoUrlTemplateOptions;
-  readonly mode: ColonnadeClusterMode;
+  readonly placement?: ColonnadePlacementStore;
   readonly encryption: TursoColonnadeClusterEncryptionOptions;
   readonly autoMigrate?: boolean;
 };
@@ -25,7 +32,10 @@ export type TursoColonnadeClusterOptions = {
 export type TursoColonnadeCluster = {
   readonly catalog: CatalogPersistence;
   readonly resolveCell: ResolveCell;
-  readonly cellPoolCount: number | undefined;
+  readonly inboxDelivery: InboxDelivery;
+  readonly placement: ColonnadePlacementStore;
+  /** Topology pin for pointer `cell_pool_count` (always `1` under placement isolation). */
+  readonly cellPoolCount: number;
   assignPrincipalToCell(principalId: string): string;
   close(): Promise<void>;
 };
@@ -88,8 +98,21 @@ function lazyCell(getStrategy: () => Promise<TursoCellPersistence>): CellPersist
   });
 }
 
+function asTursoStrategy(
+  strategy: { readonly kind: string },
+  cellId: string,
+): ColonnadeTursoServerlessBackendStrategy {
+  if (strategy.kind !== "turso-serverless") {
+    throw new Error(
+      `createTursoColonnadeCluster: placement for ${cellId} is kind=${strategy.kind}, expected turso-serverless`,
+    );
+  }
+  return strategy as ColonnadeTursoServerlessBackendStrategy;
+}
+
 /**
- * Turso-backed lazy-open cell DBs (one remote database per cell shard via URL template).
+ * Turso-backed lazy-open cell DBs (one remote database per cell via URL template).
+ * Fan-out via {@link TursoColonnadeCluster.inboxDelivery}.
  */
 export async function createTursoColonnadeCluster(
   opts: TursoColonnadeClusterOptions,
@@ -105,17 +128,31 @@ export async function createTursoColonnadeCluster(
     autoMigrate: opts.autoMigrate,
   };
 
+  const placement =
+    opts.placement ??
+    createInMemoryPlacementStore({
+      defaultStrategy: {
+        kind: "turso-serverless",
+        url: opts.cells.urlTemplate,
+        ...(opts.cells.authToken !== undefined ? { authToken: opts.cells.authToken } : {}),
+        ...(opts.cells.remoteEncryptionKey !== undefined
+          ? { remoteEncryptionKey: opts.cells.remoteEncryptionKey }
+          : {}),
+      },
+    });
+
   async function openCell(cellId: string): Promise<TursoCellPersistence> {
     const existing = cellById.get(cellId);
     if (existing !== undefined) {
       return existing.strategy;
     }
-    const credentials = resolveTursoUrl(opts.cells, cellId);
+    const id = decodeCellId(cellId);
+    const placed = (await placement.getStrategy(id)) ?? (await placement.getDefaultStrategy());
+    const tursoStrategy = asTursoStrategy(placed, cellId);
+    const credentials = resolveTursoCredentialsFromStrategy(tursoStrategy, id, cellId);
     const clients = createTursoClients(credentials);
     const strategy = await TursoCellPersistence.open(clients, cellId, cellStrategyOpts);
-    if (opts.mode.kind === "pool") {
-      await strategy.ensureCellPoolCount(opts.mode.cellCount);
-    }
+    await strategy.ensureCellPoolCount(1);
     cellById.set(cellId, { clients, strategy });
     return strategy;
   }
@@ -130,13 +167,6 @@ export async function createTursoColonnadeCluster(
       throw new Error(`createTursoColonnadeCluster: failed to open cell ${cellId}`);
     }
     return lazyCell(() => openPromise);
-  }
-
-  function assignPrincipalToCell(principalId: string): string {
-    if (opts.mode.kind === "pool") {
-      return derivePoolHomeCell(principalId, opts.mode.cellCount);
-    }
-    return perPrincipalCellId(principalId);
   }
 
   async function close(): Promise<void> {
@@ -155,8 +185,10 @@ export async function createTursoColonnadeCluster(
   return {
     catalog,
     resolveCell,
-    cellPoolCount: opts.mode.kind === "pool" ? opts.mode.cellCount : undefined,
-    assignPrincipalToCell,
+    inboxDelivery: createResolveCellInboxDelivery(resolveCell),
+    placement,
+    cellPoolCount: 1,
+    assignPrincipalToCell: principalHomeCellId,
     close,
   };
 }

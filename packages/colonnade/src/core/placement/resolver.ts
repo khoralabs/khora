@@ -12,6 +12,8 @@ export type ColonnadeCellBackendResolver = {
   open(id: ColonnadeDatabaseId): Promise<CellPersistence>;
   /** Sync open after placement has been resolved (uses cached backend). Prefer {@link open}. */
   openSync(id: ColonnadeDatabaseId, backend: ColonnadeCellBackend): CellPersistence;
+  /** Close all backends held in the strategy cache. */
+  close(): void;
 };
 
 export type CreateCellBackendResolverOptions = {
@@ -72,6 +74,13 @@ export function createCellBackendResolver(
     },
     openSync(id, backend) {
       return backend.open(id);
+    },
+    close() {
+      for (const backend of backendCache.values()) {
+        backend.close?.();
+      }
+      backendCache.clear();
+      backendOrder.length = 0;
     },
   };
 }

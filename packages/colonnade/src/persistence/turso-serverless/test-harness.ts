@@ -22,18 +22,16 @@ export function requireTursoIntegrationEnv(): { url: string; authToken: string }
 export function tursoTestUrlTemplate(baseUrl: string): string {
   const u = new URL(baseUrl.replace(/^libsql:\/\//, "https://"));
   const host = u.hostname.replace(/\.turso\.io$/, "");
-  return `libsql://${host}-{shardIndex}.${u.hostname.includes("turso") ? "turso.io" : u.host}`;
+  return `libsql://${host}-{cellId}.${u.hostname.includes("turso") ? "turso.io" : u.host}`;
 }
 
 export async function openTursoTestCluster(opts: {
-  cellCount: number;
-  outboxPayloadCodec: import("../crypto").OutboxPayloadCodec;
+  outboxPayloadCodec: import("../../crypto").OutboxPayloadCodec;
 }) {
   const { url, authToken } = requireTursoIntegrationEnv();
   return createTursoColonnadeCluster({
-    cells: { urlTemplate: url, authToken },
-    catalogShards: { urlTemplate: url, authToken, shardCount: 1 },
-    mode: { kind: "pool", cellCount: opts.cellCount },
+    cells: { urlTemplate: tursoTestUrlTemplate(url), authToken },
+    catalogShards: { urlTemplate: tursoTestUrlTemplate(url), authToken, shardCount: 1 },
     encryption: { outboxPayloadCodec: opts.outboxPayloadCodec },
   });
 }

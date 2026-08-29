@@ -25,9 +25,9 @@ import type { CatalogPersistence, CellPersistence } from "@khoralabs/colonnade/p
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 ```
 
-**SQLite topology:** `createSqliteColonnadeCluster` opens lazy cell DBs at `{cellsDirectory}/{stem}.sqlite`. Pool routing uses **`derivePoolHomeCell(principal_id, cellCount)`**. Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`**.
+**SQLite topology:** `createSqliteColonnadeCluster` isolates one cell DB per `{ kind, ownerKey }` at `{cellsDirectory}/v1/{encoded}/database.db`, routed by a placement store (default + overrides). Fan-out goes through `cluster.inboxDelivery` (`InboxDelivery` port — local opens today; multiplexed cell-node delivery later). Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`**.
 
-**Turso topology:** `createTursoColonnadeCluster` opens one Turso database per cell shard via **`cells.urlTemplate`**.
+**Turso topology:** `createTursoColonnadeCluster` opens one Turso database per cell via **`cells.urlTemplate`**.
 
 ```bash
 cd packages/khora/colonnade && bun test && bun run typecheck
