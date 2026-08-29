@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createPercolator } from "..";
+import { createPercolator } from "../../core";
 import { createPercolatorSqlitePersistence } from "./index";
 
 describe("createPercolatorSqlitePersistence", () => {

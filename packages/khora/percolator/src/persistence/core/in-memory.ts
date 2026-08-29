@@ -1,5 +1,5 @@
-import { isFilterOnlyMode } from "../filters";
-import type { StandingQuery } from "../types";
+import { isFilterOnlyMode } from "../../core/filters";
+import type { StandingQuery } from "../../core/types";
 import type { PercolatorPersistence } from "./port";
 
 export function createInMemoryPercolatorPersistence(): PercolatorPersistence {

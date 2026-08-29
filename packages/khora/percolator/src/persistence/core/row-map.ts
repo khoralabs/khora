@@ -1,4 +1,4 @@
-import { type StandingQuery, zStandingSearchRequest } from "..";
+import { parseStandingSearchRequest, type StandingQuery } from "../../core";
 
 export type QueryRow = {
   id: string;
@@ -31,7 +31,7 @@ export function searchToJson(query: StandingQuery): string {
 }
 
 export function rowToFilterQuery(row: QueryRow): StandingQuery {
-  const search = zStandingSearchRequest.parse(JSON.parse(row.search_json));
+  const search = parseStandingSearchRequest(JSON.parse(row.search_json));
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -45,7 +45,7 @@ export function rowToFilterQuery(row: QueryRow): StandingQuery {
 }
 
 export function rowToSemanticQuery(row: SemanticQueryRow): StandingQuery {
-  const search = zStandingSearchRequest.parse(JSON.parse(row.search_json));
+  const search = parseStandingSearchRequest(JSON.parse(row.search_json));
   if (row.vector !== null && row.vector.byteLength > 0) {
     search.content.vector = decodeVector(row.vector);
   }

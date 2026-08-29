@@ -22,7 +22,7 @@ const zStandingSearchOptions = z.object({
   maxVectorDistance: z.number().optional(),
 });
 
-/** Mirrors @khoralabs/percolator zStandingSearchRequest — keep in sync manually. */
+/** Mirrors @khoralabs/percolator StandingSearchRequest — keep in sync manually. */
 export const zKhoraStandingSearchRequest = z.object({
   namespace: z.string().optional(),
   additionalNamespaces: z.array(z.string()).optional(),

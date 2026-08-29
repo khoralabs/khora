@@ -8,7 +8,8 @@ import {
   type KhoraPost,
   type KhoraProfile,
 } from "@khoralabs/khora-contracts";
-import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";
+import { createPercolator } from "@khoralabs/percolator";
+import { createInMemoryPercolatorPersistence } from "@khoralabs/percolator/persistence";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 import { toPercolatorSearch } from "./percolator/adapter";

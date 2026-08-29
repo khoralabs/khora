@@ -1,77 +1,18 @@
 import type { Database } from "bun:sqlite";
+import type { StandingQuery } from "../../core";
+import { isFilterOnlyMode } from "../../core";
+import type { PercolatorPersistence } from "../core";
 import {
-  isFilterOnlyMode,
-  type PercolatorPersistence,
-  type StandingQuery,
-  zStandingSearchRequest,
-} from "..";
+  encodeVector,
+  FILTER_COLS,
+  type QueryRow,
+  rowToFilterQuery,
+  rowToSemanticQuery,
+  SEMANTIC_COLS,
+  type SemanticQueryRow,
+  searchToJson,
+} from "../core/row-map";
 import { ensurePercolatorSchema } from "./schema";
-
-type QueryRow = {
-  id: string;
-  owner_id: string;
-  search_json: string;
-  min_score: number;
-  active: number;
-  created_at_ms: number;
-  updated_at_ms: number;
-  expires_at_ms: number | null;
-};
-
-type SemanticQueryRow = QueryRow & { vector: Buffer | null };
-
-function encodeVector(vec: readonly number[]): Uint8Array {
-  const f32 = new Float32Array(vec);
-  return new Uint8Array(f32.buffer);
-}
-
-function decodeVector(blob: Buffer): number[] {
-  const f32 = new Float32Array(
-    blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength),
-  );
-  return Array.from(f32);
-}
-
-function searchToJson(query: StandingQuery): string {
-  const { vector: _vec, ...restContent } = query.search.content;
-  return JSON.stringify({ ...query.search, content: restContent });
-}
-
-function rowToFilterQuery(row: QueryRow): StandingQuery {
-  const search = zStandingSearchRequest.parse(JSON.parse(row.search_json));
-  return {
-    id: row.id,
-    ownerId: row.owner_id,
-    search,
-    minScore: row.min_score,
-    active: row.active !== 0,
-    createdAtMs: row.created_at_ms,
-    updatedAtMs: row.updated_at_ms,
-    ...(row.expires_at_ms !== null ? { expiresAtMs: row.expires_at_ms } : {}),
-  };
-}
-
-function rowToSemanticQuery(row: SemanticQueryRow): StandingQuery {
-  const search = zStandingSearchRequest.parse(JSON.parse(row.search_json));
-  if (row.vector !== null && row.vector.byteLength > 0) {
-    search.content.vector = decodeVector(row.vector);
-  }
-  return {
-    id: row.id,
-    ownerId: row.owner_id,
-    search,
-    minScore: row.min_score,
-    active: row.active !== 0,
-    createdAtMs: row.created_at_ms,
-    updatedAtMs: row.updated_at_ms,
-    ...(row.expires_at_ms !== null ? { expiresAtMs: row.expires_at_ms } : {}),
-  };
-}
-
-const FILTER_COLS =
-  "id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
-const SEMANTIC_COLS =
-  "id, owner_id, search_json, vector, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
 
 export function createPercolatorSqlitePersistence(db: Database): PercolatorPersistence {
   ensurePercolatorSchema(db);

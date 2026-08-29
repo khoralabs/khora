@@ -1,4 +1,4 @@
-import type { StandingQuery } from "../types";
+import type { StandingQuery } from "../../core/types";
 
 export type PercolatorPersistence = {
   upsertQuery(query: StandingQuery): Promise<void>;

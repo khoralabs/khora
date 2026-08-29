@@ -1,6 +1,6 @@
+import type { PercolatorPersistence } from "../persistence/core/port";
 import { DEFAULT_MIN_SCORE, FILTER_ONLY_MATCH_SCORE } from "./constants";
 import { isFilterOnlyMode, passesSearchFilters } from "./filters";
-import type { PercolatorPersistence } from "./persistence/port";
 import { scoreCandidateAgainstSearch } from "./score";
 import type {
   PercolatorCandidate,

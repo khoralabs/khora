@@ -1,10 +1,7 @@
 import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
 import { embedTextChunks } from "@khoralabs/memories-node/helpers";
-import {
-  createPercolator,
-  type Percolator,
-  type PercolatorPersistence,
-} from "@khoralabs/percolator";
+import { createPercolator, type Percolator } from "@khoralabs/percolator";
+import type { PercolatorPersistence } from "@khoralabs/percolator/persistence";
 
 export type KhoraPercolatorHost = {
   percolator: Percolator;

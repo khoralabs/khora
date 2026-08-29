@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { createPercolator } from "../engine";
-import type { PercolatorPersistence } from "../persistence/port";
-import type { StandingQueryCreate } from "../types";
+import type { StandingQueryCreate } from "../../core";
+import { createPercolator } from "../../core";
+import type { PercolatorPersistence } from "../core";
 
 /** Minimal shared contract checks for a percolator persistence factory. */
 export function runPercolatorPersistenceContractTests(

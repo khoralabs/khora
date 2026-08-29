@@ -1,5 +1,5 @@
-import { isFilterOnlyMode, type PercolatorPersistence, type StandingQuery } from "..";
-import { execSql, queryAll, queryOne, type TursoClients } from "./client";
+import { isFilterOnlyMode, type StandingQuery } from "../../core";
+import type { PercolatorPersistence } from "../core";
 import {
   encodeVector,
   FILTER_COLS,
@@ -9,7 +9,8 @@ import {
   SEMANTIC_COLS,
   type SemanticQueryRow,
   searchToJson,
-} from "./row-map";
+} from "../core/row-map";
+import { execSql, queryAll, queryOne, type TursoClients } from "./client";
 import { ensurePercolatorSchemaTurso } from "./schema";
 
 export async function createPercolatorTursoPersistence(

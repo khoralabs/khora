@@ -30,7 +30,3 @@ CREATE TABLE IF NOT EXISTS percolator_semantic_queries (
 CREATE INDEX IF NOT EXISTS idx_psemantic_owner ON percolator_semantic_queries(owner_id);
 CREATE INDEX IF NOT EXISTS idx_psemantic_active ON percolator_semantic_queries(active, expires_at_ms);
 `.trim();
-
-export function ensurePercolatorSchema(db: { run: (sql: string) => void }): void {
-  db.run(PERCOLATOR_SCHEMA_SQL);
-}

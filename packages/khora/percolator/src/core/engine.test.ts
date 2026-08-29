@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { createInMemoryPercolatorPersistence, createPercolator } from "./index";
+import { createInMemoryPercolatorPersistence } from "../persistence/core";
+import { createPercolator } from "./engine";
 
 describe("createPercolator", () => {
   test("filter-only empty query matches candidate with required label", async () => {

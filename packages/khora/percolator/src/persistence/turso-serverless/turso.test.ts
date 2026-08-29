@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createPercolator } from "..";
+import { createPercolator } from "../../core";
 import { tursoClientsFromBunSqlite } from "./testing/bun-sqlite-adapter";
 import { createPercolatorTursoPersistence } from "./turso";
 
