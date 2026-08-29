@@ -8,19 +8,20 @@ The **host library** lives in `packages/khora/host` (`@khoralabs/khora-host`). T
 
 ### Library entry: `createKhoraHost(deps)`
 
-**File:** `packages/khora/host/src/khora-host.ts`
+**File:** `packages/khora/host/src/host/create-host.ts`
 
 The host is a **persistence-agnostic orchestrator**. It does not open SQLite files or read path env vars. The composition root (typically `apps/khora/server/src/bootstrap-khora.ts`) opens databases, builds ports, and passes an `KhoraHostDeps` object:
 
 | Dep | Purpose |
 |-----|---------|
-| `persistence`, `social` | Relay persistence + social relationships (on context via `host` / `social`) |
+| `persistence`, `social` | Host persistence + social relationships (on context via `host` / `social`) |
 | `registration` | Pre-built `KhoraRegistrationApi` (registration, username maps) |
 | `cluster` | `KhoraColonnadeCluster` — cell shards, post resolution |
 | `publicationClient` | Colonnade publish/fan-out |
 | `auth` | `KhoraDidAuth` |
-| `invitesRepo?` | `KhoraInvitesRepo` from `@khoralabs/khora-host` |
-| `memories?` | `KhoraMemoriesHost` from `bootstrapKhoraMemories({ persistence, postResolver, … })` |
+| `invitesRepo?` | `KhoraInvitesRepo` from `@khoralabs/khora-host/persistence` |
+| `search?` | `HostSearch` from `bootstrapHostSearch({ persistence, postResolver, … })` (pull discovery) |
+| `subscriptions` | `HostSubscriptions` from `bootstrapHostSubscriptions(…)` (push discovery) |
 | `health` | `KhoraHostHealthPort` — readiness ping |
 | `adminStats` | `KhoraAdminStatsPort` — internal admin stats |
 | `startPrincipalTeardownWorker?` | Background unregister teardown (default `true`) |
@@ -281,7 +282,7 @@ Implementation:
 
 - `packages/khora/server-http/src/ws/inbox.ts` — upgrade + hello/bind handlers
 - `packages/khora/host/src/runtime/inbox/multiplex-session.ts` — bind verify + capped concurrent drain
-- `packages/khora/host/src/relay-inbox-drain.ts` — `popRelayInboxDrainItemsForDid`
+- `packages/khora/host/src/relay-inbox-drain.ts` — `popInboxDrainItemsForDid`
 
 For post pointers: resolve author outbox via `resolveSourcemap`, verify content hash, return `bodyJson` + metadata (`postId`, `subscriptionMatches`, etc.).
 

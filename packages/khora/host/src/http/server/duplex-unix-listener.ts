@@ -1,8 +1,8 @@
 import { AuthError } from "@khoralabs/khora-auth";
 import type { DuplexByteStream } from "@khoralabs/khora-client/transport/byte-stream";
 import type { Socket } from "bun";
-import type { HostRouteDeps } from "../http/deps";
 import { logger } from "../logger";
+import type { HostRouteDeps } from "../routes/deps";
 import { attachInboxDuplexAfterAuth } from "./duplex-attach";
 import { type DuplexUnixHandshake, parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake";
 

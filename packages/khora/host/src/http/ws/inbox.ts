@@ -7,10 +7,10 @@ import {
   type InboxMultiplexWsData,
   newInboxConnectionId,
 } from "../..";
-import type { HostRouteDeps } from "../http/deps";
-import { jsonError, rateLimitedResponse } from "../http/responses";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
+import type { HostRouteDeps } from "../routes/deps";
+import { jsonError, rateLimitedResponse } from "../routes/responses";
 
 export async function handleInboxWsUpgrade(
   req: Request,

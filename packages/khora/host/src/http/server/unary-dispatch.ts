@@ -1,5 +1,5 @@
-import type { HostRouteDeps } from "../http/deps";
-import { routeUnary } from "../http/router";
+import type { HostRouteDeps } from "../routes/deps";
+import { routeUnary } from "../routes/router";
 
 /** Canonical synthetic origin for IPC unary ingress (`req.url` / signing visibility only). */
 export const KHORA_UNARY_INGRESS_ORIGIN = "http://khora.ipc";

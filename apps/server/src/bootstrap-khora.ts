@@ -9,10 +9,9 @@ import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 import { createKhoraDidAuth } from "@khoralabs/khora-auth";
 import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
 import {
-  bootstrapKhoraMemories,
-  bootstrapKhoraPercolator,
+  bootstrapHostSearch,
+  bootstrapHostSubscriptions,
   createColonnadePostResolver,
-  createHostPersistenceClient,
   createKhoraHost,
   createKhoraRegistrationApi,
   createPrincipalLifecycle,
@@ -24,6 +23,7 @@ import {
   startEmbeddingRetryWorker,
   validateInviteEnvConfig,
 } from "@khoralabs/khora-host";
+import { createHostPersistenceClient } from "@khoralabs/khora-host/persistence";
 import {
   applyKhoraSqlitePragmas,
   createKhoraInvitesSqliteRepo,
@@ -119,13 +119,13 @@ export async function bootstrapKhoraHost(
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
-  const percolator = bootstrapKhoraPercolator({
+  const percolator = bootstrapHostSubscriptions({
     persistence: createPercolatorSqlitePersistence(percolatorDb),
     ...(opts.memories?.embeddingModel !== undefined
       ? { embeddingModel: opts.memories.embeddingModel }
       : {}),
   });
-  let memories: ReturnType<typeof bootstrapKhoraMemories> | undefined;
+  let memories: ReturnType<typeof bootstrapHostSearch> | undefined;
   const principalLifecycle = createPrincipalLifecycle({
     persistence,
     purgePrincipalCells: async (principalId) => {
@@ -204,7 +204,7 @@ export async function bootstrapKhoraHost(
     memoriesSqliteDb = getMemoriesSqliteDatabase(syncPersistence);
     ensurePendingEmbeddingsTable(memoriesSqliteDb);
 
-    memories = bootstrapKhoraMemories({
+    memories = bootstrapHostSearch({
       persistence: handle.persistence,
       close: () => {
         void handle.close();
@@ -239,8 +239,8 @@ export async function bootstrapKhoraHost(
     hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
-    ...(memories !== undefined ? { memories } : {}),
-    percolator,
+    ...(memories !== undefined ? { search: memories } : {}),
+    subscriptions: percolator,
     ...(opts.startPrincipalTeardownWorker !== undefined
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),

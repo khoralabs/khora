@@ -11,7 +11,7 @@ import {
 } from "./memories-domus";
 import type { KhoraPersistencePaths } from "./persistence-paths";
 
-export const DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT = "global";
+export const DEFAULT_HOST_SEARCH_NAMESPACE_ROOT = "global";
 
 export type KhoraMemoriesBootstrapConfig = {
   /** memories-service local SQLite dataDir (`{KHORA_DATA_DIR}/memories`). */
@@ -85,7 +85,7 @@ export function createKhoraEmbeddingModelFromEnv(
 
 export function readKhoraMemoriesNamespaceRoot(env: NodeJS.ProcessEnv = process.env): string {
   const raw = env.KHORA_MEMORIES_NAMESPACE_ROOT?.trim();
-  return raw !== undefined && raw.length > 0 ? raw : DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
+  return raw !== undefined && raw.length > 0 ? raw : DEFAULT_HOST_SEARCH_NAMESPACE_ROOT;
 }
 
 export function envMemoriesBootstrapConfig(

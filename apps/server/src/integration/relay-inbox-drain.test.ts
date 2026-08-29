@@ -3,11 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
-import {
-  assignPostAddress,
-  encodePostId,
-  popRelayInboxDrainItemsForDid,
-} from "@khoralabs/khora-host";
+import { assignPostAddress, encodePostId, popInboxDrainItemsForDid } from "@khoralabs/khora-host";
 import { createTestKhoraHost } from "../test/bootstrap-sqlite";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-drain-"));
@@ -22,7 +18,7 @@ afterAll(() => {
   rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistered (phase1)", async () => {
+test("popInboxDrainItemsForDid drops cell inbox row when author unregistered (phase1)", async () => {
   const root = nextHostDir();
   const ctx = await createTestKhoraHost({
     hostDbPath: join(root, "c.sqlite"),
@@ -87,11 +83,11 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
     },
   });
 
-  expect(await popRelayInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(1);
+  expect(await popInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(1);
 
   ctx.phase1UnregisterPrincipal("did:author");
 
-  expect(await popRelayInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(0);
+  expect(await popInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(0);
   ctx.principalTeardownWorker.stop();
   ctx.cluster.close();
 });

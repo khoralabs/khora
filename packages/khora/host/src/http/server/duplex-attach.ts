@@ -5,7 +5,7 @@ import {
   inboxWebSocketFromDuplexUtf8,
   newInboxConnectionId,
 } from "../..";
-import type { HostRouteDeps } from "../http/deps";
+import type { HostRouteDeps } from "../routes/deps";
 import { inboxBindRateLimitGuard } from "../ws/inbox";
 
 export async function attachInboxDuplexAfterAuth(opts: {

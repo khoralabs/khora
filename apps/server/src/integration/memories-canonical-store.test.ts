@@ -8,10 +8,9 @@ import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import {
   createColonnadePostResolver,
-  createHostPersistenceClient,
-  createKhoraCanonicalStore,
-  createKhoraMemoriesIndexer,
-  DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
+  createHostSearchCanonicalStore,
+  createHostSearchIndexer,
+  DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
   encodePostId,
   hydrateMemoryLabels,
   khoraOntology,
@@ -19,6 +18,7 @@ import {
   postsMemoryNamespace,
   profileMemoryNamespace,
 } from "@khoralabs/khora-host";
+import { createHostPersistenceClient } from "@khoralabs/khora-host/persistence";
 import { ids, MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesPersistenceAsync,
@@ -127,13 +127,13 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
   const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
   const persistence = createMemoriesPersistenceAsync(memoriesDb);
   const postResolver = createColonnadePostResolver(cluster);
-  const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
+  const store = createHostSearchCanonicalStore({ persistence, postResolver, persistenceClient });
   const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
-  const indexer = createKhoraMemoriesIndexer({
+  const indexer = createHostSearchIndexer({
     client,
     persistence,
     persistenceClient,
-    namespaceRoot: DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
+    namespaceRoot: DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
   });
   return {
     cluster,
@@ -154,7 +154,7 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
   };
 }
 
-describe("KhoraCanonicalStore", () => {
+describe("HostSearchCanonicalStore", () => {
   memoriesTest("resolves profile and post from indexed memories", async () => {
     const profile: KhoraProfile = {
       id: "prof-canonical-1",
@@ -189,7 +189,7 @@ describe("KhoraCanonicalStore", () => {
     await indexer.indexPost(post);
 
     const postMemoryId = ids.memory(
-      postsMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      postsMemoryNamespace(DEFAULT_HOST_SEARCH_NAMESPACE_ROOT, profile.id),
       post.id,
     );
     const postNk = await persistence.loadMemoryNamespaceKey(postMemoryId);
@@ -205,11 +205,11 @@ describe("KhoraCanonicalStore", () => {
     }
 
     const profileMemoryId = ids.memory(
-      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      profileMemoryNamespace(DEFAULT_HOST_SEARCH_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
     const profileLabels = await persistence.loadNodeLabelsForMemory(
-      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      profileMemoryNamespace(DEFAULT_HOST_SEARCH_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
     const profileHydrated = await hydrateMemoryLabels(store, profileLabels, profileMemoryId);
@@ -253,7 +253,7 @@ describe("KhoraCanonicalStore", () => {
     await indexer.indexPost(subscription);
 
     const subMemoryId = ids.memory(
-      postsMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      postsMemoryNamespace(DEFAULT_HOST_SEARCH_NAMESPACE_ROOT, profile.id),
       subscription.id,
     );
     const subNk = await persistence.loadMemoryNamespaceKey(subMemoryId);
@@ -290,11 +290,11 @@ describe("KhoraCanonicalStore", () => {
     removeProfile();
 
     const profileMemoryId = ids.memory(
-      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      profileMemoryNamespace(DEFAULT_HOST_SEARCH_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
     const profileLabels = await persistence.loadNodeLabelsForMemory(
-      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
+      profileMemoryNamespace(DEFAULT_HOST_SEARCH_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
     const hydrated = await hydrateMemoryLabels(store, profileLabels, profileMemoryId);

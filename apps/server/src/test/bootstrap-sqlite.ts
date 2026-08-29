@@ -9,7 +9,7 @@ import { createKhoraDidAuth } from "@khoralabs/khora-auth";
 import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
-  bootstrapKhoraPercolator,
+  bootstrapHostSubscriptions,
   createKhoraHost,
   createKhoraRegistrationApi,
   createPrincipalLifecycle,
@@ -80,7 +80,7 @@ export async function createTestKhoraHost(
     },
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
-  const percolator = bootstrapKhoraPercolator({
+  const percolator = bootstrapHostSubscriptions({
     persistence: createPercolatorSqlitePersistence(percolatorDb),
   });
   const principalLifecycle = createPrincipalLifecycle({
@@ -165,7 +165,7 @@ export async function createTestKhoraHost(
     adminStats,
     hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
-    percolator,
+    subscriptions: percolator,
     startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker ?? false,
   });
 }

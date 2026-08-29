@@ -41,7 +41,7 @@ async function handleEmbeddingQueue(
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   const subpath = url.pathname.slice(ADMIN_MEMORIES_PREFIX.length);
-  const memories = deps.ctx.memories;
+  const memories = deps.ctx.search;
   const db = deps.memoriesSqliteDb;
   if (memories === undefined || db === undefined) {
     return memoriesUnavailableResponse();
@@ -83,7 +83,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
   if (!envMemoriesEnabled()) {
     return memoriesUnavailableResponse();
   }
-  if (deps.memoriesService === undefined || deps.ctx.memories === undefined) {
+  if (deps.memoriesService === undefined || deps.ctx.search === undefined) {
     return memoriesUnavailableResponse();
   }
 

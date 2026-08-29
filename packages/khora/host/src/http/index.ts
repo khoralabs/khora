@@ -1,26 +1,3 @@
-export { handleAdminAgentsRoute } from "./http/admin-agents";
-export { handleAdminInvitesList, handleAdminInvitesMint } from "./http/admin-invites";
-export {
-  handleAdminStatsCell,
-  handleAdminStatsInactiveMembers,
-  handleAdminStatsPrincipal,
-  handleAdminStatsSummary,
-} from "./http/admin-stats";
-export { withAdminTokenAuth } from "./http/admin-token-guard";
-export type { HostRouteDeps } from "./http/deps";
-export { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./http/host-admin";
-export { adminStatsSummaryResponse } from "./http/internal-admin-stats";
-export { handleRegister } from "./http/register";
-export { authErrorResponse, jsonError, rateLimitedResponse } from "./http/responses";
-export {
-  type AdminMemoriesRoute,
-  type CreateHostRouterOptions,
-  createHostRouter,
-  type HostRouter,
-  route,
-  routeUnary,
-} from "./http/router";
-export { handleWellKnownKhora } from "./http/well-known-khora";
 export { logger } from "./logger";
 export { buildKhoraHostDiscovery } from "./ops/build-host-discovery";
 export {
@@ -36,6 +13,29 @@ export {
   type RegistryOptInParams,
   registerHostWithRegistry,
 } from "./registry-opt-in";
+export { handleAdminAgentsRoute } from "./routes/admin-agents";
+export { handleAdminInvitesList, handleAdminInvitesMint } from "./routes/admin-invites";
+export {
+  handleAdminStatsCell,
+  handleAdminStatsInactiveMembers,
+  handleAdminStatsPrincipal,
+  handleAdminStatsSummary,
+} from "./routes/admin-stats";
+export { withAdminTokenAuth } from "./routes/admin-token-guard";
+export type { HostRouteDeps } from "./routes/deps";
+export { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./routes/host-admin";
+export { adminStatsSummaryResponse } from "./routes/internal-admin-stats";
+export { handleRegister } from "./routes/register";
+export { authErrorResponse, jsonError, rateLimitedResponse } from "./routes/responses";
+export {
+  type AdminMemoriesRoute,
+  type CreateHostRouterOptions,
+  createHostRouter,
+  type HostRouter,
+  route,
+  routeUnary,
+} from "./routes/router";
+export { handleWellKnownKhora } from "./routes/well-known-khora";
 export type { DuplexUnixIngressHandle } from "./server/duplex-unix-listener";
 export { startDuplexUnixIngress } from "./server/duplex-unix-listener";
 export { startStdioUnaryIngress } from "./server/stdio-unary-listener";

@@ -9,10 +9,9 @@ import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import {
   agentScope,
   createColonnadePostResolver,
-  createHostPersistenceClient,
-  createKhoraCanonicalStore,
-  createKhoraMemoriesIndexer,
-  DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
+  createHostSearchCanonicalStore,
+  createHostSearchIndexer,
+  DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
   encodePostId,
   khoraOntology,
   PROFILE_MEMORY_KEY,
@@ -20,6 +19,7 @@ import {
   profileMemoryNamespace,
   topicScope,
 } from "@khoralabs/khora-host";
+import { createHostPersistenceClient } from "@khoralabs/khora-host/persistence";
 import { MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesPersistenceAsync,
@@ -112,7 +112,7 @@ function createTestRelayPersistence(profile: KhoraProfile) {
 
 describe("khora memories indexer", () => {
   memoriesTest("indexes profile and topic-scoped post; scopeDag finds post by topic", async () => {
-    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_HOST_SEARCH_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-index-1",
       username: "alice",
@@ -134,9 +134,9 @@ describe("khora memories indexer", () => {
     const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
     const persistence = createMemoriesPersistenceAsync(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
-    const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
+    const store = createHostSearchCanonicalStore({ persistence, postResolver, persistenceClient });
     const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
-    const indexer = createKhoraMemoriesIndexer({
+    const indexer = createHostSearchIndexer({
       client,
       persistence,
       persistenceClient,
@@ -210,7 +210,7 @@ describe("khora memories indexer", () => {
   });
 
   memoriesTest("deleteProfile removes profile and indexed post memories", async () => {
-    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_HOST_SEARCH_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-delete-1",
       username: "dana",
@@ -232,9 +232,9 @@ describe("khora memories indexer", () => {
     const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
     const persistence = createMemoriesPersistenceAsync(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
-    const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
+    const store = createHostSearchCanonicalStore({ persistence, postResolver, persistenceClient });
     const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
-    const indexer = createKhoraMemoriesIndexer({
+    const indexer = createHostSearchIndexer({
       client,
       persistence,
       persistenceClient,
@@ -288,7 +288,7 @@ describe("khora memories indexer", () => {
   });
 
   memoriesTest("indexes subscription with search; label filter finds subscription", async () => {
-    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_HOST_SEARCH_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-probe-1",
       username: "bob",
@@ -309,9 +309,9 @@ describe("khora memories indexer", () => {
     const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
     const persistence = createMemoriesPersistenceAsync(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
-    const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
+    const store = createHostSearchCanonicalStore({ persistence, postResolver, persistenceClient });
     const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
-    const indexer = createKhoraMemoriesIndexer({
+    const indexer = createHostSearchIndexer({
       client,
       persistence,
       persistenceClient,

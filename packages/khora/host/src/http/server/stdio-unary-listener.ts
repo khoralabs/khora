@@ -1,6 +1,6 @@
 import * as readline from "node:readline";
 import z from "zod";
-import type { HostRouteDeps } from "../http/deps";
+import type { HostRouteDeps } from "../routes/deps";
 import { dispatchHttpLikeUnary } from "./unary-dispatch";
 
 const zUnaryIngressWireRequest = z

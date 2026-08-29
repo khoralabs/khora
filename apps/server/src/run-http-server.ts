@@ -174,7 +174,7 @@ export async function runHttpServer(): Promise<void> {
         /* ignore */
       }
       try {
-        ctx.memories?.close();
+        ctx.search?.close();
       } catch {
         /* ignore */
       }

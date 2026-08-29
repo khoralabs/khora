@@ -6,14 +6,14 @@ import type { KhoraProfile } from "@khoralabs/khora-contracts";
 import {
   agentScope,
   createColonnadePostResolver,
-  createHostPersistenceClient,
-  createKhoraCanonicalStore,
-  createKhoraMemoriesIndexer,
-  DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
-  executeKhoraMemoriesSearch,
+  createHostSearchCanonicalStore,
+  createHostSearchIndexer,
+  DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
+  executeHostSearch,
   khoraOntology,
   PROFILE_MEMORY_KEY,
 } from "@khoralabs/khora-host";
+import { createHostPersistenceClient } from "@khoralabs/khora-host/persistence";
 import { MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
   createMemoriesPersistenceAsync,
@@ -120,9 +120,9 @@ function createTestRelayPersistence(profile: KhoraProfile) {
   };
 }
 
-describe("executeKhoraMemoriesSearch", () => {
+describe("executeHostSearch", () => {
   memoriesTest("filters and purges profile memories whose catalog row was removed", async () => {
-    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_HOST_SEARCH_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "e4a2c87d-141d-4bc8-a347-337fca92e3ce",
       username: "zach",
@@ -144,9 +144,9 @@ describe("executeKhoraMemoriesSearch", () => {
     const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
     const persistence = createMemoriesPersistenceAsync(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
-    const store = createKhoraCanonicalStore({ persistence, postResolver, persistenceClient });
+    const store = createHostSearchCanonicalStore({ persistence, postResolver, persistenceClient });
     const client = new MemoriesClientAsync(persistence, khoraOntology, { store });
-    const indexer = createKhoraMemoriesIndexer({
+    const indexer = createHostSearchIndexer({
       client,
       persistence,
       persistenceClient,
@@ -163,7 +163,7 @@ describe("executeKhoraMemoriesSearch", () => {
     });
     expect(before.some((h) => h.memory.key === PROFILE_MEMORY_KEY)).toBe(true);
 
-    const result = await executeKhoraMemoriesSearch({
+    const result = await executeHostSearch({
       client,
       persistence,
       store,

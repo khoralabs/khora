@@ -9,15 +9,55 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./persistence": {
+      "types": "./src/persistence/core/index.ts",
+      "import": "./src/persistence/core/index.ts",
+      "default": "./src/persistence/core/index.ts"
+    },
     "./sqlite": {
-      "types": "./src/sqlite/index.ts",
-      "import": "./src/sqlite/index.ts",
-      "default": "./src/sqlite/index.ts"
+      "types": "./src/persistence/sqlite/index.ts",
+      "import": "./src/persistence/sqlite/index.ts",
+      "default": "./src/persistence/sqlite/index.ts"
+    },
+    "./testing": {
+      "types": "./src/persistence/testing/index.ts",
+      "import": "./src/persistence/testing/index.ts",
+      "default": "./src/persistence/testing/index.ts"
     },
     "./http": {
       "types": "./src/http/index.ts",
       "import": "./src/http/index.ts",
       "default": "./src/http/index.ts"
+    },
+    "./discovery/search": {
+      "types": "./src/discovery/search/index.ts",
+      "import": "./src/discovery/search/index.ts",
+      "default": "./src/discovery/search/index.ts"
+    },
+    "./discovery/subscriptions": {
+      "types": "./src/discovery/subscriptions/index.ts",
+      "import": "./src/discovery/subscriptions/index.ts",
+      "default": "./src/discovery/subscriptions/index.ts"
+    },
+    "./posts": {
+      "types": "./src/posts/index.ts",
+      "import": "./src/posts/index.ts",
+      "default": "./src/posts/index.ts"
+    },
+    "./inbox": {
+      "types": "./src/inbox/index.ts",
+      "import": "./src/inbox/index.ts",
+      "default": "./src/inbox/index.ts"
+    },
+    "./registration": {
+      "types": "./src/registration/index.ts",
+      "import": "./src/registration/index.ts",
+      "default": "./src/registration/index.ts"
+    },
+    "./invites": {
+      "types": "./src/invites/index.ts",
+      "import": "./src/invites/index.ts",
+      "default": "./src/invites/index.ts"
     }
   },
   "scripts": {
