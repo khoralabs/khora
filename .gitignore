@@ -6,6 +6,7 @@
 *.wal
 *.journal
 .bin
+.data
 
 
 # dependencies (bun install)

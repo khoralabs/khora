@@ -1,5 +1,4 @@
 import {
-  createServiceReactMemoriesClient,
   GraphCameraReframeHint,
   GraphFetchError,
   GraphLoading,
@@ -15,6 +14,7 @@ import {
   MemoriesNamespaceMemoriesProvider,
   MemoriesNamespacesProvider,
 } from "@khoralabs/memories-react-graph";
+import { createServiceReactMemoriesClient } from "@khoralabs/memories-react-graph/service";
 import type { MemoriesDatabaseId } from "@khoralabs/memories-service/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -161,7 +161,6 @@ export function GraphPage() {
       <MemoriesClientProvider
         createClient={createClient}
         database={DOMUS_DATABASE}
-        baseUrl={MEMORIES_API_BASE}
         openOnFocus
       >
         <MemoriesNamespacesProvider namespaceRoot={namespaceRoot}>

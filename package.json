@@ -7,7 +7,8 @@
     "@types/parse-gitignore": "^1.0.2",
     "husky": "^9.1.7",
     "minimatch": "^10.2.5",
-    "parse-gitignore": "^2.0.0"
+    "parse-gitignore": "^2.0.0",
+    "@khoralabs/agent-review": "^0.2.2"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -24,11 +25,15 @@
     "clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",
     "format": "biome check --write .",
     "format:check": "biome check .",
+    "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter './apps/*' typecheck && bun run --filter './vendor/libs/packages/*' typecheck",
+    "test": "bun test",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
     "submodules:init": "git submodule update --init --recursive",
     "submodules:update": "git submodule update --remote --merge vendor/libs && bun install",
     "submodules:update:libs": "git submodule update --remote --merge vendor/libs && bun install",
-    "prepare": "husky"
+    "prepare": "husky",
+    "agent-review": "agent-review",
+    "review": "agent-review run --scope staged --include-workstream"
   },
   "type": "module",
   "dependencies": {
