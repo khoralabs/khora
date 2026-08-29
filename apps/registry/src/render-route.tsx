@@ -3,11 +3,11 @@ import { createRoot } from "react-dom/client";
 
 function showRootError(elem: HTMLElement, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err);
-  console.error("[admin-ui]", err);
+  console.error("[cli-link]", err);
   elem.replaceChildren();
   const pre = document.createElement("pre");
   pre.className = "m-6 rounded-md border border-red-500/40 bg-red-950/20 p-4 text-sm text-red-200";
-  pre.textContent = `Admin UI failed to start:\n${message}`;
+  pre.textContent = `CLI link UI failed to start:\n${message}`;
   elem.append(pre);
 }
 
