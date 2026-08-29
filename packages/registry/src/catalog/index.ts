@@ -47,6 +47,11 @@ export {
 } from "./host-health-probe";
 export { issueHostManagementToken } from "./host-management-token";
 export {
+  assertSafeHostProbeTarget,
+  isBlockedProbeAddress,
+  UnsafeHostProbeTargetError,
+} from "./host-probe-target";
+export {
   evaluateHostHealthRequirement,
   type HostHealthProbeFn,
   readHostRegistrationPolicy,

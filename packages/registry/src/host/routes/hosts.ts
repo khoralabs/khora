@@ -11,6 +11,11 @@ import {
   tryAutoActivateHost,
 } from "@khoralabs/registry/catalog";
 import type { HostRegistrationWireState } from "@khoralabs/registry/contracts";
+import {
+  assertSafeHostProbeTarget,
+  UnsafeHostProbeTargetError,
+} from "../../catalog/host-probe-target";
+import { clientIpFromRequest } from "../client-ip";
 import { probeHostHealth } from "../host-health";
 import { registryHostRuntime } from "../runtime";
 import { hostToFullJson, hostToPublicJson } from "./host-json";
@@ -19,16 +24,8 @@ const REGISTER_LIMIT = 20;
 const REGISTER_WINDOW_MS = 60 * 60 * 1000;
 const registerCounts = new Map<string, { count: number; resetAtMs: number }>();
 
-function clientIp(req: Request): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip")?.trim() ??
-    "unknown"
-  );
-}
-
 function checkRegisterRateLimit(req: Request): boolean {
-  const ip = clientIp(req);
+  const ip = clientIpFromRequest(req);
   const now = Date.now();
   const entry = registerCounts.get(ip);
   if (entry === undefined || now >= entry.resetAtMs) {
@@ -89,6 +86,22 @@ export async function handleHostRegister(req: Request): Promise<Response> {
   const baseUrl = body.baseUrl?.trim() ?? "";
   if (slug.length === 0 || baseUrl.length === 0) {
     return Response.json({ error: "slug and baseUrl are required" }, { status: 400 });
+  }
+
+  try {
+    const readyPath = body.healthReadyPath?.trim() || "/ready";
+    const healthPath = body.healthPath?.trim() || "/health";
+    const join = (path: string) => {
+      const base = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+      return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+    };
+    await assertSafeHostProbeTarget(join(readyPath));
+    await assertSafeHostProbeTarget(join(healthPath));
+  } catch (err: unknown) {
+    if (err instanceof UnsafeHostProbeTargetError) {
+      return Response.json({ error: err.message }, { status: 400 });
+    }
+    throw err;
   }
 
   const db = registryHostRuntime().db;

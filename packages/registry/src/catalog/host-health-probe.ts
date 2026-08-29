@@ -4,6 +4,7 @@ import type {
   KhoraHost,
 } from "@khoralabs/registry/contracts";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import { assertSafeHostProbeTarget } from "./host-probe-target";
 import { updateRegistrationRequirement } from "./host-registration-requirements";
 import {
   findHostById,
@@ -30,6 +31,7 @@ async function fetchProbe(
   const start = Date.now();
   const res = await fetchImpl(url, {
     method: "GET",
+    redirect: "manual",
     signal: AbortSignal.timeout(timeoutMs),
   });
   return { ok: res.ok, latencyMs: Date.now() - start };
@@ -45,6 +47,7 @@ export async function probeHostHealth(
 
   try {
     const readyUrl = joinBaseUrlAndPath(host.baseUrl, host.healthReadyPath);
+    await assertSafeHostProbeTarget(readyUrl);
     const ready = await fetchProbe(readyUrl, timeoutMs, fetchImpl);
     if (ready.ok) {
       return { status: "up", latencyMs: ready.latencyMs, probedEndpoint: "ready" };
@@ -55,6 +58,7 @@ export async function probeHostHealth(
 
   try {
     const healthUrl = joinBaseUrlAndPath(host.baseUrl, host.healthPath);
+    await assertSafeHostProbeTarget(healthUrl);
     const health = await fetchProbe(healthUrl, timeoutMs, fetchImpl);
     if (health.ok) {
       return { status: "up", latencyMs: health.latencyMs, probedEndpoint: "health" };

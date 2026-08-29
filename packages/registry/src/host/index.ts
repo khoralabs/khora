@@ -1,3 +1,4 @@
+export { clientIpFromRequest, runWithRequestPeerIp } from "./client-ip";
 export type { RegistryHostContext } from "./context";
 export { handleOptions, withCors } from "./cors";
 export { createRegistryHost } from "./create-registry-host";
