@@ -1,2 +1,6 @@
-/** Shared colonnade persistence contract test helpers (expand as suites land). */
-export {};
+export {
+  type ColonnadePersistenceContractFactory,
+  type ColonnadePersistenceContractHarness,
+  createInMemoryColonnadeContractHarness,
+  runColonnadePersistenceContractTests,
+} from "../core/contract";
