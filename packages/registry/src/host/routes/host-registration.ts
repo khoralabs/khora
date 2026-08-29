@@ -34,14 +34,10 @@ async function resolveHostForRegistrationSecret(
   secret: string,
 ) {
   const hostId = await verifyHostRegistrationSecret(db, slug, secret);
-  if (hostId !== null) {
-    return await findHostBySlug(db, slug);
+  if (hostId === null) {
+    return null;
   }
-  const host = await findHostBySlug(db, slug);
-  if (host !== null && host.status === "active") {
-    return host;
-  }
-  return null;
+  return await findHostBySlug(db, slug);
 }
 
 async function registrationResponse(
@@ -82,10 +78,6 @@ export async function handleHostRegistrationClaim(req: Request, slug: string): P
   const db = registryHostRuntime().db;
   const hostId = await verifyHostRegistrationSecret(db, slug, secret);
   if (hostId === null) {
-    const host = await findHostBySlug(db, slug);
-    if (host !== null && host.status === "active") {
-      return await registrationResponse(db, host, { activated: false });
-    }
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

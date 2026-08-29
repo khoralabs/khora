@@ -12,7 +12,6 @@ import {
   serializeRegistrationRequirements,
 } from "./host-registration-requirements";
 import {
-  clearHostRegistrationSecret,
   issueHostRegistrationSecret,
   storePendingManagementToken,
   takePendingManagementToken,
@@ -279,7 +278,8 @@ export async function activateKhoraHost(
   if (managementToken !== null) {
     await storePendingManagementToken(db, hostId, managementToken);
   }
-  await clearHostRegistrationSecret(db, hostId);
+  // Keep registration_secret_hash until deliverPendingManagementToken / claim
+  // so only the registration-secret holder can receive the management token.
   const host = await findHostById(db, hostId);
   if (host === null) {
     throw new Error("host activate failed");

@@ -78,6 +78,9 @@ export async function takePendingManagementToken(
   if (row === undefined || row.pending_management_token === null) {
     return null;
   }
-  await db.exec(`UPDATE khora_hosts SET pending_management_token = NULL WHERE id = ?`, [hostId]);
+  await db.exec(
+    `UPDATE khora_hosts SET pending_management_token = NULL, registration_secret_hash = NULL WHERE id = ?`,
+    [hostId],
+  );
   return row.pending_management_token;
 }
