@@ -1,14 +1,6 @@
-import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
-import type { NonceStore } from "./nonce-store";
-import type {
-  AuthenticatedPrincipalVerifyContext,
-  AuthPreflight,
-  InboxAccessVerifyContext,
-  RegistrationVerifyContext,
-} from "./preflight";
-import { INBOX_BIND_METHOD, inboxBindCanonicalPath } from "./signer";
-import type { AuthStrategy } from "./strategy";
-import { createDidKeyEd25519Strategy } from "./strategy-did-key";
+import type { AuthStrategy } from "../../did/strategy";
+import { createDidKeyEd25519Strategy } from "../../did/strategy-ed25519-key";
+import type { NonceStore } from "../../replay/nonce-store";
 import {
   AGENT_REQUEST_FRESHNESS_WINDOW_MS,
   AGENT_REQUEST_HEADER,
@@ -16,11 +8,12 @@ import {
   canonicalAgentRequestPath,
   parseAgentRequestEnvelopeFromHeaders,
   parseAgentRequestEnvelopeFromSearch,
-} from "./wire";
+} from "./envelope";
+import { INBOX_BIND_METHOD, inboxBindCanonicalPath } from "./sign";
 
 const DEFAULT_SWEEP_INTERVAL_MS = 60_000;
 
-/** Public error raised by {@link KhoraDidAuth} guards; carries an HTTP status hint. */
+/** Public error raised by {@link SignedRequestAuth} guards; carries an HTTP status hint. */
 export class AuthError extends Error {
   readonly status: number;
   constructor(message: string, status = 401) {
@@ -30,29 +23,68 @@ export class AuthError extends Error {
   }
 }
 
-export type KhoraDidAuthOptions = {
-  /** Pluggable per-scheme signature verifier. Defaults to {@link createDidKeyEd25519Strategy}. */
+/** Optional HTTP hints supplied by the adapter. */
+export type RegistrationVerifyClientHints = {
+  ip?: string;
+  userAgent?: string;
+};
+
+export type RegistrationVerifyContext = {
+  request: { principalId: string };
+  client?: RegistrationVerifyClientHints;
+  headers: Headers;
+  bodyText: string;
+};
+
+export type AuthenticatedPrincipalVerifyContext = {
+  method: string;
+  path: string;
+  headers: Headers;
+  claimedPrincipalId: string;
+  bodyText?: string;
+};
+
+export type InboxAccessVerifyContext = {
+  claimedPrincipalId: string;
+  path: string;
+  searchParams: URLSearchParams;
+  headers: Headers;
+};
+
+/**
+ * Optional preflight surface for hosts. Prefer importing the host-local re-export when typing
+ * against `PrincipalRegistrationRequest`; this shape stays principal-id agnostic.
+ */
+export interface SignedRequestPreflight {
+  verifyRegistration(ctx: RegistrationVerifyContext): Promise<void>;
+  verifyAuthenticatedPrincipal(ctx: AuthenticatedPrincipalVerifyContext): Promise<void>;
+  verifyInboxAccess(ctx: InboxAccessVerifyContext): Promise<void>;
+}
+
+/** @deprecated Use {@link SignedRequestPreflight}. */
+export type AuthPreflight = SignedRequestPreflight;
+
+export type SignedRequestAuthOptions = {
   strategy?: AuthStrategy;
   nonceStore: NonceStore;
-  /** Override clock (ms); defaults to `Date.now`. */
   now?: () => number;
-  /** Acceptable timestamp drift in ms; defaults to {@link AGENT_REQUEST_FRESHNESS_WINDOW_MS}. */
   freshnessWindowMs?: number;
-  /** Min ms between opportunistic nonce sweeps. Defaults to 60s. */
   sweepIntervalMs?: number;
 };
 
-export type CreateKhoraDidAuthOptions = KhoraDidAuthOptions;
+/** @deprecated Use {@link SignedRequestAuthOptions}. */
+export type KhoraDidAuthOptions = SignedRequestAuthOptions;
+/** @deprecated Use {@link SignedRequestAuthOptions}. */
+export type CreateKhoraDidAuthOptions = SignedRequestAuthOptions;
+/** @deprecated Use {@link SignedRequestAuthOptions}. */
+export type CreateSignedRequestAuthOptions = SignedRequestAuthOptions;
 
 /**
- * Lifecycle owner for Khora DID authentication. Construct one per host process, hand
- * {@link KhoraDidAuth.preflight} to `HostRuntime`, and use `requireAuthenticatedRequest` /
- * `requireInboxAccess` / `verifyRegistration` to guard HTTP routes.
- *
- * Swapping the auth scheme = passing a different {@link AuthStrategy}; route code is unaffected.
+ * Lifecycle owner for DID-signed HTTP request authentication.
+ * Swapping the scheme = passing a different {@link AuthStrategy}.
  */
-export class KhoraDidAuth {
-  readonly preflight: AuthPreflight;
+export class SignedRequestAuth {
+  readonly preflight: SignedRequestPreflight;
   private readonly strategy: AuthStrategy;
   private readonly nonceStore: NonceStore;
   private readonly now: () => number;
@@ -60,7 +92,7 @@ export class KhoraDidAuth {
   private readonly sweepIntervalMs: number;
   private lastSweepMs = 0;
 
-  constructor(opts: KhoraDidAuthOptions) {
+  constructor(opts: SignedRequestAuthOptions) {
     this.strategy = opts.strategy ?? createDidKeyEd25519Strategy();
     this.nonceStore = opts.nonceStore;
     this.now = opts.now ?? (() => Date.now());
@@ -73,10 +105,6 @@ export class KhoraDidAuth {
     };
   }
 
-  /**
-   * Extract the agent DID + envelope from request headers, run full signature verification, and
-   * return the authenticated DID. Throws {@link AuthError} on any failure.
-   */
   async requireAuthenticatedRequest(
     req: Request,
     url: URL,
@@ -99,11 +127,6 @@ export class KhoraDidAuth {
     return { did };
   }
 
-  /**
-   * Variant of {@link requireAuthenticatedRequest} for legacy inbox HTTP routes that still
-   * accept the agent DID via `?did=` / headers. Multiplex WebSocket auth uses
-   * {@link verifyInboxBind} after upgrade instead.
-   */
   async requireInboxAccess(
     req: Request,
     url: URL,
@@ -124,10 +147,6 @@ export class KhoraDidAuth {
     return { did };
   }
 
-  /**
-   * Verify a per-principal multiplex bind: signature covers
-   * `BIND\n/v1/inbox/ws?connection_id=…\nts\nnonce\n…` and consumes a nonce for that DID.
-   */
   async verifyInboxBind(opts: {
     connectionId: string;
     envelope: AgentRequestEnvelope;
@@ -150,19 +169,13 @@ export class KhoraDidAuth {
     return { did: opts.envelope.did };
   }
 
-  /**
-   * Registration-time verification: the signed body DID must match the claimed registration DID,
-   * and the signature must verify over the raw POST body bytes. Designed to be called once before
-   * `HostRuntime.registerPrincipal` (which calls the same preflight internally via the registration
-   * context — see {@link KhoraDidAuth.preflight}).
-   */
   async verifyRegistration(
     req: Request,
     bodyText: string,
-    swarmReq: PrincipalRegistrationRequest,
+    request: { principalId: string },
   ): Promise<void> {
     await this.verifyRegistrationContext({
-      request: swarmReq,
+      request,
       headers: req.headers,
       bodyText,
     }).catch((e) => {
@@ -170,17 +183,13 @@ export class KhoraDidAuth {
     });
   }
 
-  /**
-   * Same trust model as registration: signature covers `POST /v1/unregister` and the raw JSON body;
-   * body DID must match the signing DID.
-   */
   async verifyUnregister(
     req: Request,
     bodyText: string,
-    swarmReq: PrincipalRegistrationRequest,
+    request: { principalId: string },
   ): Promise<void> {
     await this.verifyUnregisterContext({
-      request: swarmReq,
+      request,
       headers: req.headers,
       bodyText,
     }).catch((e) => {
@@ -279,6 +288,10 @@ export class KhoraDidAuth {
   }
 }
 
+/** @deprecated Use {@link SignedRequestAuth}. */
+export const KhoraDidAuth = SignedRequestAuth;
+export type KhoraDidAuth = SignedRequestAuth;
+
 function readDidHeader(req: Request): string | undefined {
   const v = req.headers.get(AGENT_REQUEST_HEADER.did)?.trim();
   return v !== undefined && v.length > 0 ? v : undefined;
@@ -288,12 +301,8 @@ function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-/**
- * Factory wrapping {@link KhoraDidAuth} with the did:key Ed25519 strategy by default.
- * Pass a custom `strategy` to override.
- */
-export function createKhoraDidAuth(opts: CreateKhoraDidAuthOptions): KhoraDidAuth {
-  return new KhoraDidAuth({
+export function createSignedRequestAuth(opts: SignedRequestAuthOptions): SignedRequestAuth {
+  return new SignedRequestAuth({
     nonceStore: opts.nonceStore,
     ...(opts.strategy !== undefined ? { strategy: opts.strategy } : {}),
     ...(opts.now !== undefined ? { now: opts.now } : {}),
@@ -302,26 +311,18 @@ export function createKhoraDidAuth(opts: CreateKhoraDidAuthOptions): KhoraDidAut
   });
 }
 
+/** @deprecated Use {@link createSignedRequestAuth}. */
+export function createKhoraDidAuth(opts: SignedRequestAuthOptions): SignedRequestAuth {
+  return createSignedRequestAuth(opts);
+}
+
 export type VerifySignedAgentRequestOptions = {
-  /** Pre-read body; defaults to `await req.clone().text()` so the original body stays readable. */
   bodyText?: string;
   signedQueryKeys?: readonly string[];
 };
 
-/**
- * Request-level verify for hosts that inject a proof callback into other services
- * (e.g. memories-service `PrincipalProofVerifier`). Does not import memories.
- *
- * @example
- * ```ts
- * const khora = createKhoraDidAuth({ nonceStore });
- * // memories createDidPrincipalAuthStrategy({
- * //   verify: { verify: ({ request }) => verifySignedAgentRequest(khora, request) },
- * // })
- * ```
- */
 export async function verifySignedAgentRequest(
-  auth: KhoraDidAuth,
+  auth: SignedRequestAuth,
   req: Request,
   opts: VerifySignedAgentRequestOptions = {},
 ): Promise<{ did: string }> {

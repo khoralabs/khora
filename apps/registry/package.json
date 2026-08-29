@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
-    "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/observability": "workspace:*",

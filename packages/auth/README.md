@@ -1,73 +1,46 @@
 # `@khoralabs/khora-auth`
 
-The authentication layer for **khora** agents. Owns:
+Standards-oriented crypto/auth primitives for the Khora umbrella. Grouped by **mechanism**, not by product service.
 
-- **Wire format** (`X-Agent-*` headers, WS query params, canonical request message).
-- **Client signing** (`Signer` interface + `signAgentRequest` / `signInboxBind` helpers).
-- **Identity persistence** (re-exports `@khoralabs/did-key-identity` plus Khora-specific `defaultIdentityPath()` for `~/.khora/identity.json`).
-- **Replay protection** (`NonceStore` port; SQLite impl in `@khoralabs/khora-auth/sqlite`).
-- **Host-side facade** (`KhoraDidAuth` class) that wraps `HostRuntime`'s `AuthPreflight` interface so the host can verify any route in one call.
+## Layout
 
-Swapping the auth scheme is intended to be a one-file change: pass a different `AuthStrategy` to `KhoraDidAuth` and clients + host stay aligned.
-
-## Role in the directory
-
-```mermaid
-graph LR
-  client["khora client"] -->|"Signer, signAgentRequest"| auth["@khoralabs/khora-auth"]
-  host["khora host"] -->|"createKhoraDidAuth(nonceStore)"| auth
-  auth -->|"AuthPreflight"| host
+```
+src/
+  encoding/           # codecs (base64url, base58)
+  did/                # DID / did:key strategy + pubkey
+  http/
+    signed-request/   # application-layer signed HTTP (X-Agent-*)
+    bearer.ts         # Authorization: Bearer
+    session-cookie.ts # HMAC session cookies
+    root-token-auth.ts # composer: root-token console auth
+  replay/             # NonceStore port + in-memory fixture
+  rate-limit/         # sliding-window limiter
+  testing.ts          # NonceStore contract tests (./testing)
 ```
 
-## Lifecycle
+Future slots (not implemented): `http/message-signatures/` (RFC 9421), `jose/jws.ts`.
 
-### Client side
+## Public surface
 
-1. **Generate identity** — call `generateIdentity()` or `loadOrCreateIdentity(defaultIdentityPath())`. The returned `PersistableSigner` satisfies `Signer` (`did`, `sign(message)`) plus `export()` for `saveIdentity`. Default scheme is `did:key` + Ed25519. Persistence is provided by `@khoralabs/did-key-identity`; `defaultIdentityPath()` stays Khora-specific (`~/.khora/identity.json`).
-2. **Sign every request** — `signAgentRequest({ method, path, bodyText, signer })` produces the four `X-Agent-*` headers. The inbox WebSocket uses an unsigned upgrade, then `signInboxBind({ connectionId, signer })` inside a multiplex `bind` frame.
+| Area | Imports |
+| --- | --- |
+| DID / strategy | `createDidKeyEd25519Strategy`, `AuthStrategy`, `publicKeyForDid` |
+| Signed HTTP | `signAgentRequest`, `createSignedRequestAuth` (`createKhoraDidAuth` deprecated alias), `SignedRequestAuth` |
+| Console / root token | `createRootTokenAdminAuth`, `createAdminTokenAuthFromEnv`, `AdminTokenAuth` |
+| Replay | `NonceStore`, `createMemoryNonceStore` — **storage backends live in the host** (`createSqliteNonceStore` on `@khoralabs/khora-host/sqlite`) |
+| Testing | `@khoralabs/khora-auth/testing` → `runNonceStoreContractTests` |
 
-### Host side
+Identity file helpers re-export `@khoralabs/did-key-identity`. Product default path `~/.khora/identity.json` lives in apps (cli/daemon), not here.
 
-```ts
-import { createKhoraDidAuth } from "@khoralabs/khora-auth";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
+Post **content** signing lives in `@khoralabs/khora-client` (`posts/signing`). Host `AuthPreflight` typing lives in `@khoralabs/khora-host`.
 
-const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db) });
-const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
-```
-
-`KhoraDidAuth` checks envelope shape, DID alignment, freshness, nonce replay, and signature verification. Failures throw `AuthError(message, status)`.
-
-### Injecting into memories-service (no package coupling)
-
-`@khoralabs/memories-service` defines `PrincipalProofVerifier` and must not depend on this package. Hosts glue them:
+## Host wiring
 
 ```ts
-import { createKhoraDidAuth, verifySignedAgentRequest } from "@khoralabs/khora-auth";
-import { createDidPrincipalAuthStrategy } from "@khoralabs/memories-service/auth";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
+import { createSignedRequestAuth } from "@khoralabs/khora-auth";
+import { createSqliteNonceStore } from "@khoralabs/khora-host/sqlite";
 
-const khora = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(db) });
-const memoriesAuth = createDidPrincipalAuthStrategy({
-  verify: {
-    async verify({ request }) {
-      return verifySignedAgentRequest(khora, request);
-    },
-  },
+const auth = createSignedRequestAuth({
+  nonceStore: createSqliteNonceStore(db),
 });
 ```
-
-`verifySignedAgentRequest` reads the body via `req.clone()` by default so the host can still consume the original `Request`.
-
-## Public surface (quick map)
-
-| Module | Exports |
-| --- | --- |
-| `wire.ts` | `AGENT_REQUEST_HEADER`, `AGENT_REQUEST_SEARCH`, `AGENT_REQUEST_FRESHNESS_WINDOW_MS`, `canonicalAgentRequestMessage`, `parseAgentRequestEnvelopeFrom*`, `envelopeSignatureBytes`, `randomAgentRequestNonce`, `signatureBytesToB64Url`. |
-| `signer.ts` | `Signer`, `signAgentRequest`, `signInboxBind`, `signedInboxUrl` (deprecated). |
-| identity (via `@khoralabs/did-key-identity` + `identity-path.ts`) | `defaultIdentityPath`, `loadIdentity`, `saveIdentity`, `loadOrCreateIdentity`, `generateIdentity`. |
-| `nonce-store.ts` | `NonceStore` port. |
-| `@khoralabs/khora-auth/sqlite` | `createSqliteNonceStore`. |
-| `strategy.ts` | `AuthStrategy`, `AuthStrategyError`. |
-| `strategy-did-key.ts` | `createDidKeyEd25519Strategy` (default). |
-| `auth.ts` | `KhoraDidAuth`, `createKhoraDidAuth`, `AuthError`, `verifySignedAgentRequest`. |

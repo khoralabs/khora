@@ -1,8 +1,11 @@
 import { verifyAsync } from "@noble/ed25519";
 
-import { publicKeyForDid } from "./did-pubkey";
+import {
+  canonicalAgentRequestMessage,
+  envelopeSignatureBytes,
+} from "../http/signed-request/envelope";
+import { publicKeyForDid } from "./pubkey";
 import { type AuthStrategy, AuthStrategyError } from "./strategy";
-import { canonicalAgentRequestMessage, envelopeSignatureBytes } from "./wire";
 
 /** Verify per-request Ed25519 signatures issued by `did:key` agents. */
 export function createDidKeyEd25519Strategy(): AuthStrategy {

@@ -19,7 +19,6 @@
     "@khoralabs/agent-capabilities": "^0.2.0",
     "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
-    "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",
     "@khoralabs/registry": "workspace:*",

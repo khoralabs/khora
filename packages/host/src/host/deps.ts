@@ -1,6 +1,6 @@
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
-import type { KhoraDidAuth } from "@khoralabs/khora-auth";
+import type { KhoraDidAuth, SignedRequestAuth } from "@khoralabs/khora-auth";
 import type { HostSearch } from "../discovery/search/bootstrap";
 import type { HostSubscriptions } from "../discovery/subscriptions/bootstrap";
 import type { KhoraHostPersistence, KhoraInvitesRepo } from "../persistence/core/port";
@@ -19,7 +19,7 @@ export type KhoraHostDeps = {
   cluster: KhoraColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   cellPoolCount: number;
-  auth: KhoraDidAuth;
+  auth: SignedRequestAuth | KhoraDidAuth;
   principalLifecycle: PrincipalLifecycle;
   invitesRepo?: KhoraInvitesRepo;
   search?: HostSearch;

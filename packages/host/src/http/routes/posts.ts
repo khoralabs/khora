@@ -1,9 +1,9 @@
+import { AuthStrategyError } from "@khoralabs/khora-auth";
 import {
-  AuthStrategyError,
   khoraPostSigningPayloadFromCreate,
   signingPayloadForPatch,
   verifyKhoraPostSignature,
-} from "@khoralabs/khora-auth";
+} from "@khoralabs/khora-client";
 import { formatThrownError } from "@khoralabs/khora-client/transport";
 import {
   KHORA_AGGREGATE_DOMAIN,

@@ -1,4 +1,4 @@
-import type { AdminTokenAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/khora-auth";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 import type { RegistryIdentityPort } from "./ports/identity";
 

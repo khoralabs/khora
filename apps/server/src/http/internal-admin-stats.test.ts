@@ -3,8 +3,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { poolShardCellId } from "@khoralabs/colonnade";
+import { createRootTokenAdminAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import {
   type HostRouteDeps,

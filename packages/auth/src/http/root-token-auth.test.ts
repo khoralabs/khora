@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createAdminTokenAuthFromEnv, createRootTokenAdminAuth } from "./index";
+import { createAdminTokenAuthFromEnv, createRootTokenAdminAuth } from "./root-token-auth";
 import { clearSessionCookie, issueSessionCookie } from "./session-cookie";
 
 describe("admin-token", () => {

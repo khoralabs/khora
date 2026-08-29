@@ -5,8 +5,7 @@ import {
   openMaybeEncryptedDatabaseSync,
 } from "@khoralabs/colonnade/crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
-import { createKhoraDidAuth } from "@khoralabs/khora-auth";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
+import { createSignedRequestAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
   bootstrapHostSubscriptions,
@@ -20,6 +19,7 @@ import {
 } from "@khoralabs/khora-host";
 import {
   applyKhoraSqlitePragmas,
+  createSqliteNonceStore,
   openKhoraHostSqlitePersistence,
 } from "@khoralabs/khora-host/sqlite";
 import {
@@ -151,7 +151,7 @@ export async function createTestKhoraHost(
     storeSecrets: (secrets) => ({ ...secrets, updatedAtMs: Date.now() }),
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };
-  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
+  const auth = createSignedRequestAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
   return createKhoraHost({
     persistence,
     tenantKey,

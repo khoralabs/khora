@@ -1,4 +1,4 @@
-import { base64UrlToBytes, bytesToBase64Url } from "./encoding";
+import { base64UrlToBytes, bytesToBase64Url } from "../../encoding/base64url";
 
 /** Header names for per-request agent signatures (used on every authenticated route). */
 export const AGENT_REQUEST_HEADER = {

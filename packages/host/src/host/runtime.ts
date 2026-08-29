@@ -1,4 +1,3 @@
-import type { AuthPreflight, RegistrationVerifyContext } from "@khoralabs/khora-auth";
 import type { InboxFanoutPort } from "../inbox/fanout-port";
 import type { NotificationBufferPort } from "../inbox/notification-buffer";
 import {
@@ -12,6 +11,7 @@ import {
   profileEntityId,
 } from "../registration/types";
 import { HOST_AGGREGATE_DOMAIN } from "./aggregate-domains";
+import type { AuthPreflight, RegistrationVerifyContext } from "./auth-preflight";
 import { HOST_EVENT_KIND, type HostAppEventConstraint, type HostEventUnion } from "./events";
 
 /** Passed to {@link HostRuntimeDeps.onEvent} together with each dispatched event. */

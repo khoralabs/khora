@@ -1,9 +1,4 @@
 import {
-  khoraPostSigningPayloadFromCreate,
-  signingPayloadForPatch,
-  signKhoraPostPayload,
-} from "@khoralabs/khora-auth";
-import {
   type KhoraPost,
   type KhoraPostCreateContent,
   type KhoraPostPatch,
@@ -11,6 +6,11 @@ import {
   mergeKhoraPostPatch,
   zKhoraPost,
 } from "@khoralabs/khora-contracts";
+import {
+  khoraPostSigningPayloadFromCreate,
+  signingPayloadForPatch,
+  signKhoraPostPayload,
+} from "../posts/signing";
 import type { KhoraUnaryTransport } from "../transport";
 
 export type KhoraSubscriptionCreateInput = Omit<

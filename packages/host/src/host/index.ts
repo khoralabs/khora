@@ -1,4 +1,9 @@
 export { HOST_AGGREGATE_DOMAIN } from "./aggregate-domains";
+export type {
+  AuthPreflight,
+  RegistrationVerifyContext,
+} from "./auth-preflight";
+export { asHostAuthPreflight } from "./auth-preflight";
 export type { KhoraHostContext } from "./context";
 export { createKhoraHost } from "./create-host";
 export type { KhoraHostDeps } from "./deps";

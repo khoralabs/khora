@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
+import { createRootTokenAdminAuth } from "@khoralabs/khora-auth";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { type HostRouteDeps, handleAdminInvitesMint } from "@khoralabs/khora-host/http";
 import { createKhoraInvitesSqliteRepo } from "@khoralabs/khora-host/sqlite";

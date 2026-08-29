@@ -1,11 +1,10 @@
 import fs from "node:fs";
 import { createReadlineSession, type FlagMap, type ReadLineFn } from "@khoralabs/cli-kit";
 import { loadIdentity, type PersistableSigner } from "@khoralabs/did-key-identity";
-import { defaultIdentityPath } from "@khoralabs/khora-auth";
 import { KhoraClient } from "@khoralabs/khora-client";
-
 import { khoraCliResolvedConfig } from "../khora-app-config";
 import { agentKeyPathFromFlags, baseUrlFromFlags, hostSlugFromFlags } from "../lib/flags";
+import { defaultIdentityPath } from "../lib/identity-path";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:8787";
 

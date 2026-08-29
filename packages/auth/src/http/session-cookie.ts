@@ -71,10 +71,3 @@ export function readSessionPrincipal(
   if (parsed.id !== "root" || parsed.role !== "root") return null;
   return { id: "root", role: "root" };
 }
-
-export function tokensEqual(provided: string, expected: string): boolean {
-  const a = Buffer.from(provided, "utf8");
-  const b = Buffer.from(expected, "utf8");
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}

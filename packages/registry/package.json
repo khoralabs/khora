@@ -60,7 +60,6 @@
     "test": "bun test src"
   },
   "dependencies": {
-    "@khoralabs/admin-token": "workspace:*",
     "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/observability": "workspace:*",

@@ -19,6 +19,7 @@ export {
   createKhoraHostSqlitePersistence,
   openKhoraHostSqlitePersistence,
 } from "./khora-persistence";
+export { createSqliteNonceStore } from "./nonce-store";
 export {
   escapeSqlLikeLiteral,
   type ProjectionListedRow,

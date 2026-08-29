@@ -51,6 +51,16 @@ export {
   labelKhoraPlugin,
   mergeLabeledKhoraPluginLayers,
 } from "./khora-plugins";
+export {
+  canonicalKhoraPostSigningPayload,
+  KHORA_POST_SIGNATURE_V1,
+  type KhoraPostSigningPayloadV1,
+  khoraPostSigningPayloadFromCreate,
+  khoraPostSigningPayloadFromPatch,
+  signingPayloadForPatch,
+  signKhoraPostPayload,
+  verifyKhoraPostSignature,
+} from "./posts/signing";
 export { createKhoraSession, type KhoraSession } from "./session";
 export type {
   InboxConnectionHandle,

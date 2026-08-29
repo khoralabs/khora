@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { NonceStore } from "../nonce-store";
+import type { NonceStore } from "@khoralabs/khora-auth";
 
 const NONCE_STORE_DDL = `
 CREATE TABLE IF NOT EXISTS agent_request_nonces (
@@ -16,7 +16,7 @@ function ensureSchema(db: Database): void {
   db.run(NONCE_STORE_DDL);
 }
 
-/** Default SQLite-backed {@link NonceStore} implementation. Creates its own table lazily. */
+/** SQLite-backed {@link NonceStore}. Creates its own table lazily. */
 export function createSqliteNonceStore(db: Database): NonceStore {
   let initialized = false;
   function init(): void {

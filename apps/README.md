@@ -21,7 +21,7 @@ This folder (`apps/khora`) holds **runnable applications**. Shared libraries liv
 | Package | Role |
 | --- | --- |
 | [`@khoralabs/khora-contracts`](../../packages/khora/contracts) | Zod schemas + types shared across host, client, CLI, and apps. |
-| [`@khoralabs/khora-auth`](../../packages/khora/auth) | DID auth + `NonceStore` port; SQLite adapter via `@khoralabs/khora-auth/sqlite`. |
+| [`@khoralabs/khora-auth`](../../packages/auth) | Standards-oriented crypto/auth (DID, signed HTTP, root-token console); `NonceStore` port — SQLite adapter on `@khoralabs/khora-host/sqlite`. |
 | [`@khoralabs/khora-client`](../../packages/khora/client) | Typed host client; transport helpers via `@khoralabs/khora-client/transport`. |
 | [`@khoralabs/khora-host`](../../packages/khora/host) | Host orchestrator + invites; SQLite adapters via `./sqlite`; HTTP/WS via `./http`. |
 | [`@khoralabs/colonnade`](../../packages/khora/colonnade) | Federated persistence (router/clients); `./persistence`, `./crypto`, `./sqlite`, `./turso-serverless`. |

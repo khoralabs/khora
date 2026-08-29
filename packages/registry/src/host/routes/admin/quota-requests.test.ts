@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenAdminAuth } from "@khoralabs/admin-token";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
+import { createRootTokenAdminAuth } from "@khoralabs/khora-auth";
 import {
   activateKhoraHost,
   findHostById,

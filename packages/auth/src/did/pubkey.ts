@@ -1,5 +1,4 @@
 import { ed25519PublicKeyBytesFromDid } from "./did";
-
 import { AuthStrategyError } from "./strategy";
 
 /** Resolve a `did:key` Ed25519 public key for signature verification. */

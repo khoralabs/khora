@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AdminTokenAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/khora-auth";
 import type {
   MemoriesDatabaseCatalogStore,
   MemoriesDatabaseOntologyStore,

@@ -1,5 +1,5 @@
 import { LRUCache } from "lru-cache";
-import { base58Decode } from "./encoding";
+import { base58Decode } from "../encoding/base64url";
 
 const pubKeyCache = new LRUCache<string, Uint8Array>({ max: 512 });
 

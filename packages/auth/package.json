@@ -10,10 +10,10 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./sqlite": {
-      "types": "./src/sqlite/index.ts",
-      "import": "./src/sqlite/index.ts",
-      "default": "./src/sqlite/index.ts"
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts",
+      "default": "./src/testing.ts"
     }
   },
   "scripts": {
@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@khoralabs/did-key-identity": "^0.1.0",
-    "@khoralabs/khora-contracts": "workspace:*",
     "@noble/ed25519": "^3.1.0",
     "@scure/base": "^1.2.6",
     "lru-cache": "^11.5.1"

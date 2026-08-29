@@ -1,6 +1,7 @@
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
-import type { KhoraDidAuth } from "@khoralabs/khora-auth";
+import type { KhoraDidAuth, SignedRequestAuth } from "@khoralabs/khora-auth";
+
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
 import type { HostSearch } from "../discovery/search/bootstrap";
 import type { HostSubscriptions } from "../discovery/subscriptions/bootstrap";
@@ -25,7 +26,7 @@ export type { KhoraRegistrationApi } from "../registration/api";
 
 export type KhoraHostContext = {
   host: HostRuntime<KhoraProfile, KhoraHostAppEvent>;
-  auth: KhoraDidAuth;
+  auth: SignedRequestAuth | KhoraDidAuth;
   tenantKey: string;
   cluster: KhoraColonnadeCluster;
   publicationClient: ColonnadePublicationClient;

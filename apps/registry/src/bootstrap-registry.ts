@@ -1,5 +1,5 @@
-import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade/crypto";
+import { createAdminTokenAuthFromEnv } from "@khoralabs/khora-auth";
 import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/registry/host";
 import {
   createRegistryHost,

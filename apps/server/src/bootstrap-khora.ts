@@ -6,8 +6,7 @@ import {
   outboxKeyBytesToHex,
 } from "@khoralabs/colonnade/crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
-import { createKhoraDidAuth } from "@khoralabs/khora-auth";
-import { createSqliteNonceStore } from "@khoralabs/khora-auth/sqlite";
+import { createSignedRequestAuth } from "@khoralabs/khora-auth";
 import {
   bootstrapHostSearch,
   bootstrapHostSubscriptions,
@@ -27,6 +26,7 @@ import { createHostPersistenceClient } from "@khoralabs/khora-host/persistence";
 import {
   applyKhoraSqlitePragmas,
   createKhoraInvitesSqliteRepo,
+  createSqliteNonceStore,
   openKhoraHostSqlitePersistence,
 } from "@khoralabs/khora-host/sqlite";
 import {
@@ -156,7 +156,7 @@ export async function bootstrapKhoraHost(
     lookupNormalizedUsernameForPrincipal: registration.lookupNormalizedUsernameForPrincipal,
     sqlCipherKey: encryption.sqlCipherKey,
   });
-  const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
+  const auth = createSignedRequestAuth({ nonceStore: createSqliteNonceStore(authNoncesDb) });
   const persistenceClient = createHostPersistenceClient(persistence);
 
   const seedTokens = parseInviteSeedTokens(process.env.KHORA_INVITE_SEED_TOKENS);

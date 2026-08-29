@@ -85,12 +85,12 @@ apps/khora/server/src/index.ts
     ColonnadePublicationClient
     createRelayPrincipalLifecycle()
     createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-host)
-    createKhoraDidAuth({ db: catalogDb })
+    createSignedRequestAuth({ nonceStore })
     bootstrapKhoraMemories()        → if KHORA_MEMORIES enabled (default on)
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
     createKhoraRegistrationApi()
     createKhoraHost(deps)           → HostRuntime + teardown worker
-  createAdminTokenAuthFromEnv()
+  createAdminTokenAuthFromEnv()  // from @khoralabs/khora-auth
   Bun.serve() + route() + inbox WS handlers
   optional: startStdioUnaryIngress(), startDuplexUnixIngress()
 ```

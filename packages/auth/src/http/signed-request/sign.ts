@@ -7,7 +7,7 @@ import {
   canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
-} from "./wire";
+} from "./envelope";
 
 export type SignAgentRequestInput = {
   method: string;

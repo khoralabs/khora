@@ -1,4 +1,4 @@
-import type { AdminTokenAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/khora-auth";
 
 export async function withAdminTokenAuth(
   req: Request,

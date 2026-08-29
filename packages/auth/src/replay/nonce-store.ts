@@ -1,7 +1,7 @@
 /**
  * Replay-protection store for `(did, nonce)` pairs. Implementations must reject duplicates and
  * may opportunistically prune expired rows from `sweepExpired`. Methods may be synchronous —
- * `KhoraDidAuth` awaits them either way.
+ * {@link SignedRequestAuth} awaits them either way.
  */
 export interface NonceStore {
   /** Insert a fresh `(did, nonce)` pair; return `false` on duplicate (replay). */

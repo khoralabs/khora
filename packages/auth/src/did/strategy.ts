@@ -1,4 +1,4 @@
-import type { AgentRequestEnvelope } from "./wire";
+import type { AgentRequestEnvelope } from "../http/signed-request/envelope";
 
 /**
  * Pluggable per-scheme signature verifier. Implementations consume a parsed
@@ -6,8 +6,7 @@ import type { AgentRequestEnvelope } from "./wire";
  * `envelope.did`, and throw if the signature does not verify.
  *
  * Envelope parsing, freshness checks, nonce-store inserts, and DID matching are owned by
- * {@link KhoraDidAuth}; strategies only handle the "does this signature verify against this
- * DID's public key?" question.
+ * {@link SignedRequestAuth}; strategies only handle signature verification against the DID key.
  */
 export interface AuthStrategy {
   verifyEnvelope(p: {

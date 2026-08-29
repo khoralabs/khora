@@ -26,12 +26,12 @@
     "three": "^0.183.2"
   },
   "devDependencies": {
-    "@khoralabs/admin-token": "workspace:*",
     "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.183.1",
     "tailwindcss": "^4.1.11",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@khoralabs/khora-auth": "workspace:*"
   }
 }

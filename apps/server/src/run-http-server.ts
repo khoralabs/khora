@@ -3,7 +3,7 @@ import path from "node:path";
 
 const { dirname } = path;
 
-import { createAdminTokenAuthFromEnv } from "@khoralabs/admin-token";
+import { createAdminTokenAuthFromEnv } from "@khoralabs/khora-auth";
 import type { KhoraWsData } from "@khoralabs/khora-client/transport";
 import {
   createHostRouter,

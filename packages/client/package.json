@@ -55,7 +55,8 @@
     "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
-    "zod": "^4"
+    "zod": "^4",
+    "@noble/ed25519": "^3.1.0"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.9",

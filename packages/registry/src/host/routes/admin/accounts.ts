@@ -1,4 +1,4 @@
-import type { AdminTokenAuth } from "@khoralabs/admin-token";
+import type { AdminTokenAuth } from "@khoralabs/khora-auth";
 import {
   deleteAccount,
   listAccountEmails,

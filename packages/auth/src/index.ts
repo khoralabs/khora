@@ -13,49 +13,28 @@ export {
   loadOrCreateIdentity,
   saveIdentity,
 } from "@khoralabs/did-key-identity";
+
+export { publicKeyForDid } from "./did/pubkey";
+export { type AuthStrategy, AuthStrategyError } from "./did/strategy";
+export { createDidKeyEd25519Strategy } from "./did/strategy-ed25519-key";
+
+export { extractBearerToken, tokensEqual } from "./http/bearer";
 export {
-  AuthError,
-  type CreateKhoraDidAuthOptions,
-  createKhoraDidAuth,
-  KhoraDidAuth,
-  type KhoraDidAuthOptions,
-  type VerifySignedAgentRequestOptions,
-  verifySignedAgentRequest,
-} from "./auth";
-export { defaultIdentityPath } from "./identity-path";
-export type { NonceStore } from "./nonce-store";
+  type AdminPrincipal,
+  type AdminTokenAuth,
+  createAdminTokenAuthFromEnv,
+  createRootTokenAdminAuth,
+  type RootTokenAdminAuthOptions,
+  readAdminRootToken,
+  readAdminTokenAuthKind,
+  readAdminTokenLoginRateLimit,
+  readSecureCookies,
+} from "./http/root-token-auth";
 export {
-  canonicalKhoraPostSigningPayload,
-  KHORA_POST_SIGNATURE_V1,
-  type KhoraPostSigningPayloadV1,
-  khoraPostSigningPayloadFromCreate,
-  khoraPostSigningPayloadFromPatch,
-  signingPayloadForPatch,
-  signKhoraPostPayload,
-  verifyKhoraPostSignature,
-} from "./post-signing";
-export type {
-  AuthenticatedPrincipalVerifyContext,
-  AuthPreflight,
-  InboxAccessVerifyContext,
-  RegistrationVerifyClientHints,
-  RegistrationVerifyContext,
-} from "./preflight";
-export {
-  INBOX_BIND_METHOD,
-  INBOX_WS_PATH,
-  inboxBindCanonicalPath,
-  inboxWebSocketUpgradeUrl,
-  type SignAgentRequestInput,
-  type SignedAgentRequest,
-  type SignedInboxUrlInput,
-  type SignInboxBindInput,
-  signAgentRequest,
-  signedInboxUrl,
-  signInboxBind,
-} from "./signer";
-export { type AuthStrategy, AuthStrategyError } from "./strategy";
-export { createDidKeyEd25519Strategy } from "./strategy-did-key";
+  clearSessionCookie,
+  issueSessionCookie,
+  readSessionPrincipal,
+} from "./http/session-cookie";
 export {
   AGENT_REQUEST_FRESHNESS_WINDOW_MS,
   AGENT_REQUEST_HEADER,
@@ -68,4 +47,46 @@ export {
   parseAgentRequestEnvelopeFromSearch,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
-} from "./wire";
+} from "./http/signed-request/envelope";
+export {
+  AuthError,
+  type AuthenticatedPrincipalVerifyContext,
+  type AuthPreflight,
+  type CreateKhoraDidAuthOptions,
+  type CreateSignedRequestAuthOptions,
+  createKhoraDidAuth,
+  createSignedRequestAuth,
+  type InboxAccessVerifyContext,
+  KhoraDidAuth,
+  type KhoraDidAuthOptions,
+  type RegistrationVerifyClientHints,
+  type RegistrationVerifyContext,
+  SignedRequestAuth,
+  type SignedRequestAuthOptions,
+  type SignedRequestPreflight,
+  type VerifySignedAgentRequestOptions,
+  verifySignedAgentRequest,
+} from "./http/signed-request/facade";
+export {
+  INBOX_BIND_METHOD,
+  INBOX_WS_PATH,
+  inboxBindCanonicalPath,
+  inboxWebSocketUpgradeUrl,
+  type SignAgentRequestInput,
+  type SignedAgentRequest,
+  type SignedInboxUrlInput,
+  type SignInboxBindInput,
+  signAgentRequest,
+  signedInboxUrl,
+  signInboxBind,
+} from "./http/signed-request/sign";
+
+export {
+  clientIpFromRequest,
+  createRateLimiter,
+  type RateLimitCheck,
+  type RateLimitRule,
+} from "./rate-limit/sliding-window";
+
+export { createMemoryNonceStore } from "./replay/memory-nonce-store";
+export type { NonceStore } from "./replay/nonce-store";

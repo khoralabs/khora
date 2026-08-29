@@ -3,6 +3,7 @@ import type { NotificationBufferPort } from "../inbox/notification-buffer";
 import { createInboxWsHub } from "../inbox/ws-hub";
 import { createKhoraRelayOnEvent } from "../posts/on-event";
 import { startPrincipalTeardownWorker } from "../registration/teardown-worker";
+import { asHostAuthPreflight } from "./auth-preflight";
 import type { KhoraHostContext } from "./context";
 import type { KhoraHostDeps } from "./deps";
 import { HostRuntime } from "./runtime";
@@ -27,7 +28,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
   const notificationBuffer = createInMemoryNotificationBuffer();
   const host = new HostRuntime<KhoraProfile, KhoraHostAppEvent>({
     persistence: deps.persistence,
-    authPreflight: deps.auth.preflight,
+    authPreflight: asHostAuthPreflight(deps.auth.preflight),
     inboxHub,
     notificationBuffer,
     onEvent: createKhoraRelayOnEvent({
