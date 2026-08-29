@@ -104,6 +104,20 @@ export async function findAccountByAuthSubject(
   return row === undefined ? null : mapAccount(row);
 }
 
+/** Better Auth `user.id` values linked to a registry account. */
+export async function listBetterAuthSubjectsForAccount(
+  db: RegistryDatabase,
+  accountId: string,
+): Promise<string[]> {
+  const rows = await db.queryAll<{ provider_subject: string }>(
+    `SELECT provider_subject FROM auth_links
+     WHERE account_id = ? AND provider = 'better_auth'
+     ORDER BY provider_subject ASC`,
+    [accountId],
+  );
+  return rows.map((r) => r.provider_subject);
+}
+
 export async function findAccountById(
   db: RegistryDatabase,
   accountId: string,

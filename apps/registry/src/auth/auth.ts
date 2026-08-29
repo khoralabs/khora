@@ -1,4 +1,11 @@
-import { createRegistryAuth, type RegistryAuthOptions } from "./auth-config";
+import type { Database } from "bun:sqlite";
+import { getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import {
+  createRegistryAuth,
+  type RegistryAuthDatabase,
+  type RegistryAuthOptions,
+} from "./auth-config";
+import type { RegistryAuthKysely } from "./auth-database-schema";
 
 let authInstance: ReturnType<typeof createRegistryAuth> | undefined;
 let authOptions: RegistryAuthOptions = {};
@@ -26,3 +33,25 @@ export const registryAuth: AuthInstance = new Proxy({} as AuthInstance, {
     return value;
   },
 });
+
+function isSqliteAuthDatabase(db: RegistryAuthDatabase): db is Database {
+  return "prepare" in db && typeof db.prepare === "function";
+}
+
+function resolveAuthDatabase(): RegistryAuthDatabase {
+  if (authOptions.database !== undefined) return authOptions.database;
+  return getRegistrySqliteDatabase();
+}
+
+/** Delete all Better Auth sessions for a user id (no admin plugin / no caller session). */
+export async function revokeBetterAuthSessionsForUser(userId: string): Promise<void> {
+  const id = userId.trim();
+  if (id.length === 0) return;
+  const db = resolveAuthDatabase();
+  if (isSqliteAuthDatabase(db)) {
+    db.prepare(`DELETE FROM session WHERE userId = ?`).run(id);
+    return;
+  }
+  const kysely = db as RegistryAuthKysely;
+  await kysely.deleteFrom("session").where("userId", "=", id).execute();
+}

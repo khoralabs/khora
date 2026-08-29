@@ -33,6 +33,7 @@ export {
   findBlockedEmail,
   linkBetterAuthUser,
   listAccountEmails,
+  listBetterAuthSubjectsForAccount,
   mergeEmailOntoAccount,
   reactivateAccount,
   reactivateAccountByEmail,

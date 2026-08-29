@@ -2,6 +2,7 @@ import type { AdminTokenAuth } from "@khoralabs/khora-auth";
 import {
   deleteAccount,
   listAccountEmails,
+  listBetterAuthSubjectsForAccount,
   normalizeEmail,
   reactivateAccount,
   reactivateAccountByEmail,
@@ -21,6 +22,16 @@ function mapAccountLifecycleError(
   return { message: msg, status: 400 };
 }
 
+async function revokeSessionsForAccount(accountId: string): Promise<void> {
+  const identity = registryHostRuntime().identity;
+  const revoke = identity.revokeSessionsForUser;
+  if (revoke === undefined) return;
+  const subjects = await listBetterAuthSubjectsForAccount(registryHostRuntime().db, accountId);
+  for (const subject of subjects) {
+    await revoke(subject);
+  }
+}
+
 export function handleAdminAccountSuspend(
   req: Request,
   adminTokenAuth: AdminTokenAuth | null,
@@ -34,6 +45,7 @@ export function handleAdminAccountSuspend(
     const db = registryHostRuntime().db;
     try {
       const account = await suspendAccount(db, id);
+      await revokeSessionsForAccount(account.id);
       const blockedEmailsCount = (await listAccountEmails(db, account.id)).length;
       return Response.json({ account, blockedEmailsCount });
     } catch (err: unknown) {
@@ -55,6 +67,7 @@ export function handleAdminAccountDelete(
     }
     const db = registryHostRuntime().db;
     try {
+      await revokeSessionsForAccount(id);
       const deleted = await deleteAccount(db, id);
       return Response.json({ ok: true, ...deleted });
     } catch (err: unknown) {

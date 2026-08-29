@@ -9,6 +9,8 @@ export type RegistryIdentityPort = {
   getSession(req: Request): Promise<RegistrySession | null>;
   getSessionCookieHeader(req: Request): string | null;
   reloadTrustedOrigins?(): void;
+  /** Drop all IdP sessions for an auth user id (e.g. Better Auth `user.id`). */
+  revokeSessionsForUser?(userId: string): Promise<void>;
 };
 
 /**

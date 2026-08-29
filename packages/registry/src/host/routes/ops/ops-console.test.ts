@@ -21,13 +21,20 @@ function bearerHeaders(): HeadersInit {
 }
 
 describe("registry ops API", () => {
+  const revokedUserIds: string[] = [];
+
   beforeEach(async () => {
+    revokedUserIds.length = 0;
     resetRegistrySqliteDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await initRegistryDomainSchema(getRegistrySqliteBundle().registry);
     const db = getRegistrySqliteBundle().registry;
-    initTestRegistryHostRuntime(db);
+    initTestRegistryHostRuntime(db, {
+      revokeSessionsForUser: async (userId) => {
+        revokedUserIds.push(userId);
+      },
+    });
     await seedDefaultHost(db, {
       slug: "khora-local",
       baseUrl: "http://localhost:8788",
@@ -113,6 +120,7 @@ describe("registry ops API", () => {
     expect(suspendRes.status).toBe(200);
     const suspendedBody = (await suspendRes.json()) as { account: { status: string } };
     expect(suspendedBody.account.status).toBe("suspended");
+    expect(revokedUserIds).toEqual(["ba-admin-lifecycle-1"]);
 
     const reactivateRes = await handleAdminAccountReactivate(
       new Request(`http://x/v1/ops/accounts/${account.id}/reactivate`, {
@@ -138,5 +146,6 @@ describe("registry ops API", () => {
     const deletedBody = (await deleteRes.json()) as { ok: boolean; blockedEmailsCount: number };
     expect(deletedBody.ok).toBe(true);
     expect(deletedBody.blockedEmailsCount).toBe(1);
+    expect(revokedUserIds.filter((id) => id === "ba-admin-lifecycle-1")).toHaveLength(2);
   });
 });

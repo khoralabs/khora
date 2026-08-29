@@ -1,4 +1,9 @@
-export { getRegistryAuth, registryAuth, reloadRegistryAuth } from "./auth";
+export {
+  getRegistryAuth,
+  registryAuth,
+  reloadRegistryAuth,
+  revokeBetterAuthSessionsForUser,
+} from "./auth";
 export {
   createRegistryAuth,
   type RegistryAuth,

@@ -7,6 +7,7 @@ import {
   findAccountByEmail,
   findBlockedEmail,
   linkBetterAuthUser,
+  listBetterAuthSubjectsForAccount,
   reactivateAccountByEmail,
   suspendAccount,
 } from "./accounts";
@@ -101,6 +102,14 @@ describe("@khoralabs/registry/accounts accounts", () => {
     });
     expect(reactivated.status).toBe("active");
     expect((await findAccountByEmail(db, "reactivate@example.com"))?.id).toBe(reactivated.id);
+  });
+
+  test("listBetterAuthSubjectsForAccount returns linked subjects", async () => {
+    const account = await linkBetterAuthUser(db, {
+      providerSubject: "ba-subjects-1",
+      email: "subjects@example.com",
+    });
+    expect(await listBetterAuthSubjectsForAccount(db, account.id)).toEqual(["ba-subjects-1"]);
   });
 
   test("blocked email lookup is normalized", async () => {

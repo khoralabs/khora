@@ -1,5 +1,5 @@
 import type { RegistryIdentityPort } from "@khoralabs/registry/host";
-import { reloadRegistryAuth } from "./auth";
+import { reloadRegistryAuth, revokeBetterAuthSessionsForUser } from "./auth";
 import { getRegistrySession } from "./session";
 import { getBetterAuthSessionCookieHeader } from "./session-cookie";
 
@@ -17,5 +17,6 @@ export function createBetterAuthRegistryIdentity(
         reloadRegistryAuth({ resolveTrustedOrigins: opts.resolveTrustedOrigins });
       }
     },
+    revokeSessionsForUser: revokeBetterAuthSessionsForUser,
   };
 }
