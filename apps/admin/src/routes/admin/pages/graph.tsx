@@ -158,11 +158,7 @@ export function GraphPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground">
-      <MemoriesClientProvider
-        createClient={createClient}
-        database={DOMUS_DATABASE}
-        openOnFocus
-      >
+      <MemoriesClientProvider createClient={createClient} database={DOMUS_DATABASE} openOnFocus>
         <MemoriesNamespacesProvider namespaceRoot={namespaceRoot}>
           <MemoriesNamespaceMemoriesProvider>
             <GraphProjectionProvider focusDelay={200}>

@@ -42,8 +42,8 @@ const SCHEMA_FILE = POSTINSTALL_SCHEMA_FILE;
  * Published install: `KHORA_CLI_ASSETS_DIR` points at the meta-package root (contains
  * `configs/`, `skills/`, and `khora-config.schema.json`).
  *
- * Monorepo: `apps/khora/cli/assets/configs`, `assets/skills/khora-cli`, and
- * `packages/khora/client/khora-config.schema.json`.
+ * Monorepo: `apps/cli/assets/configs`, `assets/skills/khora-cli`, and
+ * `packages/client/khora-config.schema.json`.
  */
 export function resolveSetupAssets(env: NodeJS.ProcessEnv = process.env): SetupAssets {
   const fromEnv = env[ASSETS_DIR_ENV]?.trim();
@@ -56,16 +56,7 @@ export function resolveSetupAssets(env: NodeJS.ProcessEnv = process.env): SetupA
     };
   }
   const pkgRoot = path.resolve(import.meta.dir, "../..");
-  const schema = path.resolve(
-    pkgRoot,
-    "..",
-    "..",
-    "..",
-    "packages",
-    "khora",
-    "client",
-    SCHEMA_FILE,
-  );
+  const schema = path.resolve(pkgRoot, "..", "..", "packages", "client", SCHEMA_FILE);
   const schemaPath = existsSync(schema) ? schema : undefined;
   return {
     configsDir: path.join(pkgRoot, "assets", "configs"),
@@ -96,7 +87,7 @@ export function printSetupSummary(result: KhoraSetupResult, skill?: AgentSkillIn
     );
   } else {
     console.log(
-      `${symbols.info} ${style.muted(`skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd packages/khora/client build:schema' in dev)`)}`,
+      `${symbols.info} ${style.muted(`skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd packages/client build:schema' in dev)`)}`,
     );
   }
   console.log(`${symbols.info} ${style.muted(`at ${result.destDir}`)}`);
