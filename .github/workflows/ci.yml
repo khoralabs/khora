@@ -46,24 +46,22 @@ jobs:
       # ── @khoralabs/khora-client (npm) ───────────────────────────────────────
       - name: typecheck khora-client and bundled deps
         run: |
-          bun run --cwd packages/khora/contracts typecheck
-          bun run --cwd packages/khora/auth typecheck
-          bun run --cwd packages/khora/transport typecheck
-          bun run --cwd packages/khora/client typecheck
+          bun run --cwd packages/contracts typecheck
+          bun run --cwd packages/auth typecheck
+          bun run --cwd packages/client typecheck
 
       - name: test khora-client and bundled deps
         run: |
           bun test \
-            packages/khora/contracts \
-            packages/khora/auth \
-            packages/khora/transport \
-            packages/khora/client \
+            packages/contracts \
+            packages/auth \
+            packages/client \
             scripts/stage-khora-libs-release.test.ts
 
       - name: build khora-client
         run: |
-          bun run --cwd packages/khora/client build:schema
-          bun run --cwd packages/khora/client build
+          bun run --cwd packages/client build:schema
+          bun run --cwd packages/client build
 
       - name: stage khora-client release package
         run: bun run scripts/stage-khora-libs-release.ts 0.0.0-ci

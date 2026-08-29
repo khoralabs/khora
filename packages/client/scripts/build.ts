@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import path from "node:path";
 
 const root = path.resolve(import.meta.dir, "..");
-const repoRoot = path.resolve(root, "../../..");
+const repoRoot = path.resolve(root, "../..");
 const distDir = path.join(root, "dist");
 const dtsOutDir = path.join(root, ".dts-build");
 const entry = path.join(root, "src/index.ts");
@@ -19,8 +19,8 @@ const publicExternals = ["@khoralabs/did-key-identity", "zod"] as const;
 
 /** Workspace packages whose types must be .d.ts for API Extractor, then rolled into client. */
 const bundledTypePackages = [
-  { dir: path.join(repoRoot, "packages/khora/contracts"), name: "@khoralabs/khora-contracts" },
-  { dir: path.join(repoRoot, "packages/khora/auth"), name: "@khoralabs/khora-auth" },
+  { dir: path.join(repoRoot, "packages/contracts"), name: "@khoralabs/khora-contracts" },
+  { dir: path.join(repoRoot, "packages/auth"), name: "@khoralabs/khora-auth" },
 ] as const;
 
 type PkgJson = {

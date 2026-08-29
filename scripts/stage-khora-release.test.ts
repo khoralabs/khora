@@ -82,13 +82,13 @@ describe("stageKhoraRelease", () => {
     releaseDir = path.join(workspace, "apps/release");
 
     mkdirSync(path.join(workspace, "apps/cli/assets/configs"), { recursive: true });
-    mkdirSync(path.join(workspace, "packages/khora/client"), { recursive: true });
+    mkdirSync(path.join(workspace, "packages/client"), { recursive: true });
 
     for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
       writeFileSync(path.join(workspace, "apps/cli/assets/configs", name), `{ "name": "${name}" }`);
     }
     writeFileSync(
-      path.join(workspace, "packages/khora/client/khora-config.schema.json"),
+      path.join(workspace, "packages/client/khora-config.schema.json"),
       '{"$id":"khora-config"}',
     );
   });

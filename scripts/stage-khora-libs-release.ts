@@ -10,7 +10,7 @@ export const KHORA_LIB_PACKAGES = ["khora-client"] as const;
 export type KhoraLibPackage = (typeof KHORA_LIB_PACKAGES)[number];
 
 const PKG_DIR: Record<KhoraLibPackage, string> = {
-  "khora-client": "packages/khora/client",
+  "khora-client": "packages/client",
 };
 
 export function stagedClientExports(): Record<string, unknown> {

@@ -77,10 +77,10 @@ jobs:
       - name: test
         run: |
           bun test apps/cli apps/daemon scripts/stage-khora-release.test.ts scripts/homebrew-formula.test.ts
-          bun test packages/khora/client
+          bun test packages/client
 
       - name: build json schema
-        run: bun run --cwd packages/khora/client build:schema
+        run: bun run --cwd packages/client build:schema
 
       - name: cross-compile native binaries
         run: |

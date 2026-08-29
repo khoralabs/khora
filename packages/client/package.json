@@ -11,9 +11,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/khoralabs/khora.git",
-    "directory": "packages/khora/client"
+    "directory": "packages/client"
   },
-  "homepage": "https://github.com/khoralabs/khora/tree/main/packages/khora/client",
+  "homepage": "https://github.com/khoralabs/khora/tree/main/packages/client",
   "bugs": "https://github.com/khoralabs/khora/issues",
   "keywords": [
     "khora",

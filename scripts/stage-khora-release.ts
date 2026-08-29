@@ -7,7 +7,7 @@
  *   apps/daemon/dist/<bun-target>/khora-daemon
  *   apps/cli/assets/configs/{base,cli,daemon}.config.json
  *   apps/cli/assets/skills/khora-cli/
- *   packages/khora/client/khora-config.schema.json
+ *   packages/client/khora-config.schema.json
  *
  * Output tree: `<releaseDir>/{cli,daemon,cli-<slug>,daemon-<slug>}/...`
  * Publish order: all 6 platform pkgs → daemon meta → cli meta.
@@ -274,7 +274,7 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
   }
 
   // json schema (built via build:schema upstream)
-  const schemaSrc = path.join(workspaceRoot, "packages/khora/client/khora-config.schema.json");
+  const schemaSrc = path.join(workspaceRoot, "packages/client/khora-config.schema.json");
   if (!existsSync(schemaSrc)) {
     throw new Error(`missing khora-config.schema.json at ${schemaSrc} — run build:schema first`);
   }
