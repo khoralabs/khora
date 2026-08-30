@@ -1,20 +1,10 @@
 import { assertKhoraMemoriesDbPathUnset } from "./memories-domus-legacy";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
-import { resolvePersistenceCwd } from "./packaged-runtime";
 import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
 
 /**
  * Server env for Khora host bootstrap. See `.env.example` for variable names.
  */
-
-let cachedPersistencePaths: KhoraPersistencePaths | undefined;
-
-function persistencePaths(): KhoraPersistencePaths {
-  if (cachedPersistencePaths === undefined) {
-    cachedPersistencePaths = resolveKhoraPersistencePaths(process.env, resolvePersistenceCwd());
-  }
-  return cachedPersistencePaths;
-}
 
 /** Default HTTP ingress via Bun only (no parallel unary listener). */
 export type KhoraHostUnaryIngressMode = "off" | "stdio";
@@ -52,26 +42,6 @@ export function envPort(): number {
   return Number.isFinite(p) && p > 0 ? Math.floor(p) : 8788;
 }
 
-export function envDataDir(): string {
-  return persistencePaths().dataDir;
-}
-
-export function envHostDbPath(): string {
-  return persistencePaths().hostDbPath;
-}
-
-export function envAuthNoncesDbPath(): string {
-  return persistencePaths().authNoncesDbPath;
-}
-
-export function envPercolatorDbPath(): string {
-  return persistencePaths().percolatorDbPath;
-}
-
-export function envCellsDir(): string {
-  return persistencePaths().cellsDir;
-}
-
 export { type KhoraPersistencePaths, resolveKhoraPersistencePaths };
 
 export function envColonnadeUseCellWorkers(): boolean {
@@ -102,16 +72,6 @@ export function envPublicBaseUrl(port: number): string {
 export function envRegistryUrl(): string | undefined {
   const url = process.env.KHORA_REGISTRY_URL?.trim();
   return url !== undefined && url.length > 0 ? url.replace(/\/$/, "") : undefined;
-}
-
-export function envRegistryParticipate(): boolean {
-  const v = process.env.KHORA_REGISTRY_PARTICIPATE?.trim().toLowerCase();
-  return v === "1" || v === "true";
-}
-
-export function envRegistryTrustBaseUrlOrigin(): boolean {
-  const v = process.env.KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN?.trim().toLowerCase();
-  return v === "1" || v === "true";
 }
 
 export function envHostDisplayName(): string | undefined {

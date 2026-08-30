@@ -80,10 +80,6 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
       return handleReady(deps);
     }
 
-    if (url.pathname.startsWith("/internal/")) {
-      return jsonError("Not found", 404);
-    }
-
     if (req.method === "GET" && url.pathname === "/v1/host/registry") {
       return handleAdminRegistryGet(req, deps);
     }

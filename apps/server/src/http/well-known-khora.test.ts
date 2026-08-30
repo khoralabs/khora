@@ -1,9 +1,12 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { type HostRouteDeps, handleWellKnownKhora } from "@khoralabs/khora-host/http";
+import {
+  buildKhoraHostDiscovery,
+  type HostRouteDeps,
+  handleWellKnownKhora,
+} from "@khoralabs/khora-host/http";
 import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
-import { buildKhoraHostDiscovery } from "../ops/build-host-discovery";
 import { createKhoraHostSpecPort } from "../ops/host-spec-port";
 
 describe("well-known khora", () => {
@@ -92,14 +95,13 @@ describe("well-known khora", () => {
     expect(doc.population).toEqual({ current: 3, limit: 50 });
   });
 
-  test("env overrides stored slug and registry URL", () => {
+  test("env overrides stored slug", () => {
     hostSpec.patch({ slug: "stored", registryUrl: "http://stored.example.com" });
     process.env.KHORA_HOST_SLUG = "env-slug";
-    process.env.KHORA_REGISTRY_URL = "http://localhost:4000/";
 
     const doc = buildKhoraHostDiscovery({ hostSpec, populationCurrent: 0 });
     expect(doc.slug).toBe("env-slug");
-    expect(doc.registryUrl).toBe("http://localhost:4000");
+    expect(doc.registryUrl).toBe("http://stored.example.com");
   });
 
   test("handleWellKnownKhora returns JSON with live count", async () => {
