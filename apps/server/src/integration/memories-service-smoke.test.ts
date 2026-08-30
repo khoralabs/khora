@@ -14,14 +14,14 @@ import {
 } from "@khoralabs/memories-service/client";
 import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service/http";
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
-import { KHORA_DOMUS_MEMORIES_DATABASE_ID } from "../memories-domus";
+import { KHORA_HOST_MEMORIES_DATABASE_ID } from "../services/memories";
 
 function memoriesTest(name: string, fn: () => Promise<void>): void {
   test.skipIf(!memoriesSqliteVecAvailable())(name, fn);
 }
 
-describe("Domus memories-service smoke", () => {
-  const dataDir = mkdtempSync(path.join(tmpdir(), "khora-domus-memories-"));
+describe("host memories-service smoke", () => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), "khora-host-memories-"));
 
   afterAll(() => {
     try {
@@ -33,7 +33,7 @@ describe("Domus memories-service smoke", () => {
 
   memoriesTest("getHandle + listNamespaces/getGraphLayout via service HTTP", async () => {
     const stack = createLocalSqliteServiceStack({ dataDir });
-    const handle = await stack.service.getHandle(KHORA_DOMUS_MEMORIES_DATABASE_ID);
+    const handle = await stack.service.getHandle(KHORA_HOST_MEMORIES_DATABASE_ID);
     expect(handle.persistence).toBeDefined();
     expect(handle.sync?.syncPersistence).toBeDefined();
 
@@ -56,7 +56,7 @@ describe("Domus memories-service smoke", () => {
 
     const reads = createRemoteMemoriesReadClient({
       baseUrl: "http://localhost",
-      database: KHORA_DOMUS_MEMORIES_DATABASE_ID,
+      database: KHORA_HOST_MEMORIES_DATABASE_ID,
       fetch: fetchImpl,
     });
 

@@ -46,9 +46,12 @@ import {
   createPercolatorSqlitePersistence,
   ensurePercolatorSchema,
 } from "@khoralabs/percolator/sqlite";
-import type { KhoraEncryptionContext } from "./encryption-context";
+import type { KhoraEncryptionContext } from "./encryption";
 import { logger } from "./logger";
-import { assertKhoraMemoriesDbPathUnset, type KhoraMemoriesBootstrapConfig } from "./memories-env";
+import {
+  assertKhoraMemoriesDbPathUnset,
+  type KhoraMemoriesBootstrapConfig,
+} from "./services/memories";
 
 export type BootstrapKhoraHostOpts = {
   hostDbPath: string;
@@ -72,7 +75,7 @@ function openSideDb(path: string, sqlCipherKey?: string): Database {
 
 export type KhoraHostBootstrap = {
   ctx: KhoraHostContext;
-  /** Shared Domus SQLite handle (same connection as memories-service / indexer). */
+  /** Shared host memories SQLite handle (same connection as memories-service / indexer). */
   memoriesSqliteDb?: Database;
   memoriesService?: MemoriesDatabaseService;
   memoriesOntology?: MemoriesDatabaseOntologyStore;

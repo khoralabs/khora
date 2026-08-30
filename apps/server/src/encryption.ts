@@ -1,10 +1,17 @@
+import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
 import {
   assertEncryptionKeys,
   createOutboxPayloadCodec,
   EnvKeyProvider,
   tryGetSqlCipherKey,
 } from "@khoralabs/colonnade/crypto";
-import type { KhoraEncryptionContext } from "./encryption-context";
+
+/** Resolved encryption material for Khora server bootstrap. */
+export type KhoraEncryptionContext = {
+  /** When set, SQLite files use SQLCipher; omit for plaintext. */
+  readonly sqlCipherKey?: string;
+  readonly outboxPayloadCodec: OutboxPayloadCodec;
+};
 
 export async function bootstrapKhoraEncryption(): Promise<KhoraEncryptionContext> {
   const provider = new EnvKeyProvider();

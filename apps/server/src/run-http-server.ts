@@ -16,7 +16,7 @@ import {
 } from "@khoralabs/khora-host/http";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
-import { bootstrapKhoraEncryption } from "./encryption-bootstrap";
+import { bootstrapKhoraEncryption } from "./encryption";
 import {
   envColonnadeUseCellWorkers,
   envHostDuplexIngress,
@@ -28,9 +28,9 @@ import {
   validateEnv,
 } from "./env";
 import { logger } from "./logger";
-import { envMemoriesBootstrapConfig } from "./memories-env";
 import { tracer } from "./otel";
 import { resolvePersistenceCwd } from "./packaged-runtime";
+import { envMemoriesBootstrapConfig } from "./services/memories";
 
 /**
  * Boot the HTTP/WS host and block until SIGTERM/SIGINT.

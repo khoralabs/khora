@@ -1,6 +1,6 @@
-import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
-import { assertKhoraMemoriesDbPathUnset } from "./memories-env";
 import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
+import type { KhoraMemoriesBootstrapConfig } from "./services/memories";
+import { assertKhoraMemoriesDbPathUnset } from "./services/memories";
 
 /**
  * Server env for Khora host bootstrap. See `.env.example` for variable names.

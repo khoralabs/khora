@@ -14,13 +14,13 @@ import {
   resolveLitestreamBin,
 } from "../../../scripts/litestream-config";
 import { resolveKhoraPersistencePaths, validateEnv } from "../src/env";
-import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env";
 import {
   applyPackagedRuntimeDefaults,
   isKhoraPackaged,
   resolvePackageRoot,
   resolvePersistenceCwd,
 } from "../src/packaged-runtime";
+import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/services/memories";
 
 applyPackagedRuntimeDefaults();
 

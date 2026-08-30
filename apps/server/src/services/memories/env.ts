@@ -5,18 +5,15 @@ import {
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-node/helpers";
-import {
-  KHORA_DOMUS_MEMORIES_DATABASE_ID,
-  type KhoraDomusMemoriesDatabaseId,
-} from "./memories-domus";
-import type { KhoraPersistencePaths } from "./persistence-paths";
+import type { KhoraPersistencePaths } from "../../persistence-paths";
+import { KHORA_HOST_MEMORIES_DATABASE_ID, type KhoraHostMemoriesDatabaseId } from "./database-id";
 
 export const DEFAULT_HOST_SEARCH_NAMESPACE_ROOT = "global";
 
 export type KhoraMemoriesBootstrapConfig = {
   /** memories-service local SQLite dataDir (`{KHORA_DATA_DIR}/memories`). */
   memoriesDataDir: string;
-  databaseId: KhoraDomusMemoriesDatabaseId;
+  databaseId: KhoraHostMemoriesDatabaseId;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;
 };
@@ -92,7 +89,7 @@ export function envMemoriesBootstrapConfig(
   }
   return {
     memoriesDataDir: paths.memoriesDataDir,
-    databaseId: KHORA_DOMUS_MEMORIES_DATABASE_ID,
+    databaseId: KHORA_HOST_MEMORIES_DATABASE_ID,
     namespaceRoot: readKhoraMemoriesNamespaceRoot(env),
     embeddingModel: createKhoraEmbeddingModelFromEnv(readKhoraEmbeddingEnv(env)),
   };
