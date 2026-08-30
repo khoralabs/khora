@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  # Released surfaces: @khoralabs/khora-client (npm), khora-cli, khora-server.
+  # Released surfaces: lockstep libs (client/registry/host), khora-cli, khora-server.
   # Mirrors the test/build gates of release-khora-{libs,cli,server}.yml without publishing.
   ci:
     runs-on: blacksmith-4vcpu-ubuntu-2404
@@ -24,28 +24,33 @@ jobs:
       - name: install
         run: bun install --frozen-lockfile
 
-      # ── @khoralabs/khora-client (npm) ───────────────────────────────────────
-      - name: typecheck khora-client and bundled deps
+      # ── lockstep libs (client / registry / host) ────────────────────────────
+      - name: typecheck khora libs and bundled deps
         run: |
           bun run --cwd packages/contracts typecheck
           bun run --cwd packages/auth typecheck
           bun run --cwd packages/client typecheck
+          bun run --cwd packages/registry typecheck
+          bun run --cwd packages/host typecheck
 
-      - name: test khora-client and bundled deps
+      - name: test khora libs
         run: |
           bun test \
             packages/contracts \
             packages/auth \
             packages/client \
-            scripts/stage-khora-libs-release.test.ts
+            packages/registry \
+            packages/host \
+            scripts/stage-khora-libs-release.test.ts \
+            scripts/build-publishable-lib.test.ts
 
-      - name: build khora-client
+      - name: build and stage khora libs
         run: |
           bun run --cwd packages/client build:schema
           bun run --cwd packages/client build
-
-      - name: stage khora-client release package
-        run: bun run scripts/stage-khora-libs-release.ts 0.0.0-ci
+          bun run --cwd packages/registry build
+          bun run --cwd packages/host build
+          bun run scripts/stage-khora-libs-release.ts 0.0.0-ci
 
       # ── khora-cli ──────────────────────────────────────────────────────────
       - name: typecheck khora-cli

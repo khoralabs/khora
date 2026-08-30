@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Semver to publish for @khoralabs/khora-client (e.g. 0.1.0)"
+        description: "Lockstep semver for khora-client, khora-registry, khora-host (e.g. 0.1.0)"
         required: true
         type: string
       tag:
@@ -49,15 +49,25 @@ jobs:
 
       - name: test
         run: |
-          bun test packages/contracts packages/client scripts/stage-khora-libs-release.test.ts
+          bun test \
+            packages/contracts \
+            packages/auth \
+            packages/client \
+            packages/registry \
+            packages/host \
+            scripts/stage-khora-libs-release.test.ts \
+            scripts/build-publishable-lib.test.ts
 
       - name: build client schema
         run: bun run --cwd packages/client build:schema
 
-      - name: build client
-        run: bun run --cwd packages/client build
+      - name: build libs
+        run: |
+          bun run --cwd packages/client build
+          bun run --cwd packages/registry build
+          bun run --cwd packages/host build
 
-      - name: stage release package
+      - name: stage release packages
         run: bun run scripts/stage-khora-libs-release.ts "$VERSION"
 
       - name: configure npm auth
@@ -74,26 +84,37 @@ jobs:
         run: |
           set -euo pipefail
           echo "npm user: $(npm whoami)"
-          (cd release/khora-client && npm publish --access public --tag "$NPM_TAG" --dry-run)
+          for pkg in khora-client khora-registry khora-host; do
+            (cd "release/${pkg}" && npm publish --access public --tag "$NPM_TAG" --dry-run)
+          done
 
-      - name: publish client
-        working-directory: release/khora-client
+      - name: publish libs (client → registry → host)
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            npm publish --access public --tag "$NPM_TAG" --dry-run
-          else
-            npm publish --access public --tag "$NPM_TAG"
-          fi
+          set -euo pipefail
+          for pkg in khora-client khora-registry khora-host; do
+            echo "::group::publish ${pkg}"
+            if [ "$DRY_RUN" = "true" ]; then
+              (cd "release/${pkg}" && npm publish --access public --tag "$NPM_TAG" --dry-run)
+            else
+              (cd "release/${pkg}" && npm publish --access public --tag "$NPM_TAG")
+            fi
+            echo "::endgroup::"
+          done
 
-      - name: bump source version
+      - name: bump source versions
         if: ${{ inputs.dry_run == false }}
         run: |
           node -e "
             const fs = require('node:fs');
-            const p = 'packages/client/package.json';
-            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
-            pkg.version = process.env.VERSION;
-            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+            for (const p of [
+              'packages/client/package.json',
+              'packages/registry/package.json',
+              'packages/host/package.json',
+            ]) {
+              const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+              pkg.version = process.env.VERSION;
+              fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+            }
           "
 
       - name: commit version bump
@@ -102,14 +123,12 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/client/package.json
+          git add packages/client/package.json packages/registry/package.json packages/host/package.json
           if git diff --cached --quiet; then
             echo "::warning::version unchanged"
             exit 0
           fi
-          HUSKY=0 git commit -m "release khora-client v${VERSION}"
-          # Other release workflows may push to main concurrently; rebase and retry.
-          # --autostash: working tree may have unstaged noise that blocks rebase.
+          HUSKY=0 git commit -m "release khora-libs v${VERSION}"
           branch="$(git rev-parse --abbrev-ref HEAD)"
           for attempt in 1 2 3 4 5; do
             if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
@@ -128,5 +147,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag "khora-client-v${VERSION}"
-          HUSKY=0 git push origin "khora-client-v${VERSION}"
+          git tag "khora-libs-v${VERSION}"
+          HUSKY=0 git push origin "khora-libs-v${VERSION}"
