@@ -109,7 +109,7 @@ export async function startE2eStack(opts?: { hostSlug?: string }): Promise<E2eSt
     PORT: String(serverPort),
     KHORA_DATA_DIR: serverData,
     KHORA_OUTBOX_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-    KHORA_SQLCIPHER_KEY: "e2e-khora-sqlcipher-key!!",
+    // Omit KHORA_SQLCIPHER_KEY: plaintext host DBs avoid setCustomSQLite races under bun test spawn.
     KHORA_CONSOLE_ROOT_TOKEN: "e2e-khora-console-token",
     KHORA_REGISTRY_URL: registryUrl,
     KHORA_HOST_SLUG: hostSlug,
