@@ -17,7 +17,9 @@ out
 dist
 .dts-build
 apps/khora/release
-release/
+# staged npm/binary release trees (not scripts/release/)
+/release/
+/apps/release/
 *.tgz
 
 # code coverage
