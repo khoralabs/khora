@@ -109,9 +109,9 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | Variable | R | K | Kind | Notes |
 | --- | --- | --- | --- | --- |
 | `REGISTRY_DATABASE_PATH` | + | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `KHORA_DATA_DIR` | · | + | C | Host persistence root (default `./data`). Derives host/auth/percolator DBs, cells, Domus memories (`memories/` service dataDir; id `{ kind: "host", ownerKey: "khora" }`). |
-| `KHORA_MEMORIES` | · | + | C | `1` / unset = Domus search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
-| `KHORA_MEMORIES_NAMESPACE_ROOT` | · | + | C | Host-owned namespace root for Domus memories (default `global`). |
+| `KHORA_DATA_DIR` | · | + | C | Host persistence root (default `./data`). Derives host/auth/percolator DBs, cells, host memories (`memories/` service dataDir; id `{ kind: "host", ownerKey: "khora" }`). |
+| `KHORA_MEMORIES` | · | + | C | `1` / unset = host memories search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
+| `KHORA_MEMORIES_NAMESPACE_ROOT` | · | + | C | Host-owned namespace root for host memories (default `global`). |
 | `KHORA_CELL_POOL_COUNT` | · | + | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | C | Bun Workers for cell SQLite (default on). |
 

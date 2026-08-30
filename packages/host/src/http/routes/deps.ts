@@ -10,9 +10,9 @@ import type { V2HostRateLimiters } from "../rate-limit-buckets";
 
 export type HostRouteDeps = {
   ctx: KhoraHostContext;
-  /** Shared Domus SQLite handle for embedding-queue host routes (same as service/indexer). */
+  /** Shared host memories SQLite handle for embedding-queue host routes (same as service/indexer). */
   memoriesSqliteDb?: Database;
-  /** Domus memories-service (when memories enabled). */
+  /** Host memories-service (when memories enabled). */
   memoriesService?: MemoriesDatabaseService;
   memoriesOntology?: MemoriesDatabaseOntologyStore;
   memoriesCatalog?: MemoriesDatabaseCatalogStore;

@@ -189,7 +189,7 @@ export type KhoraPostIndexableFeature = {
   text: string;
 };
 
-/** Text features indexed for Domus (lexical + embedding): body and subscription semantic query only. */
+/** Text features indexed for host memories (lexical + embedding): body and subscription semantic query only. */
 export function khoraPostIndexableFeatures(p: KhoraPost): KhoraPostIndexableFeature[] {
   const features: KhoraPostIndexableFeature[] = [];
   const body = p.body?.trim() ?? "";
