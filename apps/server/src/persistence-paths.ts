@@ -1,5 +1,4 @@
 import path from "node:path";
-import { resolveLegacyBareMemoriesDbPath } from "./memories-domus-legacy";
 
 /** Relative paths under `KHORA_DATA_DIR` (default layout). */
 export const KHORA_PERSISTENCE_REL = {
@@ -7,7 +6,7 @@ export const KHORA_PERSISTENCE_REL = {
   authNoncesDb: "khora-auth-nonces.sqlite",
   percolatorDb: "khora-percolator.sqlite",
   cellsDir: "cells",
-  /** memories-service `dataDir` (encoded Domus DB under `v1/…/database.db`). */
+  /** memories-service `dataDir` (encoded DB under `v1/…/database.db`). */
   memoriesDir: "memories",
 } as const;
 
@@ -19,13 +18,6 @@ export type KhoraPersistencePaths = {
   authNoncesDbPath: string;
   percolatorDbPath: string;
   cellsDir: string;
-  /**
-   * Fixed bare Domus sqlite path used only as a one-shot migration source into
-   * {@link KhoraPersistencePaths.memoriesDataDir}.
-   *
-   * @deprecated Remove with `memories-domus-legacy.ts` in the next minor version.
-   */
-  legacyMemoriesDbPath: string;
   /** memories-service local SQLite `dataDir`. */
   memoriesDataDir: string;
 };
@@ -53,7 +45,7 @@ function joinUnderDataDir(
  * Primary: `KHORA_DATA_DIR` (defaults to `./data` when unset).
  * Per-component overrides: `KHORA_HOST_DB_PATH`, `KHORA_AUTH_NONCES_DB_PATH`,
  * `KHORA_PERCOLATOR_DB_PATH`, `KHORA_CELLS_DIR`.
- * Domus lives under `{KHORA_DATA_DIR}/memories` (id `host`/`khora`).
+ * Host memories live under `{KHORA_DATA_DIR}/memories` (id `host`/`khora`).
  * Legacy: if `KHORA_DATA_DIR` is unset and host DB + cells paths are set, use those only.
  */
 export function resolveKhoraPersistencePaths(
@@ -88,7 +80,6 @@ export function resolveKhoraPersistencePaths(
         KHORA_PERSISTENCE_REL.percolatorDb,
       ),
       cellsDir: resolvePath(cwd, cellsOverride),
-      legacyMemoriesDbPath: resolveLegacyBareMemoriesDbPath(dataDir),
       memoriesDataDir: path.join(dataDir, KHORA_PERSISTENCE_REL.memoriesDir),
     };
   }
@@ -110,7 +101,6 @@ export function resolveKhoraPersistencePaths(
       KHORA_PERSISTENCE_REL.percolatorDb,
     ),
     cellsDir: joinUnderDataDir(dataDir, cwd, cellsOverride, KHORA_PERSISTENCE_REL.cellsDir),
-    legacyMemoriesDbPath: resolveLegacyBareMemoriesDbPath(dataDir),
     memoriesDataDir: path.join(dataDir, KHORA_PERSISTENCE_REL.memoriesDir),
   };
 }

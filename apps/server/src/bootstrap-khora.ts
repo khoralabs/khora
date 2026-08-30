@@ -48,11 +48,7 @@ import {
 } from "@khoralabs/percolator/sqlite";
 import type { KhoraEncryptionContext } from "./encryption-context";
 import { logger } from "./logger";
-import {
-  assertKhoraMemoriesDbPathUnset,
-  migrateBareMemoriesSqliteIfNeeded,
-} from "./memories-domus-legacy";
-import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
+import { assertKhoraMemoriesDbPathUnset, type KhoraMemoriesBootstrapConfig } from "./memories-env";
 
 export type BootstrapKhoraHostOpts = {
   hostDbPath: string;
@@ -183,13 +179,6 @@ export async function bootstrapKhoraHost(
   if (opts.memories !== undefined) {
     assertKhoraMemoriesDbPathUnset();
 
-    migrateBareMemoriesSqliteIfNeeded({
-      memoriesDataDir: opts.memories.memoriesDataDir,
-      legacyDbPath: opts.memories.legacyDbPath,
-      databaseId: opts.memories.databaseId,
-      log: (msg, extra) => logger.info(extra ?? {}, msg),
-    });
-
     const stack = createLocalSqliteServiceStack({
       dataDir: opts.memories.memoriesDataDir,
       ...(encryption.sqlCipherKey !== undefined ? { sqlCipherKey: encryption.sqlCipherKey } : {}),
@@ -201,7 +190,7 @@ export async function bootstrapKhoraHost(
     const handle = await stack.service.getHandle(opts.memories.databaseId);
     const syncPersistence = handle.sync?.syncPersistence;
     if (syncPersistence === undefined) {
-      throw new Error("Domus memories handle is missing sync SQLite persistence");
+      throw new Error("Host memories handle is missing sync SQLite persistence");
     }
     memoriesSqliteDb = getMemoriesSqliteDatabase(syncPersistence);
     ensurePendingEmbeddingsTable(memoriesSqliteDb);

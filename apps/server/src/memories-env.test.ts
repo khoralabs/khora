@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "./memories-env";
+import {
+  assertKhoraMemoriesDbPathUnset,
+  envMemoriesBootstrapConfig,
+  envMemoriesEnabled,
+} from "./memories-env";
 import { resolveKhoraPersistencePaths } from "./persistence-paths";
 
 const MEM_ENV = "KHORA_MEMORIES";
@@ -41,7 +45,6 @@ describe("envMemoriesBootstrapConfig", () => {
       const cfg = envMemoriesBootstrapConfig(paths);
       expect(cfg).toBeDefined();
       expect(cfg?.memoriesDataDir).toBe(path.join("/w", "data", "memories"));
-      expect(cfg?.legacyDbPath).toBe(path.join("/w", "data", "khora-memories.sqlite"));
       expect(cfg?.databaseId).toEqual({ kind: "host", ownerKey: "khora" });
     } finally {
       restoreMem(prev);
@@ -57,5 +60,17 @@ describe("envMemoriesBootstrapConfig", () => {
     } finally {
       restoreMem(prev);
     }
+  });
+});
+
+describe("assertKhoraMemoriesDbPathUnset", () => {
+  test("allows unset path", () => {
+    expect(() => assertKhoraMemoriesDbPathUnset({})).not.toThrow();
+  });
+
+  test("rejects KHORA_MEMORIES_DB_PATH", () => {
+    expect(() => assertKhoraMemoriesDbPathUnset({ KHORA_MEMORIES_DB_PATH: "/x.sqlite" })).toThrow(
+      /KHORA_MEMORIES_DB_PATH is no longer supported/,
+    );
   });
 });

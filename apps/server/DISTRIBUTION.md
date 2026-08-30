@@ -61,6 +61,10 @@ export KHORA_OUTBOX_ENCRYPTION_KEY='64-char-hex-or-32+-byte-string'
 # export KHORA_SQLCIPHER_KEY='your-key-at-least-16-chars'
 export KHORA_DATA_DIR=./data
 
+# Host memories live under {KHORA_DATA_DIR}/memories (service layout).
+# If you still have a bare khora-memories.sqlite from an older build, move it into
+# that layout before upgrading (the one-shot migrate was removed).
+
 khora-server
 # default PORT=8788
 ```

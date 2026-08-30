@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import { KHORA_LEGACY_BARE_MEMORIES_FILENAME } from "./memories-domus-legacy";
 import { KHORA_PERSISTENCE_REL, resolveKhoraPersistencePaths } from "./persistence-paths";
 
 const ENV_KEYS = [
@@ -47,9 +46,6 @@ describe("resolveKhoraPersistencePaths", () => {
         path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.percolatorDb),
       );
       expect(p.cellsDir).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.cellsDir));
-      expect(p.legacyMemoriesDbPath).toBe(
-        path.join(cwd, "my-data", KHORA_LEGACY_BARE_MEMORIES_FILENAME),
-      );
       expect(p.memoriesDataDir).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.memoriesDir));
     } finally {
       restoreEnv(prev);
@@ -65,9 +61,6 @@ describe("resolveKhoraPersistencePaths", () => {
       expect(p.hostDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.hostDb));
       expect(p.authNoncesDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.authNoncesDb));
       expect(p.percolatorDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.percolatorDb));
-      expect(p.legacyMemoriesDbPath).toBe(
-        path.join("/w", "data", KHORA_LEGACY_BARE_MEMORIES_FILENAME),
-      );
       expect(p.memoriesDataDir).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.memoriesDir));
     } finally {
       restoreEnv(prev);
@@ -106,9 +99,6 @@ describe("resolveKhoraPersistencePaths", () => {
       expect(p.dataDir).toBe("/legacy");
       expect(p.authNoncesDbPath).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.authNoncesDb));
       expect(p.percolatorDbPath).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.percolatorDb));
-      expect(p.legacyMemoriesDbPath).toBe(
-        path.join("/legacy", KHORA_LEGACY_BARE_MEMORIES_FILENAME),
-      );
       expect(p.memoriesDataDir).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.memoriesDir));
     } finally {
       restoreEnv(prev);

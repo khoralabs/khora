@@ -16,11 +16,6 @@ export const DEFAULT_HOST_SEARCH_NAMESPACE_ROOT = "global";
 export type KhoraMemoriesBootstrapConfig = {
   /** memories-service local SQLite dataDir (`{KHORA_DATA_DIR}/memories`). */
   memoriesDataDir: string;
-  /**
-   * Legacy bare sqlite path used as one-shot migration source.
-   * @deprecated Remove with `memories-domus-legacy.ts` in the next minor version.
-   */
-  legacyDbPath: string;
   databaseId: KhoraDomusMemoriesDatabaseId;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;
@@ -89,7 +84,7 @@ export function readKhoraMemoriesNamespaceRoot(env: NodeJS.ProcessEnv = process.
 }
 
 export function envMemoriesBootstrapConfig(
-  paths: Pick<KhoraPersistencePaths, "legacyMemoriesDbPath" | "memoriesDataDir">,
+  paths: Pick<KhoraPersistencePaths, "memoriesDataDir">,
   env: NodeJS.ProcessEnv = process.env,
 ): KhoraMemoriesBootstrapConfig | undefined {
   if (!envMemoriesEnabled(env)) {
@@ -97,9 +92,18 @@ export function envMemoriesBootstrapConfig(
   }
   return {
     memoriesDataDir: paths.memoriesDataDir,
-    legacyDbPath: paths.legacyMemoriesDbPath,
     databaseId: KHORA_DOMUS_MEMORIES_DATABASE_ID,
     namespaceRoot: readKhoraMemoriesNamespaceRoot(env),
     embeddingModel: createKhoraEmbeddingModelFromEnv(readKhoraEmbeddingEnv(env)),
   };
+}
+
+/** Reject removed `KHORA_MEMORIES_DB_PATH`; host memories use `{KHORA_DATA_DIR}/memories`. */
+export function assertKhoraMemoriesDbPathUnset(env: NodeJS.ProcessEnv = process.env): void {
+  const raw = env.KHORA_MEMORIES_DB_PATH?.trim();
+  if (raw !== undefined && raw.length > 0) {
+    throw new Error(
+      'KHORA_MEMORIES_DB_PATH is no longer supported; unset it. Host memories use {KHORA_DATA_DIR}/memories (database id { kind: "host", ownerKey: "khora" }).',
+    );
+  }
 }
