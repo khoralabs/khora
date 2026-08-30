@@ -27,12 +27,11 @@ ENV NODE_ENV=production \
   KHORA_DATA_DIR=/data \
   PORT=8788 \
   KHORA_PACKAGED=1 \
-  LITESTREAM_BIN_PATH=/usr/local/bin/litestream
-
-# Arch-specific lib paths (bookworm); override at runtime if needed.
-ENV SQLCIPHER_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlcipher.so.1 \
-  SQLITE_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlite3.so.0 \
+  LITESTREAM_BIN_PATH=/usr/local/bin/litestream \
   SQLITE_VEC_PATH=/usr/local/lib/khora/vec0.so
+
+# Do not hardcode SQLCIPHER_CUSTOM_LIB / SQLITE_CUSTOM_LIB — packaged runtime
+# probes /usr/lib/{x86_64,aarch64}-linux-gnu for multi-arch images.
 
 WORKDIR /app
 

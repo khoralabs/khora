@@ -51,3 +51,6 @@ docker run --rm -p 8788:8788 \
 | Arg | Default | Description |
 |-----|---------|-------------|
 | `RELEASE_SLUG` | `linux-x64` | Staged package under `apps/release/server-<slug>/` |
+
+SQLCipher / libsqlite3 paths are probed at runtime for amd64 and arm64; do not hardcode
+`SQLCIPHER_CUSTOM_LIB` / `SQLITE_CUSTOM_LIB` in the image.
