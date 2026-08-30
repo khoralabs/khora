@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 /**
- * Render and sync Homebrew formulas for khora CLI or khora-server.
+ * Render and sync Homebrew formulas for khora CLI, khora-server, or khora-registry.
  *
  *   bun run scripts/bump-homebrew-formula.ts cli <semver>
  *   bun run scripts/bump-homebrew-formula.ts server <semver>
+ *   bun run scripts/bump-homebrew-formula.ts registry <semver>
  */
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -124,6 +125,74 @@ ${linuxBlock}
   test do
     assert_predicate bin/"khora-server", :exist?
     assert_predicate bin/"khora-litestream", :exist?
+  end
+end
+`;
+}
+
+export function renderKhoraRegistryFormula(opts: {
+  version: string;
+  darwinArm64Sha256: string;
+  linuxX64Sha256?: string;
+  linuxArm64Sha256?: string;
+  repo?: string;
+  homepage?: string;
+}): string {
+  const repo = opts.repo ?? KHORA_RELEASE_REPO;
+  const homepage = opts.homepage ?? `https://github.com/${HOMEBREW_TAP_REPO}`;
+  const darwinUrl = tarballDownloadUrl("registry", opts.version, "darwin-arm64", repo);
+  const linuxX64Url = tarballDownloadUrl("registry", opts.version, "linux-x64", repo);
+  const linuxArm64Url = tarballDownloadUrl("registry", opts.version, "linux-arm64", repo);
+
+  const linuxBlock =
+    opts.linuxX64Sha256 !== undefined && opts.linuxArm64Sha256 !== undefined
+      ? `
+  on_linux do
+    on_intel do
+      url "${linuxX64Url}"
+      sha256 "${opts.linuxX64Sha256}"
+    end
+    on_arm do
+      url "${linuxArm64Url}"
+      sha256 "${opts.linuxArm64Sha256}"
+    end
+  end
+`
+      : "";
+
+  return `class KhoraRegistry < Formula
+  desc "Khora skill registry server"
+  homepage "${homepage}"
+  version "${opts.version}"
+  license "MIT"
+
+  depends_on "sqlcipher"
+  depends_on "sqlite"
+
+  on_macos do
+    on_arm do
+      url "${darwinUrl}"
+      sha256 "${opts.darwinArm64Sha256}"
+    end
+  end
+${linuxBlock}
+  def install
+    bin.install "bin/khora-registry"
+    bin.install "bin/litestream" => "khora-registry-litestream"
+  end
+
+  def caveats
+    <<~EOS
+      khora-registry requires REGISTRY_SQLCIPHER_KEY and BETTER_AUTH_SECRET.
+      Database path defaults under the package (set REGISTRY_DATABASE_PATH).
+      Optional Litestream: REGISTRY_LITESTREAM=1 plus S3 env (see apps/registry/.env.example).
+      Bundled Litestream is installed as khora-registry-litestream.
+    EOS
+  end
+
+  test do
+    assert_predicate bin/"khora-registry", :exist?
+    assert_predicate bin/"khora-registry-litestream", :exist?
   end
 end
 `;
@@ -256,18 +325,48 @@ async function bumpServer(workspaceRoot: string, version: string): Promise<void>
   });
 }
 
+async function bumpRegistry(workspaceRoot: string, version: string): Promise<void> {
+  const manifestPath = path.join(releaseDir(workspaceRoot), "registry-tarballs/manifest.json");
+  if (!existsSync(manifestPath)) {
+    console.error(`missing ${manifestPath}; run package-release-tarballs.ts registry first`);
+    process.exit(1);
+  }
+
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as ReleaseTarballManifest;
+  const formulaDir = path.join(workspaceRoot, "homebrew-tap/Formula");
+  mkdirSync(formulaDir, { recursive: true });
+  const formulaPath = path.join(formulaDir, "khora-registry.rb");
+  writeFileSync(
+    formulaPath,
+    renderKhoraRegistryFormula({
+      version,
+      darwinArm64Sha256: shaFromManifest(manifest, "darwin-arm64"),
+      linuxX64Sha256: shaFromManifest(manifest, "linux-x64"),
+      linuxArm64Sha256: shaFromManifest(manifest, "linux-arm64"),
+    }),
+  );
+  console.log(
+    `wrote ${path.relative(workspaceRoot, formulaPath)} (${releaseTagForVersion("registry", version)})`,
+  );
+  await pushToTapRepo({
+    files: [{ local: formulaPath, remote: "Formula/khora-registry.rb" }],
+    commitMessage: `khora-registry@${version}`,
+  });
+}
+
 if (import.meta.main) {
   const product = process.argv[2] as ReleaseProduct | undefined;
   const version = process.argv[3];
   if (
-    (product !== "cli" && product !== "server") ||
+    (product !== "cli" && product !== "server" && product !== "registry") ||
     !version ||
     !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)
   ) {
-    console.error("usage: bump-homebrew-formula.ts <cli|server> <semver>");
+    console.error("usage: bump-homebrew-formula.ts <cli|server|registry> <semver>");
     process.exit(1);
   }
   const workspaceRoot = path.resolve(import.meta.dir, "..");
   if (product === "cli") await bumpCli(workspaceRoot, version);
-  else await bumpServer(workspaceRoot, version);
+  else if (product === "server") await bumpServer(workspaceRoot, version);
+  else await bumpRegistry(workspaceRoot, version);
 }

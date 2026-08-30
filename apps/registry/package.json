@@ -8,7 +8,11 @@
     "dev": "bun --env-file=.env --hot src/index",
     "start": "NODE_ENV=production bun scripts/start-registry.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:darwin-arm64": "bun run scripts/build.ts bun-darwin-arm64",
+    "build:linux-x64": "bun run scripts/build.ts bun-linux-x64",
+    "build:linux-arm64": "bun run scripts/build.ts bun-linux-arm64",
+    "build:all": "bun run scripts/build.ts bun-darwin-arm64 && bun run scripts/build.ts bun-linux-x64 && bun run scripts/build.ts bun-linux-arm64"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",

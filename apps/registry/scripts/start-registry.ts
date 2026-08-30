@@ -1,5 +1,6 @@
 /**
- * When REGISTRY_LITESTREAM is set, runs Litestream for registry.sqlite then the Bun server.
+ * Production launcher: optional Litestream sidecar, then the HTTP server in-process.
+ * Compiled entry for `khora-registry` release binaries (`bun build --compile`).
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,30 +14,38 @@ import {
   readLitestreamS3Env,
   resolveLitestreamBin,
 } from "../../../scripts/litestream-config";
+import {
+  applyPackagedRuntimeDefaults,
+  isKhoraPackaged,
+  resolvePackageRoot,
+  resolvePersistenceCwd,
+} from "../src/packaged-runtime";
 
-const registryRoot = path.resolve(path.dirname(import.meta.path), "..");
-const indexEntry = path.join(registryRoot, "src", "index.ts");
-const serverEnv = buildOtelServerEnv({ defaultServiceName: "khora-registry" });
+applyPackagedRuntimeDefaults();
 
-async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(["bun", indexEntry], {
-    cwd: registryRoot,
-    stdio: ["inherit", "inherit", "inherit"],
-    env: serverEnv,
-  });
-  await proc.exited;
-  process.exit(proc.exitCode === 0 ? 0 : (proc.exitCode ?? 1));
+const otelEnv = buildOtelServerEnv({ defaultServiceName: "khora-registry" });
+for (const [key, value] of Object.entries(otelEnv)) {
+  process.env[key] = value;
 }
 
-async function runWithLitestream(): Promise<void> {
-  const s3 = readLitestreamS3Env("registry/litestream");
-  assertLitestreamCredentials(s3);
+const registryRoot = isKhoraPackaged() ? resolvePackageRoot() : resolvePersistenceCwd();
 
-  const dbPath = path.resolve(process.cwd(), registryDatabasePath());
+async function ensureRegistryDbDir(): Promise<void> {
+  const dbPath = path.resolve(resolvePersistenceCwd(), registryDatabasePath());
   if (dbPath !== ":memory:") {
     mkdirSync(path.dirname(dbPath), { recursive: true });
   }
+}
 
+async function startLitestream(): Promise<{
+  kill: (sig?: NodeJS.Signals) => void;
+  exited: Promise<number>;
+}> {
+  const s3 = readLitestreamS3Env("registry/litestream");
+  assertLitestreamCredentials(s3);
+  await ensureRegistryDbDir();
+
+  const dbPath = path.resolve(resolvePersistenceCwd(), registryDatabasePath());
   const litestreamBin = resolveLitestreamBin(registryRoot);
   const configPath = path.join(tmpdir(), `litestream-registry-${process.pid}.yml`);
   const yaml = buildLitestreamYaml({
@@ -46,48 +55,53 @@ async function runWithLitestream(): Promise<void> {
   writeFileSync(configPath, yaml, "utf8");
 
   const lsProc = Bun.spawn([litestreamBin, "replicate", "-config", configPath], {
-    cwd: registryRoot,
+    cwd: resolvePersistenceCwd(),
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(["bun", indexEntry], {
-    cwd: registryRoot,
-    stdio: ["inherit", "inherit", "inherit"],
-    env: serverEnv,
-  });
-
-  for (const sig of ["SIGINT", "SIGTERM"] as const) {
-    process.on(sig, () => {
+  return {
+    kill(sig: NodeJS.Signals = "SIGTERM") {
       try {
-        srvProc.kill(sig);
+        lsProc.kill(sig);
       } catch {
         /* ignore */
       }
+      try {
+        rmSync(configPath);
+      } catch {
+        /* ignore */
+      }
+    },
+    exited: lsProc.exited.then((code) => code ?? 1),
+  };
+}
+
+async function main(): Promise<void> {
+  let litestream: Awaited<ReturnType<typeof startLitestream>> | undefined;
+  if (isTruthyEnv(process.env.REGISTRY_LITESTREAM)) {
+    litestream = await startLitestream();
+  }
+
+  for (const sig of ["SIGINT", "SIGTERM"] as const) {
+    process.on(sig, () => {
+      litestream?.kill(sig);
     });
   }
 
-  await srvProc.exited;
-  const code = srvProc.exitCode ?? 1;
-
   try {
-    lsProc.kill("SIGTERM");
-    await lsProc.exited;
-  } catch {
-    /* ignore */
+    const { runRegistryServer } = await import("../src/run-registry-server");
+    await runRegistryServer();
+  } finally {
+    litestream?.kill("SIGTERM");
+    if (litestream !== undefined) {
+      try {
+        await litestream.exited;
+      } catch {
+        /* ignore */
+      }
+    }
   }
-
-  try {
-    rmSync(configPath);
-  } catch {
-    /* ignore */
-  }
-
-  process.exit(code === 0 ? 0 : code);
 }
 
-if (isTruthyEnv(process.env.REGISTRY_LITESTREAM)) {
-  await runWithLitestream();
-} else {
-  await runServerOnly();
-}
+await main();

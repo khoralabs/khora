@@ -1,16 +1,17 @@
 #!/usr/bin/env bun
 /**
- * Build `.tar.gz` release assets for cli or server.
+ * Build `.tar.gz` release assets for cli, server, or registry.
  *
  *   bun run scripts/package-release-tarballs.ts cli <semver>
  *   bun run scripts/package-release-tarballs.ts server <semver>
+ *   bun run scripts/package-release-tarballs.ts registry <semver>
  */
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { SUPPORTED_TARGETS } from "./stage-khora-release";
 
-export type ReleaseProduct = "cli" | "server";
+export type ReleaseProduct = "cli" | "server" | "registry";
 
 export type ReleaseTarball = {
   slug: string;
@@ -28,11 +29,15 @@ export type ReleaseTarballManifest = {
 export const KHORA_RELEASE_REPO = "khoralabs/homebrew-tap";
 
 export function releaseTagForVersion(product: ReleaseProduct, version: string): string {
-  return product === "cli" ? `khora-cli-v${version}` : `khora-server-v${version}`;
+  if (product === "cli") return `khora-cli-v${version}`;
+  if (product === "server") return `khora-server-v${version}`;
+  return `khora-registry-v${version}`;
 }
 
 export function tarballFilename(product: ReleaseProduct, slug: string): string {
-  return product === "cli" ? `khora-${slug}.tar.gz` : `khora-server-${slug}.tar.gz`;
+  if (product === "cli") return `khora-${slug}.tar.gz`;
+  if (product === "server") return `khora-server-${slug}.tar.gz`;
+  return `khora-registry-${slug}.tar.gz`;
 }
 
 export function tarballDownloadUrl(
@@ -112,6 +117,28 @@ async function packageServerTarballs(opts: {
   return tarballs;
 }
 
+async function packageRegistryTarballs(opts: {
+  releaseDir: string;
+  version: string;
+  outputDir: string;
+}): Promise<ReleaseTarball[]> {
+  const tarballs: ReleaseTarball[] = [];
+  for (const target of SUPPORTED_TARGETS) {
+    const staging = path.join(opts.releaseDir, `registry-${target.slug}`);
+    if (!existsSync(path.join(staging, "bin", "khora-registry"))) {
+      throw new Error(`missing staged registry package at ${staging}`);
+    }
+
+    const filename = tarballFilename("registry", target.slug);
+    const archivePath = path.join(opts.outputDir, filename);
+    await Bun.$`tar -czf ${archivePath} -C ${staging} .`.quiet();
+
+    const sha256 = createHash("sha256").update(readFileSync(archivePath)).digest("hex");
+    tarballs.push({ slug: target.slug, filename, path: archivePath, sha256 });
+  }
+  return tarballs;
+}
+
 export async function packageReleaseTarballs(opts: {
   product: ReleaseProduct;
   releaseDir: string;
@@ -120,14 +147,23 @@ export async function packageReleaseTarballs(opts: {
 }): Promise<ReleaseTarballManifest> {
   const outputDir =
     opts.outputDir ??
-    path.join(opts.releaseDir, opts.product === "cli" ? "tarballs" : "server-tarballs");
+    path.join(
+      opts.releaseDir,
+      opts.product === "cli"
+        ? "tarballs"
+        : opts.product === "server"
+          ? "server-tarballs"
+          : "registry-tarballs",
+    );
   if (existsSync(outputDir)) rmSync(outputDir, { recursive: true, force: true });
   mkdirSync(outputDir, { recursive: true });
 
   const tarballs =
     opts.product === "cli"
       ? await packageCliTarballs({ ...opts, outputDir })
-      : await packageServerTarballs({ ...opts, outputDir });
+      : opts.product === "server"
+        ? await packageServerTarballs({ ...opts, outputDir })
+        : await packageRegistryTarballs({ ...opts, outputDir });
 
   const manifest: ReleaseTarballManifest = {
     version: opts.version,
@@ -141,12 +177,12 @@ export async function packageReleaseTarballs(opts: {
 if (import.meta.main) {
   const product = process.argv[2] as ReleaseProduct | undefined;
   const version = process.argv[3];
-  if (product !== "cli" && product !== "server") {
-    console.error("usage: package-release-tarballs.ts <cli|server> <semver>");
+  if (product !== "cli" && product !== "server" && product !== "registry") {
+    console.error("usage: package-release-tarballs.ts <cli|server|registry> <semver>");
     process.exit(1);
   }
   if (!version || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)) {
-    console.error("usage: package-release-tarballs.ts <cli|server> <semver>");
+    console.error("usage: package-release-tarballs.ts <cli|server|registry> <semver>");
     process.exit(1);
   }
   const workspaceRoot = path.resolve(import.meta.dir, "..");

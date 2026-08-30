@@ -1,0 +1,108 @@
+name: release khora-registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver to publish (e.g. 0.1.0)"
+        required: true
+        type: string
+      dry_run:
+        description: "Build and verify only; skip GitHub release / Homebrew bump"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    env:
+      VERSION: ${{ inputs.version }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/checkout-khora
+        with:
+          token: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: install
+        run: bun install --frozen-lockfile
+
+      - name: test packaging helpers
+        run: bun test scripts/homebrew-formula.test.ts scripts/stage-khora-registry-release.test.ts
+
+      - name: install system sqlite libs (smoke host)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libsqlcipher1 libsqlite3-0
+
+      - name: cross-compile registry binaries
+        run: |
+          set -euo pipefail
+          for slug in darwin-arm64 linux-x64 linux-arm64; do
+            echo "::group::registry bun-$slug"
+            bun run apps/registry/scripts/build.ts "bun-$slug"
+            echo "::endgroup::"
+          done
+
+      - name: stage registry packages
+        run: bun run scripts/stage-khora-registry-release.ts "$VERSION"
+
+      - name: smoke-test compiled binaries
+        run: bun run scripts/verify-release-binaries.ts registry
+
+      - name: package registry tarballs
+        run: bun run scripts/package-release-tarballs.ts registry "$VERSION"
+
+      - name: create GitHub release
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN is empty or unset (needed to publish public release assets)"
+            exit 1
+          fi
+          gh release create "khora-registry-v${VERSION}" \
+            apps/release/registry-tarballs/*.tar.gz \
+            --repo khoralabs/homebrew-tap \
+            --title "khora-registry v${VERSION}" \
+            --generate-notes
+
+      - name: bump homebrew formula
+        if: ${{ inputs.dry_run == false }}
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: bun run scripts/bump-homebrew-formula.ts registry "$VERSION"
+
+      - name: commit homebrew formula
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add homebrew-tap/Formula/khora-registry.rb
+          git diff --staged --quiet || git commit -m "chore(homebrew): khora-registry@${VERSION}"
+          branch="$(git rev-parse --abbrev-ref HEAD)"
+          for attempt in 1 2 3 4 5; do
+            if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
+              exit 0
+            fi
+            echo "push rejected (attempt ${attempt}); rebasing onto origin/${branch}..."
+            git fetch origin "${branch}"
+            git rebase --autostash "origin/${branch}"
+            sleep $((attempt * 2))
+          done
+          echo "::error::failed to push homebrew formula after retries"
+          exit 1

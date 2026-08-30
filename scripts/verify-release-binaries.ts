@@ -4,6 +4,7 @@
  *
  *   bun run scripts/verify-release-binaries.ts cli
  *   bun run scripts/verify-release-binaries.ts server
+ *   bun run scripts/verify-release-binaries.ts registry
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -132,6 +133,80 @@ async function smokeServer(label: string, binPath: string, packageRoot?: string)
   }
 }
 
+async function smokeRegistry(label: string, binPath: string, packageRoot?: string): Promise<void> {
+  if (!existsSync(binPath)) {
+    throw new Error(`missing binary: ${binPath}`);
+  }
+
+  const dataDir = mkdtempSync(path.join(tmpdir(), "khora-registry-smoke-"));
+  const port = 14000 + Math.floor(Math.random() * 1000);
+  const env: Record<string, string> = {
+    ...process.env,
+    PORT: String(port),
+    REGISTRY_DATABASE_PATH: path.join(dataDir, "registry.sqlite"),
+    REGISTRY_SQLCIPHER_KEY: "smoke-test-sqlcipher-key!!",
+    BETTER_AUTH_SECRET: "0123456789abcdef0123456789abcdef",
+    REGISTRY_AUTH_OTP_LOG: "1",
+    LOG_LEVEL: "error",
+  };
+
+  if (packageRoot !== undefined) {
+    const ls = path.join(packageRoot, "bin", "litestream");
+    if (existsSync(ls)) env.LITESTREAM_BIN_PATH = ls;
+  }
+
+  const proc = Bun.spawn([binPath], {
+    cwd: dataDir,
+    env,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  let combined = "";
+  const collect = async (stream: ReadableStream<Uint8Array> | null) => {
+    if (stream === null) return;
+    combined += await new Response(stream).text();
+  };
+  void collect(proc.stdout);
+  void collect(proc.stderr);
+
+  try {
+    let ok = false;
+    for (let i = 0; i < 40; i++) {
+      await Bun.sleep(250);
+      try {
+        const res = await fetch(`http://127.0.0.1:${port}/health`);
+        if (res.ok) {
+          ok = true;
+          break;
+        }
+      } catch {
+        /* not up yet */
+      }
+      if (proc.exitCode !== null) break;
+    }
+
+    assertNoNativeBindingCrash(label, combined);
+    if (!ok) {
+      throw new Error(
+        `${label} failed to become ready (exit ${proc.exitCode ?? "running"})\n${combined}`,
+      );
+    }
+  } finally {
+    try {
+      proc.kill("SIGTERM");
+    } catch {
+      /* ignore */
+    }
+    try {
+      await proc.exited;
+    } catch {
+      /* ignore */
+    }
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+}
+
 async function verifyCli(): Promise<void> {
   for (const target of SUPPORTED_TARGETS) {
     const cliPath = path.join(workspaceRoot, "apps/cli/dist", target.bunTarget, "khora");
@@ -176,10 +251,37 @@ async function verifyServer(): Promise<void> {
   console.log(`verified ${SUPPORTED_TARGETS.length} khora-server release binaries`);
 }
 
+async function verifyRegistry(): Promise<void> {
+  for (const target of SUPPORTED_TARGETS) {
+    const distBin = path.join(
+      workspaceRoot,
+      "apps/registry/dist",
+      target.bunTarget,
+      "khora-registry",
+    );
+    const stagedRoot = path.join(workspaceRoot, "apps/release", `registry-${target.slug}`);
+    const stagedBin = path.join(stagedRoot, "bin", "khora-registry");
+    const label = `registry ${target.slug}`;
+
+    const binPath = existsSync(stagedBin) ? stagedBin : distBin;
+    const packageRoot = existsSync(stagedBin) ? stagedRoot : undefined;
+
+    if (target.slug === hostSlug) {
+      await smokeRegistry(label, binPath, packageRoot);
+    } else if (existsSync(binPath)) {
+      scanBinary(label, binPath);
+    } else {
+      throw new Error(`missing binary for ${label}: tried ${stagedBin} and ${distBin}`);
+    }
+  }
+  console.log(`verified ${SUPPORTED_TARGETS.length} khora-registry release binaries`);
+}
+
 const product = process.argv[2];
-if (product !== "cli" && product !== "server") {
-  console.error("usage: verify-release-binaries.ts <cli|server>");
+if (product !== "cli" && product !== "server" && product !== "registry") {
+  console.error("usage: verify-release-binaries.ts <cli|server|registry>");
   process.exit(1);
 }
 if (product === "cli") await verifyCli();
-else await verifyServer();
+else if (product === "server") await verifyServer();
+else await verifyRegistry();

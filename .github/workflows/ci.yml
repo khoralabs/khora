@@ -85,3 +85,10 @@ jobs:
 
       - name: build khora-server linux-x64 smoke
         run: bun run apps/server/scripts/build.ts bun-linux-x64
+
+      # ── khora-registry ───────────────────────────────────────────────────
+      - name: test khora-registry packaging
+        run: bun test scripts/stage-khora-registry-release.test.ts
+
+      - name: build khora-registry linux-x64 smoke
+        run: bun run apps/registry/scripts/build.ts bun-linux-x64
