@@ -1,20 +1,42 @@
-# agent-kernel
+# Khora
 
-To install dependencies:
+Monorepo for the Khora host, registry, CLI, and shared libraries.
+
+## Layout
+
+| Path | Package / role |
+| --- | --- |
+| `apps/cli` | `@khoralabs/khora-cli` — agent CLI |
+| `apps/daemon` | `@khoralabs/khora-daemon` — inbox WebSocket listener |
+| `apps/server` | `@khoralabs/khora-server` — headless host (HTTP/WS) |
+| `apps/registry` | `@khoralabs/khora-registry` — host catalog + Better Auth |
+| `packages/client` | `@khoralabs/khora-client` — typed HTTP/WS client |
+| `packages/host` | `@khoralabs/khora-host` — host library (used by server) |
+| `packages/registry` | `@khoralabs/khora-registry` — registry library (used by app) |
+| `packages/colonnade`, `packages/auth`, `packages/contracts`, … | Shared infrastructure |
+
+App and env wiring: [`apps/README.md`](apps/README.md), [`apps/env-matrix.md`](apps/env-matrix.md).
+
+## Setup
 
 ```bash
 git submodule update --init --recursive
 bun install
 ```
 
-[Husky](https://typicode.github.io/husky/) runs **Biome** format/lint on `git push` (see `.husky/pre-push`). Fix issues locally with `bun run format`, or check without writing via `bun run format:check`.
+[Husky](https://typicode.github.io/husky/) runs Biome on `git push`. Fix locally with `bun run format`.
 
-To run:
+**Tests:** `bun test` at the repo root. For sqlite-vec tests, see [`packages/memories/packages/persistence/sqlite/README.md`](packages/memories/packages/persistence/sqlite/README.md#running-tests-sqlite-vec--extension-loading) or `bun run test:with-sqlite`.
 
-```bash
-bun run index.ts
-```
+## Releases (GitHub Actions)
 
-**Tests:** `bun test` at the repo root runs workspace packages and preloads SQLite setup (`bunfig.toml`) so extension-capable `libsqlite3` is chosen before other tests open `bun:sqlite`. Tests that use `@khoralabs/memories-sqlite` still need a suitable SQLite build for sqlite-vec (often Homebrew SQLite on macOS). Use `bun run test:with-sqlite` when Homebrew `sqlite` is installed but `brew` is not on `PATH`, or set `SQLITE_CUSTOM_LIB` — see [`packages/memories/packages/persistence/sqlite/README.md`](packages/memories/packages/persistence/sqlite/README.md#running-tests-sqlite-vec--extension-loading).
+| Workflow | What it ships |
+| --- | --- |
+| [`release-khora-libs.yml`](.github/workflows/release-khora-libs.yml) | Lockstep npm: `@khoralabs/khora-client`, `@khoralabs/khora-host`, `@khoralabs/khora-registry` |
+| [`release-khora-cli.yml`](.github/workflows/release-khora-cli.yml) | CLI + daemon platform npm packages, tarballs, Homebrew `khora` |
+| [`release-khora-server.yml`](.github/workflows/release-khora-server.yml) | `khora-server` tarballs, GHCR slim Docker, Homebrew |
+| [`release-khora-registry.yml`](.github/workflows/release-khora-registry.yml) | `khora-registry` tarballs, GHCR slim Docker, Homebrew |
 
-This project was created using `bun init` in bun v1.3.4. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Public install assets: [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) Releases. Docker images: `ghcr.io/khoralabs/khora-server`, `ghcr.io/khoralabs/khora-registry`.
+
+Per-app notes: [`apps/cli/RELEASE.md`](apps/cli/RELEASE.md), [`apps/server/DISTRIBUTION.md`](apps/server/DISTRIBUTION.md).

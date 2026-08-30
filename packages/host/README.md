@@ -45,7 +45,6 @@ SQLite handles and host/social persistence adapters are wired in the server boot
 | `KHORA_DATA_DIR` | persistence root (default `./data`) |
 | `KHORA_MEMORIES` | memories on/off (default on) |
 | `KHORA_HOST_DB_PATH` / `KHORA_CELLS_DIR` | optional per-path overrides |
-| `KHORA_CELL_POOL_COUNT` | `cellPoolCount` (default 16) |
 | `KHORA_COLONNADE_CELL_WORKERS` | `useCellWorkers` |
 | `KHORA_RELAY_TENANT_KEY` | `tenantKey` |
 | `PORT` | HTTP port (default 8788) |
@@ -374,3 +373,14 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 | `@khoralabs/khora-host` | `packages/host/src/invites/` | Invite tokens repo + env |
 | `@khoralabs/khora-contracts` | `packages/contracts/` | Profile/post Zod schemas |
 | `@khoralabs/khora-client/transport` | `packages/client/` | Inbox WS, unary HTTP |
+
+## Build & publish
+
+Library only — run via `apps/server`. From repo root:
+
+```bash
+bun run --cwd packages/host build
+bun test packages/host
+```
+
+Published on npm as `@khoralabs/khora-host` (lockstep with `@khoralabs/khora-client` and `@khoralabs/khora-registry` via `.github/workflows/release-khora-libs.yml`).

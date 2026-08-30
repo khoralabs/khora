@@ -1,6 +1,6 @@
 # Production environment matrix
 
-Reference for deploying the Khora services under `apps/khora` (Render or similar). Per-app `.env.example` files hold local dev defaults; this doc is the **prod wiring map**.
+Reference for deploying Khora apps (`apps/{cli,daemon,server,registry}`) and libraries (`packages/{client,host,registry,...}`). Per-app `.env.example` files hold local dev defaults; this doc is the **prod wiring map**.
 
 ## Services
 
@@ -36,7 +36,7 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Concept | Set on | Example prod value |
 | --- | --- | --- |
-| Registry public URL | registry (`REGISTRY_URL`), khora-server (`KHORA_REGISTRY_URL`), CLI (`KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
+| Registry public URL | registry (`REGISTRY_URL`), khora-server (`KHORA_REGISTRY_URL`), CLI (`KHORA_REGISTRY_URL`) | `https://r.khoralabs.com` |
 | Khora server public URL | host registry (`POST /v1/hosts/register` + activate), khora-server (`KHORA_PUBLIC_BASE_URL`) | `https://api.khora.khoralabs.com` |
 | Browser origins for registry APIs | Host `/v1/host/registry*` or registry `/v1/ops` → register explicit trusted origins; enable registry participation | e.g. `https://k-0.khoralabs.com` |
 
@@ -93,6 +93,11 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | S | ≥16 chars enables registry `/v1/ops/*` (Bearer). |
 | `KHORA_CONSOLE_ROOT_TOKEN` | · | + | S | ≥16 chars enables khora-server `/v1/ops/*` and `/v1/host/registry*` (Bearer). Alias: `ADMIN_ROOT_TOKEN`. |
 | `REGISTRY_BOOTSTRAP_EMAILS` | + | · | C | Comma-separated emails granted `staff` role on first login. |
+| `KHORA_AUTH_MD_URL` | + | · | C | Markdown URL for Better Auth device verification (default `https://khoralabs.com/auth.md`). |
+| `KHORA_SECURE_COOKIES` | + | · | C | Force Secure session cookies (`1`/`true`; default on when `REGISTRY_URL` is https). |
+| `REGISTRY_HOST_HEALTH_POLL_INTERVAL_MS` | + | · | C | Background host health poll interval (default 60000). |
+| `REGISTRY_HOST_HEALTH_PROBE_TIMEOUT_MS` | + | · | C | Per-host health probe timeout (default 5000). |
+| `REGISTRY_HOST_HEALTH_POLL_DISABLED` | + | · | C | Set `1` to disable background health polling. |
 
 ### Email (AWS SES)
 
@@ -109,10 +114,9 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | Variable | R | K | Kind | Notes |
 | --- | --- | --- | --- | --- |
 | `REGISTRY_DATABASE_PATH` | + | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `KHORA_DATA_DIR` | · | + | C | Host persistence root (default `./data`). Derives host/auth/percolator DBs, cells, host memories (`memories/` service dataDir; id `{ kind: "host", ownerKey: "khora" }`). |
+| `KHORA_DATA_DIR` | · | + | C | Host persistence root (default `./data`). Derives host/auth/percolator DBs, cells, host memories (`memories/` service dataDir; id `{ kind: "host", ownerKey: "khora" }`). Do **not** set removed `KHORA_MEMORIES_DB_PATH`. |
 | `KHORA_MEMORIES` | · | + | C | `1` / unset = host memories search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
 | `KHORA_MEMORIES_NAMESPACE_ROOT` | · | + | C | Host-owned namespace root for host memories (default `global`). |
-| `KHORA_CELL_POOL_COUNT` | · | + | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | C | Bun Workers for cell SQLite (default on). |
 
 ### OpenTelemetry (apps → collector)
@@ -195,7 +199,7 @@ REGISTRY_SQLCIPHER_KEY=...
 
 ```
 PORT=4000
-REGISTRY_URL=https://registry.example.com
+REGISTRY_URL=https://r.khoralabs.com
 REGISTRY_DATABASE_PATH=/data/registry.sqlite
 # Host registration trust: manual (default), health (auto-activate on probe), open
 # REGISTRY_REGISTRATION_TRUST=manual

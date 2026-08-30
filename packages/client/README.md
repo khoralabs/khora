@@ -31,13 +31,15 @@ The JSON Schema artifact is exported at `@khoralabs/khora-client/khora-config.sc
 - `bun test` — package tests
 - `bun run build:schema` — regenerate `khora-config.schema.json`
 
+Published on npm as `@khoralabs/khora-client` (lockstep with `@khoralabs/khora-host` and `@khoralabs/khora-registry` via `.github/workflows/release-khora-libs.yml`).
+
 ## Negotiation channels (separate from Khora host)
 
 Bilateral OBP/NBC sessions use channel multiplex transport from [`khoralabs/relay`](https://github.com/khoralabs/relay) (and Vellum orchestration). The Khora host provides discovery (profiles, posts, inbox) only.
 
 1. **Discovery** — `KhoraClient.connectInbox()` for post fan-out and future `negotiation_invite` handoff notifications.
 2. **Channel transport** — against a Vellum-provisioned relay URL. See [`.brain/technical/channel-lifecycle.md`](../../../.brain/technical/channel-lifecycle.md) and [`khoralabs/relay`](https://github.com/khoralabs/relay).
-3. **Local daemon** — [`@khoralabs/vellum-daemon`](https://github.com/khoralabs/vellum) connects to the multiplex; the Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers inbox delivery only.
+3. **Local daemon** — [`@khoralabs/vellum-daemon`](https://github.com/khoralabs/vellum) connects to the multiplex; the Khora inbox daemon ([`apps/daemon`](../../apps/daemon)) covers inbox delivery only.
 
 ## Subscriptions
 

@@ -8,16 +8,16 @@ Unlike the [Vellum](https://github.com/khoralabs/vellum) daemon (per-channel OBP
 
 ```bash
 bun install
-bun run --cwd apps/khora/daemon start
+bun run --cwd apps/daemon start
 ```
 
 Or via the CLI:
 
 ```bash
-bun run --cwd apps/khora/cli start inbox listen          # foreground
-bun run --cwd apps/khora/cli start inbox listen -b       # background
-bun run --cwd apps/khora/cli start inbox status
-bun run --cwd apps/khora/cli start inbox stop
+bun run --cwd apps/cli start inbox listen          # foreground
+bun run --cwd apps/cli start inbox listen -b       # background
+bun run --cwd apps/cli start inbox status
+bun run --cwd apps/cli start inbox stop
 ```
 
 ## Configuration
@@ -43,8 +43,8 @@ Background mode writes `{dataDir}/khora-daemon.json`:
 ## Build native binary
 
 ```bash
-bun run --cwd apps/khora/daemon build:darwin-arm64
-bun run --cwd apps/khora/daemon build:all
+bun run --cwd apps/daemon build:darwin-arm64
+bun run --cwd apps/daemon build:all
 ```
 
 Published as `@khoralabs/khora-daemon` with platform packages `@khoralabs/khora-daemon-<os>-<arch>`.
