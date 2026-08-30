@@ -9,7 +9,7 @@ import {
   encodePostId,
   resolvePostById,
 } from "@khoralabs/khora-host";
-import { createTestKhoraHost } from "../test/bootstrap-sqlite";
+import { createTestKhoraHost } from "./test-host";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-post-outbox-"));
 let seq = 0;

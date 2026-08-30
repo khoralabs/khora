@@ -16,5 +16,5 @@
     "autoCommit": true,
     "autoLink": true
   },
-  "skip": true
+  "skip": false
 }

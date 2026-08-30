@@ -3,6 +3,7 @@ import {
   assertEncryptionKeys,
   createOutboxPayloadCodec,
   EnvKeyProvider,
+  outboxKeyBytesToHex,
   tryGetSqlCipherKey,
 } from "@khoralabs/colonnade/crypto";
 
@@ -11,6 +12,7 @@ export type KhoraEncryptionContext = {
   /** When set, SQLite files use SQLCipher; omit for plaintext. */
   readonly sqlCipherKey?: string;
   readonly outboxPayloadCodec: OutboxPayloadCodec;
+  readonly outboxKeyHex: string;
 };
 
 export async function bootstrapKhoraEncryption(): Promise<KhoraEncryptionContext> {
@@ -19,5 +21,9 @@ export async function bootstrapKhoraEncryption(): Promise<KhoraEncryptionContext
   const sqlCipherKey = await tryGetSqlCipherKey(provider, "khora");
   const outboxKey = await provider.getOutboxFieldKey();
   const outboxPayloadCodec = createOutboxPayloadCodec(outboxKey);
-  return { sqlCipherKey, outboxPayloadCodec };
+  return {
+    sqlCipherKey,
+    outboxPayloadCodec,
+    outboxKeyHex: outboxKeyBytesToHex(outboxKey),
+  };
 }

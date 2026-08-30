@@ -15,6 +15,12 @@ export { createAgentAccountStatusPort } from "./agent-account-status";
 export { countRegisteredPrincipals } from "./count-registered-principals";
 export { createEntityAdapter, parseEntityRow } from "./entity-adapter";
 export { createKhoraHostHealthPort } from "./health-port";
+export {
+  type CreateSqliteKhoraHostFoundationOpts,
+  createSqliteKhoraHostFoundation,
+  type SqliteKhoraHostFoundation,
+  type SqliteKhoraHostFoundationEncryption,
+} from "./host-foundation";
 export { createKhoraHostSpecPort } from "./host-spec-port";
 export { ensureKhoraInviteSchema, KHORA_INVITE_KIND, type KhoraInviteKind } from "./invites/schema";
 export { createKhoraInvitesSqliteRepo } from "./invites/sqlite";

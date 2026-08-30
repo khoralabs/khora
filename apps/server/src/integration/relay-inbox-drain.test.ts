@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
 import { assignPostAddress, encodePostId, popInboxDrainItemsForDid } from "@khoralabs/khora-host";
-import { createTestKhoraHost } from "../test/bootstrap-sqlite";
+import { createTestKhoraHost } from "./test-host";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-drain-"));
 let seq = 0;
