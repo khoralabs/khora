@@ -4,7 +4,7 @@ description: >-
   Requires KHORALABS_SUBMODULES_TOKEN. Verifies vendor/libs is present.
 inputs:
   token:
-    description: Fine-grained PAT (Contents: Read) for private khoralabs submodule remotes
+    description: "Fine-grained PAT (Contents: Read) for private khoralabs submodule remotes"
     required: true
 runs:
   using: composite
