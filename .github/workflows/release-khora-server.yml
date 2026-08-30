@@ -27,24 +27,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: init submodules
-        env:
-          TOKEN: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${TOKEN:-}" ]; then
-            echo "::error::KHORALABS_SUBMODULES_TOKEN secret is empty or unset"
-            exit 1
-          fi
-          sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
-          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git submodule sync --recursive
-          git submodule update --init --recursive
-
-      - name: verify submodules
-        run: |
-          set -euo pipefail
-          test -d vendor/libs
+      - uses: ./.github/actions/checkout-khora
+        with:
+          token: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
 
       - uses: oven-sh/setup-bun@v2
         with:

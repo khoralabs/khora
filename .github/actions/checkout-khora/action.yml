@@ -1,0 +1,32 @@
+name: Init Khora submodules
+description: >-
+  Initialize private khoralabs submodules after actions/checkout.
+  Requires KHORALABS_SUBMODULES_TOKEN. Verifies vendor/libs is present.
+inputs:
+  token:
+    description: Fine-grained PAT (Contents: Read) for private khoralabs submodule remotes
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: init submodules
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        if [ -z "${TOKEN:-}" ]; then
+          echo "::error::KHORALABS_SUBMODULES_TOKEN secret is empty or unset"
+          exit 1
+        fi
+        # scp-style git@host:path URLs often skip url.insteadOf; rewrite to HTTPS first.
+        sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
+        git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+        git submodule sync --recursive
+        git submodule update --init --recursive
+
+    - name: verify submodules
+      shell: bash
+      run: |
+        set -euo pipefail
+        test -d vendor/libs

@@ -13,27 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: init submodules
-        env:
-          # Fine-grained PAT (or classic repo-scoped) with Contents: Read on private
-          # khoralabs/* submodule remotes (libs, …).
-          TOKEN: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${TOKEN:-}" ]; then
-            echo "::error::KHORALABS_SUBMODULES_TOKEN secret is empty or unset"
-            exit 1
-          fi
-          # scp-style git@host:path URLs often skip url.insteadOf; rewrite to HTTPS first.
-          sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
-          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git submodule sync --recursive
-          git submodule update --init --recursive
-
-      - name: verify submodules
-        run: |
-          set -euo pipefail
-          test -d vendor/libs
+      - uses: ./.github/actions/checkout-khora
+        with:
+          token: ${{ secrets.KHORALABS_SUBMODULES_TOKEN }}
 
       - uses: oven-sh/setup-bun@v2
         with:
