@@ -3,20 +3,9 @@ import type {
   EmailConfirmResult,
   EmailConfirmSession,
   SendOtpParams,
-  SubscribeMarketingParams,
   VerifyOtpParams,
 } from "@khoralabs/registry/email-confirm";
 import { createUsersAuthClient } from "../browser-auth-client";
-
-async function readJsonError(res: Response): Promise<string> {
-  try {
-    const j = (await res.json()) as { error?: unknown };
-    if (typeof j.error === "string" && j.error.length > 0) return j.error;
-  } catch {
-    /* ignore */
-  }
-  return res.statusText || `HTTP ${res.status}`;
-}
 
 function mapSession(data: {
   user: { id: string; email: string; name?: string | null; role?: string | null };
@@ -31,13 +20,8 @@ function mapSession(data: {
   };
 }
 
-export function createRegistryEmailConfirmApi(opts: {
-  registryUrl: string;
-  sourceApp?: string;
-  fetchImpl?: typeof fetch;
-}): EmailConfirmApi {
+export function createRegistryEmailConfirmApi(opts: { registryUrl: string }): EmailConfirmApi {
   const base = opts.registryUrl.replace(/\/$/, "");
-  const fetchImpl = opts.fetchImpl ?? fetch;
   const authClient = createUsersAuthClient({ registryUrl: base });
 
   return {
@@ -77,23 +61,6 @@ export function createRegistryEmailConfirmApi(opts: {
         };
       }
       return { ok: true, session: mapSession({ user: data.user }) };
-    },
-
-    async subscribeMarketing(params: SubscribeMarketingParams): Promise<EmailConfirmResult> {
-      const res = await fetchImpl(`${base}/v1/marketing/subscribe`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email: params.email,
-          listSlug: params.listSlug,
-          sourceApp: params.sourceApp ?? opts.sourceApp,
-        }),
-      });
-      if (!res.ok) {
-        return { ok: false, error: await readJsonError(res) };
-      }
-      return { ok: true };
     },
   };
 }

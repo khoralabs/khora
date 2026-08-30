@@ -4,7 +4,6 @@ import { createLogger } from "@khoralabs/observability/logger";
 import { handleOptions, runWithRequestPeerIp, withCors } from "@khoralabs/registry/host";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { serve } from "bun";
-import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";
 import { bootstrapRegistryHost } from "./bootstrap-registry";
 import { handleHealth, handleReady } from "./health";
 import { tracer } from "./otel";
@@ -71,21 +70,6 @@ const server = serve({
             status = identityRes.status;
             span.setAttribute("registry.dispatch", "identity");
             return withCors(req, identityRes);
-          }
-
-          if (path === "/v1/marketing/subscribe") {
-            if (req.method === "POST") {
-              const res = await handleMarketingSubscribe(req);
-              status = res.status;
-              span.setAttribute("registry.dispatch", "marketing");
-              return withCors(req, res);
-            }
-            if (req.method === "DELETE") {
-              const res = await handleMarketingUnsubscribe(req);
-              status = res.status;
-              span.setAttribute("registry.dispatch", "marketing");
-              return withCors(req, res);
-            }
           }
 
           span.setAttribute("registry.dispatch", "host");

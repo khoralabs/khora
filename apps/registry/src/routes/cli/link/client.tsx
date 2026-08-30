@@ -8,7 +8,6 @@ import "../../../../styles/globals.css";
 
 const emailConfirmApi = createRegistryEmailConfirmApi({
   registryUrl: window.location.origin,
-  sourceApp: "khora-cli-link",
 });
 
 function userCodeFromQuery(): string {
