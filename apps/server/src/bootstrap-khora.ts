@@ -149,12 +149,7 @@ export async function bootstrapKhoraHost(
   const hostSpec = createKhoraHostSpecPort({ hostDb, tenantKey });
   const adminStats = createKhoraAdminStatsPort({
     hostDb,
-    percolatorDb,
-    cellsDir: opts.cellsDir,
     tenantKey,
-    cluster,
-    lookupNormalizedUsernameForPrincipal: registration.lookupNormalizedUsernameForPrincipal,
-    sqlCipherKey: encryption.sqlCipherKey,
   });
   const auth = createSignedRequestAuth({
     nonceStore: createSqliteNonceStore(authNoncesDb),
