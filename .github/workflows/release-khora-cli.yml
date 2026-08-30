@@ -55,7 +55,7 @@ jobs:
 
       - name: test
         run: |
-          bun test apps/cli apps/daemon scripts/stage-khora-release.test.ts scripts/homebrew-formula.test.ts
+          bun test apps/cli apps/daemon scripts/release/cli/stage.test.ts scripts/release/homebrew-formula.test.ts
           bun test packages/client
 
       - name: build json schema
@@ -74,13 +74,13 @@ jobs:
           done
 
       - name: smoke-test compiled binaries
-        run: bun run scripts/verify-release-binaries.ts cli
+        run: bun run scripts/release/verify-binaries.ts cli
 
       - name: stage release packages
-        run: bun run scripts/stage-khora-release.ts "$VERSION" --registry-url="$KHORA_RELEASE_REGISTRY_URL"
+        run: bun run scripts/release/cli/stage.ts "$VERSION" --registry-url="$KHORA_RELEASE_REGISTRY_URL"
 
       - name: package release tarballs
-        run: bun run scripts/package-release-tarballs.ts cli "$VERSION"
+        run: bun run scripts/release/package-tarballs.ts cli "$VERSION"
 
       - name: configure npm auth
         env:
@@ -166,7 +166,7 @@ jobs:
         if: ${{ inputs.dry_run == false }}
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: bun run scripts/bump-homebrew-formula.ts cli "$VERSION"
+        run: bun run scripts/release/bump-homebrew-formula.ts cli "$VERSION"
 
       - name: commit homebrew formula
         if: ${{ inputs.dry_run == false }}

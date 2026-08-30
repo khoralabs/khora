@@ -13,7 +13,7 @@ import {
   isTruthyEnv,
   readLitestreamS3Env,
   resolveLitestreamBin,
-} from "../../../scripts/litestream-config";
+} from "../../../scripts/litestream/config";
 import {
   applyPackagedRuntimeDefaults,
   isKhoraPackaged,

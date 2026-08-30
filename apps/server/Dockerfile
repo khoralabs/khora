@@ -2,7 +2,7 @@
 #
 # From repository root, after:
 #   bun run apps/server/scripts/build.ts bun-linux-x64   # or bun-linux-arm64
-#   bun run scripts/stage-khora-server-release.ts 0.0.0
+#   bun run scripts/release/server/stage.ts 0.0.0
 #
 #   docker build -f apps/server/Dockerfile \
 #     --build-arg RELEASE_SLUG=linux-x64 \

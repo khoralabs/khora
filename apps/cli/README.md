@@ -56,7 +56,7 @@ Release staging (after all three targets are built, and `packages/client` schema
 
 ```bash
 bun run --cwd packages/client build:schema
-bun run scripts/stage-khora-release.ts 0.1.0
+bun run scripts/release/cli/stage.ts 0.1.0
 ```
 
 CI publishes via [`.github/workflows/release-khora-cli.yml`](../../.github/workflows/release-khora-cli.yml).

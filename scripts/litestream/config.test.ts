@@ -1,9 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  assertLitestreamCredentials,
-  buildLitestreamYaml,
-  readLitestreamLogLevel,
-} from "./litestream-config";
+import { assertLitestreamCredentials, buildLitestreamYaml, readLitestreamLogLevel } from "./config";
 
 const fileDb = {
   kind: "file" as const,

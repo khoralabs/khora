@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import path from "node:path";
-import { buildPublishableLib } from "../../../scripts/build-publishable-lib.ts";
+import { buildPublishableLib } from "../../../scripts/release/libs/build-publishable-lib.ts";
 
 const repoRoot = path.resolve(import.meta.dir, "../../..");
 await buildPublishableLib({

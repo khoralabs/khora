@@ -93,9 +93,9 @@ khora-server
 ```bash
 bun install
 bun run apps/server/scripts/build.ts bun-darwin-arm64   # or linux-*
-bun run scripts/stage-khora-server-release.ts 0.0.0-dev
-bun run scripts/package-release-tarballs.ts server 0.0.0-dev
-bun run scripts/verify-release-binaries.ts server
+bun run scripts/release/server/stage.ts 0.0.0-dev
+bun run scripts/release/package-tarballs.ts server 0.0.0-dev
+bun run scripts/release/verify-binaries.ts server
 ```
 
 Release CI: `.github/workflows/release-khora-server.yml` (tarballs + GHCR slim Docker + Homebrew).

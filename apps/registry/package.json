@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "preinstall": "bun ../../scripts/install-litestream.ts --output .bin/litestream",
+    "preinstall": "bun ./scripts/install-litestream.ts",
     "dev": "bun --env-file=.env --hot src/index",
     "start": "NODE_ENV=production bun scripts/start-registry.ts",
     "test": "bun test",

@@ -31,4 +31,4 @@ bun run --cwd packages/registry build
 bun test packages/registry
 ```
 
-Lockstep npm publish with `@khoralabs/khora-client` and `@khoralabs/khora-host`: `.github/workflows/release-khora-libs.yml` → `scripts/stage-khora-libs-release.ts`.
+Lockstep npm publish with `@khoralabs/khora-client` and `@khoralabs/khora-host`: `.github/workflows/release-khora-libs.yml` → `scripts/release/libs/stage.ts`.

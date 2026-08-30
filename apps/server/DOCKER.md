@@ -10,7 +10,7 @@ Published images: `ghcr.io/khoralabs/khora-server:<version>` (from the release w
 
 ```bash
 bun run apps/server/scripts/build.ts bun-linux-x64
-bun run scripts/stage-khora-server-release.ts 0.0.0-local
+bun run scripts/release/server/stage.ts 0.0.0-local
 docker build -f apps/server/Dockerfile --build-arg RELEASE_SLUG=linux-x64 -t khora-server .
 # arm64: bun-linux-arm64 + RELEASE_SLUG=linux-arm64
 ```

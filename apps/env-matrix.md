@@ -254,4 +254,4 @@ Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`.
 | Registry | `apps/registry/.env.example` |
 | Khora server | `apps/server/.env.example` |
 
-Litestream shared logic: `scripts/litestream-config.ts`.
+Litestream shared logic: `scripts/litestream/config.ts`.

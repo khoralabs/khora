@@ -49,7 +49,7 @@ Checklist:
 - [ ] Token is not expired and has **write** access to `@khoralabs/*`
 - [ ] First publish uses `--access public` (workflow and staged `publishConfig` do this)
 
-Local smoke test after `bun run scripts/stage-khora-release.ts 0.0.1-canary`:
+Local smoke test after `bun run scripts/release/cli/stage.ts 0.0.1-canary`:
 
 ```bash
 export NPM_TOKEN=...
@@ -70,7 +70,7 @@ for t in bun-darwin-arm64 bun-linux-x64 bun-linux-arm64; do
   bun run apps/cli/scripts/build.ts "$t"
   bun run apps/daemon/scripts/build.ts "$t"
 done
-bun run scripts/stage-khora-release.ts 0.0.1-canary
+bun run scripts/release/cli/stage.ts 0.0.1-canary
 ```
 
 Output: `apps/release/`.
@@ -88,13 +88,13 @@ All **8** packages must publish under the **same semver** on every release. The 
 
 When publishing with the `latest` tag, CI runs `npm dist-tag add <pkg>@<version> latest` on every package after publish.
 
-Before publish, CI smoke-tests each compiled binary (`scripts/verify-release-binaries.ts cli`) so startup crashes (e.g. eager native-binding loads) fail the release.
+Before publish, CI smoke-tests each compiled binary (`scripts/release/verify-binaries.ts cli`) so startup crashes (e.g. eager native-binding loads) fail the release.
 
 ## GitHub release tarballs + Homebrew
 
-After staging, CI runs `scripts/package-release-tarballs.ts cli <version>` to produce `apps/release/tarballs/khora-<platform>.tar.gz` (CLI + daemon + configs + schema). Assets upload to the **public** [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) Releases under tag `khora-cli-v<semver>` (source builds remain in the private repo).
+After staging, CI runs `scripts/release/package-tarballs.ts cli <version>` to produce `apps/release/tarballs/khora-<platform>.tar.gz` (CLI + daemon + configs + schema). Assets upload to the **public** [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) Releases under tag `khora-cli-v<semver>` (source builds remain in the private repo).
 
-The Homebrew formula lives in [`homebrew-tap/Formula/khora.rb`](../../homebrew-tap/Formula/khora.rb). Release CI rewrites it via `scripts/bump-homebrew-formula.ts cli <version>` and pushes to [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) when `HOMEBREW_TAP_TOKEN` is set.
+The Homebrew formula lives in [`homebrew-tap/Formula/khora.rb`](../../homebrew-tap/Formula/khora.rb). Release CI rewrites it via `scripts/release/bump-homebrew-formula.ts cli <version>` and pushes to [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) when `HOMEBREW_TAP_TOKEN` is set.
 
 Install:
 

@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "preinstall": "bun ../../scripts/install-litestream.ts --output .bin/litestream",
+    "preinstall": "bun ./scripts/install-litestream.ts",
     "start": "NODE_ENV=production bun run scripts/start-khora.ts",
     "start:server": "bun run src/index.ts",
     "dev": "bun --hot src/index.ts",

@@ -55,8 +55,8 @@ jobs:
             packages/client \
             packages/registry \
             packages/host \
-            scripts/stage-khora-libs-release.test.ts \
-            scripts/build-publishable-lib.test.ts
+            scripts/release/libs/stage.test.ts \
+            scripts/release/libs/build-publishable-lib.test.ts
 
       - name: build client schema
         run: bun run --cwd packages/client build:schema
@@ -68,7 +68,7 @@ jobs:
           bun run --cwd packages/host build
 
       - name: stage release packages
-        run: bun run scripts/stage-khora-libs-release.ts "$VERSION"
+        run: bun run scripts/release/libs/stage.ts "$VERSION"
 
       - name: configure npm auth
         env:

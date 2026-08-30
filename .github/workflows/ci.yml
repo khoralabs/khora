@@ -41,8 +41,8 @@ jobs:
             packages/client \
             packages/registry \
             packages/host \
-            scripts/stage-khora-libs-release.test.ts \
-            scripts/build-publishable-lib.test.ts
+            scripts/release/libs/stage.test.ts \
+            scripts/release/libs/build-publishable-lib.test.ts
 
       - name: build and stage khora libs
         run: |
@@ -50,7 +50,7 @@ jobs:
           bun run --cwd packages/client build
           bun run --cwd packages/registry build
           bun run --cwd packages/host build
-          bun run scripts/stage-khora-libs-release.ts 0.0.0-ci
+          bun run scripts/release/libs/stage.ts 0.0.0-ci
 
       # ── khora-cli ──────────────────────────────────────────────────────────
       - name: typecheck khora-cli
@@ -63,8 +63,8 @@ jobs:
           bun test \
             apps/cli \
             apps/daemon \
-            scripts/stage-khora-release.test.ts \
-            scripts/homebrew-formula.test.ts
+            scripts/release/cli/stage.test.ts \
+            scripts/release/homebrew-formula.test.ts
 
       - name: build khora-cli linux-x64 smoke
         run: |
@@ -80,15 +80,15 @@ jobs:
       - name: test khora-server packaging
         run: |
           bun test \
-            scripts/homebrew-formula.test.ts \
-            scripts/stage-khora-server-release.test.ts
+            scripts/release/homebrew-formula.test.ts \
+            scripts/release/server/stage.test.ts
 
       - name: build khora-server linux-x64 smoke
         run: bun run apps/server/scripts/build.ts bun-linux-x64
 
       # ── khora-registry ───────────────────────────────────────────────────
       - name: test khora-registry packaging
-        run: bun test scripts/stage-khora-registry-release.test.ts
+        run: bun test scripts/release/registry/stage.test.ts
 
       - name: build khora-registry linux-x64 smoke
         run: bun run apps/registry/scripts/build.ts bun-linux-x64

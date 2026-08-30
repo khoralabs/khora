@@ -8,7 +8,7 @@ Published images: `ghcr.io/khoralabs/khora-registry:<version>` (from the release
 
 ```bash
 bun run apps/registry/scripts/build.ts bun-linux-x64
-bun run scripts/stage-khora-registry-release.ts 0.0.0-local
+bun run scripts/release/registry/stage.ts 0.0.0-local
 docker build -f apps/registry/Dockerfile --build-arg RELEASE_SLUG=linux-x64 -t khora-registry .
 # arm64: bun-linux-arm64 + RELEASE_SLUG=linux-arm64
 ```

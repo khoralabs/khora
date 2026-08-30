@@ -125,7 +125,7 @@ export function resolveLitestreamBin(appRoot: string): string {
   if (!existsSync(litestreamBin)) {
     throw new Error(
       `litestream: binary not found at ${litestreamBin}. Run preinstall or ` +
-        "bun scripts/install-litestream.ts --output .bin/litestream",
+        "bun ./scripts/install-litestream.ts",
     );
   }
   return litestreamBin;
