@@ -25,6 +25,9 @@ import {
 import { createHostPersistenceClient } from "@khoralabs/khora-host/persistence";
 import {
   applyKhoraSqlitePragmas,
+  createKhoraAdminStatsPort,
+  createKhoraHostHealthPort,
+  createKhoraHostSpecPort,
   createKhoraInvitesSqliteRepo,
   createSqliteNonceStore,
   openKhoraHostSqlitePersistence,
@@ -50,9 +53,6 @@ import {
   migrateBareMemoriesSqliteIfNeeded,
 } from "./memories-domus-legacy";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
-import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
-import { createKhoraHostHealthPort } from "./ops/health-port";
-import { createKhoraHostSpecPort } from "./ops/host-spec-port";
 
 export type BootstrapKhoraHostOpts = {
   hostDbPath: string;

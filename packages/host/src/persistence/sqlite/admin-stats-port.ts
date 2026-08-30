@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { KhoraAdminStatsPort } from "@khoralabs/khora-host";
-import { countRegisteredPrincipals } from "@khoralabs/khora-host/sqlite";
+import type { KhoraAdminStatsPort } from "../../ports";
+import { countRegisteredPrincipals } from "./count-registered-principals";
 
 export function createKhoraAdminStatsPort(deps: {
   hostDb: Database;

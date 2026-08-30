@@ -7,8 +7,7 @@ import {
   handleAdminHostConfigGet,
   handleAdminHostConfigPatch,
 } from "@khoralabs/khora-host/http";
-import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
-import { createKhoraHostSpecPort } from "../ops/host-spec-port";
+import { createKhoraHostSpecPort, DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 

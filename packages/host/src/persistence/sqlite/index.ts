@@ -10,9 +10,12 @@ export {
   TABLE_SOCIAL_PRINCIPAL_CHANNELS,
   USERNAME_INDEX_TENANT_KEY,
 } from "../core/id-conventions";
+export { createKhoraAdminStatsPort } from "./admin-stats-port";
 export { createAgentAccountStatusPort } from "./agent-account-status";
 export { countRegisteredPrincipals } from "./count-registered-principals";
 export { createEntityAdapter, parseEntityRow } from "./entity-adapter";
+export { createKhoraHostHealthPort } from "./health-port";
+export { createKhoraHostSpecPort } from "./host-spec-port";
 export { ensureKhoraInviteSchema, KHORA_INVITE_KIND, type KhoraInviteKind } from "./invites/schema";
 export { createKhoraInvitesSqliteRepo } from "./invites/sqlite";
 export {

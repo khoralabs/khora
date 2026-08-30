@@ -6,8 +6,7 @@ import {
   type HostRouteDeps,
   handleWellKnownKhora,
 } from "@khoralabs/khora-host/http";
-import { DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
-import { createKhoraHostSpecPort } from "../ops/host-spec-port";
+import { createKhoraHostSpecPort, DEFAULT_TENANT_KEY } from "@khoralabs/khora-host/sqlite";
 
 describe("well-known khora", () => {
   let hostDb: Database;
