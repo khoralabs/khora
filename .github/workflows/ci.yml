@@ -92,3 +92,8 @@ jobs:
 
       - name: build khora-registry linux-x64 smoke
         run: bun run apps/registry/scripts/build.ts bun-linux-x64
+
+      # ── CLI happy-path E2E (registry + server + cli + daemon) ─────────────
+      - name: test khora e2e happy path
+        timeout-minutes: 5
+        run: bun run test:e2e

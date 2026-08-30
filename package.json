@@ -28,6 +28,7 @@
     "format:check": "biome check .",
     "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter './apps/*' typecheck && bun run --filter './vendor/libs/packages/*' typecheck",
     "test": "bun test",
+    "test:e2e": "bun test apps/e2e",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
     "submodules:init": "git submodule update --init --recursive",
     "submodules:update": "git submodule update --remote --merge vendor/libs && bun install",
