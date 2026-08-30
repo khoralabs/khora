@@ -10,6 +10,7 @@
       "devDependencies": {
         "@biomejs/biome": "^2.4.10",
         "@khoralabs/agent-review": "^0.2.2",
+        "@microsoft/api-extractor": "^7.58.9",
         "@tsconfig/node20": "20.1.8",
         "@types/bun": "latest",
         "@types/parse-gitignore": "^1.0.2",
@@ -135,7 +136,6 @@
         "zod": "^4",
       },
       "devDependencies": {
-        "@microsoft/api-extractor": "^7.58.9",
         "@types/bun": "latest",
         "typescript": "^5",
       },
