@@ -83,15 +83,16 @@ async function main(): Promise<void> {
     litestream = await startLitestream();
   }
 
-  for (const sig of ["SIGINT", "SIGTERM"] as const) {
-    process.on(sig, () => {
-      litestream?.kill(sig);
-    });
-  }
-
   try {
     const { runRegistryServer } = await import("../src/run-registry-server");
-    await runRegistryServer();
+    // HTML /cli/link routes need the Bun HTML bundler; skip in --compile packages.
+    // Inline env check so --define KHORA_PACKAGED=1 can DCE the html-routes import.
+    if (process.env.KHORA_PACKAGED !== "1" && process.env.KHORA_PACKAGED !== "true") {
+      const { registryHtmlRoutes } = await import("../src/html-routes");
+      await runRegistryServer({ htmlRoutes: registryHtmlRoutes });
+    } else {
+      await runRegistryServer();
+    }
   } finally {
     litestream?.kill("SIGTERM");
     if (litestream !== undefined) {

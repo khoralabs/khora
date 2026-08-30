@@ -105,8 +105,8 @@ export async function runRegistryServer(opts: RunRegistryServerOptions = {}): Pr
       } catch {
         /* already stopped */
       }
+      // Resolve so start-registry.ts can flush Litestream in its finally block.
       resolve();
-      process.exit(0);
     }
 
     process.once("SIGTERM", () => shutdown("SIGTERM"));
