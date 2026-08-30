@@ -7,7 +7,7 @@ For non-Docker installs (tarball / Homebrew), see [DISTRIBUTION.md](./DISTRIBUTI
 ## Build
 
 ```bash
-docker build --platform linux/amd64 -f apps/khora/server/Dockerfile -t khora-server .
+docker build --platform linux/amd64 -f apps/server/Dockerfile -t khora-server .
 ```
 
 ## Run

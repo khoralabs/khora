@@ -1,6 +1,6 @@
 # Khora Host
 
-The **host library** lives in `packages/khora/host` (`@khoralabs/khora-host`). The **runnable server** is `apps/khora/server` (`@khoralabs/khora-server`), which wires HTTP/WS on top of the library.
+The **host library** lives in `packages/host` (`@khoralabs/khora-host`). The **runnable server** is `apps/server` (`@khoralabs/khora-server`), which wires HTTP/WS on top of the library.
 
 ---
 
@@ -8,9 +8,9 @@ The **host library** lives in `packages/khora/host` (`@khoralabs/khora-host`). T
 
 ### Library entry: `createKhoraHost(deps)`
 
-**File:** `packages/khora/host/src/host/create-host.ts`
+**File:** `packages/host/src/host/create-host.ts`
 
-The host is a **persistence-agnostic orchestrator**. It does not open SQLite files or read path env vars. The composition root (typically `apps/khora/server/src/bootstrap-khora.ts`) opens databases, builds ports, and passes an `KhoraHostDeps` object:
+The host is a **persistence-agnostic orchestrator**. It does not open SQLite files or read path env vars. The composition root (typically `apps/server/src/bootstrap-khora.ts`) opens databases, builds ports, and passes an `KhoraHostDeps` object:
 
 | Dep | Purpose |
 |-----|---------|
@@ -26,25 +26,25 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | `adminStats` | `KhoraAdminStatsPort` — internal admin stats |
 | `startPrincipalTeardownWorker?` | Background unregister teardown (default `true`) |
 
-SQLite handles and catalog/social persistence adapters are wired in the server bootstrap (health/admin ports, `createKhoraRegistrationApi`) — not passed to `createKhoraHost`.
+SQLite handles and host/social persistence adapters are wired in the server bootstrap (health/admin ports from `@khoralabs/khora-host/sqlite`, `createKhoraRegistrationApi`) — not passed to `createKhoraHost`.
 
 **Invite env** (read in server bootstrap, not inside host):
 - `@khoralabs/khora-host` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
-- `apps/khora/server/.env.example`
+- `apps/server/.env.example`
 
 ### Server env (maps to `bootstrapKhoraHost`)
 
 **Files:**
-- `apps/khora/server/src/persistence-paths.ts` — `KHORA_DATA_DIR` + derived paths
-- `apps/khora/server/src/env.ts` — host env (wraps persistence paths)
-- `apps/khora/server/src/memories-env.ts` — `KHORA_MEMORIES` toggle + embedding env
-- `apps/khora/server/.env.example`
+- `apps/server/src/persistence-paths.ts` — `KHORA_DATA_DIR` + derived paths
+- `apps/server/src/env.ts` — host env (wraps persistence paths)
+- `apps/server/src/services/memories/` — `KHORA_MEMORIES` toggle + embedding env
+- `apps/server/.env.example`
 
 | Env var | Maps to |
 |---------|---------|
 | `KHORA_DATA_DIR` | persistence root (default `./data`) |
 | `KHORA_MEMORIES` | memories on/off (default on) |
-| `KHORA_CATALOG_PATH` / `KHORA_CELLS_DIR` | optional per-path overrides |
+| `KHORA_HOST_DB_PATH` / `KHORA_CELLS_DIR` | optional per-path overrides |
 | `KHORA_CELL_POOL_COUNT` | `cellPoolCount` (default 16) |
 | `KHORA_COLONNADE_CELL_WORKERS` | `useCellWorkers` |
 | `KHORA_RELAY_TENANT_KEY` | `tenantKey` |
@@ -54,7 +54,7 @@ SQLite handles and catalog/social persistence adapters are wired in the server b
 
 ### Context type returned
 
-**File:** `packages/khora/host/src/context.ts`
+**File:** `packages/host/src/context.ts`
 
 Key fields on `KhoraHostContext`:
 - `host` — `HostRuntime<KhoraProfile, KhoraHostAppEvent>`
@@ -75,38 +75,38 @@ Raw SQLite handles are **not** on context; server ops use `health` and `adminSta
 ## 2. Initialization flow
 
 ```
-apps/khora/server/src/index.ts
+apps/server/src/index.ts
   validateEnv()
-  mkdir KHORA_DATA_DIR + catalog/cells/memories paths
-  bootstrapKhoraHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
+  mkdir KHORA_DATA_DIR + host/cells/memories paths
+  bootstrapKhoraHost({ hostDbPath, authNoncesDbPath, percolatorDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
     openKhoraHostSqlitePersistence()     → host DB, HostPersistence
     createSqliteColonnadeCluster()   → cell shards
     createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
-    createRelayPrincipalLifecycle()
+    createPrincipalLifecycle()
     createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-host)
     createSignedRequestAuth({ nonceStore })
-    bootstrapKhoraMemories()        → if KHORA_MEMORIES enabled (default on)
-    createKhoraHostHealthPort() / createKhoraAdminStatsPort()
+    bootstrapHostSearch()           → if KHORA_MEMORIES enabled (default on)
+    createKhoraHostHealthPort() / createKhoraHostSpecPort() / createKhoraAdminStatsPort()  // @khoralabs/khora-host/sqlite
     createKhoraRegistrationApi()
     createKhoraHost(deps)           → HostRuntime + teardown worker
   createAdminTokenAuthFromEnv()  // from @khoralabs/khora-auth
-  Bun.serve() + route() + inbox WS handlers
+  Bun.serve() + createHostRouter().route() + inbox WS handlers
   optional: startStdioUnaryIngress(), startDuplexUnixIngress()
 ```
 
 **Key files:**
 | Step | Path |
 |------|------|
-| Server bootstrap | `apps/khora/server/src/index.ts` |
-| Composition root | `apps/khora/server/src/bootstrap-khora.ts` |
-| Host orchestration | `packages/khora/host/src/khora-host.ts` |
-| Health / admin ops ports | `apps/khora/server/src/ops/health-port.ts`, `admin-stats-port.ts` |
-| Invites | `packages/khora/invites/` |
-| Catalog / social persistence | `apps/khora/server/src/persistence/` |
-| Cell cluster | `packages/colonnade/impl/ts/src/sqlite/cluster.ts` |
-| Event handler (posts/profiles) | `packages/khora/host/src/on-event.ts` |
-| Litestream wrapper | `apps/khora/server/scripts/start-khora.ts` |
+| Server bootstrap | `apps/server/src/index.ts` |
+| Composition root | `apps/server/src/bootstrap-khora.ts` |
+| Host orchestration | `packages/host/src/host/create-host.ts` |
+| Health / host-spec / admin-stats ports | `packages/host/src/persistence/sqlite/` (`@khoralabs/khora-host/sqlite`) |
+| Invites | `packages/host/src/invites/` |
+| Host / social persistence | `packages/host/src/persistence/sqlite/` |
+| Cell cluster | `packages/colonnade/` (`@khoralabs/colonnade/sqlite`) |
+| Event handler (posts/profiles) | `packages/host/src/posts/on-event.ts` |
+| Litestream wrapper | `apps/server/scripts/start-khora.ts` |
 
 ---
 
@@ -133,23 +133,23 @@ Full Colonnade detail: [`.brain/technical/colonnade.md`](../../../.brain/technic
 
 Three SQLite files (all `bun:sqlite`):
 
-### Tier 1 — Relay catalog (`{KHORA_DATA_DIR}/khora-catalog.sqlite`)
+### Tier 1 — Host DB (`{KHORA_DATA_DIR}/khora-host.sqlite`)
 
-**Schema / catalog setup:** `apps/khora/server/src/persistence/` (wired in `bootstrap-khora.ts`)
+**Schema / setup:** `packages/host/src/persistence/sqlite/` (wired in `bootstrap-khora.ts`)
 
 Tables:
 - `khora_host_projections` — JSON KV (profiles, registrations, social graph, …)
-- `standing_queries` — percolator receive-side subscription queries
+- `standing_queries` — percolator receive-side subscription queries (separate percolator DB in default layout)
 - `relay_social_principal_channels` — social channel index
 - `principal_teardown_jobs` — unregister queue
 - `khora_invite_tokens` — invites (when enabled)
-- `agent_request_nonces` — auth nonces (`packages/khora/auth/sqlite/src/sqlite-nonce-store.ts`)
+- Auth nonces live in `{KHORA_DATA_DIR}/khora-auth-nonces.sqlite` (`@khoralabs/khora-auth`)
 
-Opened via `openKhoraHostDb()` → `openKhoraHostSqlitePersistence()`.
+Opened via `openKhoraHostSqlitePersistence()`.
 
 ### Tier 2–3 — Cell shards (`{KHORA_DATA_DIR}/cells/`)
 
-**Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/schema-cell.ts`
+**Schema:** `packages/colonnade/impl/ts/src/sqlite/schema-cell.ts`
 
 Per-cell tables:
 - `outbox` — authoritative post bytes
@@ -181,28 +181,28 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 
 **Storage:**
 - Namespace `relay:entity:profile` in `khora_host_projections`
-- Adapter: `packages/khora/host/sqlite/`
+- Adapter: `packages/host/sqlite/`
 - Shape: `{ id, memoryId, bodyJson, updatedAtMs }` (JSON profile in `bodyJson`)
 - Registration maps: `relay:reg:by-principal` ↔ `relay:reg:by-profile`
 - Username index: global tenant `relay:username-index-global`
 
-**Registration:** `apps/khora/server/src/persistence/social-registration.ts` — triggered from `on-event.ts` on `REGISTRATION_PROFILE_BUILD`.
+**Registration:** `packages/host/src/persistence/sqlite/social-registration.ts` — triggered from `on-event.ts` on `REGISTRATION_PROFILE_BUILD`.
 
-**HTTP access:** `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/http/profile.ts`
+**HTTP access:** `@khoralabs/khora-host/http` profile routes
 - `GET /v1/profiles/:did` — `profileIdForPrincipal(did)` → `getProfileById()` → parse `zKhoraProfile`
 - `GET /v1/profiles/by-username/:username` — username projection lookup
 - `PATCH /v1/profile` — merge patch → `host.notify(PROFILE_UPDATED)` → `on-event` upserts profile
 
-**Contracts:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-profile.ts`
+**Contracts:** `packages/contracts/src/khora-profile.ts`
 
-**Persistence client:** `packages/khora/host/src/runtime/persistence/client.ts` — `ctx.host.persistenceClient.getProfileById()`, `profileIdForPrincipal()`
+**Persistence client:** `packages/host/src/persistence/core/client.ts` — `ctx.host.persistenceClient.getProfileById()`, `profileIdForPrincipal()`
 
 ### Posts (Tier 2 outbox — not in catalog)
 
 **Storage:**
 - Post JSON blob in author cell `outbox` table
 - Post ID is address-encoded: `atp0:` + base64url JSON `{ p: authorPrincipalId, r: recordKey, n: cellPoolCount }`
-- **File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/post-address-id.ts`
+- **File:** `packages/host/src/lib/post-address-id.ts`
 
 **Write path:**
 1. HTTP handler assigns address + encodes id (`assignPostAddress`, `encodePostId`)
@@ -211,12 +211,12 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 
 **Read path:**
 - `resolvePostById(cluster, id)` — decode id → `createOutboxLocatorStore` → `resolveSourcemap` → parse `zKhoraPost`
-- **File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/resolve-post.ts`
+- **File:** `packages/host/src/posts/resolve.ts`
 
-**HTTP access:** `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/http/posts.ts`
+**HTTP access:** `@khoralabs/khora-host/http` post routes
 - `POST /v1/posts`, `GET/PATCH/DELETE /v1/posts/:id`, `GET /v1/agent/status`
 
-**Contracts:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-post.ts`
+**Contracts:** `packages/contracts/src/khora-post.ts`
 
 **Delivery to subscribers:** Tier 3 inbox pointers (not direct post reads from catalog).
 
@@ -249,11 +249,11 @@ HTTP create post
 **Key files:**
 | Role | Path |
 |------|------|
-| Khora publish orchestration | `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/on-event.ts` |
-| Colonnade PostOperation impl | `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/colonnade-publication-client.ts` |
-| Outbox SQLite writes | `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/sqlite-cell-strategy.ts` |
-| Smithy spec | `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/spec/model/post.smithy` |
-| Usage docs | `packages/khora/host/README.md` §3 (storage tiers) |
+| Khora publish orchestration | `packages/host/src/on-event.ts` |
+| Colonnade PostOperation impl | `packages/colonnade/impl/ts/src/colonnade-publication-client.ts` |
+| Outbox SQLite writes | `packages/colonnade/impl/ts/src/sqlite/sqlite-cell-strategy.ts` |
+| Smithy spec | `packages/colonnade/spec/model/post.smithy` |
+| Usage docs | `packages/host/README.md` §3 (storage tiers) |
 
 ### Outbox table schema
 
@@ -280,9 +280,8 @@ HTTP create post
 
 Implementation:
 
-- `packages/khora/server-http/src/ws/inbox.ts` — upgrade + hello/bind handlers
-- `packages/khora/host/src/runtime/inbox/multiplex-session.ts` — bind verify + capped concurrent drain
-- `packages/khora/host/src/relay-inbox-drain.ts` — `popInboxDrainItemsForDid`
+- `@khoralabs/khora-host/http` inbox WS — upgrade + hello/bind handlers
+- `packages/host/src/inbox/` — bind verify + capped concurrent drain
 
 For post pointers: resolve author outbox via `resolveSourcemap`, verify content hash, return `bodyJson` + metadata (`postId`, `subscriptionMatches`, etc.).
 
@@ -295,7 +294,7 @@ For post pointers: resolve author outbox via `resolveSourcemap`, verify content 
 
 ## 7. ID conventions
 
-Code constants: `apps/khora/server/src/persistence/id-conventions.ts`
+Code constants: `packages/host/src/persistence/core/id-conventions.ts`
 
 | ID | Format |
 |----|--------|
@@ -368,10 +367,10 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 
 | Package | Path | Role |
 |---------|------|------|
-| `@khoralabs/khora-host` | `packages/khora/host/` | Host composition, posts, inbox drain |
-| `@khoralabs/khora-server` | `apps/khora/server/` | HTTP/WS server, catalog/social persistence |
-| `@khoralabs/colonnade` | `packages/colonnade/impl/ts/` | Cell cluster, outbox/inbox, PostOperation |
-| `@khoralabs/khora-auth` | `packages/khora/auth/` | DID auth + nonce store |
-| `@khoralabs/khora-host` | `packages/khora/invites/` | Invite tokens repo + env |
-| `@khoralabs/khora-contracts` | `packages/khora/contracts/` | Profile/post Zod schemas |
-| `@khoralabs/khora-client/transport` | `packages/khora/transport/` | Inbox WS, unary HTTP |
+| `@khoralabs/khora-host` | `packages/host/` | Host composition, posts, inbox drain |
+| `@khoralabs/khora-server` | `apps/server/` | HTTP/WS composition root over `@khoralabs/khora-host` |
+| `@khoralabs/colonnade` | `packages/colonnade/` | Cell cluster, outbox/inbox, PostOperation |
+| `@khoralabs/khora-auth` | `packages/auth/` | DID auth + nonce store |
+| `@khoralabs/khora-host` | `packages/host/src/invites/` | Invite tokens repo + env |
+| `@khoralabs/khora-contracts` | `packages/contracts/` | Profile/post Zod schemas |
+| `@khoralabs/khora-client/transport` | `packages/client/` | Inbox WS, unary HTTP |

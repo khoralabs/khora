@@ -1,5 +1,5 @@
 # Khora server — build from repository root:
-#   DOCKER_BUILDKIT=0 docker build --platform linux/amd64 -f apps/khora/server/Dockerfile -t khora-server .
+#   DOCKER_BUILDKIT=0 docker build --platform linux/amd64 -f apps/server/Dockerfile -t khora-server .
 #
 # Optional: skip Litestream binary:
 #   docker build --build-arg INSTALL_LITESTREAM=0 ...
@@ -30,12 +30,12 @@ COPY scripts/install-litestream.ts ./scripts/install-litestream.ts
 
 RUN bun install --frozen-lockfile --filter '@khoralabs/khora-server' --production \
   && if [ "$INSTALL_LITESTREAM" = "1" ]; then \
-       bun run scripts/install-litestream.ts --output apps/khora/server/.bin/litestream; \
+       bun run scripts/install-litestream.ts --output apps/server/.bin/litestream; \
      fi
 
 RUN mkdir -p /data && chown -R bun:bun /data
 
-WORKDIR /app/apps/khora/server
+WORKDIR /app/apps/server
 
 USER bun
 

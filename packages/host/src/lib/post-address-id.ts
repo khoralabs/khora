@@ -1,6 +1,6 @@
 /**
  * Address-encoded Khora post ids (`atp0:` prefix).
- * See packages/khora/host/id-conventions.md
+ * See packages/host/id-conventions.md
  */
 
 import { principalHomeCellId } from "@khoralabs/colonnade";

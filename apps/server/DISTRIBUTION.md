@@ -92,7 +92,7 @@ khora-server
 
 ```bash
 bun install
-bun run apps/khora/server/scripts/build.ts bun-darwin-arm64   # or linux-*
+bun run apps/server/scripts/build.ts bun-darwin-arm64   # or linux-*
 bun run scripts/stage-khora-server-release.ts 0.0.0-dev
 bun run scripts/package-khora-server-release-tarballs.ts 0.0.0-dev
 bun run scripts/verify-khora-server-release-binaries.ts
