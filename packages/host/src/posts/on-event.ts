@@ -282,6 +282,10 @@ export function createKhoraRelayOnEvent(deps: {
       const post = event.payload.post;
       const previous = event.payload.previous;
       const address = decodePostId(post.id);
+      if (previous.kind === "subscription" && subscriptions !== undefined) {
+        await subscriptions.percolator.deactivateQuery(previous.id);
+      }
+      await deletePostOutboxRecord(cluster, previous.id);
       if (post.kind === "subscription" && subscriptions !== undefined && address !== undefined) {
         await registerSubscriptionQuery(subscriptions, post, address.authorPrincipalId);
       }
