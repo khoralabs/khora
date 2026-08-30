@@ -5,7 +5,7 @@ import type {
   SendOtpParams,
   VerifyOtpParams,
 } from "@khoralabs/registry/email-confirm";
-import { createUsersAuthClient } from "../browser-auth-client";
+import { createUsersAuthClient } from "./auth-client";
 
 function mapSession(data: {
   user: { id: string; email: string; name?: string | null; role?: string | null };

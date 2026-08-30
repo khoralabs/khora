@@ -13,10 +13,10 @@ import {
   getRegistrySqliteBundle,
   resetRegistrySqliteDatabase,
 } from "@khoralabs/registry/sqlite";
-import { getRegistryAuth, reloadRegistryAuth } from "./auth";
-import { createBetterAuthHttpPort } from "./better-auth-http";
+import { setCaptureOtpForTests } from "./email/ses";
+import { getRegistryAuth, reloadRegistryAuth } from "./instance";
+import { createBetterAuthHttpPort } from "./ports/http";
 import { initRegistryAppSchema } from "./schema";
-import { setCaptureOtpForTests } from "./ses";
 
 function agentAuthDeps(
   db: ReturnType<typeof createRegistrySqliteDatabase>,

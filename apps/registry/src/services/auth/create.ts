@@ -5,14 +5,12 @@ import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 import { getRegistrySqliteBundle, getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
-import type { RegistryAuthKysely } from "./auth-database-schema";
-import { isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
-import { sendOtpEmail } from "./ses";
+import { sendOtpEmail } from "./email/ses";
+import { isBootstrapStaffEmail, normalizeEmail } from "./staff";
 
 const logger = createLogger({ name: "registry-auth" });
 
-export type { RegistryAuthDatabaseSchema, RegistryAuthKysely } from "./auth-database-schema";
-export type RegistryAuthDatabase = Database | RegistryAuthKysely;
+export type RegistryAuthDatabase = Database;
 
 export type RegistryAuthOptions = {
   baseURL?: string;
@@ -89,38 +87,24 @@ function shouldUseSecureCookies(baseURL: string): boolean {
   return baseURL.startsWith("https://");
 }
 
-function isSqliteAuthDatabase(db: RegistryAuthDatabase): db is Database {
-  return "prepare" in db && typeof db.prepare === "function";
-}
-
 function resolveAuthDatabase(opts: RegistryAuthOptions): RegistryAuthDatabase {
-  if (opts.database !== undefined) return opts.database;
-  // Turso/libsql auth DBs must be injected by the composition root.
-  return getRegistrySqliteDatabase();
+  return opts.database ?? getRegistrySqliteDatabase();
 }
 
 function resolveDomainDatabase(opts: RegistryAuthOptions): RegistryDatabase {
   return opts.domainDatabase ?? getRegistrySqliteBundle().registry;
 }
 
-async function readAuthUserById(
+function readAuthUserById(
   authDb: RegistryAuthDatabase,
   userId: string,
-): Promise<{ id: string; email: string } | undefined> {
-  if (isSqliteAuthDatabase(authDb)) {
-    return (
-      (authDb.prepare(`SELECT id, email FROM user WHERE id = ? LIMIT 1`).get(userId) as {
-        id: string;
-        email: string;
-      } | null) ?? undefined
-    );
-  }
-  const row = await authDb
-    .selectFrom("user")
-    .select(["id", "email"])
-    .where("id", "=", userId)
-    .executeTakeFirst();
-  return row;
+): { id: string; email: string } | undefined {
+  return (
+    (authDb.prepare(`SELECT id, email FROM user WHERE id = ? LIMIT 1`).get(userId) as {
+      id: string;
+      email: string;
+    } | null) ?? undefined
+  );
 }
 
 export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
@@ -203,7 +187,7 @@ export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
       session: {
         create: {
           after: async (session) => {
-            const row = await readAuthUserById(authDb, session.userId);
+            const row = readAuthUserById(authDb, session.userId);
             if (row !== undefined) {
               await syncAccountForUser(row.id, row.email);
             }

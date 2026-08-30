@@ -3,6 +3,10 @@ export type { RegistryHostContext } from "./context";
 export { handleOptions, withCors } from "./cors";
 export { createRegistryHost } from "./create-registry-host";
 export { dispatchRegistryHostFetch } from "./fetch";
+export {
+  type HandleRegistryRequestDeps,
+  handleRegistryRequest,
+} from "./handle-registry-request";
 export { probeHostHealth, probeHostHealthById, runHostHealthPoll } from "./host-health";
 export {
   type AgentAuthRouteDeps,

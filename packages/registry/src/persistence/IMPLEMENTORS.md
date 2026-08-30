@@ -19,4 +19,4 @@ Layout mirrors [`memories-node` persistence](https://github.com/khoralabs/memori
 
 ## App wiring
 
-See [`apps/registry/src/bootstrap-registry.ts`](../../../apps/registry/src/bootstrap-registry.ts): chooses sqlite vs turso from `REGISTRY_BACKEND`, opens domain + auth DBs, runs `initRegistryDomainSchema` + Better Auth migrations, then wires identity/authHttp ports into `createRegistryHost`.
+See [`apps/registry/src/bootstrap-registry.ts`](../../../apps/registry/src/bootstrap-registry.ts): opens the Bun SQLite domain + auth store, runs `initRegistryDomainSchema` + Better Auth migrations (via `apps/registry/src/services/auth`), then wires identity/authHttp ports into `createRegistryHost`. The reference app is sqlite-only; other composition roots may still use `./turso-serverless` for the domain DB.

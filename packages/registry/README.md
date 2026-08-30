@@ -1,6 +1,6 @@
 # `@khoralabs/registry`
 
-Multi-entrypoint registry package: contracts, accounts/catalog domain, Better Auth, HTTP host, outbound client, and memories-style persistence adapters.
+Multi-entrypoint registry package: contracts, accounts/catalog domain, HTTP host, outbound client, and persistence adapters.
 
 ## Exports
 
@@ -10,13 +10,13 @@ Multi-entrypoint registry package: contracts, accounts/catalog domain, Better Au
 | `./contracts` | Wire / DTO types |
 | `./persistence` | `RegistryDatabase` port + domain schema (no drivers) |
 | `./sqlite` | Bun SQLite adapter |
-| `./turso-serverless` | Turso / libsql adapter |
+| `./turso-serverless` | Turso / libsql domain adapter (optional) |
 | `./accounts` | Accounts domain |
 | `./catalog` | Host catalog domain |
-| `./auth`, `./auth/client`, `./auth/ses` | Better Auth IdP |
-| `./host` | HTTP host (`createRegistryHost`) |
+| `./email-confirm` | EmailConfirm API types only |
+| `./host` | HTTP host (`createRegistryHost`, `handleRegistryRequest`, identity route factories) |
 | `./client` | Host→registry HTTP client |
 
 Persistence layout: [`src/persistence/IMPLEMENTORS.md`](src/persistence/IMPLEMENTORS.md).
 
-EmailConfirm + `/cli/link` UI live in [`apps/registry`](../../apps/registry). Operator APIs are headless at `/v1/ops` (Bearer root token).
+Better Auth IdP adapters (bun:sqlite), SES OTP, and `/cli/link` UI live in [`apps/registry/src/services/auth`](../../apps/registry/src/services/auth) and implement package identity ports. Operator APIs are headless at `/v1/ops` (Bearer root token).

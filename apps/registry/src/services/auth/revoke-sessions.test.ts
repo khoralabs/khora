@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { reloadRegistryAuth, revokeBetterAuthSessionsForUser } from "./auth";
+import { reloadRegistryAuth, revokeBetterAuthSessionsForUser } from "./instance";
 
 describe("revokeBetterAuthSessionsForUser", () => {
   let sqlite: Database;

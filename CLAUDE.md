@@ -52,7 +52,8 @@ Single multi-entrypoint package `@khoralabs/registry`:
 
 - `./contracts` — wire / DTO types
 - `./persistence` — `RegistryDatabase` port (no drivers); `./sqlite` / `./turso-serverless` adapters
-- `./accounts` / `./catalog` / `./auth` / `./host` / `./client` — domain, IdP, HTTP host, outbound client
+- `./accounts` / `./catalog` / `./host` / `./client` — domain, HTTP host, outbound client
+- Better Auth IdP adapters live in `apps/registry/src/services/auth` (implement package identity ports)
 
 EmailConfirm + `/cli/link` UI live in `apps/registry` (not a separate package). Operator APIs are headless at `/v1/ops` (Bearer `REGISTRY_CONSOLE_ROOT_TOKEN`). See `packages/registry/README.md`.
 

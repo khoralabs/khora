@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
 import { getMigrations } from "better-auth/db/migration";
-import { createRegistryAuth, type RegistryAuthDatabase } from "./auth-config";
+import { createRegistryAuth, type RegistryAuthDatabase } from "./create";
 
 async function ensureAuthSchema(authDb: RegistryAuthDatabase): Promise<void> {
   const auth = createRegistryAuth({ database: authDb });
@@ -14,9 +14,7 @@ async function ensureAuthSchema(authDb: RegistryAuthDatabase): Promise<void> {
 }
 
 export async function initBetterAuthSchema(authDb: RegistryAuthDatabase): Promise<void> {
-  if ("run" in authDb && typeof authDb.run === "function") {
-    (authDb as Database).run("PRAGMA foreign_keys = ON;");
-  }
+  (authDb as Database).run("PRAGMA foreign_keys = ON;");
   await ensureAuthSchema(authDb);
 }
 

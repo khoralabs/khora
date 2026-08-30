@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { createRegistryEmailConfirmApi } from "@/auth/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { createRegistryEmailConfirmApi } from "@/services/auth";
 import { useEmailConfirmFlow } from "@/ui/email-confirm";
 import { renderRoute } from "../../../render-route";
 import "../../../../styles/globals.css";

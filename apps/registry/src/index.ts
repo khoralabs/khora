@@ -1,7 +1,7 @@
 import "./otel.js";
 
 import { createLogger } from "@khoralabs/observability/logger";
-import { handleOptions, runWithRequestPeerIp, withCors } from "@khoralabs/registry/host";
+import { handleRegistryRequest, runWithRequestPeerIp } from "@khoralabs/registry/host";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { serve } from "bun";
 import { bootstrapRegistryHost } from "./bootstrap-registry";
@@ -47,12 +47,6 @@ const server = serve({
       return context.with(trace.setSpan(context.active(), span), async () => {
         let status = 200;
         try {
-          const options = handleOptions(req);
-          if (options !== null) {
-            status = options.status;
-            return options;
-          }
-
           if (path === "/health") {
             const res = handleHealth();
             status = res.status;
@@ -65,16 +59,18 @@ const server = serve({
             return res;
           }
 
-          const identityRes = await identityRoutes.handle(req, path);
-          if (identityRes !== null) {
-            status = identityRes.status;
-            span.setAttribute("registry.dispatch", "identity");
-            return withCors(req, identityRes);
-          }
-
-          span.setAttribute("registry.dispatch", "host");
-          const res = await host.fetch(req);
+          const res = await handleRegistryRequest(req, { host, identityRoutes });
           status = res.status;
+          if (
+            path.startsWith("/api/auth") ||
+            path.startsWith("/v1/device") ||
+            path.startsWith("/agent/auth") ||
+            path.startsWith("/.well-known/")
+          ) {
+            span.setAttribute("registry.dispatch", "identity");
+          } else {
+            span.setAttribute("registry.dispatch", "host");
+          }
           return res;
         } catch (err) {
           status = 500;

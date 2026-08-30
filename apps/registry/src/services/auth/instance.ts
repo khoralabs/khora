@@ -1,11 +1,5 @@
-import type { Database } from "bun:sqlite";
 import { getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
-import {
-  createRegistryAuth,
-  type RegistryAuthDatabase,
-  type RegistryAuthOptions,
-} from "./auth-config";
-import type { RegistryAuthKysely } from "./auth-database-schema";
+import { createRegistryAuth, type RegistryAuthDatabase, type RegistryAuthOptions } from "./create";
 
 let authInstance: ReturnType<typeof createRegistryAuth> | undefined;
 let authOptions: RegistryAuthOptions = {};
@@ -34,10 +28,6 @@ export const registryAuth: AuthInstance = new Proxy({} as AuthInstance, {
   },
 });
 
-function isSqliteAuthDatabase(db: RegistryAuthDatabase): db is Database {
-  return "prepare" in db && typeof db.prepare === "function";
-}
-
 function resolveAuthDatabase(): RegistryAuthDatabase {
   if (authOptions.database !== undefined) return authOptions.database;
   return getRegistrySqliteDatabase();
@@ -47,11 +37,5 @@ function resolveAuthDatabase(): RegistryAuthDatabase {
 export async function revokeBetterAuthSessionsForUser(userId: string): Promise<void> {
   const id = userId.trim();
   if (id.length === 0) return;
-  const db = resolveAuthDatabase();
-  if (isSqliteAuthDatabase(db)) {
-    db.prepare(`DELETE FROM session WHERE userId = ?`).run(id);
-    return;
-  }
-  const kysely = db as RegistryAuthKysely;
-  await kysely.deleteFrom("session").where("userId", "=", id).execute();
+  resolveAuthDatabase().prepare(`DELETE FROM session WHERE userId = ?`).run(id);
 }

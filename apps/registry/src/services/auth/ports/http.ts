@@ -1,6 +1,6 @@
 import type { RegistryAuthHttpPort } from "@khoralabs/registry/host";
-import { getRegistryAuth } from "./auth";
-import { extractBetterAuthSessionCookie, formatBetterAuthSessionCookie } from "./session-cookie";
+import { getRegistryAuth } from "../instance";
+import { extractBetterAuthSessionCookie, formatBetterAuthSessionCookie } from "../session-cookie";
 
 export function createBetterAuthHttpPort(opts: { publicUrl: () => string }): RegistryAuthHttpPort {
   return {

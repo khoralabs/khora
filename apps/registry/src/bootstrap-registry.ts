@@ -6,20 +6,13 @@ import {
   createRegistryIdentityRoutes,
   readRegistryTrustedOrigins,
 } from "@khoralabs/registry/host";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
 import { openRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
-import {
-  openRegistryTursoDatabase,
-  registryTursoCredentialsFromEnv,
-} from "@khoralabs/registry/turso-serverless";
 import {
   createBetterAuthHttpPort,
   createBetterAuthRegistryIdentity,
-  createRegistryLibsqlAuthDatabase,
   initRegistryAppSchema,
-  type RegistryAuthDatabase,
   reloadRegistryAuth,
-} from "./auth";
+} from "./services/auth";
 
 function registryPublicUrl(): string {
   const port = process.env.PORT?.trim() ?? "4000";
@@ -29,44 +22,23 @@ function registryPublicUrl(): string {
   return configured ?? `http://localhost:${port}`;
 }
 
-function isTursoBackend(): boolean {
-  return process.env.REGISTRY_BACKEND?.trim().toLowerCase() === "turso";
-}
-
-async function openRegistryStore(): Promise<{
-  registry: RegistryDatabase;
-  authDatabase: RegistryAuthDatabase;
-}> {
-  if (isTursoBackend()) {
-    const creds = registryTursoCredentialsFromEnv();
-    const bundle = await openRegistryTursoDatabase(creds);
-    const authDatabase = createRegistryLibsqlAuthDatabase(creds);
-    return { registry: bundle.registry, authDatabase };
-  }
-  const bundle = await openRegistrySqliteDatabase();
-  return { registry: bundle.registry, authDatabase: bundle.db };
-}
-
 export async function bootstrapRegistryHost(): Promise<{
   host: RegistryHostContext;
   identityRoutes: RegistryIdentityRoutes;
 }> {
-  if (!isTursoBackend()) {
-    await assertEncryptionKeys(new EnvKeyProvider(), "registry");
-  }
+  await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 
-  const store = await openRegistryStore();
-  await initRegistryAppSchema(store.registry, store.authDatabase);
-  reloadRegistryAuth({ database: store.authDatabase, domainDatabase: store.registry });
+  const bundle = await openRegistrySqliteDatabase();
+  await initRegistryAppSchema(bundle.registry, bundle.db);
+  reloadRegistryAuth({ database: bundle.db, domainDatabase: bundle.registry });
 
-  const { registry } = store;
-  const resolveTrustedOrigins = () => readRegistryTrustedOrigins(registry);
+  const resolveTrustedOrigins = () => readRegistryTrustedOrigins(bundle.registry);
   const publicUrl = registryPublicUrl;
 
   const identity = createBetterAuthRegistryIdentity({ resolveTrustedOrigins });
   const authHttp = createBetterAuthHttpPort({ publicUrl });
   const identityRoutes = createRegistryIdentityRoutes({
-    db: registry,
+    db: bundle.registry,
     identity,
     authHttp,
     publicUrl,
@@ -77,7 +49,7 @@ export async function bootstrapRegistryHost(): Promise<{
   });
 
   const host = createRegistryHost({
-    db: registry,
+    db: bundle.registry,
     identity,
     adminTokenAuth: createAdminTokenAuthFromEnv(),
     publicUrl,
