@@ -63,10 +63,16 @@ export function parseTsExportEntries(packageDir: string): ExportEntry[] {
       sourceRel = value;
     } else if (value && typeof value === "object") {
       const cond = value as Record<string, unknown>;
-      const t = cond.types ?? cond.import ?? cond.default;
-      if (typeof t === "string") sourceRel = t;
+      // Prefer implementation paths for bun build; skip pure .d.ts types entries.
+      const candidates = [cond.import, cond.default, cond.types];
+      for (const c of candidates) {
+        if (typeof c === "string" && c.endsWith(".ts") && !c.endsWith(".d.ts")) {
+          sourceRel = c;
+          break;
+        }
+      }
     }
-    if (!sourceRel || !sourceRel.endsWith(".ts")) continue;
+    if (!sourceRel?.endsWith(".ts")) continue;
     const sourceFile = path.resolve(packageDir, sourceRel);
     if (!existsSync(sourceFile)) {
       throw new Error(`export ${exportKey} source missing: ${sourceFile}`);
@@ -83,6 +89,19 @@ export function parseTsExportEntries(packageDir: string): ExportEntry[] {
   return entries;
 }
 
+export function mapSrcTypesPathToDist(typesPath: string): string | undefined {
+  const normalized = typesPath.replace(/^\.\//, "");
+  if (!normalized.startsWith("src/")) return undefined;
+  // Already a declaration under src (unusual) — map to dist without double .d.ts
+  if (normalized.endsWith(".d.ts")) {
+    return `./dist/${normalized.slice("src/".length)}`;
+  }
+  if (normalized.endsWith(".ts")) {
+    return `./dist/${normalized.slice("src/".length).replace(/\.ts$/, ".d.ts")}`;
+  }
+  return undefined;
+}
+
 /** Point package types at ./dist for AE resolution; restore via returned disposer. */
 function pointPackageTypesAtDist(pkgDir: string): () => void {
   const pkgPath = path.join(pkgDir, "package.json");
@@ -90,9 +109,19 @@ function pointPackageTypesAtDist(pkgDir: string): () => void {
   const pkg = JSON.parse(original) as PkgJson;
   const dts = "./dist/index.d.ts";
   pkg.types = dts;
-  if (pkg.exports && typeof pkg.exports === "object" && "." in pkg.exports) {
-    const exp = pkg.exports["."] as Record<string, unknown>;
-    pkg.exports["."] = { ...exp, types: dts };
+  if (pkg.exports && typeof pkg.exports === "object") {
+    for (const [key, value] of Object.entries(pkg.exports)) {
+      if (!value || typeof value !== "object") continue;
+      const exp = value as Record<string, unknown>;
+      const typesPath = typeof exp.types === "string" ? exp.types : undefined;
+      if (typesPath === undefined) continue;
+      const mapped = mapSrcTypesPathToDist(typesPath);
+      if (mapped !== undefined) {
+        pkg.exports[key] = { ...exp, types: mapped };
+      } else if (key === ".") {
+        pkg.exports[key] = { ...exp, types: dts };
+      }
+    }
   }
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   return () => writeFileSync(pkgPath, original);
@@ -128,11 +157,14 @@ async function emitPackageDtsToDist(pkgDir: string): Promise<void> {
       2,
     )}\n`,
   );
-  const result = await Bun.$`tsc -p ${tsconfigPath}`.cwd(pkgDir).nothrow();
-  rmSync(tsconfigPath, { force: true });
-  if (result.exitCode !== 0) {
-    console.error(result.stderr.toString() || result.stdout.toString());
-    throw new Error(`declaration emit failed: ${pkgDir}`);
+  try {
+    const result = await Bun.$`tsc -p ${tsconfigPath}`.cwd(pkgDir).nothrow();
+    if (result.exitCode !== 0) {
+      console.error(result.stderr.toString() || result.stdout.toString());
+      throw new Error(`declaration emit failed: ${pkgDir}`);
+    }
+  } finally {
+    rmSync(tsconfigPath, { force: true });
   }
   if (!existsSync(path.join(outDir, "index.d.ts"))) {
     throw new Error(`missing dist/index.d.ts after emit: ${pkgDir}`);
