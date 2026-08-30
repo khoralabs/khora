@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { findAccountByEmail, linkBetterAuthUser } from "@khoralabs/registry/accounts";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
+import { findAccountByEmail, linkBetterAuthUser } from "@khoralabs/khora-registry/accounts";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
 import { tursoClientsFromBunSqlite } from "./testing/bun-sqlite-adapter";
 import { createRegistryTursoDatabase } from "./turso-database";
 

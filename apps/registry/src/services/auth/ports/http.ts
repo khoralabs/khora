@@ -1,4 +1,4 @@
-import type { RegistryAuthHttpPort } from "@khoralabs/registry/host";
+import type { RegistryAuthHttpPort } from "@khoralabs/khora-registry/host";
 import { getRegistryAuth } from "../instance";
 import { extractBetterAuthSessionCookie, formatBetterAuthSessionCookie } from "../session-cookie";
 

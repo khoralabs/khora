@@ -15,9 +15,9 @@ import {
   listAgentLinksForAccount,
   propagateAgentLinksToHosts,
   unlinkAgentFromMembership,
-} from "@khoralabs/registry/accounts";
-import { findActiveHostBySlug, findHostById } from "@khoralabs/registry/catalog";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/accounts";
+import { findActiveHostBySlug, findHostById } from "@khoralabs/khora-registry/catalog";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { registryHostRuntime } from "../runtime";
 import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host";
 

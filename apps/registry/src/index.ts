@@ -1,7 +1,7 @@
 import "./otel.js";
 
+import { handleRegistryRequest, runWithRequestPeerIp } from "@khoralabs/khora-registry/host";
 import { createLogger } from "@khoralabs/observability/logger";
-import { handleRegistryRequest, runWithRequestPeerIp } from "@khoralabs/registry/host";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { serve } from "bun";
 import { bootstrapRegistryHost } from "./bootstrap-registry";

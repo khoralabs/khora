@@ -1,5 +1,5 @@
-import type { Membership } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { Membership } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { MembershipRow } from "./types-internal";
 
 function mapMembership(row: MembershipRow): Membership {

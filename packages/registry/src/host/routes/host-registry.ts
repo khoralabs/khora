@@ -9,9 +9,9 @@ import {
   requestHostTrustedOriginQuota,
   TrustedOriginConflictError,
   verifyHostManagementToken,
-} from "@khoralabs/registry/catalog";
-import type { HostRegistryWireState } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/catalog";
+import type { HostRegistryWireState } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { registryHostRuntime } from "../runtime";
 import { hostToFullJson, toHostRegistryWireState } from "./host-json";
 

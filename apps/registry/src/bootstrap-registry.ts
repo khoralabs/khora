@@ -1,12 +1,12 @@
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade/crypto";
 import { createAdminTokenAuthFromEnv } from "@khoralabs/khora-auth";
-import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/registry/host";
+import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/khora-registry/host";
 import {
   createRegistryHost,
   createRegistryIdentityRoutes,
   readRegistryTrustedOrigins,
-} from "@khoralabs/registry/host";
-import { openRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/host";
+import { openRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 import {
   createBetterAuthHttpPort,
   createBetterAuthRegistryIdentity,

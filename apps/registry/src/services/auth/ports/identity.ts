@@ -1,4 +1,4 @@
-import type { RegistryIdentityPort } from "@khoralabs/registry/host";
+import type { RegistryIdentityPort } from "@khoralabs/khora-registry/host";
 import { reloadRegistryAuth, revokeBetterAuthSessionsForUser } from "../instance";
 import { getRegistrySession } from "../session";
 import { getBetterAuthSessionCookieHeader } from "../session-cookie";

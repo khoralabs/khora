@@ -1,4 +1,4 @@
-import { getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { getRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 import { createRegistryAuth, type RegistryAuthDatabase, type RegistryAuthOptions } from "./create";
 
 let authInstance: ReturnType<typeof createRegistryAuth> | undefined;

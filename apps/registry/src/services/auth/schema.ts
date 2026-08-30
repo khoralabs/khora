@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
 import { getMigrations } from "better-auth/db/migration";
 import { createRegistryAuth, type RegistryAuthDatabase } from "./create";
 

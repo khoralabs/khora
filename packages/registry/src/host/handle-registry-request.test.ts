@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import {
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/khora-registry/sqlite";
 import type { RegistryHostContext } from "./context";
 import { handleRegistryRequest } from "./handle-registry-request";
 import type { RegistryIdentityRoutes } from "./ports/identity";

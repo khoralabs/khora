@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { createRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import { createRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 import { activateKhoraHost, registerKhoraHost, updateHostHealthCheck } from "./index";
 
 describe("khora host health", () => {

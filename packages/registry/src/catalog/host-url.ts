@@ -1,5 +1,5 @@
-import type { KhoraHost } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { KhoraHost } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { listActiveHosts } from "./khora-hosts";
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);

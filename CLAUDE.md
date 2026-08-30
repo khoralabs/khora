@@ -48,7 +48,7 @@ Optional AOT bundling via [`@khoralabs/bun-web`](vendor/libs/packages/bun-web/RE
 
 ## Registry packages
 
-Single multi-entrypoint package `@khoralabs/registry`:
+Single multi-entrypoint package `@khoralabs/khora-registry`:
 
 - `./contracts` — wire / DTO types
 - `./persistence` — `RegistryDatabase` port (no drivers); `./sqlite` / `./turso-serverless` adapters

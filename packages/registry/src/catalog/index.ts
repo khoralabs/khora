@@ -24,7 +24,7 @@ export type {
   RegistryAdminSummary,
   RegistryHostSummaryItem,
   RegistryHostsSummary,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 export {
   getRegistryAdminSummary,
   lookupRegistryByAccountId,

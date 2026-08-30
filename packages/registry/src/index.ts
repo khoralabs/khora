@@ -1,6 +1,6 @@
 /**
  * Thin composition helpers commonly used by apps/registry.
- * Prefer subpath imports (`@khoralabs/registry/host`, `/persistence`, …) elsewhere.
+ * Prefer subpath imports (`@khoralabs/khora-registry/host`, `/persistence`, …) elsewhere.
  */
 
 export type { RegistryHostContext, RegistryIdentityRoutes } from "./host/index";

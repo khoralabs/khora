@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { EnvKeyProvider } from "@khoralabs/colonnade/crypto";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
 import { openEncryptedDatabaseSync, SqliteCryptoError } from "@khoralabs/sqlite-crypto";
 import { createRegistrySqliteBundle, type RegistrySqliteBundle } from "./sqlite-database";
 

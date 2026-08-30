@@ -8,7 +8,7 @@ import {
   removeHostTrustedOriginRemote,
   requestHostTrustedOriginQuotaRemote,
   requestHostTrustedOriginRemote,
-} from "@khoralabs/registry/client";
+} from "@khoralabs/khora-registry/client";
 
 import { toRegistryClientConfig } from "../registry-client-config";
 import { withAdminTokenAuth } from "./admin-token-guard";

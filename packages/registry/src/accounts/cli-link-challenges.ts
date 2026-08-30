@@ -1,5 +1,5 @@
-import type { CliLinkChallenge } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { CliLinkChallenge } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { CliLinkChallengeRow } from "./types-internal";
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;

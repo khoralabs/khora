@@ -1,5 +1,8 @@
-import type { RegistryAccountLookup, RegistryEmailLookup } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type {
+  RegistryAccountLookup,
+  RegistryEmailLookup,
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts";
 import {
   listMarketingConsentsForAccount,
@@ -13,7 +16,7 @@ export type {
   RegistryAuthUser,
   RegistryEmailLookup,
   RegistryEmailLookupResponse,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 
 export async function lookupRegistryByEmail(
   db: RegistryDatabase,

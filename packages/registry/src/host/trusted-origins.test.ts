@@ -6,9 +6,12 @@ import {
   replaceHostTrustedOrigins,
   requestHostTrustedOrigin,
   setHostRegistryParticipation,
-} from "@khoralabs/registry/catalog";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/catalog";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import {
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/khora-registry/sqlite";
 import { corsHeadersForTrustedOrigins } from "./cors";
 import { readRegistryTrustedOrigins } from "./trusted-origins";
 

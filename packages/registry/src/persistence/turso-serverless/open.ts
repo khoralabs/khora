@@ -1,5 +1,5 @@
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
 import { createTursoClients, type TursoClients } from "./client";
 import { createRegistryTursoDatabase } from "./turso-database";
 

@@ -6,9 +6,12 @@ import {
   findHostById,
   registerKhoraHost,
   requestHostTrustedOriginQuota,
-} from "@khoralabs/registry/catalog";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/catalog";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import {
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/khora-registry/sqlite";
 import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleHostRegistryQuotaRequestDelete,

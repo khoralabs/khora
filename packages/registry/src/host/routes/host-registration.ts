@@ -5,9 +5,9 @@ import {
   registrationStatusJson,
   tryAutoActivateHost,
   verifyHostRegistrationSecret,
-} from "@khoralabs/registry/catalog";
-import type { HostRegistrationWireState } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/catalog";
+import type { HostRegistrationWireState } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { probeHostHealth } from "../host-health";
 import { registryHostRuntime } from "../runtime";
 import { hostToFullJson } from "./host-json";

@@ -1,5 +1,5 @@
-import type { AgentAccountBinding } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { AgentAccountBinding } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { AgentAccountBindingRow } from "./types-internal";
 
 function mapBinding(row: AgentAccountBindingRow): AgentAccountBinding {

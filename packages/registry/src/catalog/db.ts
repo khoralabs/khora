@@ -4,4 +4,4 @@ export {
   registryDatabasePath,
   resetRegistryCatalogDb,
   resetRegistrySqliteDatabase,
-} from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/sqlite";

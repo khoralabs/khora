@@ -1,5 +1,5 @@
 import type { Database, SQLQueryBindings } from "bun:sqlite";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 
 function asBindings(args: unknown[]): SQLQueryBindings[] {
   return args as SQLQueryBindings[];

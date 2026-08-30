@@ -1,4 +1,4 @@
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { RegistryAuthHttpPort, RegistryIdentityPort } from "../ports/identity";
 import {
   handleAgentAuthClaimComplete,

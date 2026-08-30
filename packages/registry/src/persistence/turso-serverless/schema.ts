@@ -1,4 +1,4 @@
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
 import type { TursoClients } from "./client";
 import { createRegistryTursoDatabase } from "./turso-database";
 

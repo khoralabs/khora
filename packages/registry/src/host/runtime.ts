@@ -1,5 +1,5 @@
 import type { AdminTokenAuth } from "@khoralabs/khora-auth";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { RegistryIdentityPort } from "./ports/identity";
 
 export type RegistryHostRuntime = {

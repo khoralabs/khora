@@ -11,7 +11,7 @@ export type {
   RegistryAuthUser,
   RegistryEmailLookup,
   RegistryEmailLookupResponse,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 export {
   ensureAgentLinkedOnHost,
   findAgentLinkOnHost,

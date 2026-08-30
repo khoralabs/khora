@@ -4,7 +4,7 @@ import type {
   HostTrustedOriginRequest,
   HostTrustedOriginRequestStatus,
   RegistrationRequirementState,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 
 import { type RegistryClientConfig, readServerPublicOrigin } from "./config";
 import type { HostRegistrationClientState, HostRegistryClientState } from "./types";

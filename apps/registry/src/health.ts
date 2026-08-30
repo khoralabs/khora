@@ -1,4 +1,4 @@
-import { getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { getRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 
 export function handleHealth(): Response {
   return Response.json({ ok: true });

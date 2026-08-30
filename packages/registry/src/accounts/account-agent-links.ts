@@ -1,5 +1,8 @@
-import type { AccountAgentLink, HostLinkPropagationResult } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type {
+  AccountAgentLink,
+  HostLinkPropagationResult,
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { bindAgentToAccount, findBindingByAgentDid } from "./agent-account-bindings";
 import { deleteMembershipIfEmpty, findMembershipById, upsertMembership } from "./memberships";
 import type { AccountAgentLinkRow } from "./types-internal";

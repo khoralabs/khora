@@ -1,8 +1,11 @@
 import type { Database } from "bun:sqlite";
+import { findBlockedEmail, linkBetterAuthUser } from "@khoralabs/khora-registry/accounts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
+import {
+  getRegistrySqliteBundle,
+  getRegistrySqliteDatabase,
+} from "@khoralabs/khora-registry/sqlite";
 import { createLogger } from "@khoralabs/observability/logger";
-import { findBlockedEmail, linkBetterAuthUser } from "@khoralabs/registry/accounts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
-import { getRegistrySqliteBundle, getRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 import { sendOtpEmail } from "./email/ses";

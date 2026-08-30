@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
 import { createRootTokenAdminAuth } from "@khoralabs/khora-auth";
-import { linkBetterAuthUser } from "@khoralabs/registry/accounts";
-import { registerKhoraHost, seedDefaultHost } from "@khoralabs/registry/catalog";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { linkBetterAuthUser } from "@khoralabs/khora-registry/accounts";
+import { registerKhoraHost, seedDefaultHost } from "@khoralabs/khora-registry/catalog";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import {
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/khora-registry/sqlite";
 import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleAdminAccountDelete,

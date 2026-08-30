@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
-import { seedDefaultHost } from "@khoralabs/registry/catalog";
-import type { AgentAuthRouteDeps, RegistryAuthHttpPort } from "@khoralabs/registry/host";
+import { seedDefaultHost } from "@khoralabs/khora-registry/catalog";
+import type { AgentAuthRouteDeps, RegistryAuthHttpPort } from "@khoralabs/khora-registry/host";
 import {
   handleAgentAuthClaimComplete,
   handleAgentAuthRegister,
   handleOAuthAuthorizationServerMetadata,
   handleOAuthProtectedResourceMetadata,
-} from "@khoralabs/registry/host";
+} from "@khoralabs/khora-registry/host";
 import {
   type createRegistrySqliteDatabase,
   getRegistrySqliteBundle,
   resetRegistrySqliteDatabase,
-} from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/sqlite";
 import { setCaptureOtpForTests } from "./email/ses";
 import { getRegistryAuth, reloadRegistryAuth } from "./instance";
 import { createBetterAuthHttpPort } from "./ports/http";

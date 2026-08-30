@@ -2,7 +2,7 @@ import type {
   HostTrustedOriginQuotaRequest,
   HostTrustedOriginRequest,
   RegistrationRequirementState,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 
 /** Client view of registry state, enriched with local origin policy flags. */
 export type HostRegistryClientState = {

@@ -1,12 +1,12 @@
-import type { HostRegistryState, KhoraHost } from "@khoralabs/registry/catalog";
-import { readHostRegistryState } from "@khoralabs/registry/catalog";
+import type { HostRegistryState, KhoraHost } from "@khoralabs/khora-registry/catalog";
+import { readHostRegistryState } from "@khoralabs/khora-registry/catalog";
 import type {
   HostRegistrationHostHealthWire,
   HostRegistrationHostWire,
   HostRegistryWireFragment,
   HostRegistryWireState,
-} from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 
 export function hostHealthJson(host: KhoraHost): HostRegistrationHostHealthWire {
   return {

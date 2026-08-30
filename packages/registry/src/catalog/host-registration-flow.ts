@@ -3,8 +3,8 @@ import type {
   HostHealthStatus,
   HostRegistrationStatusWire,
   KhoraHost,
-} from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { type HostHealthProbeResult, recordHostHealthProbe } from "./host-health-probe";
 import {
   allAutoActivateRequirementsMet,

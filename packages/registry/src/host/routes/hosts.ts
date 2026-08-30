@@ -9,8 +9,8 @@ import {
   registerKhoraHost,
   registrationStatusJson,
   tryAutoActivateHost,
-} from "@khoralabs/registry/catalog";
-import type { HostRegistrationWireState } from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/catalog";
+import type { HostRegistrationWireState } from "@khoralabs/khora-registry/contracts";
 import {
   assertSafeHostProbeTarget,
   UnsafeHostProbeTargetError,

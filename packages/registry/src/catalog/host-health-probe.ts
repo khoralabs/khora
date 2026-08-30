@@ -2,8 +2,8 @@ import type {
   HostHealthProbedEndpoint,
   HostHealthStatus,
   KhoraHost,
-} from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { assertSafeHostProbeTarget } from "./host-probe-target";
 import { updateRegistrationRequirement } from "./host-registration-requirements";
 import {

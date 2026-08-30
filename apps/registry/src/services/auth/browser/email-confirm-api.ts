@@ -4,7 +4,7 @@ import type {
   EmailConfirmSession,
   SendOtpParams,
   VerifyOtpParams,
-} from "@khoralabs/registry/email-confirm";
+} from "@khoralabs/khora-registry/email-confirm";
 import { createUsersAuthClient } from "./auth-client";
 
 function mapSession(data: {

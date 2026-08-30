@@ -1,5 +1,5 @@
-import type { Account } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { Account } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { normalizeEmail } from "./normalize";
 import type { AccountRow } from "./types-internal";
 

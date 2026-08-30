@@ -5,8 +5,8 @@ import {
   listAgentLinksForMembership,
   listMarketingConsentsForAccount,
   listMembershipsForAccount,
-} from "@khoralabs/registry/accounts";
-import { findHostById } from "@khoralabs/registry/catalog";
+} from "@khoralabs/khora-registry/accounts";
+import { findHostById } from "@khoralabs/khora-registry/catalog";
 import { registryHostRuntime } from "../runtime";
 
 export async function handleMe(req: Request): Promise<Response> {

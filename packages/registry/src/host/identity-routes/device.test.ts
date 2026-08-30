@@ -3,15 +3,15 @@ import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
 import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
-} from "@khoralabs/registry/accounts";
-import { seedDefaultHost } from "@khoralabs/registry/catalog";
-import type { RegistryAuthHttpPort } from "@khoralabs/registry/host";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/accounts";
+import { seedDefaultHost } from "@khoralabs/khora-registry/catalog";
+import type { RegistryAuthHttpPort } from "@khoralabs/khora-registry/host";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
 import {
   type createRegistrySqliteDatabase,
   getRegistrySqliteBundle,
   resetRegistrySqliteDatabase,
-} from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/sqlite";
 import { type DeviceRouteDeps, handleDeviceAuthorize, handleDeviceToken } from "./device";
 
 const stubAuthHttp: RegistryAuthHttpPort = {

@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade/crypto";
-import { linkBetterAuthUser, suspendAccount } from "@khoralabs/registry/accounts";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { getRegistrySqliteBundle, resetRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { linkBetterAuthUser, suspendAccount } from "@khoralabs/khora-registry/accounts";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import {
+  getRegistrySqliteBundle,
+  resetRegistrySqliteDatabase,
+} from "@khoralabs/khora-registry/sqlite";
 import { initRegistryHostRuntime } from "../runtime";
 import { handleMe } from "./me";
 

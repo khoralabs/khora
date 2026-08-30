@@ -4,8 +4,8 @@ import {
   createDeviceAuthorization,
   expireDeviceIfNeeded,
   hashDeviceCode,
-} from "@khoralabs/registry/accounts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/accounts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { RegistryAuthHttpPort, RegistryIdentityPort } from "../ports/identity";
 
 export type DeviceRouteDeps = {

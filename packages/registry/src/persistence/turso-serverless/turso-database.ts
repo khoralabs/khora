@@ -1,4 +1,4 @@
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import {
   execMultiple as execMultipleSql,
   execSql,

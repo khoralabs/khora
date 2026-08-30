@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { KhoraHost } from "@khoralabs/registry/catalog";
+import type { KhoraHost } from "@khoralabs/khora-registry/catalog";
 import { hostToPublicJson } from "./host-json";
 
 function mockHost(overrides: Partial<KhoraHost> = {}): KhoraHost {

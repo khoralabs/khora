@@ -6,14 +6,14 @@ Layout mirrors [`memories-node` persistence](https://github.com/khoralabs/memori
 
 | Path | Role | Public export |
 | ---- | ---- | ------------- |
-| [`./core`](./core) | `RegistryDatabase` port, shared domain DDL (`initRegistryDomainSchema`) | `@khoralabs/registry/persistence` |
-| [`./sqlite`](./sqlite) | Bun `bun:sqlite` (+ SQLCipher) adapter | `@khoralabs/registry/sqlite` |
-| [`./turso-serverless`](./turso-serverless) | Turso / `@tursodatabase/serverless` domain adapter | `@khoralabs/registry/turso-serverless` |
+| [`./core`](./core) | `RegistryDatabase` port, shared domain DDL (`initRegistryDomainSchema`) | `@khoralabs/khora-registry/persistence` |
+| [`./sqlite`](./sqlite) | Bun `bun:sqlite` (+ SQLCipher) adapter | `@khoralabs/khora-registry/sqlite` |
+| [`./turso-serverless`](./turso-serverless) | Turso / `@tursodatabase/serverless` domain adapter | `@khoralabs/khora-registry/turso-serverless` |
 
 ## Rules
 
-- Domain / host code imports types and schema helpers from `@khoralabs/registry/persistence` only.
-- Composition roots open a domain store via `@khoralabs/registry/sqlite` or `@khoralabs/registry/turso-serverless` and inject `RegistryDatabase` into the host. Better Auth (and its auth DB) live in `apps/registry`.
+- Domain / host code imports types and schema helpers from `@khoralabs/khora-registry/persistence` only.
+- Composition roots open a domain store via `@khoralabs/khora-registry/sqlite` or `@khoralabs/khora-registry/turso-serverless` and inject `RegistryDatabase` into the host. Better Auth (and its auth DB) live in `apps/registry`.
 - Driver packages are optional dependencies; importing `./persistence` must not require Turso.
 - Each adapter owns connection + schema application for its driver; shared domain SQL stays in `core/`.
 

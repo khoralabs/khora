@@ -1,4 +1,4 @@
-import type { RegistrySession } from "@khoralabs/registry/host";
+import type { RegistrySession } from "@khoralabs/khora-registry/host";
 import { getRegistryAuth } from "./instance";
 
 export type { RegistrySession };

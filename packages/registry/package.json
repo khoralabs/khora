@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/registry",
+  "name": "@khoralabs/khora-registry",
   "version": "0.0.0",
   "type": "module",
   "private": true,

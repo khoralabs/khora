@@ -7,7 +7,7 @@ import {
   reactivateAccount,
   reactivateAccountByEmail,
   suspendAccount,
-} from "@khoralabs/registry/accounts";
+} from "@khoralabs/khora-registry/accounts";
 import { registryHostRuntime } from "../../runtime";
 import { withAdminTokenAuth } from "./admin-token-guard";
 

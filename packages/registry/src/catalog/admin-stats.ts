@@ -6,13 +6,13 @@ import {
   listMarketingConsentsForAccount,
   listMarketingConsentsForEmail,
   normalizeEmail,
-} from "@khoralabs/registry/accounts";
+} from "@khoralabs/khora-registry/accounts";
 import type {
   RegistryAccountLookup,
   RegistryAdminSummary,
   RegistryEmailLookup,
-} from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import {
   countAllPendingHostTrustedOriginQuotaRequests,
   countAllPendingHostTrustedOriginRequests,
@@ -25,7 +25,7 @@ export type {
   RegistryAuthUser,
   RegistryEmailLookup,
   RegistryEmailLookupResponse,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 
 async function countByStatus(
   db: RegistryDatabase,

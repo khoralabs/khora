@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 
 export function hashHostManagementToken(token: string): string {
   return createHash("sha256").update(token, "utf8").digest("hex");

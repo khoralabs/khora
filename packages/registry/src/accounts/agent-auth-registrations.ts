@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { AgentAuthRegistration, AgentAuthRegistrationStatus } from "./ceremony-types";
 import { normalizeEmail } from "./normalize";
 import type { AgentAuthRegistrationRow } from "./types-internal";

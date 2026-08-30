@@ -3,7 +3,7 @@ import type {
   RegistrationRequirementId,
   RegistrationRequirementState,
   RegistrationTrustLevel,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 
 export type {
   RegistrationPolicy,
@@ -11,7 +11,7 @@ export type {
   RegistrationRequirementState,
   RegistrationRequirementStatus,
   RegistrationTrustLevel,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 
 const ALL_REQUIREMENT_IDS: RegistrationRequirementId[] = [
   "health_check",

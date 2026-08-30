@@ -5,7 +5,7 @@ import {
   normalizeEmail,
   type RegistryAuthUser,
   type RegistryEmailLookupResponse,
-} from "@khoralabs/registry/accounts";
+} from "@khoralabs/khora-registry/accounts";
 import { registryHostRuntime } from "../../runtime";
 import { withAdminTokenAuth } from "./admin-token-guard";
 

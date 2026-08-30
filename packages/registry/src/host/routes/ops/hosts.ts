@@ -15,7 +15,7 @@ import {
   suspendKhoraHost,
   TrustedOriginConflictError,
   updateHostRegistrySettings,
-} from "@khoralabs/registry/catalog";
+} from "@khoralabs/khora-registry/catalog";
 import { probeHostHealthById } from "../../host-health";
 import { registryHostRuntime } from "../../runtime";
 import { hostToFullJson } from "../host-json";

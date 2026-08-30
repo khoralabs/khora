@@ -4,8 +4,8 @@ import type {
   HostTrustedOriginQuotaRequest,
   HostTrustedOriginRequest,
   KhoraHost,
-} from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { verifyHostManagementToken as verifyHostManagementTokenId } from "./host-management-token";
 import { findHostById, listActiveHosts } from "./khora-hosts";
 import type {
@@ -19,7 +19,7 @@ import {
   HOST_TRUSTED_ORIGIN_SELECT,
 } from "./types-internal";
 
-export type { HostRegistryState } from "@khoralabs/registry/contracts";
+export type { HostRegistryState } from "@khoralabs/khora-registry/contracts";
 
 export async function verifyHostManagementToken(
   db: RegistryDatabase,

@@ -1,5 +1,3 @@
-import { createLogger } from "@khoralabs/observability/logger";
-import { withSpan } from "@khoralabs/observability/spans";
 import {
   applyHostHealthProbe,
   findHostById,
@@ -7,8 +5,10 @@ import {
   type KhoraHost,
   listHostsForHealthPoll,
   probeHostHealth,
-} from "@khoralabs/registry/catalog";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/catalog";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
+import { createLogger } from "@khoralabs/observability/logger";
+import { withSpan } from "@khoralabs/observability/spans";
 import { trace } from "@opentelemetry/api";
 
 export type { HostHealthProbeResult };

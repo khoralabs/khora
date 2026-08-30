@@ -1,4 +1,4 @@
-import { normalizeEmail } from "@khoralabs/registry/accounts";
+import { normalizeEmail } from "@khoralabs/khora-registry/accounts";
 
 export { normalizeEmail };
 

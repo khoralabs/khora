@@ -2,8 +2,8 @@ import {
   findActiveHostBySlug,
   findHostByBaseUrl,
   type KhoraHost,
-} from "@khoralabs/registry/catalog";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/catalog";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { registryHostRuntime } from "../runtime";
 
 export async function resolveRegistryHost(

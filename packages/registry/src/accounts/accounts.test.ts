@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { createRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import { createRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 import {
   deleteAccount,
   findAccountByEmail,
@@ -18,7 +18,7 @@ function _testDb() {
   return createRegistrySqliteDatabase(sqlite);
 }
 
-describe("@khoralabs/registry/accounts accounts", () => {
+describe("@khoralabs/khora-registry/accounts accounts", () => {
   let db: ReturnType<typeof createRegistrySqliteDatabase>;
   let sqlite: Database;
 

@@ -7,8 +7,8 @@ import {
   findPendingAgentAuthByEmail,
   normalizeEmail,
   verifyAgentAuthOtp,
-} from "@khoralabs/registry/accounts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+} from "@khoralabs/khora-registry/accounts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { RegistryAuthHttpPort } from "../ports/identity";
 
 const AGENT_AUTH_SCOPES = ["registry.session", "link.agent"] as const;

@@ -4,9 +4,9 @@ import {
   bindAgentToAccount,
   findBindingByAgentDid,
   linkBetterAuthUser,
-} from "@khoralabs/registry/accounts";
-import { initRegistryDomainSchema } from "@khoralabs/registry/persistence";
-import { createRegistrySqliteDatabase } from "@khoralabs/registry/sqlite";
+} from "@khoralabs/khora-registry/accounts";
+import { initRegistryDomainSchema } from "@khoralabs/khora-registry/persistence";
+import { createRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 import {
   activateKhoraHost,
   deleteKhoraHost,

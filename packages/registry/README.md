@@ -1,4 +1,4 @@
-# `@khoralabs/registry`
+# `@khoralabs/khora-registry`
 
 Multi-entrypoint registry package: contracts, accounts/catalog domain, HTTP host, outbound client, and persistence adapters.
 

@@ -5,7 +5,7 @@ import type {
   CliLinkChallenge,
   MarketingConsent,
   Membership,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 import type { AgentAuthRegistration, DeviceAuthorization } from "./ceremony-types";
 import type { SqlRow } from "./sql-row";
 

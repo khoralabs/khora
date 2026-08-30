@@ -1,5 +1,5 @@
-import type { MarketingConsent } from "@khoralabs/registry/contracts";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { MarketingConsent } from "@khoralabs/khora-registry/contracts";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import { normalizeEmail } from "./normalize";
 import type { MarketingConsentRow } from "./types-internal";
 

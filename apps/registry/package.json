@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/khora-registry",
+  "name": "@khoralabs/khora-registry-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/observability": "workspace:*",
-    "@khoralabs/registry": "workspace:*",
+    "@khoralabs/khora-registry": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
     "better-auth": "^1.6.11",
     "bun-plugin-tailwind": "^0.1.2",

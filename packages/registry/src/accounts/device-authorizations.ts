@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { RegistryDatabase } from "@khoralabs/registry/persistence";
+import type { RegistryDatabase } from "@khoralabs/khora-registry/persistence";
 import type { DeviceAuthorization, DeviceAuthorizationStatus } from "./ceremony-types";
 import type { DeviceAuthorizationRow } from "./types-internal";
 

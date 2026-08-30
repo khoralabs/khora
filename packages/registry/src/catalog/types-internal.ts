@@ -3,7 +3,7 @@ import type {
   HostTrustedOriginQuotaRequest,
   HostTrustedOriginRequest,
   KhoraHost,
-} from "@khoralabs/registry/contracts";
+} from "@khoralabs/khora-registry/contracts";
 import type { SnakeCaseKey, SqlRow } from "./sql-row";
 import { sqlSelectColumns } from "./sql-row";
 
