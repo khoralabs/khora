@@ -1,12 +1,20 @@
-# Khora registry — build from repository root:
-#   DOCKER_BUILDKIT=0 docker build --platform linux/amd64 -f apps/khora/registry/Dockerfile -t khora-registry .
+# Slim image from a staged release package (compiled binary + Litestream).
 #
-# Optional: skip Litestream binary (smaller/faster build; set REGISTRY_LITESTREAM only with INSTALL_LITESTREAM=1):
-#   docker build --build-arg INSTALL_LITESTREAM=0 ...
+# From repository root, after:
+#   bun run apps/registry/scripts/build.ts bun-linux-x64
+#   bun run scripts/stage-khora-registry-release.ts 0.0.0
+#
+#   docker build -f apps/registry/Dockerfile \
+#     --build-arg RELEASE_SLUG=linux-x64 \
+#     -t khora-registry .
+#
+# RELEASE_SLUG: linux-x64 (amd64) or linux-arm64
 
-FROM --platform=linux/amd64 oven/bun:1.3-debian
+ARG RELEASE_SLUG=linux-x64
 
-ARG INSTALL_LITESTREAM=1
+FROM debian:bookworm-slim
+
+ARG RELEASE_SLUG=linux-x64
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -15,30 +23,24 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production \
-  SQLCIPHER_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlcipher.so.1 \
   REGISTRY_DATABASE_PATH=/data/registry.sqlite \
-  PORT=4000
+  PORT=4000 \
+  KHORA_PACKAGED=1 \
+  LITESTREAM_BIN_PATH=/usr/local/bin/litestream \
+  SQLCIPHER_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlcipher.so.1
 
 WORKDIR /app
 
-COPY package.json bun.lock bunfig.toml ./
-COPY apps ./apps
-COPY packages ./packages
-COPY scripts/install-litestream.ts ./scripts/install-litestream.ts
+COPY apps/release/registry-${RELEASE_SLUG}/bin/khora-registry /usr/local/bin/khora-registry
+COPY apps/release/registry-${RELEASE_SLUG}/bin/litestream /usr/local/bin/litestream
 
-RUN bun install --frozen-lockfile --filter '@khoralabs/khora-registry' --production \
-  && if [ "$INSTALL_LITESTREAM" = "1" ]; then \
-       bun run scripts/install-litestream.ts --output apps/khora/registry/.bin/litestream; \
-     fi
+RUN chmod 755 /usr/local/bin/khora-registry /usr/local/bin/litestream \
+  && mkdir -p /data \
+  && useradd --system --uid 10001 --home /data khora \
+  && chown -R khora:khora /data
 
-RUN mkdir -p /data && chown -R bun:bun /data
-
-WORKDIR /app/apps/khora/registry
-
-USER bun
+USER khora
 
 EXPOSE 4000
-
 VOLUME ["/data"]
-
-CMD ["bun", "run", "start"]
+ENTRYPOINT ["/usr/local/bin/khora-registry"]

@@ -1,13 +1,18 @@
-# Khora server — Docker
+# Khora server — Docker (compiled binary)
 
-Build context is the **repository root**.
+Build context is the **repository root**. Images ship the same `khora-server` binary as Homebrew/tarballs (plus Litestream and sqlite-vec).
 
-For non-Docker installs (tarball / Homebrew), see [DISTRIBUTION.md](./DISTRIBUTION.md).
+For non-Docker installs, see [DISTRIBUTION.md](./DISTRIBUTION.md).
 
-## Build
+Published images: `ghcr.io/khoralabs/khora-server:<version>` (from the release workflow).
+
+## Build locally
 
 ```bash
-docker build --platform linux/amd64 -f apps/server/Dockerfile -t khora-server .
+bun run apps/server/scripts/build.ts bun-linux-x64
+bun run scripts/stage-khora-server-release.ts 0.0.0-local
+docker build -f apps/server/Dockerfile --build-arg RELEASE_SLUG=linux-x64 -t khora-server .
+# arm64: bun-linux-arm64 + RELEASE_SLUG=linux-arm64
 ```
 
 ## Run
@@ -23,15 +28,8 @@ docker run --rm -p 8788:8788 \
 
 ## Operator API (headless)
 
-This image is **headless**. Operator endpoints:
-
-- `/v1/ops/*` — invites, agents, host config (Bearer `KHORA_CONSOLE_ROOT_TOKEN` / `ADMIN_ROOT_TOKEN`)
+- `/v1/ops/*` — invites, agents, host config (Bearer operator / root token)
 - `/v1/host/registry*` — registry participation and origin/quota management
-
-```bash
-bun run --cwd apps/server dev
-# curl -H "Authorization: Bearer $KHORA_CONSOLE_ROOT_TOKEN" http://127.0.0.1:8788/v1/ops/host/config
-```
 
 ## Required environment
 
@@ -43,29 +41,13 @@ bun run --cwd apps/server dev
 
 | Variable | Description |
 |----------|-------------|
-| `KHORA_SQLCIPHER_KEY` | When set (≥16 chars), SQLCipher for host, cells, memories DBs; omit for plaintext |
-
-## Linux container defaults (image)
-
-| Variable | Default |
-|----------|---------|
-| `SQLCIPHER_CUSTOM_LIB` | `/usr/lib/x86_64-linux-gnu/libsqlcipher.so.1` |
-| `SQLITE_CUSTOM_LIB` | `/usr/lib/x86_64-linux-gnu/libsqlite3.so.0` |
-
-Memories (sqlite-vec) is **on** by default. Disable with `KHORA_MEMORIES=0`.
-
-## Optional
-
-| Variable | Description |
-|----------|-------------|
-| `KHORA_LITESTREAM` | Set to `1` for Litestream replication (S3 env required) |
+| `KHORA_SQLCIPHER_KEY` | When set (≥16 chars), SQLCipher for host, cells, memories DBs |
+| `KHORA_LITESTREAM` | `1` for Litestream replication (S3 env required) |
 | `PORT` | HTTP port (default `8788`) |
-| `GOOGLE_API_KEY` / `KHORA_EMBEDDING_API_KEY` | Semantic embeddings (lexical-only if unset) |
+| `GOOGLE_API_KEY` / `GEMINI_API_KEY` / `KHORA_EMBEDDING_API_KEY` | Semantic embeddings |
 
 ## Build args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `INSTALL_LITESTREAM` | `1` | Download Litestream binary (set `0` for faster dev builds) |
-
-Use `DOCKER_BUILDKIT=0` if your Docker daemon lacks buildx.
+| `RELEASE_SLUG` | `linux-x64` | Staged package under `apps/release/server-<slug>/` |

@@ -1,12 +1,20 @@
-# Khora server — build from repository root:
-#   DOCKER_BUILDKIT=0 docker build --platform linux/amd64 -f apps/server/Dockerfile -t khora-server .
+# Slim image from a staged release package (compiled binary + Litestream + vec0).
 #
-# Optional: skip Litestream binary:
-#   docker build --build-arg INSTALL_LITESTREAM=0 ...
+# From repository root, after:
+#   bun run apps/server/scripts/build.ts bun-linux-x64   # or bun-linux-arm64
+#   bun run scripts/stage-khora-server-release.ts 0.0.0
+#
+#   docker build -f apps/server/Dockerfile \
+#     --build-arg RELEASE_SLUG=linux-x64 \
+#     -t khora-server .
+#
+# RELEASE_SLUG: linux-x64 (amd64) or linux-arm64
 
-FROM --platform=linux/amd64 oven/bun:1.3-debian
+ARG RELEASE_SLUG=linux-x64
 
-ARG INSTALL_LITESTREAM=1
+FROM debian:bookworm-slim
+
+ARG RELEASE_SLUG=linux-x64
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -16,31 +24,29 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production \
-  SQLCIPHER_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlcipher.so.1 \
-  SQLITE_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlite3.so.0 \
   KHORA_DATA_DIR=/data \
-  PORT=8788
+  PORT=8788 \
+  KHORA_PACKAGED=1 \
+  LITESTREAM_BIN_PATH=/usr/local/bin/litestream
+
+# Arch-specific lib paths (bookworm); override at runtime if needed.
+ENV SQLCIPHER_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlcipher.so.1 \
+  SQLITE_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlite3.so.0 \
+  SQLITE_VEC_PATH=/usr/local/lib/khora/vec0.so
 
 WORKDIR /app
 
-COPY package.json bun.lock bunfig.toml ./
-COPY apps ./apps
-COPY packages ./packages
-COPY scripts/install-litestream.ts ./scripts/install-litestream.ts
+COPY apps/release/server-${RELEASE_SLUG}/bin/khora-server /usr/local/bin/khora-server
+COPY apps/release/server-${RELEASE_SLUG}/bin/litestream /usr/local/bin/litestream
+COPY apps/release/server-${RELEASE_SLUG}/lib/ /usr/local/lib/khora/
 
-RUN bun install --frozen-lockfile --filter '@khoralabs/khora-server' --production \
-  && if [ "$INSTALL_LITESTREAM" = "1" ]; then \
-       bun run scripts/install-litestream.ts --output apps/server/.bin/litestream; \
-     fi
+RUN chmod 755 /usr/local/bin/khora-server /usr/local/bin/litestream \
+  && mkdir -p /data \
+  && useradd --system --uid 10001 --home /data khora \
+  && chown -R khora:khora /data
 
-RUN mkdir -p /data && chown -R bun:bun /data
-
-WORKDIR /app/apps/server
-
-USER bun
+USER khora
 
 EXPOSE 8788
-
 VOLUME ["/data"]
-
-CMD ["bun", "run", "start"]
+ENTRYPOINT ["/usr/local/bin/khora-server"]
