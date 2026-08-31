@@ -1,6 +1,15 @@
 # Khora Host
 
-The **host library** lives in `packages/host` (`@khoralabs/khora-host`). The **runnable server** is `apps/server` (`@khoralabs/khora-server`), which wires HTTP/WS on top of the library.
+The **host library** lives in `packages/host` (`@khoralabs/khora-host`). The **runnable server** is `apps/server` (`@khoralabs/khora-server`), which selects persistence strategies and wires product env on top of the library.
+
+**Boundary:** the host app owns path layout, SQLite (or other) foundation selection, and memories stack wiring. The package owns orchestration ports, optional encryption key bootstrap (`./bootstrap`), and strategy-agnostic HTTP/WS serve helpers (`./http`).
+
+| Export | Responsibility |
+|--------|----------------|
+| `.` / product modules | `createKhoraHost`, invites, posts, discovery — persistence-agnostic |
+| `./sqlite` | SQLite adapters when the **app** chooses SQLite |
+| `./bootstrap` | `bootstrapKhoraEncryption` (EnvKeyProvider `"khora"`) — no DB open |
+| `./http` | Routes, `createHostRouteDepsFromEnv`, `serveKhoraHttp` (Bun.serve + optional ingress) |
 
 ---
 
@@ -10,7 +19,7 @@ The **host library** lives in `packages/host` (`@khoralabs/khora-host`). The **r
 
 **File:** `packages/host/src/host/create-host.ts`
 
-The host is a **persistence-agnostic orchestrator**. It does not open SQLite files or read path env vars. The composition root (typically `apps/server/src/bootstrap-khora.ts`) opens databases, builds ports, and passes an `KhoraHostDeps` object:
+The host is a **persistence-agnostic orchestrator**. It does not open SQLite files or read path env vars. The composition root (typically `apps/server/src/bootstrap-khora.ts`) **selects** the persistence strategy, opens databases, builds ports, and passes a `KhoraHostDeps` object:
 
 | Dep | Purpose |
 |-----|---------|
@@ -32,9 +41,22 @@ SQLite handles and host/social persistence adapters are wired in the server boot
 - `@khoralabs/khora-host` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
 - `apps/server/.env.example`
 
-### Server env (maps to `bootstrapKhoraHost`)
+### Encryption bootstrap (`@khoralabs/khora-host/bootstrap`)
 
-**Files:**
+`bootstrapKhoraEncryption()` loads colonnade keys for the `"khora"` namespace. It does not choose storage or open databases. Apps that pick SQLCipher still pass the returned key into their own foundation open.
+
+### HTTP serve (`@khoralabs/khora-host/http`)
+
+After the app builds a `KhoraHostContext` (and optional memories handles):
+
+- `createHostRouteDepsFromEnv({ ctx, memories… })` — admin token from env + rate limiters
+- `serveKhoraHttp({ deps, port, fetch?, unaryIngress?, duplexUnixPath? })` — Bun.serve, inbox WS, optional ingress, SIGTERM drain
+
+OTel spans, packaged-runtime cwd, and Litestream stay in `apps/server` (pass a custom `fetch` when instrumenting).
+
+### Server env (maps to app `bootstrapKhoraHost`)
+
+**Files (app-owned strategy / layout):**
 - `apps/server/src/persistence-paths.ts` — `KHORA_DATA_DIR` + derived paths
 - `apps/server/src/env.ts` — host env (wraps persistence paths)
 - `apps/server/src/services/memories/` — `KHORA_MEMORIES` toggle + embedding env
@@ -74,31 +96,26 @@ Raw SQLite handles are **not** on context; server ops use `health` and `adminSta
 ## 2. Initialization flow
 
 ```
-apps/server/src/index.ts
-  validateEnv()
-  mkdir KHORA_DATA_DIR + host/cells/memories paths
-  bootstrapKhoraHost({ hostDbPath, authNoncesDbPath, percolatorDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
-    openKhoraHostSqlitePersistence()     → host DB, HostPersistence
-    createSqliteColonnadeCluster()   → cell shards
-    createColonnadePostResolver()    → PostResolver for memories + posts
-    ColonnadePublicationClient
-    createPrincipalLifecycle()
-    createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-host)
-    createSignedRequestAuth({ nonceStore })
-    bootstrapHostSearch()           → if KHORA_MEMORIES enabled (default on)
-    createKhoraHostHealthPort() / createKhoraHostSpecPort() / createKhoraAdminStatsPort()  // @khoralabs/khora-host/sqlite
-    createKhoraRegistrationApi()
-    createKhoraHost(deps)           → HostRuntime + teardown worker
-  createAdminTokenAuthFromEnv()  // from @khoralabs/khora-auth
-  Bun.serve() + createHostRouter().route() + inbox WS handlers
-  optional: startStdioUnaryIngress(), startDuplexUnixIngress()
+apps/server/src/run-http-server.ts
+  validateEnv() + resolveKhoraPersistencePaths()   // app path layout
+  mkdir data dirs
+  bootstrapKhoraEncryption()                       // @khoralabs/khora-host/bootstrap
+  bootstrapKhoraHost(...)                          // apps/server — selects SQLite + memories stack
+    createSqliteKhoraHostFoundation()              // @khoralabs/khora-host/sqlite (app chose SQLite)
+    createKhoraInvitesSqliteRepo()                 // if invite pepper set
+    createLocalSqliteServiceStack() + bootstrapHostSearch()  // if memories on
+    createKhoraHost(deps)
+  createHostRouteDepsFromEnv({ ctx, memories… })   // @khoralabs/khora-host/http
+  serveKhoraHttp({ deps, port, fetch: otelWrap… }) // package serve; app OTel via fetch
 ```
 
 **Key files:**
 | Step | Path |
 |------|------|
-| Server bootstrap | `apps/server/src/index.ts` |
-| Composition root | `apps/server/src/bootstrap-khora.ts` |
+| Server HTTP entry | `apps/server/src/run-http-server.ts` |
+| Composition root (persistence strategy) | `apps/server/src/bootstrap-khora.ts` |
+| Encryption bootstrap | `packages/host/src/bootstrap/` (`@khoralabs/khora-host/bootstrap`) |
+| HTTP serve helpers | `packages/host/src/http/server/` (`serveKhoraHttp`, route deps) |
 | Host orchestration | `packages/host/src/host/create-host.ts` |
 | Health / host-spec / admin-stats ports | `packages/host/src/persistence/sqlite/` (`@khoralabs/khora-host/sqlite`) |
 | Invites | `packages/host/src/invites/` |
