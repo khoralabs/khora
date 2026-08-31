@@ -52,6 +52,12 @@ export {
   mergeLabeledKhoraPluginLayers,
 } from "./khora-plugins";
 export {
+  DEFAULT_KHORA_BASE_URL,
+  defaultIdentityPath,
+  defaultKhoraDataDir,
+  resolveKhoraDataDir,
+} from "./operator-home";
+export {
   canonicalKhoraPostSigningPayload,
   KHORA_POST_SIGNATURE_V1,
   type KhoraPostSigningPayloadV1,

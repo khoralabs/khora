@@ -2,12 +2,11 @@
 import { loadIdentity, type PersistableSigner } from "@khoralabs/did-key-identity";
 import {
   DEFAULT_KHORA_BASE_URL,
-  daemonJsonOutput,
-  loadDaemonLayeredConfig,
+  defaultIdentityPath,
   resolveKhoraDataDir,
-} from "./daemon-config";
+} from "@khoralabs/khora-client";
+import { daemonJsonOutput, loadDaemonLayeredConfig } from "./daemon-config";
 import { printDaemonHelp } from "./daemon-help";
-import { defaultIdentityPath } from "./identity-path";
 import { pluginsFromDaemonConfig } from "./plugins-from-config";
 import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon";
 

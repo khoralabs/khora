@@ -2,11 +2,11 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FlagMap } from "@khoralabs/cli-kit";
+import { resolveKhoraDataDir } from "@khoralabs/khora-client";
 import {
   type KhoraDaemonControlFile,
   readKhoraDaemonControlFile,
 } from "@khoralabs/khora-daemon/control-pid";
-import { resolveKhoraDataDir } from "@khoralabs/khora-daemon/daemon-config";
 
 import { agentIdentityPath, cliBaseUrl } from "./flows/context";
 import { khoraCliResolvedConfig } from "./khora-app-config";

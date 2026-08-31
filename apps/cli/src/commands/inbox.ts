@@ -1,16 +1,12 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
+import { DEFAULT_KHORA_BASE_URL, resolveKhoraDataDir } from "@khoralabs/khora-client";
 import {
   isProcessAlive,
   readKhoraDaemonControlFile,
   removeKhoraDaemonControlFile,
 } from "@khoralabs/khora-daemon/control-pid";
-import {
-  DEFAULT_KHORA_BASE_URL,
-  daemonJsonOutput,
-  loadDaemonLayeredConfig,
-  resolveKhoraDataDir,
-} from "@khoralabs/khora-daemon/daemon-config";
+import { daemonJsonOutput, loadDaemonLayeredConfig } from "@khoralabs/khora-daemon/daemon-config";
 import { pluginsFromDaemonConfig } from "@khoralabs/khora-daemon/plugins-from-config";
 import { runKhoraInboxDaemon } from "@khoralabs/khora-daemon/run";
 import {
