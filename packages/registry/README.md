@@ -15,11 +15,14 @@ Multi-entrypoint registry package: contracts, accounts/catalog domain, HTTP host
 | `./catalog` | Host catalog domain |
 | `./email-confirm` | EmailConfirm API types only |
 | `./host` | HTTP host (`composeRegistryHost`, `handleRegistryRequest`, identity route factories) |
-| `./client` | Host→registry HTTP client |
+| `./client` | Host→registry HTTP client (management token / registration sync) |
+| `./agent-client` | Agent→registry HTTP + `~/.khora` session/link/pending stores (CLI / operators) |
 
 Persistence layout: [`src/persistence/IMPLEMENTORS.md`](src/persistence/IMPLEMENTORS.md).
 
 **Composition:** after opening a domain DB and building IdP ports, call `composeRegistryHost({ db, identity, authHttp, adminTokenAuth, … })` then serve with `handleRegistryRequest` (optional `peerIp` / `onReady`). Bun.serve, OTel, packaged runtime, Better Auth/SES, and `/cli/link` UI stay in [`apps/registry`](../../apps/registry). Operator APIs are headless at `/v1/ops` (Bearer root token).
+
+**Clients:** use `./client` from a running Khora host opting into the registry. Use `./agent-client` from operator tools (`apps/cli`) for device/agent auth, link ceremony, and the public host catalog — not the same audience as `./client`.
 
 ## Build & publish
 

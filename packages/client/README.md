@@ -10,6 +10,13 @@ Wiring (`createHttpKhoraTransportBundle`, `createKhoraTransportBundleFromEnv`, `
 
 - **`loadKhoraAppConfig`**, **`extendKhoraAppConfig`**, **`zKhoraAppConfigBase`**, **`khoraConfigJsonSchema`**, **`resolveKhoraConfigPath`**, **`readKhoraConfigFileWithExtends`**, **`mergeKhoraAppConfigLayers`**, **`khoraAppConfigFromEnv`**, **`KhoraConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`KHORA_*`), and JSON Schema generation.
 
+## Operator home
+
+Shared CLI/daemon path helpers (exported from package root):
+
+- **`defaultIdentityPath`**, **`DEFAULT_KHORA_BASE_URL`**, **`defaultKhoraDataDir`**, **`resolveKhoraDataDir`**
+- **`discoverRegisteredHostSlugs`** — probe configured hosts for a DID profile (used after registry link)
+
 Example snippet:
 
 ```json
