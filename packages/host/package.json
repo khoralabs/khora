@@ -29,6 +29,11 @@
       "import": "./src/http/index.ts",
       "default": "./src/http/index.ts"
     },
+    "./bootstrap": {
+      "types": "./src/bootstrap/index.ts",
+      "import": "./src/bootstrap/index.ts",
+      "default": "./src/bootstrap/index.ts"
+    },
     "./discovery/search": {
       "types": "./src/discovery/search/index.ts",
       "import": "./src/discovery/search/index.ts",

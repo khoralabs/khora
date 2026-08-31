@@ -1,4 +1,4 @@
 export {
   bootstrapKhoraEncryption,
   type KhoraEncryptionContext,
-} from "@khoralabs/khora-host/bootstrap";
+} from "./encryption";
