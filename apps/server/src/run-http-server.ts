@@ -1,18 +1,13 @@
-import { mkdirSync, unlinkSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 const { dirname } = path;
 
-import { createAdminTokenAuthFromEnv } from "@khoralabs/khora-auth";
 import type { KhoraWsData } from "@khoralabs/khora-client/transport";
 import {
-  createHostRouter,
-  createInboxDrainWebSocketHandlersForDeps,
-  createV2HostRateLimiters,
-  type HostRouteDeps,
+  createHostRouteDepsFromEnv,
   runWithRequestPeerIp,
-  startDuplexUnixIngress,
-  startStdioUnaryIngress,
+  serveKhoraHttp,
 } from "@khoralabs/khora-host/http";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
@@ -68,8 +63,15 @@ export async function runHttpServer(): Promise<void> {
       ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
     });
 
-  const adminTokenAuth = createAdminTokenAuthFromEnv();
-  if (adminTokenAuth === null) {
+  const { deps, adminTokenAuthEnabled } = createHostRouteDepsFromEnv({
+    ctx,
+    ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
+    ...(memoriesService !== undefined ? { memoriesService } : {}),
+    ...(memoriesOntology !== undefined ? { memoriesOntology } : {}),
+    ...(memoriesCatalog !== undefined ? { memoriesCatalog } : {}),
+  });
+
+  if (!adminTokenAuthEnabled) {
     logger.info(
       "Operator API disabled (set ADMIN_ROOT_TOKEN / KHORA_CONSOLE_ROOT_TOKEN to enable)",
     );
@@ -77,26 +79,19 @@ export async function runHttpServer(): Promise<void> {
     logger.info("Operator API enabled at /v1/ops and /v1/host/registry (Bearer root token)");
   }
 
-  const deps: HostRouteDeps = {
-    ctx,
-    ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
-    ...(memoriesService !== undefined ? { memoriesService } : {}),
-    ...(memoriesOntology !== undefined ? { memoriesOntology } : {}),
-    ...(memoriesCatalog !== undefined ? { memoriesCatalog } : {}),
-    rateLimiters: createV2HostRateLimiters(),
-    adminTokenAuth,
-  };
-  const { route } = createHostRouter({
-    hostSpec: ctx.hostSpec,
-  });
-  const inboxWsHandlers = createInboxDrainWebSocketHandlersForDeps({
-    ctx,
-    rateLimiters: deps.rateLimiters,
-  });
+  const unaryIngress = envHostUnaryIngress();
+  const duplexMode = envHostDuplexIngress();
 
-  const server = Bun.serve<KhoraWsData>({
+  await serveKhoraHttp({
+    deps,
     port: envPort(),
-    async fetch(req, srv) {
+    logger,
+    ...(unaryIngress === "stdio" ? { unaryIngress: "stdio" as const } : {}),
+    ...(duplexMode === "unix" ? { duplexUnixPath: envHostDuplexUnixPath() } : {}),
+    onListening: ({ port }) => {
+      logger.info({ port }, "listening");
+    },
+    fetch: async (req, srv, { route, deps: routeDeps }) => {
       const peerIp = srv.requestIP(req)?.address ?? null;
       return runWithRequestPeerIp(peerIp, async () => {
         const startMs = Date.now();
@@ -107,7 +102,7 @@ export async function runHttpServer(): Promise<void> {
         return context.with(trace.setSpan(context.active(), span), async () => {
           let status = 200;
           try {
-            const res = await route(req, url, server, deps);
+            const res = await route(req, url, srv as Bun.Server<KhoraWsData>, routeDeps);
             status = res?.status ?? 404;
             return res ?? new Response("Not found", { status: 404 });
           } catch (err) {
@@ -128,83 +123,5 @@ export async function runHttpServer(): Promise<void> {
         });
       });
     },
-    websocket: inboxWsHandlers,
-  });
-
-  logger.info({ port: server.port }, "listening");
-
-  const unaryIngress = envHostUnaryIngress();
-  if (unaryIngress === "stdio") {
-    logger.info("Unary ingress: stdio (NDJSON lines); parallel to HTTP.");
-    void startStdioUnaryIngress(deps).catch((e) => {
-      logger.fatal({ err: e }, "stdio unary ingress failed");
-      process.exit(1);
-    });
-  }
-
-  let duplexIngress: ReturnType<typeof startDuplexUnixIngress> | undefined;
-  const duplexMode = envHostDuplexIngress();
-  if (duplexMode === "unix") {
-    const duplexUnixPath = envHostDuplexUnixPath();
-    mkdirSync(dirname(duplexUnixPath), { recursive: true });
-    try {
-      unlinkSync(duplexUnixPath);
-    } catch {
-      /* stale socket may not exist */
-    }
-    duplexIngress = startDuplexUnixIngress({ deps, unixPath: duplexUnixPath });
-  }
-
-  await new Promise<never>((_resolve, reject) => {
-    function shutdown(signal: NodeJS.Signals): void {
-      logger.info({ signal }, "draining and shutting down");
-
-      setTimeout(() => {
-        logger.error("shutdown timeout; forcing exit");
-        process.exit(1);
-      }, 10_000).unref();
-
-      try {
-        ctx.principalTeardownWorker.stop();
-      } catch {
-        /* ignore */
-      }
-      try {
-        ctx.cluster.close();
-      } catch {
-        /* ignore */
-      }
-      try {
-        ctx.search?.close();
-      } catch {
-        /* ignore */
-      }
-      try {
-        server.stop(false);
-      } catch {
-        /* already stopped */
-      }
-      try {
-        duplexIngress?.stop(true);
-      } catch {
-        /* ignore */
-      }
-      process.exit(0);
-    }
-
-    process.once("SIGTERM", () => shutdown("SIGTERM"));
-    process.once("SIGINT", () => shutdown("SIGINT"));
-
-    process.on("uncaughtException", (err) => {
-      logger.fatal({ err }, "uncaughtException");
-      reject(err);
-      process.exit(1);
-    });
-
-    process.on("unhandledRejection", (reason) => {
-      logger.fatal({ reason }, "unhandledRejection");
-      reject(reason instanceof Error ? reason : new Error(String(reason)));
-      process.exit(1);
-    });
   });
 }
