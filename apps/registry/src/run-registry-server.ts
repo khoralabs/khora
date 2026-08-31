@@ -1,9 +1,9 @@
-import { handleRegistryRequest, runWithRequestPeerIp } from "@khoralabs/khora-registry/host";
+import { handleRegistryRequest, registryDispatchKind } from "@khoralabs/khora-registry/host";
 import { createLogger } from "@khoralabs/observability/logger";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { serve } from "bun";
 import { bootstrapRegistryHost } from "./bootstrap-registry";
-import { handleHealth, handleReady } from "./health";
+import { handleReady } from "./health";
 import type { registryHtmlRoutes } from "./html-routes";
 import { tracer } from "./otel";
 
@@ -34,59 +34,41 @@ export async function runRegistryServer(opts: RunRegistryServerOptions = {}): Pr
     ...(opts.htmlRoutes !== undefined ? { routes: opts.htmlRoutes } : {}),
     async fetch(req, srv) {
       const peerIp = srv.requestIP(req)?.address ?? null;
-      return runWithRequestPeerIp(peerIp, async () => {
-        const startMs = Date.now();
-        const url = new URL(req.url);
-        const path = url.pathname;
-        const method = req.method;
+      const startMs = Date.now();
+      const url = new URL(req.url);
+      const path = url.pathname;
+      const method = req.method;
 
-        const span = tracer.startSpan(`HTTP ${method}`, {
-          attributes: {
-            "http.method": method,
-            "http.target": path,
-          },
-        });
+      const span = tracer.startSpan(`HTTP ${method}`, {
+        attributes: {
+          "http.method": method,
+          "http.target": path,
+        },
+      });
 
-        return context.with(trace.setSpan(context.active(), span), async () => {
-          let status = 200;
-          try {
-            if (path === "/health") {
-              const res = handleHealth();
-              status = res.status;
-              return res;
-            }
-
-            if (path === "/ready") {
-              const res = handleReady();
-              status = res.status;
-              return res;
-            }
-
-            const res = await handleRegistryRequest(req, { host, identityRoutes });
-            status = res.status;
-            if (
-              path.startsWith("/api/auth") ||
-              path.startsWith("/v1/device") ||
-              path.startsWith("/agent/auth") ||
-              path.startsWith("/.well-known/")
-            ) {
-              span.setAttribute("registry.dispatch", "identity");
-            } else {
-              span.setAttribute("registry.dispatch", "host");
-            }
-            return res;
-          } catch (err) {
-            status = 500;
-            span.recordException(err instanceof Error ? err : new Error(String(err)));
-            span.setStatus({ code: SpanStatusCode.ERROR });
-            throw err;
-          } finally {
-            span.setAttribute("http.status_code", status);
-            span.setStatus({ code: status >= 500 ? SpanStatusCode.ERROR : SpanStatusCode.OK });
-            span.end();
-            logger.info({ method, path, status, durationMs: Date.now() - startMs }, "request");
-          }
-        });
+      return context.with(trace.setSpan(context.active(), span), async () => {
+        let status = 200;
+        try {
+          const res = await handleRegistryRequest(req, {
+            host,
+            identityRoutes,
+            peerIp,
+            onReady: handleReady,
+          });
+          status = res.status;
+          span.setAttribute("registry.dispatch", registryDispatchKind(path));
+          return res;
+        } catch (err) {
+          status = 500;
+          span.recordException(err instanceof Error ? err : new Error(String(err)));
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw err;
+        } finally {
+          span.setAttribute("http.status_code", status);
+          span.setStatus({ code: status >= 500 ? SpanStatusCode.ERROR : SpanStatusCode.OK });
+          span.end();
+          logger.info({ method, path, status, durationMs: Date.now() - startMs }, "request");
+        }
       });
     },
     development: process.env.NODE_ENV !== "production" && {

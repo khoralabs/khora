@@ -1,9 +1,6 @@
 import { getRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 
-export function handleHealth(): Response {
-  return Response.json({ ok: true });
-}
-
+/** App readiness probe (secrets + DB). Passed as `onReady` to `handleRegistryRequest`. */
 export function handleReady(): Response {
   const issues: string[] = [];
 

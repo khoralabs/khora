@@ -5,6 +5,7 @@ import {
   getRegistrySqliteBundle,
   resetRegistrySqliteDatabase,
 } from "@khoralabs/khora-registry/sqlite";
+import { clientIpFromRequest } from "./client-ip";
 import type { RegistryHostContext } from "./context";
 import { handleRegistryRequest } from "./handle-registry-request";
 import type { RegistryIdentityRoutes } from "./ports/identity";
@@ -131,5 +132,44 @@ describe("handleRegistryRequest", () => {
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, ready: true });
+  });
+
+  test("invokes onHealth override for /health", async () => {
+    const host: RegistryHostContext = {
+      db: getRegistrySqliteBundle().registry,
+      identity: { getSession: async () => null, getSessionCookieHeader: () => null },
+      fetch: async () => Response.json({ ok: false }, { status: 500 }),
+      stop() {},
+    };
+    const identityRoutes: RegistryIdentityRoutes = { handle: async () => null };
+
+    const res = await handleRegistryRequest(new Request("http://localhost:4000/health"), {
+      host,
+      identityRoutes,
+      onHealth: () => Response.json({ ok: true, custom: true }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, custom: true });
+  });
+
+  test("peerIp wraps ALS so clientIpFromRequest sees the peer", async () => {
+    let seenIp = "unset";
+    const host: RegistryHostContext = {
+      db: getRegistrySqliteBundle().registry,
+      identity: { getSession: async () => null, getSessionCookieHeader: () => null },
+      fetch: async (req) => {
+        seenIp = clientIpFromRequest(req);
+        return Response.json({ ok: true });
+      },
+      stop() {},
+    };
+    const identityRoutes: RegistryIdentityRoutes = { handle: async () => null };
+
+    await handleRegistryRequest(new Request("http://localhost:4000/v1/hosts"), {
+      host,
+      identityRoutes,
+      peerIp: "203.0.113.10",
+    });
+    expect(seenIp).toBe("203.0.113.10");
   });
 });
