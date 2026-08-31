@@ -53,6 +53,11 @@
       "types": "./src/client/index.ts",
       "import": "./src/client/index.ts",
       "default": "./src/client/index.ts"
+    },
+    "./agent-client": {
+      "types": "./src/agent-client/index.ts",
+      "import": "./src/agent-client/index.ts",
+      "default": "./src/agent-client/index.ts"
     }
   },
   "scripts": {
@@ -62,6 +67,7 @@
   },
   "dependencies": {
     "@khoralabs/colonnade": "workspace:*",
+    "@khoralabs/did-key-identity": "^0.1.0",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/observability": "workspace:*",
     "@khoralabs/sqlite-crypto": "^0.1.0",

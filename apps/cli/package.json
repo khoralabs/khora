@@ -20,7 +20,8 @@
     "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
-    "@khoralabs/khora-daemon": "workspace:*"
+    "@khoralabs/khora-daemon": "workspace:*",
+    "@khoralabs/khora-registry": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

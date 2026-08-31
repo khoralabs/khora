@@ -35,6 +35,7 @@
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-daemon": "workspace:*",
+        "@khoralabs/khora-registry": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -225,6 +226,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/colonnade": "workspace:*",
+        "@khoralabs/did-key-identity": "^0.1.0",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
