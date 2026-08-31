@@ -1,4 +1,8 @@
 export { clientIpFromRequest, runWithRequestPeerIp } from "./client-ip";
+export {
+  type ComposeRegistryHostDeps,
+  composeRegistryHost,
+} from "./compose-registry-host";
 export type { RegistryHostContext } from "./context";
 export { handleOptions, withCors } from "./cors";
 export { createRegistryHost } from "./create-registry-host";
@@ -32,5 +36,6 @@ export type {
   RegistrySession,
 } from "./ports/identity";
 export type { RegistryHostDeps } from "./registry-host-deps";
+export { resolveRegistryPublicUrl } from "./resolve-registry-public-url";
 export { initRegistryHostRuntime, type RegistryHostRuntime, registryHostRuntime } from "./runtime";
 export { readRegistryTrustedOrigins } from "./trusted-origins";

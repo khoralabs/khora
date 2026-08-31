@@ -2,9 +2,9 @@ import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade/crypt
 import { createAdminTokenAuthFromEnv } from "@khoralabs/khora-auth";
 import type { RegistryHostContext, RegistryIdentityRoutes } from "@khoralabs/khora-registry/host";
 import {
-  createRegistryHost,
-  createRegistryIdentityRoutes,
+  composeRegistryHost,
   readRegistryTrustedOrigins,
+  resolveRegistryPublicUrl,
 } from "@khoralabs/khora-registry/host";
 import { openRegistrySqliteDatabase } from "@khoralabs/khora-registry/sqlite";
 import {
@@ -13,14 +13,6 @@ import {
   initRegistryAppSchema,
   reloadRegistryAuth,
 } from "./services/auth";
-
-function registryPublicUrl(): string {
-  const port = process.env.PORT?.trim() ?? "4000";
-  const configured =
-    process.env.REGISTRY_URL?.trim()?.replace(/\/$/, "") ??
-    process.env.BETTER_AUTH_URL?.trim()?.replace(/\/$/, "");
-  return configured ?? `http://localhost:${port}`;
-}
 
 export async function bootstrapRegistryHost(): Promise<{
   host: RegistryHostContext;
@@ -33,28 +25,22 @@ export async function bootstrapRegistryHost(): Promise<{
   reloadRegistryAuth({ database: bundle.db, domainDatabase: bundle.registry });
 
   const resolveTrustedOrigins = () => readRegistryTrustedOrigins(bundle.registry);
-  const publicUrl = registryPublicUrl;
-
+  const publicUrl = () => resolveRegistryPublicUrl();
   const identity = createBetterAuthRegistryIdentity({ resolveTrustedOrigins });
   const authHttp = createBetterAuthHttpPort({ publicUrl });
-  const identityRoutes = createRegistryIdentityRoutes({
+
+  return composeRegistryHost({
     db: bundle.registry,
     identity,
     authHttp,
-    publicUrl,
-    authMdUrl: process.env.KHORA_AUTH_MD_URL?.trim() || "https://khoralabs.com/auth.md",
-    resourceName: "Khora Registry",
-    deviceVerificationPath: "/cli/link",
-    defaultSourceApp: "khora-cli",
-  });
-
-  const host = createRegistryHost({
-    db: bundle.registry,
-    identity,
     adminTokenAuth: createAdminTokenAuthFromEnv(),
     publicUrl,
     resolveTrustedOrigins,
+    identityRouteOptions: {
+      authMdUrl: process.env.KHORA_AUTH_MD_URL?.trim() || "https://khoralabs.com/auth.md",
+      resourceName: "Khora Registry",
+      deviceVerificationPath: "/cli/link",
+      defaultSourceApp: "khora-cli",
+    },
   });
-
-  return { host, identityRoutes };
 }
