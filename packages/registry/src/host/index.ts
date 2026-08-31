@@ -35,6 +35,10 @@ export type {
   RegistryIdentityRoutes,
   RegistrySession,
 } from "./ports/identity";
+export {
+  type RegistryDispatchKind,
+  registryDispatchKind,
+} from "./registry-dispatch-kind";
 export type { RegistryHostDeps } from "./registry-host-deps";
 export { resolveRegistryPublicUrl } from "./resolve-registry-public-url";
 export { initRegistryHostRuntime, type RegistryHostRuntime, registryHostRuntime } from "./runtime";

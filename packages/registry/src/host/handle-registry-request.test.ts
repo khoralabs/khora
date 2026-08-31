@@ -92,4 +92,44 @@ describe("handleRegistryRequest", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ from: "host" });
   });
+
+  test("serves default /health without calling host.fetch", async () => {
+    let hostCalled = false;
+    const host: RegistryHostContext = {
+      db: getRegistrySqliteBundle().registry,
+      identity: { getSession: async () => null, getSessionCookieHeader: () => null },
+      fetch: async () => {
+        hostCalled = true;
+        return Response.json({ ok: false }, { status: 500 });
+      },
+      stop() {},
+    };
+    const identityRoutes: RegistryIdentityRoutes = { handle: async () => null };
+
+    const res = await handleRegistryRequest(new Request("http://localhost:4000/health"), {
+      host,
+      identityRoutes,
+    });
+    expect(hostCalled).toBe(false);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  test("invokes onReady for /ready", async () => {
+    const host: RegistryHostContext = {
+      db: getRegistrySqliteBundle().registry,
+      identity: { getSession: async () => null, getSessionCookieHeader: () => null },
+      fetch: async () => Response.json({ ok: false }, { status: 500 }),
+      stop() {},
+    };
+    const identityRoutes: RegistryIdentityRoutes = { handle: async () => null };
+
+    const res = await handleRegistryRequest(new Request("http://localhost:4000/ready"), {
+      host,
+      identityRoutes,
+      onReady: () => Response.json({ ok: true, ready: true }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, ready: true });
+  });
 });

@@ -51,10 +51,6 @@ export async function dispatchRegistryHostFetch(
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (path === "/health") {
-    return withCors(req, Response.json({ ok: true }));
-  }
-
   if (path === `${OPS}/lookup/email` && req.method === "GET") {
     return withCors(req, await handleLookupEmail(req, url, runtime.adminTokenAuth));
   }
