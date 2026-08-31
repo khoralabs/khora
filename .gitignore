@@ -7,6 +7,7 @@
 *.journal
 .bin
 .data
+data
 
 
 # dependencies (bun install)

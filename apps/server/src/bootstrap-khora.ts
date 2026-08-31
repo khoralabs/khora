@@ -10,6 +10,7 @@ import {
   startEmbeddingRetryWorker,
   validateInviteEnvConfig,
 } from "@khoralabs/khora-host";
+import type { KhoraEncryptionContext } from "@khoralabs/khora-host/bootstrap";
 import {
   createKhoraInvitesSqliteRepo,
   createSqliteKhoraHostFoundation,
@@ -24,7 +25,6 @@ import type {
   MemoriesDatabaseService,
 } from "@khoralabs/memories-service";
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
-import type { KhoraEncryptionContext } from "./encryption";
 import { logger } from "./logger";
 import {
   assertKhoraMemoriesDbPathUnset,

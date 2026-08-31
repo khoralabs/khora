@@ -4,6 +4,7 @@ import path from "node:path";
 const { dirname } = path;
 
 import type { KhoraWsData } from "@khoralabs/khora-client/transport";
+import { bootstrapKhoraEncryption } from "@khoralabs/khora-host/bootstrap";
 import {
   createHostRouteDepsFromEnv,
   runWithRequestPeerIp,
@@ -11,7 +12,6 @@ import {
 } from "@khoralabs/khora-host/http";
 import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
-import { bootstrapKhoraEncryption } from "./encryption";
 import {
   envColonnadeUseCellWorkers,
   envHostDuplexIngress,
