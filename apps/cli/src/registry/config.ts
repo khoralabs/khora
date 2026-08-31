@@ -2,10 +2,10 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { FlagMap } from "@khoralabs/cli-kit";
+import { defaultRegistryUrl } from "@khoralabs/khora-registry/agent-client";
 
 import { khoraCliResolvedConfig } from "../khora-app-config";
 import { registryUrlFromFlags } from "../lib/flags";
-import { defaultRegistryUrl } from "./default-registry-url";
 
 export function cliRegistryUrl(flags: FlagMap): string {
   const cfg = khoraCliResolvedConfig(flags);

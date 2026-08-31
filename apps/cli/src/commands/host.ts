@@ -1,11 +1,15 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
+import {
+  fetchHosts,
+  type RegistryHostHealth,
+  registerHost,
+} from "@khoralabs/khora-registry/agent-client";
 import { cliCurrentHostSlug, resolveCliHost } from "../flows/context";
 import { khoraCliResolvedConfig } from "../khora-app-config";
 import { patchCliConfigFile, resolveCliConfigWritePath } from "../lib/cli-config-write";
 import { baseUrlFromFlags, nameFromFlags } from "../lib/flags";
 import { style } from "../lib/style";
-import { fetchHosts, type RegistryHostHealth, registerHost } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
 
 export async function handleHostList(flags: FlagMap): Promise<void> {

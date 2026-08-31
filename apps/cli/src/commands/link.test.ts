@@ -3,18 +3,17 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
+  agentAuthComplete,
+  agentAuthRegister,
   clearAgentAuthPending,
-  readAgentAuthPending,
-  writeAgentAuthPending,
-} from "../registry/agent-auth-pending";
-import { agentAuthComplete, agentAuthRegister } from "../registry/client";
-import { cliRegistryUrl } from "../registry/config";
-import {
   clearRegistrySessionCookie,
   loadRegistrySessionCookie,
+  readAgentAuthPending,
   registrySessionFilePath,
   saveRegistrySessionCookie,
-} from "../registry/session-store";
+  writeAgentAuthPending,
+} from "@khoralabs/khora-registry/agent-client";
+import { cliRegistryUrl } from "../registry/config";
 
 describe("cliRegistryUrl", () => {
   const prev = process.env.KHORA_REGISTRY_URL;

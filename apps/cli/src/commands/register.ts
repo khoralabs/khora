@@ -1,6 +1,6 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
-
+import { linkEnsure, readLinkState, writeLinkState } from "@khoralabs/khora-registry/agent-client";
 import type { KhoraCliContext } from "../flows/context";
 import {
   assertInteractiveAllowed,
@@ -12,9 +12,7 @@ import {
 import { runRegisterInteractiveFlow } from "../flows/register-flow";
 import { errorMessage } from "../lib/error-message";
 import { nameFromFlags, registerFieldsFromFlags } from "../lib/flags";
-import { linkEnsure } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
-import { readLinkState, writeLinkState } from "../registry/link-state";
 
 export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");

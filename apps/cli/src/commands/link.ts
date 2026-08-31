@@ -2,32 +2,30 @@ import { stdin as input, stdout as output } from "node:process";
 import * as readline from "node:readline/promises";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
-import { cliBaseUrl, cliCurrentHostSlug, loadSigner } from "../flows/context";
-import { khoraCliResolvedConfig } from "../khora-app-config";
-import { style } from "../lib/style";
-import {
-  clearAgentAuthPending,
-  readAgentAuthPending,
-  writeAgentAuthPending,
-} from "../registry/agent-auth-pending";
+import { discoverRegisteredHostSlugs } from "@khoralabs/khora-client";
 import {
   agentAuthComplete,
   agentAuthRegister,
+  clearAgentAuthPending,
+  clearLinkState,
+  clearRegistrySessionCookie,
   deviceAuthorize,
   devicePollToken,
   linkAgent,
   linkChallenge,
   linkStatus,
   linkUnlink,
-} from "../registry/client";
-import { cliRegistryUrl } from "../registry/config";
-import { discoverRegisteredHostSlugs } from "../registry/link-propagate";
-import { clearLinkState, readLinkState, writeLinkState } from "../registry/link-state";
-import {
-  clearRegistrySessionCookie,
   loadRegistrySessionCookie,
+  readAgentAuthPending,
+  readLinkState,
   saveRegistrySessionCookie,
-} from "../registry/session-store";
+  writeAgentAuthPending,
+  writeLinkState,
+} from "@khoralabs/khora-registry/agent-client";
+import { cliBaseUrl, cliCurrentHostSlug, loadSigner } from "../flows/context";
+import { khoraCliResolvedConfig } from "../khora-app-config";
+import { style } from "../lib/style";
+import { cliRegistryUrl } from "../registry/config";
 
 async function openVerificationUrl(url: string): Promise<void> {
   if (process.platform === "darwin") {

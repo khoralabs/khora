@@ -1,6 +1,10 @@
 import type { PersistableSigner } from "@khoralabs/did-key-identity";
-import { KhoraClient } from "@khoralabs/khora-client";
+import { KhoraClient } from "./khora-client";
 
+/**
+ * Probe configured host base URLs and return slugs where this DID has a profile.
+ * Used after registry link to propagate across known hosts.
+ */
 export async function discoverRegisteredHostSlugs(
   signer: PersistableSigner,
   hosts: Record<string, { baseUrl: string }>,

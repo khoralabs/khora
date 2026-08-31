@@ -4,6 +4,7 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 import { generateIdentity, loadIdentity, saveIdentity } from "@khoralabs/did-key-identity";
 import { KhoraClient } from "@khoralabs/khora-client";
+import { fetchHosts } from "@khoralabs/khora-registry/agent-client";
 import {
   type AgentSkillInstallResult,
   runAgentSkillSetup,
@@ -23,7 +24,6 @@ import {
 import { runRegisterInteractiveFlow } from "../flows/register-flow";
 import { nameFromFlags } from "../lib/flags";
 import { style, symbols } from "../lib/style";
-import { fetchHosts } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
 
 const ASSETS_DIR_ENV = "KHORA_CLI_ASSETS_DIR";
