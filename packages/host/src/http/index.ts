@@ -31,6 +31,16 @@ export {
 export { handleWellKnownKhora } from "./routes/well-known-khora";
 export type { DuplexUnixIngressHandle } from "./server/duplex-unix-listener";
 export { startDuplexUnixIngress } from "./server/duplex-unix-listener";
+export {
+  type CreateHostRouteDepsFromEnvOpts,
+  createHostRouteDepsFromEnv,
+  type HostRouteDepsFromEnv,
+} from "./server/route-deps-from-env";
+export {
+  type ServeKhoraHttpFetch,
+  type ServeKhoraHttpOpts,
+  serveKhoraHttp,
+} from "./server/serve-khora-http";
 export { startStdioUnaryIngress } from "./server/stdio-unary-listener";
 export {
   createInboxDrainWebSocketHandlers,
