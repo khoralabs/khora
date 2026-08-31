@@ -6,7 +6,7 @@ Multi-entrypoint registry package: contracts, accounts/catalog domain, HTTP host
 
 | Subpath | Purpose |
 | --- | --- |
-| `.` | Thin composition helpers for `apps/registry` |
+| `.` | Thin composition helpers for `apps/registry` (`composeRegistryHost`, …) |
 | `./contracts` | Wire / DTO types |
 | `./persistence` | `RegistryDatabase` port + domain schema (no drivers) |
 | `./sqlite` | Bun SQLite adapter |
@@ -14,12 +14,12 @@ Multi-entrypoint registry package: contracts, accounts/catalog domain, HTTP host
 | `./accounts` | Accounts domain |
 | `./catalog` | Host catalog domain |
 | `./email-confirm` | EmailConfirm API types only |
-| `./host` | HTTP host (`createRegistryHost`, `handleRegistryRequest`, identity route factories) |
+| `./host` | HTTP host (`composeRegistryHost`, `handleRegistryRequest`, identity route factories) |
 | `./client` | Host→registry HTTP client |
 
 Persistence layout: [`src/persistence/IMPLEMENTORS.md`](src/persistence/IMPLEMENTORS.md).
 
-Better Auth IdP adapters (bun:sqlite), SES OTP, and `/cli/link` UI live in [`apps/registry/src/services/auth`](../../apps/registry/src/services/auth) and implement package identity ports. Operator APIs are headless at `/v1/ops` (Bearer root token).
+**Composition:** after opening a domain DB and building IdP ports, call `composeRegistryHost({ db, identity, authHttp, adminTokenAuth, … })` then serve with `handleRegistryRequest` (optional `peerIp` / `onReady`). Bun.serve, OTel, packaged runtime, Better Auth/SES, and `/cli/link` UI stay in [`apps/registry`](../../apps/registry). Operator APIs are headless at `/v1/ops` (Bearer root token).
 
 ## Build & publish
 
