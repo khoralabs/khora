@@ -28,6 +28,31 @@ function scanBinary(label: string, binPath: string): void {
   }
 }
 
+async function killSmokeProc(proc: ReturnType<typeof Bun.spawn>): Promise<void> {
+  try {
+    proc.kill("SIGTERM");
+  } catch {
+    /* ignore */
+  }
+  try {
+    await Promise.race([proc.exited, Bun.sleep(3000)]);
+  } catch {
+    /* ignore */
+  }
+  if (proc.exitCode === null) {
+    try {
+      proc.kill("SIGKILL");
+    } catch {
+      /* ignore */
+    }
+    try {
+      await Promise.race([proc.exited, Bun.sleep(3000)]);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function runCliOrDaemon(label: string, binPath: string): void {
   if (!existsSync(binPath)) {
     throw new Error(`missing binary: ${binPath}`);
@@ -119,16 +144,7 @@ async function smokeServer(label: string, binPath: string, packageRoot?: string)
       );
     }
   } finally {
-    try {
-      proc.kill("SIGTERM");
-    } catch {
-      /* ignore */
-    }
-    try {
-      await proc.exited;
-    } catch {
-      /* ignore */
-    }
+    await killSmokeProc(proc);
     rmSync(dataDir, { recursive: true, force: true });
   }
 }
@@ -147,6 +163,7 @@ async function smokeRegistry(label: string, binPath: string, packageRoot?: strin
     REGISTRY_SQLCIPHER_KEY: "smoke-test-sqlcipher-key!!",
     BETTER_AUTH_SECRET: "0123456789abcdef0123456789abcdef",
     REGISTRY_AUTH_OTP_LOG: "1",
+    REGISTRY_HOST_HEALTH_POLL_DISABLED: "1",
     LOG_LEVEL: "error",
   };
 
@@ -175,7 +192,7 @@ async function smokeRegistry(label: string, binPath: string, packageRoot?: strin
     for (let i = 0; i < 40; i++) {
       await Bun.sleep(250);
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/health`);
+        const res = await fetch(`http://127.0.0.1:${port}/ready`);
         if (res.ok) {
           ok = true;
           break;
@@ -193,16 +210,7 @@ async function smokeRegistry(label: string, binPath: string, packageRoot?: strin
       );
     }
   } finally {
-    try {
-      proc.kill("SIGTERM");
-    } catch {
-      /* ignore */
-    }
-    try {
-      await proc.exited;
-    } catch {
-      /* ignore */
-    }
+    await killSmokeProc(proc);
     rmSync(dataDir, { recursive: true, force: true });
   }
 }
