@@ -96,21 +96,12 @@ describe("zKhoraSearchRequest asOf", () => {
     expect(parsed.asOf).toEqual({ lte: 1_700_000_000_000 });
   });
 
-  test("accepts deprecated asOfTimestampMs", () => {
+  test("strips unknown asOfTimestampMs", () => {
     const parsed = zKhoraSearchRequest.parse({
       content: { text: "hello" },
       asOfTimestampMs: 1_700_000_000_000,
     });
-    expect(parsed.asOfTimestampMs).toBe(1_700_000_000_000);
-  });
-
-  test("rejects conflicting asOf.lte and asOfTimestampMs", () => {
-    expect(() =>
-      zKhoraSearchRequest.parse({
-        content: { text: "hello" },
-        asOf: { lte: 1 },
-        asOfTimestampMs: 2,
-      }),
-    ).toThrow(/conflict/);
+    expect(parsed.asOf).toBeUndefined();
+    expect("asOfTimestampMs" in parsed).toBe(false);
   });
 });

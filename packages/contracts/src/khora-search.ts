@@ -43,31 +43,15 @@ export const zKhoraSearchAsOf = z
 export type KhoraSearchAsOf = z.infer<typeof zKhoraSearchAsOf>;
 
 /** POST /v1/search JSON body. */
-export const zKhoraSearchRequest = z
-  .object({
-    namespace: z.string().optional(),
-    additionalNamespaces: z.array(z.string()).optional(),
-    searchEntireDatabase: z.literal(true).optional(),
-    searchScopeMode: z.enum(["pathSubtree", "scopeDag", "exactScope"]).optional(),
-    content: zSearchContent,
-    options: zSearchOptions.optional(),
-    asOf: zKhoraSearchAsOf.optional(),
-    /** @deprecated Prefer `asOf: { lte }`. */
-    asOfTimestampMs: z.number().optional(),
-  })
-  .superRefine((val, ctx) => {
-    if (
-      val.asOfTimestampMs !== undefined &&
-      val.asOf?.lte !== undefined &&
-      val.asOf.lte !== val.asOfTimestampMs
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "asOf.lte and asOfTimestampMs conflict (must be equal when both set)",
-        path: ["asOfTimestampMs"],
-      });
-    }
-  });
+export const zKhoraSearchRequest = z.object({
+  namespace: z.string().optional(),
+  additionalNamespaces: z.array(z.string()).optional(),
+  searchEntireDatabase: z.literal(true).optional(),
+  searchScopeMode: z.enum(["pathSubtree", "scopeDag", "exactScope"]).optional(),
+  content: zSearchContent,
+  options: zSearchOptions.optional(),
+  asOf: zKhoraSearchAsOf.optional(),
+});
 
 export type KhoraSearchRequest = z.infer<typeof zKhoraSearchRequest>;
 

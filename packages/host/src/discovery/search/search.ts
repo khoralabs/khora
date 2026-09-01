@@ -29,18 +29,9 @@ export type {
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
 
-/** Map khora wire `asOf` / deprecated `asOfTimestampMs` to memories `SearchAsOf`. */
-export function resolveKhoraSearchAsOf(params: {
-  asOf?: SearchAsOf;
-  asOfTimestampMs?: number;
-}): SearchAsOf | undefined {
-  const { asOf, asOfTimestampMs } = params;
-  if (asOf === undefined && asOfTimestampMs === undefined) return undefined;
-  if (asOfTimestampMs !== undefined && asOf?.lte !== undefined && asOf.lte !== asOfTimestampMs) {
-    throw new Error("asOf.lte and asOfTimestampMs conflict (must be equal when both set)");
-  }
-  if (asOf === undefined) return { lte: asOfTimestampMs };
-  return asOfTimestampMs !== undefined ? { ...asOf, lte: asOfTimestampMs } : asOf;
+/** Pass through khora wire `asOf` as memories `SearchAsOf`. */
+export function resolveKhoraSearchAsOf(params: { asOf?: SearchAsOf }): SearchAsOf | undefined {
+  return params.asOf;
 }
 
 export async function executeHostSearch(deps: {
