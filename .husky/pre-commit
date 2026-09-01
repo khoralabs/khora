@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+  exit 0
+fi
 set -e
 
 cd "$(git rev-parse --show-toplevel)"

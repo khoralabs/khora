@@ -144,7 +144,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add homebrew-tap/Formula/khora-server.rb homebrew-tap/scripts/install-khora-server.sh
-          git diff --staged --quiet || git commit -m "chore(homebrew): khora-server@${VERSION}"
+          git diff --staged --quiet || HUSKY=0 git commit -m "chore(homebrew): khora-server@${VERSION}"
           # Other release workflows may push to main concurrently; rebase and retry.
           # --autostash: release builds leave unstaged artifacts that block rebase.
           branch="$(git rev-parse --abbrev-ref HEAD)"

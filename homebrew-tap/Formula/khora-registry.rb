@@ -1,7 +1,7 @@
 class KhoraRegistry < Formula
   desc "Khora skill registry server"
   homepage "https://github.com/khoralabs/homebrew-tap"
-  version "0.0.0"
+  version "0.1.0"
   license "MIT"
 
   depends_on "sqlcipher"
@@ -9,19 +9,19 @@ class KhoraRegistry < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-registry-v0.0.0/khora-registry-darwin-arm64.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-registry-v0.1.0/khora-registry-darwin-arm64.tar.gz"
+      sha256 "ddb8213e829c13d5cc0a633f5e2f4f6d00e5279b3160447e3649492c92eedc9c"
     end
   end
 
   on_linux do
     on_intel do
-      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-registry-v0.0.0/khora-registry-linux-x64.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-registry-v0.1.0/khora-registry-linux-x64.tar.gz"
+      sha256 "9b188d4c01e2565c178328a6dfabcf5d1c37cb9240d5c06c0e2290ff3772c69a"
     end
     on_arm do
-      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-registry-v0.0.0/khora-registry-linux-arm64.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-registry-v0.1.0/khora-registry-linux-arm64.tar.gz"
+      sha256 "88a4b116ddd2a97638bbc23509601488b479dd518716d5010e3e936d768aea06"
     end
   end
 

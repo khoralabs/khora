@@ -144,7 +144,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add homebrew-tap/Formula/khora-registry.rb
-          git diff --staged --quiet || git commit -m "chore(homebrew): khora-registry@${VERSION}"
+          git diff --staged --quiet || HUSKY=0 git commit -m "chore(homebrew): khora-registry@${VERSION}"
           branch="$(git rev-parse --abbrev-ref HEAD)"
           for attempt in 1 2 3 4 5; do
             if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
