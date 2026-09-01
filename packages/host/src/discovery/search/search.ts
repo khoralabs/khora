@@ -74,7 +74,8 @@ export async function executeHostSearch(deps: {
   }
 
   const asOf = resolveKhoraSearchAsOf(params);
-  const searchParams = {
+  type ClientSearchParams = Parameters<typeof client.search>[0];
+  const searchParams: ClientSearchParams = {
     ...(params.additionalNamespaces !== undefined
       ? { additionalNamespaces: params.additionalNamespaces }
       : {}),
@@ -82,13 +83,15 @@ export async function executeHostSearch(deps: {
       ? { searchEntireDatabase: params.searchEntireDatabase }
       : {}),
     ...(asOf !== undefined ? { asOf } : {}),
-    ...(params.options !== undefined ? { options: params.options } : {}),
+    ...(params.options !== undefined
+      ? { options: params.options as ClientSearchParams["options"] }
+      : {}),
     namespace: params.namespace ?? namespaceRoot,
     searchScopeMode: params.searchScopeMode ?? "pathSubtree",
     content,
-  } satisfies SearchParams;
+  };
 
-  const { hits } = await client.search(searchParams as Parameters<typeof client.search>[0]);
+  const { hits } = await client.search(searchParams);
   const enriched: KhoraSearchResponse["hits"] = [];
   for (const hit of hits) {
     const hydrated = await hydrateMemoryLabels(store, hit.labels, hit.memory._id, hit.source_key);
