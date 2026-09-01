@@ -6,6 +6,8 @@
       "name": "@khoralabs/agent-kernel",
       "dependencies": {
         "@khoralabs/memories-node": "catalog:",
+        "@khoralabs/sqlite-migrate": "catalog:",
+        "sqlite-vec": "catalog:",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.4.10",
@@ -109,8 +111,10 @@
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
         "@khoralabs/sqlite-crypto": "catalog:",
+        "@khoralabs/sqlite-migrate": "catalog:",
         "@opentelemetry/api": "catalog:",
         "ai": "^6",
+        "sqlite-vec": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "catalog:",
@@ -197,6 +201,8 @@
         "@khoralabs/percolator": "workspace:*",
         "@khoralabs/sourcemaps": "catalog:",
         "@khoralabs/sqlite-crypto": "catalog:",
+        "@khoralabs/sqlite-migrate": "catalog:",
+        "sqlite-vec": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -294,10 +300,12 @@
     "@khoralabs/memories-service": "^0.8.0",
     "@khoralabs/sourcemaps": "^0.1.0",
     "@khoralabs/sqlite-crypto": "^0.1.0",
+    "@khoralabs/sqlite-migrate": "^0.1.0",
     "@noble/ed25519": "^3.1.0",
     "@opentelemetry/api": "^1.9.0",
     "@tursodatabase/serverless": "^1.2.3",
     "@types/bun": "latest",
+    "sqlite-vec": "^0.1.10-alpha.4",
     "typescript": "^5",
     "zod": "^4",
   },
@@ -521,6 +529,8 @@
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-9eXXrtxYeOCGpKdcEWoGtLVzHfi3zF+6s//LPv4SFWoy9tJtGu1hLdW9gGFhtbRfTHDxMb1/RHblk7NREqQdwQ=="],
 
     "@khoralabs/sqlite-crypto": ["@khoralabs/sqlite-crypto@0.1.0", "", {}, "sha512-HTpnQtwaPQDD0J5fwk9w8o47cs1HrhTBYEL5SKUlEMuvUdcqC/JgEZzwMqeT7wIZQLPdrBuPoHJMyrAkyVJGDw=="],
+
+    "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@0.1.0", "", {}, "sha512-mGkPR6WposZArUh1k4A1s2VwyOtGJUPlKkUY+DYjZ8pkhgJ6mEhHQOlRQJNOAXKlJETsdVy4iPTeyuvzPl/zFg=="],
 
     "@microsoft/api-extractor": ["@microsoft/api-extractor@7.58.9", "", { "dependencies": { "@microsoft/api-extractor-model": "7.33.8", "@microsoft/tsdoc": "~0.16.0", "@microsoft/tsdoc-config": "~0.18.1", "@rushstack/node-core-library": "5.23.1", "@rushstack/rig-package": "0.7.3", "@rushstack/terminal": "0.24.0", "@rushstack/ts-command-line": "5.3.10", "diff": "~8.0.2", "minimatch": "10.2.3", "resolve": "~1.22.1", "semver": "~7.7.4", "source-map": "~0.6.1", "typescript": "5.9.3" }, "bin": { "api-extractor": "bin/api-extractor" } }, "sha512-S2UF4yza5GoxCmf7hJQNxJNZN9ltOVuOQv8Dy+Z21aol5ERoBNMdWcQHm4MJMPPItW4H/4rZD906iaf4mUojJA=="],
 
@@ -1337,6 +1347,18 @@
     "sprintf-js": ["sprintf-js@1.1.3", "", {}, "sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA=="],
 
     "sql.js": ["sql.js@1.14.2", "", {}, "sha512-3ZGPovObMFrdw79zrUHbfdE/DLIsy8jdNdssmMSQuRAymedU6q84asPt0kgiqrdMYlPegDItiIMfmIXzZnYFcw=="],
+
+    "sqlite-vec": ["sqlite-vec@0.1.10-alpha.4", "", { "optionalDependencies": { "sqlite-vec-darwin-arm64": "0.1.10-alpha.4", "sqlite-vec-darwin-x64": "0.1.10-alpha.4", "sqlite-vec-linux-arm64": "0.1.10-alpha.4", "sqlite-vec-linux-x64": "0.1.10-alpha.4", "sqlite-vec-windows-x64": "0.1.10-alpha.4" } }, "sha512-Ce5zw8jkaJJlPoPp6aaxCjL/niC7bRw3TT6oeEmFqYLMiHU5eB7i9pvVWM6TaqmvgNCl3XJUBNmFRcI/RHPVhQ=="],
+
+    "sqlite-vec-darwin-arm64": ["sqlite-vec-darwin-arm64@0.1.10-alpha.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-PK/Ont16u4nig8J3WNhhw7ZdTsCdF7M296R9FGIoO+ygDflGwDFPdr9V7xhYvbZYyAea+n4chWsd27KBphXh4w=="],
+
+    "sqlite-vec-darwin-x64": ["sqlite-vec-darwin-x64@0.1.10-alpha.4", "", { "os": "darwin", "cpu": "x64" }, "sha512-NF2leZqfNAQ605GsZkE++qlPrG0Mz1Sgf2Trctjj+qSwglurRcRegP9GSPxEV3I/Rh0bhiGN0L1nGOk88hjoQg=="],
+
+    "sqlite-vec-linux-arm64": ["sqlite-vec-linux-arm64@0.1.10-alpha.4", "", { "os": "linux", "cpu": "arm64" }, "sha512-qF7kG0aYQ3LpjyxA3QCgtoDGX0W2l4ZyxeSMzE6vq77LnDutfCmgqdGVs80Qn31dTVDTs51e18jLZWxvAZkjYQ=="],
+
+    "sqlite-vec-linux-x64": ["sqlite-vec-linux-x64@0.1.10-alpha.4", "", { "os": "linux", "cpu": "x64" }, "sha512-fX7KE6qfCdRg6gWSc/2rOQ8ZNs+Ex4RhHFTYtlpinHvuZoaaBI7sUBU7EpL0lW/+DDbUxQ3O5XywRTXtv9RU5A=="],
+
+    "sqlite-vec-windows-x64": ["sqlite-vec-windows-x64@0.1.10-alpha.4", "", { "os": "win32", "cpu": "x64" }, "sha512-njyLiQBLWrtApR1M+UqUfyhsJylgdyW3B5/bRaaqz4ByLrX1OPlSA2AniuOT0dXH+vZCZs8wUMGdN87PGCt+hQ=="],
 
     "stackback": ["stackback@0.0.2", "", {}, "sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw=="],
 

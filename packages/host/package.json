@@ -103,6 +103,8 @@
     "@khoralabs/khora-registry": "workspace:*",
     "@khoralabs/sourcemaps": "catalog:",
     "@khoralabs/sqlite-crypto": "catalog:",
+    "@khoralabs/sqlite-migrate": "catalog:",
+    "sqlite-vec": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {

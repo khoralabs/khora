@@ -26,8 +26,10 @@
     "@khoralabs/observability": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
     "@khoralabs/sqlite-crypto": "catalog:",
+    "@khoralabs/sqlite-migrate": "catalog:",
     "@opentelemetry/api": "catalog:",
-    "ai": "^6"
+    "ai": "^6",
+    "sqlite-vec": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
