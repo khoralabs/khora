@@ -1,6 +1,6 @@
 {
   "name": "@khoralabs/khora-host",
-  "version": "0.0.0",
+  "version": "0.1.7",
   "type": "module",
   "private": true,
   "exports": {
