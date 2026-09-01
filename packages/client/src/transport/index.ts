@@ -36,7 +36,7 @@ export type {
   InboxWsServerMessage,
   InboxWsSnapshotMessage,
 } from "./inbox-ws";
-export { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws";
+export { parseInboxWebSocketMessage } from "./inbox-ws";
 export type {
   KhoraWsData,
   KhoraWsUpgradePort,

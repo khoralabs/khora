@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws";
+import { parseInboxWebSocketMessage } from "./inbox-ws";
 
 describe("parseInboxWebSocketMessage", () => {
   test("hello", () => {
@@ -82,21 +82,5 @@ describe("parseInboxWebSocketMessage", () => {
 
   test("wrong shape returns undefined", () => {
     expect(parseInboxWebSocketMessage(JSON.stringify({ type: "other" }))).toBeUndefined();
-  });
-});
-
-describe("inboxWebSocketUrl", () => {
-  test("http to ws without did by default", () => {
-    expect(inboxWebSocketUrl("http://localhost:8787")).toBe("ws://localhost:8787/v1/inbox/ws");
-  });
-
-  test("optional did query for compat", () => {
-    expect(inboxWebSocketUrl("http://localhost:8787", "did:key:1")).toBe(
-      "ws://localhost:8787/v1/inbox/ws?did=did%3Akey%3A1",
-    );
-  });
-
-  test("https to wss", () => {
-    expect(inboxWebSocketUrl("https://khora.example/")).toContain("wss://");
   });
 });

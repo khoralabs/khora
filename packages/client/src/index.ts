@@ -80,7 +80,6 @@ export {
   type InboxNotificationRow,
   type InboxWsNotificationMessage,
   type InboxWsSnapshotMessage,
-  inboxWebSocketUrl,
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,
   KhoraClientError,

@@ -143,14 +143,3 @@ export function parseInboxWebSocketMessage(raw: string): InboxWsServerMessage | 
   }
   return { type: "drain", did: r.data.did, items: r.data.items };
 }
-
-/** @deprecated Prefer unsigned upgrade URL via {@link inboxWebSocketUpgradeUrl} from auth. */
-export function inboxWebSocketUrl(baseUrl: string, did?: string): string {
-  const root = new URL(baseUrl.trim().replace(/\/$/, ""));
-  const ws = new URL("/v1/inbox/ws", root);
-  ws.protocol = root.protocol === "https:" ? "wss:" : "ws:";
-  if (did !== undefined && did.length > 0) {
-    ws.searchParams.set("did", did);
-  }
-  return ws.toString();
-}

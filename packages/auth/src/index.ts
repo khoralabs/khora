@@ -74,10 +74,8 @@ export {
   inboxWebSocketUpgradeUrl,
   type SignAgentRequestInput,
   type SignedAgentRequest,
-  type SignedInboxUrlInput,
   type SignInboxBindInput,
   signAgentRequest,
-  signedInboxUrl,
   signInboxBind,
 } from "./http/signed-request/sign";
 

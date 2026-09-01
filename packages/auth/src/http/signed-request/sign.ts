@@ -1,7 +1,6 @@
 import type { Signer } from "@khoralabs/did-key-identity";
 import {
   AGENT_REQUEST_HEADER,
-  AGENT_REQUEST_SEARCH,
   type AgentRequestEnvelope,
   canonicalAgentRequestMessage,
   canonicalAgentRequestPath,
@@ -91,40 +90,6 @@ export async function signInboxBind(input: SignInboxBindInput): Promise<AgentReq
     ...(input.nonce !== undefined ? { nonce: input.nonce } : {}),
   });
   return signed.envelope;
-}
-
-export type SignedInboxUrlInput = {
-  baseUrl: string;
-  /** Defaults to {@link INBOX_WS_PATH}. */
-  path?: string;
-  signer: Signer;
-  now?: () => number;
-  nonce?: () => string;
-};
-
-/**
- * @deprecated Prefer unsigned upgrade + {@link signInboxBind} (multiplex stream).
- * Build a signed WebSocket URL for legacy single-DID upgrade auth.
- */
-export async function signedInboxUrl(input: SignedInboxUrlInput): Promise<string> {
-  const path = input.path ?? INBOX_WS_PATH;
-  const root = new URL(input.baseUrl.trim().replace(/\/$/, ""));
-  const ws = new URL(path, root);
-  ws.protocol = root.protocol === "https:" ? "wss:" : "ws:";
-  const signedPath = canonicalAgentRequestPath(ws.pathname, ws.searchParams, []);
-  const signed = await signAgentRequest({
-    method: "GET",
-    path: signedPath,
-    bodyText: "",
-    signer: input.signer,
-    ...(input.now !== undefined ? { now: input.now } : {}),
-    ...(input.nonce !== undefined ? { nonce: input.nonce } : {}),
-  });
-  ws.searchParams.set(AGENT_REQUEST_SEARCH.did, signed.envelope.did);
-  ws.searchParams.set(AGENT_REQUEST_SEARCH.ts, String(signed.envelope.timestampMs));
-  ws.searchParams.set(AGENT_REQUEST_SEARCH.nonce, signed.envelope.nonce);
-  ws.searchParams.set(AGENT_REQUEST_SEARCH.sig, signed.envelope.signatureB64Url);
-  return ws.toString();
 }
 
 /** Unsigned inbox WebSocket URL (auth via post-upgrade bind). */
