@@ -53,7 +53,6 @@ describe("registry opt-in", () => {
 
   beforeEach(() => {
     for (const key of [
-      "KHORA_REGISTRY_PARTICIPATE",
       "KHORA_HOST_SLUG",
       "KHORA_REGISTRY_URL",
       "KHORA_PUBLIC_BASE_URL",
@@ -104,18 +103,29 @@ describe("registry opt-in", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  test("maybeRegistryOptInOnStartup skips when participation disabled", () => {
-    delete process.env.KHORA_REGISTRY_PARTICIPATE;
+  test("maybeRegistryOptInOnStartup skips when no stored slug", () => {
     const fetchImpl = mock(async () => new Response(null, { status: 201 }));
     maybeRegistryOptInOnStartup(createMockHostSpec());
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  test("maybeRegistryOptInOnStartup skips without slug", () => {
-    process.env.KHORA_REGISTRY_PARTICIPATE = "1";
-    delete process.env.KHORA_HOST_SLUG;
-    const fetchImpl = mock(async () => new Response(null, { status: 201 }));
-    maybeRegistryOptInOnStartup(createMockHostSpec());
-    expect(fetchImpl).not.toHaveBeenCalled();
+  test("maybeRegistryOptInOnStartup registers when stored slug is present", async () => {
+    const fetchImpl = mock(
+      async (_url: string, _init?: RequestInit) =>
+        new Response(JSON.stringify({ host: { status: "pending" } }), { status: 201 }),
+    );
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchImpl as unknown as typeof fetch;
+    try {
+      const hostSpec = createMockHostSpec();
+      hostSpec.patch({ slug: "lab", registryUrl: "http://localhost:4000" });
+      maybeRegistryOptInOnStartup(hostSpec);
+      await Bun.sleep(20);
+      expect(fetchImpl).toHaveBeenCalled();
+      const call = fetchImpl.mock.calls[0];
+      expect(call?.[0]).toBe("http://localhost:4000/v1/hosts/register");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

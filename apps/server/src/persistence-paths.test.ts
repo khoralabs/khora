@@ -85,21 +85,21 @@ describe("resolveKhoraPersistencePaths", () => {
     }
   });
 
-  test("legacy host DB and cells paths without KHORA_DATA_DIR", () => {
+  test("host DB and cells overrides without KHORA_DATA_DIR still use default data dir", () => {
     const prev = snapshotEnv();
     try {
       delete process.env.KHORA_DATA_DIR;
-      process.env.KHORA_HOST_DB_PATH = "/legacy/host.sqlite";
-      process.env.KHORA_CELLS_DIR = "/legacy/cells";
+      process.env.KHORA_HOST_DB_PATH = "/custom/host.sqlite";
+      process.env.KHORA_CELLS_DIR = "/custom/cells";
       delete process.env.KHORA_AUTH_NONCES_DB_PATH;
       delete process.env.KHORA_PERCOLATOR_DB_PATH;
       const p = resolveKhoraPersistencePaths(process.env, "/w");
-      expect(p.hostDbPath).toBe("/legacy/host.sqlite");
-      expect(p.cellsDir).toBe("/legacy/cells");
-      expect(p.dataDir).toBe("/legacy");
-      expect(p.authNoncesDbPath).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.authNoncesDb));
-      expect(p.percolatorDbPath).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.percolatorDb));
-      expect(p.memoriesDataDir).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.memoriesDir));
+      expect(p.dataDir).toBe(path.join("/w", "data"));
+      expect(p.hostDbPath).toBe("/custom/host.sqlite");
+      expect(p.cellsDir).toBe("/custom/cells");
+      expect(p.authNoncesDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.authNoncesDb));
+      expect(p.percolatorDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.percolatorDb));
+      expect(p.memoriesDataDir).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.memoriesDir));
     } finally {
       restoreEnv(prev);
     }

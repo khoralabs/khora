@@ -9,11 +9,6 @@ import { toRegistryClientConfig } from "./registry-client-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 
-function envHostSlug(): string | undefined {
-  const slug = process.env.KHORA_HOST_SLUG?.trim();
-  return slug !== undefined && slug.length > 0 ? slug : undefined;
-}
-
 function envPort(): number {
   const raw = process.env.PORT?.trim();
   if (raw === undefined || raw.length === 0) return 8788;
@@ -32,11 +27,6 @@ function envPublicBaseUrl(port: number): string {
 function envRegistryUrl(): string | undefined {
   const url = process.env.KHORA_REGISTRY_URL?.trim();
   return url !== undefined && url.length > 0 ? url.replace(/\/$/, "") : undefined;
-}
-
-function envRegistryParticipate(): boolean {
-  const v = process.env.KHORA_REGISTRY_PARTICIPATE?.trim().toLowerCase();
-  return v === "1" || v === "true";
 }
 
 function envHostDisplayName(): string | undefined {
@@ -79,35 +69,29 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
 }
 
 /**
- * Env-gated registry registration + pending-token poll + trusted-origin sync.
- * No-op when participation is off and no stored slug; safe to call from every host bootstrap.
+ * Registry registration + pending-token poll + trusted-origin sync when a host slug
+ * is stored (via `/v1/host/registry`). Safe to call from every host bootstrap.
  */
 export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
   const effective = hostSpec.readEffective();
-  const envParticipate = envRegistryParticipate();
-  const slug = effective.slug ?? envHostSlug();
-  if (slug === undefined) {
-    if (envParticipate) {
-      logger.warn("Registry opt-in enabled but host slug is missing; skipping registration");
-    }
+  const stored = hostSpec.read();
+  if (stored?.slug === undefined) {
     return;
   }
 
+  const slug = effective.slug ?? stored.slug;
   const registryUrl = effective.registryUrl ?? envRegistryUrl() ?? DEFAULT_REGISTRY_URL;
   const baseUrl = effective.publicBaseUrl ?? envPublicBaseUrl(envPort());
   const displayName = effective.displayName ?? envHostDisplayName();
-  const stored = hostSpec.read();
 
-  if (envParticipate || stored?.slug !== undefined) {
-    void registerHostWithRegistry({
-      registryUrl,
-      slug,
-      baseUrl,
-      ...(displayName !== undefined ? { displayName } : {}),
-    });
-  }
+  void registerHostWithRegistry({
+    registryUrl,
+    slug,
+    baseUrl,
+    ...(displayName !== undefined ? { displayName } : {}),
+  });
 
-  const registrationSecret = stored?.registrationSecret;
+  const registrationSecret = stored.registrationSecret;
   if (registrationSecret !== undefined && hostSpec.readEffective().managementToken === undefined) {
     void (async () => {
       try {

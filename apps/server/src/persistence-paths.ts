@@ -46,7 +46,6 @@ function joinUnderDataDir(
  * Per-component overrides: `KHORA_HOST_DB_PATH`, `KHORA_AUTH_NONCES_DB_PATH`,
  * `KHORA_PERCOLATOR_DB_PATH`, `KHORA_CELLS_DIR`.
  * Host memories live under `{KHORA_DATA_DIR}/memories` (id `host`/`khora`).
- * Legacy: if `KHORA_DATA_DIR` is unset and host DB + cells paths are set, use those only.
  */
 export function resolveKhoraPersistencePaths(
   env: NodeJS.ProcessEnv = process.env,
@@ -57,32 +56,6 @@ export function resolveKhoraPersistencePaths(
   const authNoncesOverride = trimEnv(env, "KHORA_AUTH_NONCES_DB_PATH");
   const percolatorOverride = trimEnv(env, "KHORA_PERCOLATOR_DB_PATH");
   const cellsOverride = trimEnv(env, "KHORA_CELLS_DIR");
-
-  const useLegacyOnly =
-    dataDirRaw === undefined && hostDbOverride !== undefined && cellsOverride !== undefined;
-
-  if (useLegacyOnly) {
-    const hostDbPath = resolvePath(cwd, hostDbOverride);
-    const dataDir = path.dirname(hostDbPath);
-    return {
-      dataDir,
-      hostDbPath,
-      authNoncesDbPath: joinUnderDataDir(
-        dataDir,
-        cwd,
-        authNoncesOverride,
-        KHORA_PERSISTENCE_REL.authNoncesDb,
-      ),
-      percolatorDbPath: joinUnderDataDir(
-        dataDir,
-        cwd,
-        percolatorOverride,
-        KHORA_PERSISTENCE_REL.percolatorDb,
-      ),
-      cellsDir: resolvePath(cwd, cellsOverride),
-      memoriesDataDir: path.join(dataDir, KHORA_PERSISTENCE_REL.memoriesDir),
-    };
-  }
 
   const dataDir = resolvePath(cwd, dataDirRaw ?? DEFAULT_KHORA_DATA_DIR);
   return {
