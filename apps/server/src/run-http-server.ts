@@ -51,25 +51,18 @@ export async function runHttpServer(): Promise<void> {
 
   const tenantKey = envTenantKey();
   const encryption = await bootstrapKhoraEncryption();
-  const { ctx, memoriesSqliteDb, memoriesService, memoriesOntology, memoriesCatalog } =
-    await bootstrapKhoraHost({
-      hostDbPath,
-      authNoncesDbPath,
-      percolatorDbPath,
-      cellsDir,
-      useCellWorkers: envColonnadeUseCellWorkers(),
-      encryption,
-      ...(tenantKey !== undefined ? { tenantKey } : {}),
-      ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
-    });
-
-  const { deps, adminTokenAuthEnabled } = createHostRouteDepsFromEnv({
-    ctx,
-    ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
-    ...(memoriesService !== undefined ? { memoriesService } : {}),
-    ...(memoriesOntology !== undefined ? { memoriesOntology } : {}),
-    ...(memoriesCatalog !== undefined ? { memoriesCatalog } : {}),
+  const { ctx } = await bootstrapKhoraHost({
+    hostDbPath,
+    authNoncesDbPath,
+    percolatorDbPath,
+    cellsDir,
+    useCellWorkers: envColonnadeUseCellWorkers(),
+    encryption,
+    ...(tenantKey !== undefined ? { tenantKey } : {}),
+    ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
   });
+
+  const { deps, adminTokenAuthEnabled } = createHostRouteDepsFromEnv({ ctx });
 
   if (!adminTokenAuthEnabled) {
     logger.info(

@@ -19,11 +19,6 @@ import {
   ensureCustomSqliteForExtensions,
   getMemoriesSqliteDatabase,
 } from "@khoralabs/memories-node/sqlite";
-import type {
-  MemoriesDatabaseCatalogStore,
-  MemoriesDatabaseOntologyStore,
-  MemoriesDatabaseService,
-} from "@khoralabs/memories-service";
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { logger } from "./logger";
 import {
@@ -47,11 +42,6 @@ export type BootstrapKhoraHostOpts = {
 
 export type KhoraHostBootstrap = {
   ctx: KhoraHostContext;
-  /** Shared host memories SQLite handle (same connection as memories-service / indexer). */
-  memoriesSqliteDb?: Database;
-  memoriesService?: MemoriesDatabaseService;
-  memoriesOntology?: MemoriesDatabaseOntologyStore;
-  memoriesCatalog?: MemoriesDatabaseCatalogStore;
 };
 
 export async function bootstrapKhoraHost(
@@ -105,9 +95,6 @@ export async function bootstrapKhoraHost(
   }
 
   let memoriesSqliteDb: Database | undefined;
-  let memoriesService: MemoriesDatabaseService | undefined;
-  let memoriesOntology: MemoriesDatabaseOntologyStore | undefined;
-  let memoriesCatalog: MemoriesDatabaseCatalogStore | undefined;
 
   if (opts.memories !== undefined) {
     assertKhoraMemoriesDbPathUnset();
@@ -116,9 +103,6 @@ export async function bootstrapKhoraHost(
       dataDir: opts.memories.memoriesDataDir,
       ...(encryption.sqlCipherKey !== undefined ? { sqlCipherKey: encryption.sqlCipherKey } : {}),
     });
-    memoriesService = stack.service;
-    memoriesOntology = stack.ontology;
-    memoriesCatalog = stack.catalog;
 
     const handle = await stack.service.getHandle(opts.memories.databaseId);
     const syncPersistence = handle.sync?.syncPersistence;
@@ -169,11 +153,5 @@ export async function bootstrapKhoraHost(
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
   });
-  return {
-    ctx,
-    ...(memoriesSqliteDb !== undefined ? { memoriesSqliteDb } : {}),
-    ...(memoriesService !== undefined ? { memoriesService } : {}),
-    ...(memoriesOntology !== undefined ? { memoriesOntology } : {}),
-    ...(memoriesCatalog !== undefined ? { memoriesCatalog } : {}),
-  };
+  return { ctx };
 }
