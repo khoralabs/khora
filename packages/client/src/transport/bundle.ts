@@ -1,4 +1,4 @@
-import type { RelaySigner } from "@khoralabs/khora-auth";
+import type { Signer } from "@khoralabs/khora-auth";
 import type { KhoraDuplexTransport } from "./duplex-ws";
 import { WsKhoraDuplexTransport } from "./duplex-ws";
 import {
@@ -28,7 +28,7 @@ export function createHttpKhoraTransportBundle(
 export type CreateKhoraTransportBundleFromEnvOptions = {
   /** HTTP origin when `KHORA_TRANSPORT` is `http` (default). */
   baseUrl: string;
-  signer: RelaySigner;
+  signer: Signer;
   fetch?: KhoraFetch;
   nowMs?: () => number;
   nonceFactory?: () => string;

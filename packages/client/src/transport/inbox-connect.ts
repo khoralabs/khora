@@ -1,4 +1,4 @@
-import { inboxWebSocketUpgradeUrl, type RelaySigner, signInboxBind } from "@khoralabs/khora-auth";
+import { inboxWebSocketUpgradeUrl, type Signer, signInboxBind } from "@khoralabs/khora-auth";
 import type { KhoraInboxNotification } from "@khoralabs/khora-contracts";
 import type { KhoraClientEvent } from "./client-events";
 import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws";
@@ -21,7 +21,7 @@ export type InboxWsHandlers = {
 export type ConnectInboxOptions = {
   base: string;
   /** Principals to bind immediately after `hello` (may be empty if you only call {@link InboxConnectionHandle.bind} later). */
-  signers: readonly RelaySigner[];
+  signers: readonly Signer[];
   now: () => number;
   nonce: () => string;
   WebSocketCtor: typeof WebSocket;
@@ -33,7 +33,7 @@ const BIND_CHUNK = 128;
 export type InboxConnectionHandle = {
   close(): void;
   /** Sign and send additional principal binds (after hello). */
-  bind(signers: readonly RelaySigner[]): Promise<void>;
+  bind(signers: readonly Signer[]): Promise<void>;
   /** Ask the host to drop live delivery for these DIDs. */
   unbind(dids: readonly string[]): Promise<void>;
 };
@@ -81,7 +81,7 @@ export async function connectInbox(
     return connectionId;
   };
 
-  const sendBindPrincipals = async (signers: readonly RelaySigner[]): Promise<void> => {
+  const sendBindPrincipals = async (signers: readonly Signer[]): Promise<void> => {
     if (signers.length === 0) return;
     const connId = await waitHello();
     if (closed) return;

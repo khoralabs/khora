@@ -1,4 +1,4 @@
-export type { Signer as RelaySigner } from "@khoralabs/did-key-identity";
+export type { Signer } from "@khoralabs/did-key-identity";
 export type {
   HostAggregateRef,
   HostEventBase,

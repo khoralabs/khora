@@ -1,4 +1,4 @@
-import type { Signer as RelaySigner } from "@khoralabs/did-key-identity";
+import type { Signer } from "@khoralabs/did-key-identity";
 import {
   AuthStrategyError,
   envelopeSignatureBytes,
@@ -92,7 +92,7 @@ export function khoraPostSigningPayloadFromPatch(
 }
 
 export async function signKhoraPostPayload(
-  signer: RelaySigner,
+  signer: Signer,
   payload: KhoraPostSigningPayloadV1,
 ): Promise<string> {
   if (payload.authorDid !== signer.did) {

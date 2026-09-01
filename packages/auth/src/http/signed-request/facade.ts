@@ -61,9 +61,6 @@ export interface SignedRequestPreflight {
   verifyInboxAccess(ctx: InboxAccessVerifyContext): Promise<void>;
 }
 
-/** @deprecated Use {@link SignedRequestPreflight}. */
-export type AuthPreflight = SignedRequestPreflight;
-
 export type SignedRequestAuthOptions = {
   strategy?: AuthStrategy;
   nonceStore: NonceStore;
@@ -73,13 +70,6 @@ export type SignedRequestAuthOptions = {
   /** After signature verify succeeds, reject principals that must not use signed APIs. */
   assertPrincipalAllowed?: (did: string) => void | Promise<void>;
 };
-
-/** @deprecated Use {@link SignedRequestAuthOptions}. */
-export type KhoraDidAuthOptions = SignedRequestAuthOptions;
-/** @deprecated Use {@link SignedRequestAuthOptions}. */
-export type CreateKhoraDidAuthOptions = SignedRequestAuthOptions;
-/** @deprecated Use {@link SignedRequestAuthOptions}. */
-export type CreateSignedRequestAuthOptions = SignedRequestAuthOptions;
 
 /**
  * Lifecycle owner for DID-signed HTTP request authentication.
@@ -309,10 +299,6 @@ export class SignedRequestAuth {
   }
 }
 
-/** @deprecated Use {@link SignedRequestAuth}. */
-export const KhoraDidAuth = SignedRequestAuth;
-export type KhoraDidAuth = SignedRequestAuth;
-
 function readDidHeader(req: Request): string | undefined {
   const v = req.headers.get(AGENT_REQUEST_HEADER.did)?.trim();
   return v !== undefined && v.length > 0 ? v : undefined;
@@ -333,11 +319,6 @@ export function createSignedRequestAuth(opts: SignedRequestAuthOptions): SignedR
       ? { assertPrincipalAllowed: opts.assertPrincipalAllowed }
       : {}),
   });
-}
-
-/** @deprecated Use {@link createSignedRequestAuth}. */
-export function createKhoraDidAuth(opts: SignedRequestAuthOptions): SignedRequestAuth {
-  return createSignedRequestAuth(opts);
 }
 
 export type VerifySignedAgentRequestOptions = {

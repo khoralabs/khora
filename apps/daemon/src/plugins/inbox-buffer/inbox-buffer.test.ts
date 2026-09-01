@@ -3,12 +3,12 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { RelaySigner } from "@khoralabs/khora-auth";
+import type { Signer } from "@khoralabs/khora-auth";
 import { KhoraClient } from "@khoralabs/khora-client";
 
 import { createInboxBufferPlugin } from "./index";
 
-function testSigner(): RelaySigner {
+function testSigner(): Signer {
   return { did: "did:key:buf", sign: async () => new Uint8Array(64) };
 }
 

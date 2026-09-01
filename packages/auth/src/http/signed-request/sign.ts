@@ -3,7 +3,6 @@ import {
   AGENT_REQUEST_HEADER,
   type AgentRequestEnvelope,
   canonicalAgentRequestMessage,
-  canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
 } from "./envelope";

@@ -1,7 +1,7 @@
 import {
   canonicalAgentRequestPath,
-  type RelaySigner,
   randomAgentRequestNonce,
+  type Signer,
   signAgentRequest,
 } from "@khoralabs/khora-auth";
 import type z from "zod";
@@ -38,7 +38,7 @@ export type RequestVoidOptions = {
 export type KhoraUnaryTransport = {
   readonly base: string;
   readonly did: string;
-  readonly signer: RelaySigner;
+  readonly signer: Signer;
   readonly now: () => number;
   readonly nonce: () => string;
   fetch(path: string, init?: RequestInit): Promise<Response>;
@@ -48,7 +48,7 @@ export type KhoraUnaryTransport = {
 
 export type CreateHttpTransportOptions = {
   baseUrl: string;
-  signer: RelaySigner;
+  signer: Signer;
   fetch?: KhoraFetch;
   nowMs?: () => number;
   nonceFactory?: () => string;

@@ -1,4 +1,4 @@
-import type { Signer as RelaySigner } from "@khoralabs/did-key-identity";
+import type { Signer } from "@khoralabs/did-key-identity";
 import type {
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
@@ -59,7 +59,7 @@ export type { PublicProfileResult } from "./http/profile";
 export type KhoraClientOptions = {
   /** Required unless {@link transportBundle} supplies unary+duplex. */
   baseUrl?: string;
-  signer: RelaySigner;
+  signer: Signer;
   /** When set, {@link baseUrl} is optional — deploy-selected transports (`KHORA_TRANSPORT`, …). */
   transportBundle?: KhoraTransportBundle;
   fetch?: KhoraFetch;
@@ -213,7 +213,7 @@ export class KhoraClient {
 
   connectInbox(
     handlers: InboxWsHandlers,
-    signers?: readonly RelaySigner[],
+    signers?: readonly Signer[],
   ): Promise<InboxConnectionHandle> {
     return this.duplex.connectInbox(
       {

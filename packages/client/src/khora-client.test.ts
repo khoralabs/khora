@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { generateIdentity, type PersistableSigner, type RelaySigner } from "@khoralabs/khora-auth";
+import { generateIdentity, type PersistableSigner, type Signer } from "@khoralabs/khora-auth";
 import { KhoraClient } from "./khora-client";
 import { KhoraClientError, type KhoraClientEvent } from "./transport";
 
@@ -10,7 +10,7 @@ async function makeSigner(): Promise<PersistableSigner> {
 }
 
 /** Predictable mock signer for assertions that don't care about real crypto. */
-function staticSigner(did = "did:key:test"): RelaySigner {
+function staticSigner(did = "did:key:test"): Signer {
   return {
     did,
     async sign() {
@@ -24,7 +24,7 @@ function staticSigner(did = "did:key:test"): RelaySigner {
  * shape is `METHOD\nPATH\nts\nnonce\nbodyHash` (see `canonicalAgentRequestMessage`), so
  * `recordedPaths` reflects exactly what the transport asked the signer to bind.
  */
-function pathRecordingSigner(did = "did:key:rec"): RelaySigner & { recordedPaths: string[] } {
+function pathRecordingSigner(did = "did:key:rec"): Signer & { recordedPaths: string[] } {
   const recordedPaths: string[] = [];
   return {
     did,

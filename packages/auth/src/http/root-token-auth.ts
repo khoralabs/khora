@@ -49,11 +49,6 @@ export function readSecureCookies(): boolean {
   return publicUrl?.startsWith("https://") ?? false;
 }
 
-/** @deprecated Cookie login removed; kept for env compatibility. Always null. */
-export function readAdminTokenLoginRateLimit(): null {
-  return null;
-}
-
 export function readAdminTokenAuthKind(): "root-token" {
   const kind =
     process.env.ADMIN_TOKEN_AUTH?.trim().toLowerCase() ??

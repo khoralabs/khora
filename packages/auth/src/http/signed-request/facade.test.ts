@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateIdentity, type Signer as RelaySigner } from "@khoralabs/did-key-identity";
+import { generateIdentity, type Signer } from "@khoralabs/did-key-identity";
 import { createMemoryNonceStore } from "../../replay/memory-nonce-store";
 import {
   AGENT_REQUEST_HEADER,
@@ -10,7 +10,7 @@ import { AuthError, createSignedRequestAuth, verifySignedAgentRequest } from "./
 import { INBOX_BIND_METHOD, inboxBindCanonicalPath, signInboxBind } from "./sign";
 
 async function buildSignedHeaders(p: {
-  signer: RelaySigner;
+  signer: Signer;
   method: string;
   path: string;
   bodyText: string;
@@ -33,7 +33,7 @@ async function buildSignedHeaders(p: {
   return h;
 }
 
-describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
+describe("SignedRequestAuth.preflight (did:key Ed25519 default)", () => {
   test("accepts fresh + valid signed request", async () => {
     const now = 1_700_000_000_000;
     const auth = createSignedRequestAuth({ nonceStore: createMemoryNonceStore(), now: () => now });
@@ -195,7 +195,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
   });
 });
 
-describe("KhoraDidAuth.requireAuthenticatedRequest", () => {
+describe("SignedRequestAuth.requireAuthenticatedRequest", () => {
   test("returns DID on success and wraps failures in AuthError", async () => {
     const now = 1_700_000_000_000;
     const auth = createSignedRequestAuth({ nonceStore: createMemoryNonceStore(), now: () => now });
@@ -249,7 +249,7 @@ describe("KhoraDidAuth.requireAuthenticatedRequest", () => {
   });
 });
 
-describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
+describe("SignedRequestAuth.requireInboxAccess (signed query allowlist)", () => {
   test("accepts /v1/inbox?limit=10&markRead=1 when client signs the canonical path", async () => {
     const now = 1_700_000_000_000;
     const auth = createSignedRequestAuth({ nonceStore: createMemoryNonceStore(), now: () => now });
@@ -312,7 +312,7 @@ describe("KhoraDidAuth.requireInboxAccess (signed query allowlist)", () => {
   });
 });
 
-describe("KhoraDidAuth.verifyInboxBind", () => {
+describe("SignedRequestAuth.verifyInboxBind", () => {
   test("accepts a fresh bind signature for connection_id", async () => {
     const now = 1_700_000_000_000;
     const auth = createSignedRequestAuth({ nonceStore: createMemoryNonceStore(), now: () => now });

@@ -1,11 +1,4 @@
-/** @deprecated Prefer {@link PersistableSigner}. */
-/** @deprecated Prefer {@link Signer}. */
-export type {
-  PersistableSigner,
-  PersistableSigner as PersistableRelaySigner,
-  Signer,
-  Signer as RelaySigner,
-} from "@khoralabs/did-key-identity";
+export type { PersistableSigner, Signer } from "@khoralabs/did-key-identity";
 export {
   generateIdentity,
   type IdentityFile,
@@ -27,7 +20,6 @@ export {
   type RootTokenAdminAuthOptions,
   readAdminRootToken,
   readAdminTokenAuthKind,
-  readAdminTokenLoginRateLimit,
   readSecureCookies,
 } from "./http/root-token-auth";
 export {
@@ -51,14 +43,8 @@ export {
 export {
   AuthError,
   type AuthenticatedPrincipalVerifyContext,
-  type AuthPreflight,
-  type CreateKhoraDidAuthOptions,
-  type CreateSignedRequestAuthOptions,
-  createKhoraDidAuth,
   createSignedRequestAuth,
   type InboxAccessVerifyContext,
-  KhoraDidAuth,
-  type KhoraDidAuthOptions,
   type RegistrationVerifyClientHints,
   type RegistrationVerifyContext,
   SignedRequestAuth,
