@@ -16,9 +16,13 @@ FROM debian:bookworm-slim
 
 ARG RELEASE_SLUG=linux-x64
 
-RUN apt-get update \
+# libsqlcipher1 is in bookworm-backports (bookworm main has libsqlcipher0 only).
+RUN echo "deb http://deb.debian.org/debian bookworm-backports main" \
+      > /etc/apt/sources.list.d/backports.list \
+  && apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
+  && apt-get install -y --no-install-recommends -t bookworm-backports \
     libsqlcipher1 \
   && rm -rf /var/lib/apt/lists/*
 
