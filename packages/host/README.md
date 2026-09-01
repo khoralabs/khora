@@ -27,7 +27,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | `registration` | Pre-built `KhoraRegistrationApi` (registration, username maps) |
 | `cluster` | `KhoraColonnadeCluster` — cell shards, post resolution |
 | `publicationClient` | Colonnade publish/fan-out |
-| `auth` | `KhoraDidAuth` |
+| `auth` | `SignedRequestAuth` |
 | `invitesRepo?` | `KhoraInvitesRepo` from `@khoralabs/khora-host/persistence` |
 | `search?` | `HostSearch` from `bootstrapHostSearch({ persistence, postResolver, … })` (pull discovery) |
 | `subscriptions` | `HostSubscriptions` from `bootstrapHostSubscriptions(…)` (push discovery) |
@@ -79,7 +79,7 @@ OTel spans, packaged-runtime cwd, and Litestream stay in `apps/server` (pass a c
 
 Key fields on `KhoraHostContext`:
 - `host` — `HostRuntime<KhoraProfile, KhoraHostAppEvent>`
-- `auth` — `KhoraDidAuth`
+- `auth` — `SignedRequestAuth`
 - `cluster` — `KhoraColonnadeCluster`
 - `publicationClient` — `ColonnadePublicationClient`
 - `health` — `KhoraHostHealthPort` (readiness)

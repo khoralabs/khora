@@ -54,7 +54,7 @@ Litestream (when enabled via the start script) watches `data/*.sqlite` and `cell
 ```
 CLI / Daemon            khora-client                 khora-host/http + khora-host
 ─────────────           ────────────                 ──────────────────────────────
-AgentSigner ──sign──▶ X-Agent-* headers ──▶ KhoraDidAuth ──nonce──▶ auth-nonces.sqlite
+AgentSigner ──sign──▶ X-Agent-* headers ──▶ SignedRequestAuth ──nonce──▶ auth-nonces.sqlite
                       JSON body             HostRuntime / publish ──▶ host.sqlite + cells/
                                             percolator standing Q ──▶ percolator.sqlite
                                 ◀── WS ── /v1/inbox/ws

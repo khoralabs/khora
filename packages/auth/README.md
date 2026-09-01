@@ -25,7 +25,7 @@ Future slots (not implemented): `http/message-signatures/` (RFC 9421), `jose/jws
 | Area | Imports |
 | --- | --- |
 | DID / strategy | `createDidKeyEd25519Strategy`, `AuthStrategy`, `publicKeyForDid` |
-| Signed HTTP | `signAgentRequest`, `createSignedRequestAuth` (`createKhoraDidAuth` deprecated alias), `SignedRequestAuth` |
+| Signed HTTP | `signAgentRequest`, `createSignedRequestAuth`, `SignedRequestAuth` |
 | Console / root token | `createRootTokenAdminAuth`, `createAdminTokenAuthFromEnv`, `AdminTokenAuth` |
 | Replay | `NonceStore`, `createMemoryNonceStore` — **storage backends live in the host** (`createSqliteNonceStore` on `@khoralabs/khora-host/sqlite`) |
 | Testing | `@khoralabs/khora-auth/testing` → `runNonceStoreContractTests` |
