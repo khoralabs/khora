@@ -67,20 +67,20 @@
   },
   "dependencies": {
     "@khoralabs/colonnade": "workspace:*",
-    "@khoralabs/did-key-identity": "^0.1.0",
+    "@khoralabs/did-key-identity": "catalog:",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/observability": "workspace:*",
-    "@khoralabs/sqlite-crypto": "^0.1.0",
-    "@opentelemetry/api": "^1.9.0"
+    "@khoralabs/sqlite-crypto": "catalog:",
+    "@opentelemetry/api": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "catalog:"
   },
   "optionalDependencies": {
-    "@tursodatabase/serverless": "^1.2.3"
+    "@tursodatabase/serverless": "catalog:"
   }
 }

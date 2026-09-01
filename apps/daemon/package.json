@@ -19,12 +19,12 @@
     "build:all": "bun run scripts/build.ts bun-darwin-arm64 && bun run scripts/build.ts bun-linux-x64 && bun run scripts/build.ts bun-linux-arm64"
   },
   "dependencies": {
-    "@khoralabs/did-key-identity": "^0.1.0",
+    "@khoralabs/did-key-identity": "catalog:",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-client": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -75,20 +75,20 @@
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
-    "@khoralabs/memories-node": "^0.7.6",
-    "@khoralabs/memories-service": "^0.7.6",
+    "@khoralabs/memories-node": "catalog:",
+    "@khoralabs/memories-service": "catalog:",
     "@khoralabs/observability": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
     "@khoralabs/khora-registry": "workspace:*",
-    "@khoralabs/sourcemaps": "^0.1.0",
-    "@khoralabs/sqlite-crypto": "^0.1.0",
-    "zod": "^4"
+    "@khoralabs/sourcemaps": "catalog:",
+    "@khoralabs/sqlite-crypto": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   }
 }

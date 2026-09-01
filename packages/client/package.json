@@ -52,18 +52,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/did-key-identity": "^0.1.0",
+    "@khoralabs/did-key-identity": "catalog:",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
-    "zod": "^4",
-    "@noble/ed25519": "^3.1.0"
+    "zod": "catalog:",
+    "@noble/ed25519": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "catalog:"
   },
   "publishConfig": {
     "access": "public"

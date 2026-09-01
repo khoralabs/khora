@@ -40,14 +40,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^4"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "catalog:"
   },
   "publishConfig": {
     "access": "public"

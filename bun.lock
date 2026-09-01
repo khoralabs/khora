@@ -5,21 +5,21 @@
     "": {
       "name": "@khoralabs/agent-kernel",
       "dependencies": {
-        "@khoralabs/memories-node": "^0.7.6",
+        "@khoralabs/memories-node": "catalog:",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.4.10",
         "@khoralabs/agent-review": "^0.2.2",
         "@microsoft/api-extractor": "^7.58.9",
         "@tsconfig/node20": "20.1.8",
-        "@types/bun": "latest",
+        "@types/bun": "catalog:",
         "@types/parse-gitignore": "^1.0.2",
         "husky": "^9.1.7",
         "minimatch": "^10.2.5",
         "parse-gitignore": "^2.0.0",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "apps/cli": {
@@ -30,7 +30,7 @@
       },
       "dependencies": {
         "@khoralabs/cli-kit": "workspace:*",
-        "@khoralabs/did-key-identity": "^0.1.0",
+        "@khoralabs/did-key-identity": "catalog:",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
@@ -38,32 +38,32 @@
         "@khoralabs/khora-registry": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "apps/daemon": {
       "name": "@khoralabs/khora-daemon",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/did-key-identity": "^0.1.0",
+        "@khoralabs/did-key-identity": "catalog:",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
     },
     "apps/e2e": {
       "name": "@khoralabs/khora-e2e",
       "version": "0.0.0",
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
     },
     "apps/registry": {
@@ -75,7 +75,7 @@
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-registry": "workspace:*",
         "@khoralabs/observability": "workspace:*",
-        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/api": "catalog:",
         "better-auth": "^1.6.11",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
@@ -87,11 +87,11 @@
         "usehooks-ts": "^3.1.1",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "catalog:",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "tailwindcss": "^4.1.11",
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "apps/server": {
@@ -104,82 +104,82 @@
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-host": "workspace:*",
-        "@khoralabs/memories-node": "^0.7.6",
-        "@khoralabs/memories-service": "^0.7.6",
+        "@khoralabs/memories-node": "catalog:",
+        "@khoralabs/memories-service": "catalog:",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-        "@opentelemetry/api": "^1.9.0",
+        "@khoralabs/sqlite-crypto": "catalog:",
+        "@opentelemetry/api": "catalog:",
         "ai": "^6",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
     },
     "packages/auth": {
       "name": "@khoralabs/khora-auth",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/did-key-identity": "^0.1.0",
-        "@noble/ed25519": "^3.1.0",
+        "@khoralabs/did-key-identity": "catalog:",
+        "@noble/ed25519": "catalog:",
         "@scure/base": "^1.2.6",
         "lru-cache": "^11.5.1",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "packages/client": {
       "name": "@khoralabs/khora-client",
       "version": "0.1.6",
       "dependencies": {
-        "@khoralabs/did-key-identity": "^0.1.0",
+        "@khoralabs/did-key-identity": "catalog:",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "zod": "^4",
+        "@noble/ed25519": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "packages/colonnade": {
       "name": "@khoralabs/colonnade",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/sourcemaps": "^0.1.0",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-        "@tursodatabase/serverless": "^1.2.3",
+        "@khoralabs/sourcemaps": "catalog:",
+        "@khoralabs/sqlite-crypto": "catalog:",
+        "@tursodatabase/serverless": "catalog:",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "packages/contracts": {
       "name": "@khoralabs/khora-contracts",
       "version": "0.0.0",
       "dependencies": {
-        "zod": "^4",
+        "zod": "catalog:",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "packages/host": {
@@ -191,34 +191,34 @@
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-registry": "workspace:*",
-        "@khoralabs/memories-node": "^0.7.6",
-        "@khoralabs/memories-service": "^0.7.6",
+        "@khoralabs/memories-node": "catalog:",
+        "@khoralabs/memories-service": "catalog:",
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
-        "@khoralabs/sourcemaps": "^0.1.0",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-        "zod": "^4",
+        "@khoralabs/sourcemaps": "catalog:",
+        "@khoralabs/sqlite-crypto": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "packages/percolator": {
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
       "dependencies": {
-        "@tursodatabase/serverless": "^1.2.3",
+        "@tursodatabase/serverless": "catalog:",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "packages/registry": {
@@ -226,21 +226,21 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/colonnade": "workspace:*",
-        "@khoralabs/did-key-identity": "^0.1.0",
+        "@khoralabs/did-key-identity": "catalog:",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/observability": "workspace:*",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-        "@opentelemetry/api": "^1.9.0",
+        "@khoralabs/sqlite-crypto": "catalog:",
+        "@opentelemetry/api": "catalog:",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
       },
       "optionalDependencies": {
-        "@tursodatabase/serverless": "^1.2.3",
+        "@tursodatabase/serverless": "catalog:",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "catalog:",
       },
     },
     "vendor/libs/packages/cli-kit": {
@@ -291,6 +291,19 @@
     "@khoralabs/memories-react-graph": "0.7.6",
     "@khoralabs/memories-service": "0.7.6",
     "kysely": "0.28.17",
+  },
+  "catalog": {
+    "@khoralabs/did-key-identity": "^0.1.0",
+    "@khoralabs/memories-node": "^0.7.6",
+    "@khoralabs/memories-service": "^0.7.6",
+    "@khoralabs/sourcemaps": "^0.1.0",
+    "@khoralabs/sqlite-crypto": "^0.1.0",
+    "@noble/ed25519": "^3.1.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@tursodatabase/serverless": "^1.2.3",
+    "@types/bun": "latest",
+    "typescript": "^5",
+    "zod": "^4",
   },
   "packages": {
     "@adraffy/ens-normalize": ["@adraffy/ens-normalize@1.11.1", "", {}, "sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ=="],
@@ -887,7 +900,7 @@
 
     "@types/argparse": ["@types/argparse@1.0.38", "", {}, "sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA=="],
 
-    "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
+    "@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
     "@types/chai": ["@types/chai@5.2.3", "", { "dependencies": { "@types/deep-eql": "*", "assertion-error": "^2.0.1" } }, "sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA=="],
 
@@ -979,7 +992,7 @@
 
     "bun-plugin-tailwind": ["bun-plugin-tailwind@0.1.2", "", { "peerDependencies": { "bun": ">=1.0.0" } }, "sha512-41jNC1tZRSK3s1o7pTNrLuQG8kL/0vR/JgiTmZAJ1eHwe0w5j6HFPKeqEk0WAD13jfrUC7+ULuewFBBCoADPpg=="],
 
-    "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
+    "bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "chai": ["chai@6.2.2", "", {}, "sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg=="],
 
@@ -1537,35 +1550,7 @@
 
     "@khoralabs/agent-review/ai": ["ai@7.0.28", "", { "dependencies": { "@ai-sdk/gateway": "4.0.20", "@ai-sdk/provider": "4.0.3", "@ai-sdk/provider-utils": "5.0.10" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-RtynA4e6rWH2YiMX0OJz2h2i+sdJgiItuwqmstYZAiTZ0ZkZzQ8s4KVh7tQfZuDCfzIhRTg+q1h1xirT8AClkw=="],
 
-    "@khoralabs/cli-kit/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/colonnade/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-auth/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-cli/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-client/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-contracts/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-daemon/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-e2e/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-host/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-registry/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-registry-server/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/khora-server/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
     "@khoralabs/memories-node/ai": ["ai@7.0.28", "", { "dependencies": { "@ai-sdk/gateway": "4.0.20", "@ai-sdk/provider": "4.0.3", "@ai-sdk/provider-utils": "5.0.10" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-RtynA4e6rWH2YiMX0OJz2h2i+sdJgiItuwqmstYZAiTZ0ZkZzQ8s4KVh7tQfZuDCfzIhRTg+q1h1xirT8AClkw=="],
-
-    "@khoralabs/observability/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
-
-    "@khoralabs/percolator/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 
     "@microsoft/api-extractor/minimatch": ["minimatch@10.2.3", "", { "dependencies": { "brace-expansion": "^5.0.2" } }, "sha512-Rwi3pnapEqirPSbWbrZaa6N3nmqq4Xer/2XooiOKyV3q12ML06f7MOuc5DVH8ONZIFhwIYQ3yzPH4nt7iWHaTg=="],
 
@@ -1691,37 +1676,9 @@
 
     "@khoralabs/agent-review/ai/@ai-sdk/provider": ["@ai-sdk/provider@4.0.3", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw=="],
 
-    "@khoralabs/cli-kit/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/colonnade/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-auth/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-cli/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-client/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-contracts/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-daemon/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-e2e/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-host/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-registry-server/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-registry/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/khora-server/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
     "@khoralabs/memories-node/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.20", "", { "dependencies": { "@ai-sdk/provider": "4.0.3", "@ai-sdk/provider-utils": "5.0.10", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-m3PdYs0yqSxswsrEhVj64wDLgFs35Zxl8liLNuWGzE7bwBLF6Mhu0E5rPpDNJbIjyQpA4aMKOOWBfjERw2zvPw=="],
 
     "@khoralabs/memories-node/ai/@ai-sdk/provider": ["@ai-sdk/provider@4.0.3", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw=="],
-
-    "@khoralabs/observability/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
-
-    "@khoralabs/percolator/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@opentelemetry/exporter-logs-otlp-grpc/@opentelemetry/sdk-logs/@opentelemetry/resources": ["@opentelemetry/resources@2.0.1", "", { "dependencies": { "@opentelemetry/core": "2.0.1", "@opentelemetry/semantic-conventions": "^1.29.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.3.0 <1.10.0" } }, "sha512-dZOB3R6zvBwDKnHDTB4X1xtMArB/d324VsbiPkX/Yu0Q8T2xceRthoIVFhJdvgVM2QhGVUyX9tzwiNxGtoBJUw=="],
 

@@ -42,18 +42,18 @@
     "bench:sweep-json": "bun run src/core/bench/sweep-json.ts"
   },
   "dependencies": {
-    "@khoralabs/sourcemaps": "^0.1.0",
-    "@khoralabs/sqlite-crypto": "^0.1.0",
-    "@tursodatabase/serverless": "^1.2.3"
+    "@khoralabs/sourcemaps": "catalog:",
+    "@khoralabs/sqlite-crypto": "catalog:",
+    "@tursodatabase/serverless": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "catalog:"
   },
   "optionalPeerDependencies": {
-    "@tursodatabase/serverless": "^1.2.3"
+    "@tursodatabase/serverless": "catalog:"
   }
 }

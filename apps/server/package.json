@@ -21,16 +21,16 @@
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",
-    "@khoralabs/memories-node": "^0.7.6",
-    "@khoralabs/memories-service": "^0.7.6",
+    "@khoralabs/memories-node": "catalog:",
+    "@khoralabs/memories-service": "catalog:",
     "@khoralabs/observability": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
-    "@khoralabs/sqlite-crypto": "^0.1.0",
-    "@opentelemetry/api": "^1.9.0",
+    "@khoralabs/sqlite-crypto": "catalog:",
+    "@opentelemetry/api": "catalog:",
     "ai": "^6"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   }
 }

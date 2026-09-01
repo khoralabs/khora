@@ -35,13 +35,13 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@tursodatabase/serverless": "^1.2.3"
+    "@tursodatabase/serverless": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "catalog:"
   }
 }
