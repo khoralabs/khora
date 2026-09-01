@@ -4,7 +4,6 @@ import { defaultNoopCatalogPersistence } from "../persistence/core/noop-catalog-
 import type { PostOperationInput, PostOperationOutput } from "./colonnade-types";
 import { randomId } from "./hash";
 import type { InboxDelivery } from "./inbox-delivery";
-import { createResolveCellInboxDelivery } from "./resolve-cell-inbox-delivery";
 
 function isResolveCell(
   value: CatalogPersistence | ResolveCell | InboxDelivery,
@@ -33,15 +32,9 @@ export class ColonnadePublicationClient {
   private readonly resolveAuthor: ResolveCell;
   private readonly inboxDelivery: InboxDelivery;
 
-  /** Legacy: `resolveCell` only (noop catalog + ResolveCellInboxDelivery). */
-  constructor(resolveCell: ResolveCell);
-  /** Legacy: catalog + resolveCell for author and fan-out. */
-  constructor(catalog: CatalogPersistence, resolveCell: ResolveCell);
-  /**
-   * Preferred: author cell accessor + abstract inbox delivery.
-   * Pass catalog as the first arg when replicating to catalog.
-   */
+  /** Author cell accessor + abstract inbox delivery (noop catalog). */
   constructor(resolveAuthor: ResolveCell, inboxDelivery: InboxDelivery);
+  /** Catalog + author cell accessor + abstract inbox delivery. */
   constructor(
     catalog: CatalogPersistence,
     resolveAuthor: ResolveCell,
@@ -49,35 +42,23 @@ export class ColonnadePublicationClient {
   );
   constructor(
     a: CatalogPersistence | ResolveCell,
-    b?: ResolveCell | InboxDelivery,
+    b: ResolveCell | InboxDelivery,
     c?: InboxDelivery,
   ) {
-    if (c !== undefined && isInboxDelivery(c) && b !== undefined && isResolveCell(b)) {
+    if (c !== undefined && isInboxDelivery(c) && isResolveCell(b)) {
       this.catalog = a as CatalogPersistence;
       this.resolveAuthor = b;
       this.inboxDelivery = c;
       return;
     }
-    if (b !== undefined && isInboxDelivery(b) && isResolveCell(a)) {
+    if (isInboxDelivery(b) && isResolveCell(a)) {
       this.catalog = defaultNoopCatalogPersistence();
       this.resolveAuthor = a;
       this.inboxDelivery = b;
       return;
     }
-    if (b !== undefined && isResolveCell(b)) {
-      this.catalog = a as CatalogPersistence;
-      this.resolveAuthor = b;
-      this.inboxDelivery = createResolveCellInboxDelivery(b);
-      return;
-    }
-    if (isResolveCell(a)) {
-      this.catalog = defaultNoopCatalogPersistence();
-      this.resolveAuthor = a;
-      this.inboxDelivery = createResolveCellInboxDelivery(a);
-      return;
-    }
     throw new Error(
-      "ColonnadePublicationClient: pass ResolveCell; (Catalog, ResolveCell); (ResolveCell, InboxDelivery); or (Catalog, ResolveCell, InboxDelivery)",
+      "ColonnadePublicationClient: pass (ResolveCell, InboxDelivery) or (Catalog, ResolveCell, InboxDelivery)",
     );
   }
 

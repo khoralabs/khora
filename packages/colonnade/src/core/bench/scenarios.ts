@@ -2,6 +2,7 @@ import { ColonnadePublicationClient } from "../colonnade-publication-client";
 import { ColonnadeRouter } from "../colonnade-router";
 import type { RoutedWrite, WriteOp } from "../colonnade-types";
 import { sha256HexLower } from "../hash";
+import { createResolveCellInboxDelivery } from "../resolve-cell-inbox-delivery";
 import type { SampleSummary } from "./stats";
 import { summarizeMs } from "./stats";
 import type { BenchmarkStrategies } from "./strategies";
@@ -125,7 +126,11 @@ export async function benchPostOutboxOnly(params: BenchRunParams): Promise<Bench
 
   const catalog = params.strategies.createCatalog();
   const resolve = params.strategies.createResolveCell(params.cellIds);
-  const pub = new ColonnadePublicationClient(catalog, resolve);
+  const pub = new ColonnadePublicationClient(
+    catalog,
+    resolve,
+    createResolveCellInboxDelivery(resolve),
+  );
 
   const { samples_ms, wall_ms } = await runTimedIterations(
     params.iterations,
@@ -167,7 +172,11 @@ export async function benchPostCatalogFanout(params: BenchRunParams): Promise<Be
 
   const catalog = params.strategies.createCatalog();
   const resolve = params.strategies.createResolveCell(params.cellIds);
-  const pub = new ColonnadePublicationClient(catalog, resolve);
+  const pub = new ColonnadePublicationClient(
+    catalog,
+    resolve,
+    createResolveCellInboxDelivery(resolve),
+  );
 
   const { samples_ms, wall_ms } = await runTimedIterations(
     params.iterations,

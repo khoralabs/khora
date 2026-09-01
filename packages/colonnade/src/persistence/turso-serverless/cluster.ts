@@ -149,7 +149,7 @@ export async function createTursoColonnadeCluster(
     const id = decodeCellId(cellId);
     const placed = (await placement.getStrategy(id)) ?? (await placement.getDefaultStrategy());
     const tursoStrategy = asTursoStrategy(placed, cellId);
-    const credentials = resolveTursoCredentialsFromStrategy(tursoStrategy, id, cellId);
+    const credentials = resolveTursoCredentialsFromStrategy(tursoStrategy, id);
     const clients = createTursoClients(credentials);
     const strategy = await TursoCellPersistence.open(clients, cellId, cellStrategyOpts);
     await strategy.ensureCellPoolCount(1);

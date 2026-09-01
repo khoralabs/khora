@@ -3,6 +3,7 @@ import { ColonnadePublicationClient } from "../../core/colonnade-publication-cli
 import { ColonnadeRouter } from "../../core/colonnade-router";
 import type { RoutedWrite, WriteOp } from "../../core/colonnade-types";
 import { canonicalSourceMapRowBytes, sha256HexLower } from "../../core/hash";
+import { createResolveCellInboxDelivery } from "../../core/resolve-cell-inbox-delivery";
 import {
   createOutboxLocatorStore,
   createPointerStore,
@@ -324,7 +325,11 @@ describe("ColonnadePublicationClient", () => {
         throw new Error(`no cell ${id}`);
       })();
 
-    const pub = new ColonnadePublicationClient(catalog, resolve);
+    const pub = new ColonnadePublicationClient(
+      catalog,
+      resolve,
+      createResolveCellInboxDelivery(resolve),
+    );
     const body = new Uint8Array(2049).fill(7);
     const res = await pub.postOperation({
       author_principal_id: "alice",
@@ -364,7 +369,7 @@ describe("ColonnadePublicationClient", () => {
       if (id === "cell-a") return cellA;
       throw new Error(`no cell ${id}`);
     };
-    const pub = new ColonnadePublicationClient(resolve);
+    const pub = new ColonnadePublicationClient(resolve, createResolveCellInboxDelivery(resolve));
     const res = await pub.postOperation({
       author_principal_id: "alice",
       author_cell_id: "cell-a",

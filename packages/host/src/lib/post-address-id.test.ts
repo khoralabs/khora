@@ -17,7 +17,7 @@ test("encodePostId / decodePostId round-trip", () => {
   });
 });
 
-test("decodePostId maps legacy pool count n to principal home cell", () => {
+test("decodePostId maps encoded pool count n to principal home cell", () => {
   const id = encodePostId({
     authorPrincipalId: goldenAddress.authorPrincipalId,
     recordKey: goldenAddress.recordKey,

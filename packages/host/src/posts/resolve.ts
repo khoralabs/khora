@@ -15,7 +15,7 @@ async function resolvePostByIdFromCluster(
   if (address === undefined) {
     return undefined;
   }
-  // Author home is principal-encoded; wire `n` may be a legacy pool count — use cluster pin.
+  // Author home is principal-encoded; wire `n` is ignored — use cluster pin.
   const poolCount = cluster.cellPoolCount;
   const cell = cluster.resolveCell(address.authorCellId);
   const store = createOutboxLocatorStore(cell, poolCount);

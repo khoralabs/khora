@@ -22,7 +22,7 @@ export function requireTursoIntegrationEnv(): { url: string; authToken: string }
 export function tursoTestUrlTemplate(baseUrl: string): string {
   const u = new URL(baseUrl.replace(/^libsql:\/\//, "https://"));
   const host = u.hostname.replace(/\.turso\.io$/, "");
-  return `libsql://${host}-{cellId}.${u.hostname.includes("turso") ? "turso.io" : u.host}`;
+  return `libsql://${host}-{ownerKey}.${u.hostname.includes("turso") ? "turso.io" : u.host}`;
 }
 
 export async function openTursoTestCluster(opts: {

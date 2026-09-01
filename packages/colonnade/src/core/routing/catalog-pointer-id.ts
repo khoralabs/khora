@@ -11,7 +11,7 @@ export function encodeCatalogPointerId(shardIndex: number): string {
   return `${PREFIX}${hexShard}_${randomBytes(16).toString("hex")}`;
 }
 
-/** Returns shard index or **`null`** if id is legacy (no shard prefix). */
+/** Returns shard index from a `cptr_HHHH_…` id, or **`null`** if the id is not encoded. */
 export function parseCatalogPointerShardIndex(catalogPointerId: string): number | null {
   if (!catalogPointerId.startsWith(PREFIX)) {
     return null;

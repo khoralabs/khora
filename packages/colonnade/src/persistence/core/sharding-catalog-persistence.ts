@@ -22,7 +22,7 @@ import type { CatalogPersistence } from "./catalog-persistence";
 
 /**
  * Tenant-key **routing façade** over catalog SQLite shards (**`catalogShardCount`** files).
- * **`resolveCatalogPointer`** prefers shard ids encoded as **`cptr_HHHH_…`**; legacy ids are resolved by probing shards.
+ * **`resolveCatalogPointer`** / **`upsertCatalogPointer`** require shard ids encoded as **`cptr_HHHH_…`**.
  */
 export class ShardingCatalogPersistence implements CatalogPersistence {
   readonly nextCatalogPointerId: (tenantKey: string) => string;
@@ -95,39 +95,32 @@ export class ShardingCatalogPersistence implements CatalogPersistence {
 
   upsertCatalogPointer(input: UpsertCatalogPointerInput): Promise<UpsertCatalogPointerOutput> {
     const idx = parseCatalogPointerShardIndex(input.catalog_pointer_id);
-    if (idx !== null) {
-      const s = this.shards[idx];
-      if (s === undefined) {
-        throw new Error(`ShardingCatalogPersistence: encoded shard ${idx} out of range`);
-      }
-      return s.upsertCatalogPointer(input);
+    if (idx === null) {
+      throw new Error(
+        `ShardingCatalogPersistence: catalog_pointer_id must be cptr_HHHH_… (got ${input.catalog_pointer_id})`,
+      );
     }
-    const head = this.shards[0];
-    if (head === undefined) {
-      throw new Error("ShardingCatalogPersistence: no shards");
+    const s = this.shards[idx];
+    if (s === undefined) {
+      throw new Error(`ShardingCatalogPersistence: encoded shard ${idx} out of range`);
     }
-    return head.upsertCatalogPointer(input);
+    return s.upsertCatalogPointer(input);
   }
 
   async resolveCatalogPointer(
     input: ResolveCatalogPointerInput,
   ): Promise<ResolveCatalogPointerOutput> {
     const idx = parseCatalogPointerShardIndex(input.catalog_pointer_id);
-    if (idx !== null) {
-      const s = this.shards[idx];
-      if (s === undefined) {
-        throw new Error(`ShardingCatalogPersistence: encoded shard ${idx} out of range`);
-      }
-      return s.resolveCatalogPointer(input);
+    if (idx === null) {
+      throw new Error(
+        `ShardingCatalogPersistence: catalog_pointer_id must be cptr_HHHH_… (got ${input.catalog_pointer_id})`,
+      );
     }
-    for (const s of this.shards) {
-      try {
-        return await s.resolveCatalogPointer(input);
-      } catch {}
+    const s = this.shards[idx];
+    if (s === undefined) {
+      throw new Error(`ShardingCatalogPersistence: encoded shard ${idx} out of range`);
     }
-    throw new Error(
-      `ShardingCatalogPersistence: unknown catalog_pointer_id ${input.catalog_pointer_id}`,
-    );
+    return s.resolveCatalogPointer(input);
   }
 
   upsertSourceMapPointerRow(
