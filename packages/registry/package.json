@@ -1,8 +1,29 @@
 {
   "name": "@khoralabs/khora-registry",
   "version": "0.1.7",
+  "description": "Khora registry domain library.",
+  "license": "MIT",
   "type": "module",
-  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khoralabs/khora.git",
+    "directory": "packages/registry"
+  },
+  "homepage": "https://github.com/khoralabs/khora/tree/main/packages/registry",
+  "bugs": "https://github.com/khoralabs/khora/issues",
+  "keywords": [
+    "khora",
+    "registry",
+    "khoralabs"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -82,5 +103,8 @@
   },
   "optionalDependencies": {
     "@tursodatabase/serverless": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

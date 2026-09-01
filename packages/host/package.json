@@ -1,8 +1,29 @@
 {
   "name": "@khoralabs/khora-host",
   "version": "0.1.7",
+  "description": "Khora host domain library.",
+  "license": "MIT",
   "type": "module",
-  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khoralabs/khora.git",
+    "directory": "packages/host"
+  },
+  "homepage": "https://github.com/khoralabs/khora/tree/main/packages/host",
+  "bugs": "https://github.com/khoralabs/khora/issues",
+  "keywords": [
+    "khora",
+    "host",
+    "khoralabs"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -90,5 +111,8 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "typescript": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

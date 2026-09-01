@@ -4,7 +4,6 @@
   "description": "Typed HTTP/WS client for Khora hosts.",
   "license": "MIT",
   "type": "module",
-  "private": true,
   "engines": {
     "node": ">=18"
   },

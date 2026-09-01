@@ -16,7 +16,7 @@ on:
           - latest
           - next
       dry_run:
-        description: "Run npm publish --dry-run; skip git tag/push"
+        description: "Dry-run pack/publish; skip git tag/push"
         required: false
         type: boolean
         default: false
@@ -55,8 +55,18 @@ jobs:
             packages/client \
             packages/registry \
             packages/host \
-            scripts/release/libs/stage.test.ts \
+            scripts/release/libs/publish.test.ts \
             scripts/release/libs/build-publishable-lib.test.ts
+
+      - name: bump lib versions
+        run: |
+          bun -e '
+            import { bumpLibVersions } from "./scripts/release/libs/publish.ts";
+            bumpLibVersions(process.cwd(), process.env.VERSION);
+          '
+
+      - name: refresh lockfile after version bump
+        run: bun install
 
       - name: build client schema
         run: bun run --cwd packages/client build:schema
@@ -67,9 +77,6 @@ jobs:
           bun run --cwd packages/registry build
           bun run --cwd packages/host build
 
-      - name: stage release packages
-        run: bun run scripts/release/libs/stage.ts "$VERSION"
-
       - name: configure npm auth
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -79,43 +86,18 @@ jobs:
             exit 1
           fi
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
-
-      - name: verify npm publish access
-        run: |
-          set -euo pipefail
-          echo "npm user: $(npm whoami)"
-          for pkg in khora-client khora-registry khora-host; do
-            (cd "release/${pkg}" && npm publish --access public --tag "$NPM_TAG" --dry-run)
-          done
+          echo "NPM_CONFIG_TOKEN=${NPM_TOKEN}" >> "$GITHUB_ENV"
 
       - name: publish libs (client → registry → host)
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          for pkg in khora-client khora-registry khora-host; do
-            echo "::group::publish ${pkg}"
-            if [ "$DRY_RUN" = "true" ]; then
-              (cd "release/${pkg}" && npm publish --access public --tag "$NPM_TAG" --dry-run)
-            else
-              (cd "release/${pkg}" && npm publish --access public --tag "$NPM_TAG")
-            fi
-            echo "::endgroup::"
-          done
-
-      - name: bump source versions
-        if: ${{ inputs.dry_run == false }}
-        run: |
-          node -e "
-            const fs = require('node:fs');
-            for (const p of [
-              'packages/client/package.json',
-              'packages/registry/package.json',
-              'packages/host/package.json',
-            ]) {
-              const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
-              pkg.version = process.env.VERSION;
-              fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
-            }
-          "
+          if [ "$DRY_RUN" = "true" ]; then
+            bun run scripts/release/libs/publish.ts --dry-run --tag "$NPM_TAG"
+          else
+            bun run scripts/release/libs/publish.ts --tag "$NPM_TAG"
+          fi
 
       - name: commit version bump
         if: ${{ inputs.dry_run == false }}
@@ -123,7 +105,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/client/package.json packages/registry/package.json packages/host/package.json
+          git add packages/client/package.json packages/registry/package.json packages/host/package.json bun.lock
           if git diff --cached --quiet; then
             echo "::warning::version unchanged"
             exit 0
