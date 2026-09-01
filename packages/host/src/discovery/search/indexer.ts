@@ -35,7 +35,12 @@ export function createHostSearchIndexer(deps: {
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
   logError?: (message: string, err: unknown) => void;
-  onEmbeddingFailure?: (input: { namespace: string; memoryKey: string; text: string }) => void;
+  onEmbeddingFailure?: (input: {
+    namespace: string;
+    memoryKey: string;
+    sourceKey: string;
+    text: string;
+  }) => void;
 }): HostSearchIndexer {
   const { client, persistence, persistenceClient, embeddingModel, namespaceRoot } = deps;
   const logError = deps.logError ?? ((msg, err) => console.error(msg, err));
@@ -44,6 +49,7 @@ export function createHostSearchIndexer(deps: {
     text: string;
     namespace: string;
     memoryKey: string;
+    sourceKey: string;
   }): Promise<number[] | undefined> {
     if (embeddingModel === undefined || input.text.trim().length === 0) return undefined;
     try {
@@ -94,6 +100,7 @@ export function createHostSearchIndexer(deps: {
           text,
           namespace: ns,
           memoryKey: PROFILE_MEMORY_KEY,
+          sourceKey: "body",
         });
         const memoryId = ids.memory(ns, PROFILE_MEMORY_KEY);
         await client.mergeMemory({
@@ -152,6 +159,7 @@ export function createHostSearchIndexer(deps: {
             text: feature.text,
             namespace: ns,
             memoryKey: post.id,
+            sourceKey: feature.key,
           });
           content.push({
             key: feature.key,

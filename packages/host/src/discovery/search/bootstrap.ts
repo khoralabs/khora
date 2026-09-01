@@ -25,7 +25,12 @@ export type BootstrapHostSearchOpts = {
   postResolver: PostResolver;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;
-  onEmbeddingFailure?: (input: { namespace: string; memoryKey: string; text: string }) => void;
+  onEmbeddingFailure?: (input: {
+    namespace: string;
+    memoryKey: string;
+    sourceKey: string;
+    text: string;
+  }) => void;
 };
 
 export function bootstrapHostSearch(opts: BootstrapHostSearchOpts): HostSearch {

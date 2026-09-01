@@ -1,12 +1,13 @@
 import type { Database } from "bun:sqlite";
-import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
+import type { MemoriesClientAsync } from "@khoralabs/memories-node";
 import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-node/helpers";
-import { upsertMemorySearchMetaVectorAsync } from "@khoralabs/memories-node/persistence";
+import type { khoraOntology } from "./ontology";
 
 const DEFAULT_INTERVAL_MS = 30_000;
 const DEFAULT_BATCH_SIZE = 25;
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_BACKOFF_BASE_MS = 15_000;
+const DEFAULT_SOURCE_KEY = "body";
 
 export type PendingEmbeddingQueueHandle = { stop(): void };
 
@@ -14,6 +15,7 @@ export type PendingEmbeddingQueueSummaryRow = {
   id: number;
   namespace: string;
   memoryKey: string;
+  sourceKey: string;
   attempts: number;
   lastAttemptAt: number | null;
   createdAt: number;
@@ -29,6 +31,7 @@ type PendingEmbeddingRow = {
   id: number;
   namespace: string;
   memory_key: string;
+  source_key: string;
   text: string;
   attempts: number;
   last_attempt_at: number | null;
@@ -44,19 +47,62 @@ export type RunPendingEmbeddingRetryBatchResult = {
   removedEmpty: number;
 };
 
+type PendingEmbeddingClient = MemoriesClientAsync<
+  typeof khoraOntology.nodeLabels,
+  typeof khoraOntology.edgeLabels
+>;
+
+function migratePendingEmbeddingsTable(db: Database): void {
+  const cols = db.query<{ name: string }, []>("PRAGMA table_info(pending_embeddings)").all();
+  if (cols.length === 0) return;
+  if (cols.some((c) => c.name === "source_key")) return;
+
+  db.run("BEGIN");
+  try {
+    db.run(`
+      CREATE TABLE pending_embeddings_migrated (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        namespace TEXT NOT NULL,
+        memory_key TEXT NOT NULL,
+        source_key TEXT NOT NULL DEFAULT 'body',
+        text TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_attempt_at INTEGER,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        UNIQUE(namespace, memory_key, source_key)
+      );
+    `);
+    db.run(`
+      INSERT INTO pending_embeddings_migrated (
+        id, namespace, memory_key, source_key, text, attempts, last_attempt_at, created_at
+      )
+      SELECT id, namespace, memory_key, 'body', text, attempts, last_attempt_at, created_at
+      FROM pending_embeddings;
+    `);
+    db.run("DROP TABLE pending_embeddings");
+    db.run("ALTER TABLE pending_embeddings_migrated RENAME TO pending_embeddings");
+    db.run("COMMIT");
+  } catch (err) {
+    db.run("ROLLBACK");
+    throw err;
+  }
+}
+
 export function ensurePendingEmbeddingsTable(db: Database): void {
   db.run(`
     CREATE TABLE IF NOT EXISTS pending_embeddings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       namespace TEXT NOT NULL,
       memory_key TEXT NOT NULL,
+      source_key TEXT NOT NULL DEFAULT 'body',
       text TEXT NOT NULL,
       attempts INTEGER NOT NULL DEFAULT 0,
       last_attempt_at INTEGER,
       created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-      UNIQUE(namespace, memory_key)
+      UNIQUE(namespace, memory_key, source_key)
     );
   `);
+  migratePendingEmbeddingsTable(db);
 }
 
 export function purgeEmptyPendingEmbeddings(db: Database): number {
@@ -82,20 +128,21 @@ export function resetFailedPendingEmbeddings(db: Database, maxAttempts?: number)
 
 export function enqueuePendingEmbedding(
   db: Database,
-  input: { namespace: string; memoryKey: string; text: string },
+  input: { namespace: string; memoryKey: string; sourceKey: string; text: string },
 ): void {
   if (input.text.trim().length === 0) return;
   ensurePendingEmbeddingsTable(db);
+  const sourceKey = input.sourceKey.trim().length > 0 ? input.sourceKey : DEFAULT_SOURCE_KEY;
   db.query(
     `
-      INSERT INTO pending_embeddings (namespace, memory_key, text, attempts, last_attempt_at)
-      VALUES (?, ?, ?, 0, NULL)
-      ON CONFLICT(namespace, memory_key) DO UPDATE SET
+      INSERT INTO pending_embeddings (namespace, memory_key, source_key, text, attempts, last_attempt_at)
+      VALUES (?, ?, ?, ?, 0, NULL)
+      ON CONFLICT(namespace, memory_key, source_key) DO UPDATE SET
         text=excluded.text,
         attempts=0,
         last_attempt_at=NULL
     `,
-  ).run(input.namespace, input.memoryKey, input.text);
+  ).run(input.namespace, input.memoryKey, sourceKey, input.text);
 }
 
 export function readPendingEmbeddingQueueSummary(
@@ -118,7 +165,7 @@ export function readPendingEmbeddingQueueSummary(
   const rows = db
     .query<PendingEmbeddingRow, [number]>(
       `
-        SELECT id, namespace, memory_key, text, attempts, last_attempt_at, created_at
+        SELECT id, namespace, memory_key, source_key, text, attempts, last_attempt_at, created_at
         FROM pending_embeddings
         ORDER BY attempts DESC, created_at ASC
         LIMIT ?
@@ -129,6 +176,7 @@ export function readPendingEmbeddingQueueSummary(
       id: row.id,
       namespace: row.namespace,
       memoryKey: row.memory_key,
+      sourceKey: row.source_key,
       attempts: row.attempts,
       lastAttemptAt: row.last_attempt_at ?? null,
       createdAt: row.created_at,
@@ -142,7 +190,7 @@ export function readPendingEmbeddingQueueSummary(
 
 export async function runPendingEmbeddingRetryBatch(opts: {
   db: Database;
-  persistence: MemoriesPersistenceAsync;
+  client: PendingEmbeddingClient;
   embeddingModel?: EmbeddingModel;
   batchSize?: number;
   maxAttempts?: number;
@@ -166,7 +214,7 @@ export async function runPendingEmbeddingRetryBatch(opts: {
   const rows = opts.db
     .query<PendingEmbeddingRow, [number, number, number]>(
       `
-        SELECT id, namespace, memory_key, text, attempts, last_attempt_at, created_at
+        SELECT id, namespace, memory_key, source_key, text, attempts, last_attempt_at, created_at
         FROM pending_embeddings
         WHERE attempts < ?
           AND (last_attempt_at IS NULL OR last_attempt_at <= ?)
@@ -195,7 +243,7 @@ export async function runPendingEmbeddingRetryBatch(opts: {
     const waitMs = backoffBaseMs * 2 ** row.attempts;
     if (!ignoreBackoff && lastAttemptMs !== undefined && nowMs - lastAttemptMs < waitMs) continue;
 
-    const memoryId = await opts.persistence.findMemoryIdByKey(row.namespace, row.memory_key);
+    const memoryId = await opts.client.persistence.findMemoryIdByKey(row.namespace, row.memory_key);
     if (memoryId === undefined) {
       opts.db.query("DELETE FROM pending_embeddings WHERE id = ?").run(row.id);
       result.removedMissing += 1;
@@ -209,16 +257,11 @@ export async function runPendingEmbeddingRetryBatch(opts: {
       if (!vector || vector.length === 0) {
         throw new Error("empty vector");
       }
-      await opts.persistence.withTransaction(async () => {
-        await upsertMemorySearchMetaVectorAsync(
-          opts.persistence,
-          { now: Date.now() },
-          {
-            namespace: row.namespace,
-            memoryKey: row.memory_key,
-            vector: new Float32Array(vector),
-          },
-        );
+      await opts.client.replaceMemoryFeature({
+        namespace: row.namespace,
+        key: row.memory_key,
+        sourceKey: row.source_key,
+        vector,
       });
       opts.db.query("DELETE FROM pending_embeddings WHERE id = ?").run(row.id);
       result.succeeded += 1;
@@ -243,7 +286,7 @@ export async function runPendingEmbeddingRetryBatch(opts: {
 
 export function startEmbeddingRetryWorker(opts: {
   db: Database;
-  persistence: MemoriesPersistenceAsync;
+  client: PendingEmbeddingClient;
   embeddingModel?: EmbeddingModel;
   intervalMs?: number;
   batchSize?: number;
@@ -270,7 +313,7 @@ export function startEmbeddingRetryWorker(opts: {
     try {
       await runPendingEmbeddingRetryBatch({
         db: opts.db,
-        persistence: opts.persistence,
+        client: opts.client,
         embeddingModel: opts.embeddingModel,
         batchSize,
         maxAttempts,

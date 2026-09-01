@@ -137,14 +137,14 @@ export async function bootstrapKhoraHost(
       postResolver: foundation.postResolver,
       embeddingModel: opts.memories.embeddingModel,
       namespaceRoot: opts.memories.namespaceRoot,
-      onEmbeddingFailure: ({ namespace, memoryKey, text }) => {
+      onEmbeddingFailure: ({ namespace, memoryKey, sourceKey, text }) => {
         if (!memoriesSqliteDb) return;
-        enqueuePendingEmbedding(memoriesSqliteDb, { namespace, memoryKey, text });
+        enqueuePendingEmbedding(memoriesSqliteDb, { namespace, memoryKey, sourceKey, text });
       },
     });
     startEmbeddingRetryWorker({
       db: memoriesSqliteDb,
-      persistence: handle.persistence,
+      client: memories.client,
       embeddingModel: opts.memories.embeddingModel,
     });
   }
