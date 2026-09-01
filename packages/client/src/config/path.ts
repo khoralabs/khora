@@ -22,9 +22,7 @@ export type ResolvedKhoraConfigPath = {
  *   2. `env.KHORA_CONFIG` — explicit
  *   3. First entry of `defaultPaths` that exists on disk — non-explicit
  *
- * `defaultPaths` defaults to `[defaultKhoraConfigPath()]`. The legacy `defaultPath` option is
- * kept as a thin alias (single-element array) for backward compatibility; if both are supplied,
- * `defaultPaths` wins.
+ * `defaultPaths` defaults to `[defaultKhoraConfigPath()]`.
  *
  * `undefined` is returned when nothing applies. Callers may treat ENOENT on an explicit path as
  * fatal; non-explicit resolutions are skipped silently when the file is missing.
@@ -33,8 +31,6 @@ export function resolveKhoraConfigPath(
   opts: {
     flag?: string;
     env?: NodeJS.ProcessEnv;
-    /** Single default path. Use `defaultPaths` for ordered fallback discovery. */
-    defaultPath?: string;
     /** Ordered list of candidate default paths; first existing wins. */
     defaultPaths?: readonly string[];
     fsExists?: (p: string) => boolean;
@@ -45,9 +41,7 @@ export function resolveKhoraConfigPath(
   const envVal = opts.env?.KHORA_CONFIG?.trim();
   if (envVal !== undefined && envVal.length > 0) return { path: envVal, explicit: true };
   const exists = opts.fsExists ?? existsSync;
-  const candidates =
-    opts.defaultPaths ??
-    (opts.defaultPath !== undefined ? [opts.defaultPath] : [defaultKhoraConfigPath()]);
+  const candidates = opts.defaultPaths ?? [defaultKhoraConfigPath()];
   for (const candidate of candidates) {
     if (exists(candidate)) return { path: candidate, explicit: false };
   }

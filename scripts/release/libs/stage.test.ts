@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import {
-  KHORA_LIB_PUBLISH_ORDER,
-  stagedClientExports,
-  stagedDependencies,
-  stagedExports,
-} from "./stage";
+import { KHORA_LIB_PUBLISH_ORDER, stagedDependencies, stagedExports } from "./stage";
 
 const repoRoot = path.resolve(import.meta.dir, "../../..");
 
@@ -15,7 +10,7 @@ describe("stage khora libs helpers", () => {
   });
 
   test("client exports include schema, transport, and dist entry", () => {
-    const e = stagedClientExports();
+    const e = stagedExports("khora-client", path.join(repoRoot, "packages/client"));
     expect((e["."] as Record<string, string>).types).toBe("./dist/index.d.ts");
     expect(e["./khora-config.schema.json"]).toBe("./khora-config.schema.json");
     expect((e["./transport"] as Record<string, string>).import).toBe("./dist/transport.js");

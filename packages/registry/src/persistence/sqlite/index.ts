@@ -1,12 +1,9 @@
 export {
   createRegistrySqliteDatabaseFromMemory,
-  getRegistryCatalogDb,
-  getRegistryDatabase,
   getRegistrySqliteBundle,
   getRegistrySqliteDatabase,
   openRegistrySqliteDatabase,
   registryDatabasePath,
-  resetRegistryCatalogDb,
   resetRegistrySqliteDatabase,
 } from "./db";
 export {

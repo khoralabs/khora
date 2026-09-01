@@ -13,9 +13,6 @@ export function resetRegistrySqliteDatabase(): void {
   bundle = undefined;
 }
 
-/** @deprecated Use resetRegistrySqliteDatabase */
-export const resetRegistryCatalogDb = resetRegistrySqliteDatabase;
-
 export function registryDatabasePath(): string {
   const configured = process.env.REGISTRY_DATABASE_PATH?.trim();
   const raw =
@@ -58,12 +55,6 @@ export function getRegistrySqliteBundle(): RegistrySqliteBundle {
 export function getRegistrySqliteDatabase(): Database {
   return getRegistrySqliteBundle().db;
 }
-
-/** @deprecated Use getRegistrySqliteDatabase */
-export const getRegistryCatalogDb = getRegistrySqliteDatabase;
-
-/** @deprecated Use getRegistrySqliteDatabase */
-export const getRegistryDatabase = getRegistrySqliteDatabase;
 
 export async function openRegistrySqliteDatabase(): Promise<RegistrySqliteBundle> {
   const next = createRegistrySqliteBundle(openRawRegistrySqliteDatabase());

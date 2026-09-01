@@ -189,6 +189,3 @@ CREATE TABLE IF NOT EXISTS agent_account_bindings (
   bound_via_host_id TEXT REFERENCES khora_hosts(id)
 );
 `.trim();
-
-/** @deprecated Use REGISTRY_DOMAIN_SCHEMA_SQL */
-export const USERS_SCHEMA_SQL = REGISTRY_DOMAIN_SCHEMA_SQL;

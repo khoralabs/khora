@@ -42,28 +42,6 @@ export function stagedExports(pkg: KhoraLibPackage, packageDir: string): Record<
   return exportsMap;
 }
 
-/** @deprecated use stagedExports("khora-client", …) */
-export function stagedClientExports(): Record<string, unknown> {
-  return {
-    ".": {
-      types: "./dist/index.d.ts",
-      import: "./dist/index.js",
-      default: "./dist/index.js",
-    },
-    "./transport": {
-      types: "./dist/transport.d.ts",
-      import: "./dist/transport.js",
-      default: "./dist/transport.js",
-    },
-    "./transport/byte-stream": {
-      types: "./dist/transport/byte-stream.d.ts",
-      import: "./dist/transport/byte-stream.js",
-      default: "./dist/transport/byte-stream.js",
-    },
-    "./khora-config.schema.json": "./khora-config.schema.json",
-  };
-}
-
 export function stagedDependencies(pkg: KhoraLibPackage, version: string): Record<string, string> {
   switch (pkg) {
     case "khora-client":

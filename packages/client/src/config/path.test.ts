@@ -7,7 +7,7 @@ describe("resolveKhoraConfigPath", () => {
     const r = resolveKhoraConfigPath({
       flag: "/a.json",
       env: { KHORA_CONFIG: "/b.json" },
-      defaultPath: "/c.json",
+      defaultPaths: ["/c.json"],
       fsExists: () => true,
     });
     expect(r).toEqual({ path: "/a.json", explicit: true });
@@ -16,7 +16,7 @@ describe("resolveKhoraConfigPath", () => {
   test("env wins over default when no flag", () => {
     const r = resolveKhoraConfigPath({
       env: { KHORA_CONFIG: "/b.json" },
-      defaultPath: "/c.json",
+      defaultPaths: ["/c.json"],
       fsExists: () => true,
     });
     expect(r).toEqual({ path: "/b.json", explicit: true });
@@ -24,12 +24,12 @@ describe("resolveKhoraConfigPath", () => {
 
   test("default returned only when file exists", () => {
     const ok = resolveKhoraConfigPath({
-      defaultPath: "/c.json",
+      defaultPaths: ["/c.json"],
       fsExists: () => true,
     });
     expect(ok).toEqual({ path: "/c.json", explicit: false });
     const missing = resolveKhoraConfigPath({
-      defaultPath: "/c.json",
+      defaultPaths: ["/c.json"],
       fsExists: () => false,
     });
     expect(missing).toBeUndefined();
@@ -63,15 +63,6 @@ describe("resolveKhoraConfigPath", () => {
       fsExists: () => false,
     });
     expect(r).toBeUndefined();
-  });
-
-  test("defaultPaths wins over defaultPath when both supplied", () => {
-    const r = resolveKhoraConfigPath({
-      defaultPath: "/legacy.json",
-      defaultPaths: ["/new.json"],
-      fsExists: () => true,
-    });
-    expect(r).toEqual({ path: "/new.json", explicit: false });
   });
 
   test("defaultPaths walks past missing entries to find the next existing one", () => {
