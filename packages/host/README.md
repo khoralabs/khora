@@ -47,9 +47,9 @@ SQLite handles and host/social persistence adapters are wired in the server boot
 
 ### HTTP serve (`@khoralabs/khora-host/http`)
 
-After the app builds a `KhoraHostContext` (and optional memories handles):
+After the app builds a `KhoraHostContext`:
 
-- `createHostRouteDepsFromEnv({ ctx, memories… })` — admin token from env + rate limiters
+- `createHostRouteDepsFromEnv({ ctx })` — admin token from env + rate limiters
 - `serveKhoraHttp({ deps, port, fetch?, unaryIngress?, duplexUnixPath? })` — Bun.serve, inbox WS, optional ingress, SIGTERM drain
 
 OTel spans, packaged-runtime cwd, and Litestream stay in `apps/server` (pass a custom `fetch` when instrumenting).
@@ -105,7 +105,7 @@ apps/server/src/run-http-server.ts
     createKhoraInvitesSqliteRepo()                 // if invite pepper set
     createLocalSqliteServiceStack() + bootstrapHostSearch()  // if memories on
     createKhoraHost(deps)
-  createHostRouteDepsFromEnv({ ctx, memories… })   // @khoralabs/khora-host/http
+  createHostRouteDepsFromEnv({ ctx })            // @khoralabs/khora-host/http
   serveKhoraHttp({ deps, port, fetch: otelWrap… }) // package serve; app OTel via fetch
 ```
 
