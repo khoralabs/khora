@@ -1,6 +1,6 @@
 {
   "name": "@khoralabs/khora-registry",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Khora registry domain library.",
   "license": "MIT",
   "type": "module",
