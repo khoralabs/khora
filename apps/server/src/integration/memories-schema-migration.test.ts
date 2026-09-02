@@ -25,7 +25,7 @@ function memoriesTest(name: string, fn: () => Promise<void>): void {
   test.skipIf(!memoriesSqliteVecAvailable())(name, fn);
 }
 
-describe("memories 0.8.0 schema migration", () => {
+describe("memories 0.10.0 schema migration", () => {
   const dataDir = mkdtempSync(path.join(tmpdir(), "khora-memories-migrate-"));
 
   afterAll(() => {
