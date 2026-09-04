@@ -35,6 +35,7 @@ export {
   zKhoraAppConfigBase,
   zKhoraAppPluginMap,
 } from "./config/index";
+export { type DiscoverHostOptions, discoverHost } from "./discover-host";
 export { discoverRegisteredHostSlugs } from "./discover-registered-hosts";
 export {
   type AuthorSubscriptionsSnapshot,

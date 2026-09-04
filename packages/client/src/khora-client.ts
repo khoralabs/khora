@@ -1,5 +1,6 @@
 import type { Signer } from "@khoralabs/did-key-identity";
 import type {
+  KhoraHostDiscovery,
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
   KhoraPost,
@@ -13,6 +14,7 @@ import type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
+import { type DiscoverHostOptions, discoverHost } from "./discover-host";
 import { getAgentStatus } from "./http/agent";
 import {
   type AuthorSubscriptionsSnapshot,
@@ -172,6 +174,14 @@ export class KhoraClient {
 
   lookupProfileByDid(did: string): Promise<PublicProfileResult | null> {
     return httpLookupProfileByDid(this.transport, did);
+  }
+
+  /** Fetch and validate host discovery metadata (`GET /.well-known/khora`). */
+  static discover(
+    baseUrl: string,
+    opts?: Omit<DiscoverHostOptions, "baseUrl">,
+  ): Promise<KhoraHostDiscovery> {
+    return discoverHost({ baseUrl, ...opts });
   }
 
   async createPost(body: KhoraPostCreateContent): Promise<KhoraPost> {
