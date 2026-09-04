@@ -1,5 +1,6 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/khora-contracts";
 import { zKhoraRegisterResult, zKhoraRegistrationRequestBody } from "@khoralabs/khora-contracts";
+import { KHORA_ERROR_CODE } from "@khoralabs/khora-contracts/http";
 import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "../../invites";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
@@ -41,15 +42,15 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
   if (populationLimit !== undefined) {
     const current = ctx.adminStats.registeredPrincipalCount();
     if (current >= populationLimit) {
-      return jsonError("Host at population capacity", 503);
+      return jsonError("Host at population capacity", 503, KHORA_ERROR_CODE.population_full);
     }
   }
   if (ctx.host.persistenceClient.registrationExists(body.did)) {
-    return jsonError("Already registered", 409);
+    return jsonError("Already registered", 409, KHORA_ERROR_CODE.already_registered);
   }
   const accountStatus = ctx.agentAccountStatus.getStatus(body.did);
   if (accountStatus !== undefined) {
-    return jsonError("Registration not allowed", 403);
+    return jsonError("Registration not allowed", 403, KHORA_ERROR_CODE.registration_forbidden);
   }
   const inviteTokenRaw = body.inviteToken?.trim();
   const inviteTokenPresent = inviteTokenRaw !== undefined && inviteTokenRaw.length > 0;
@@ -111,13 +112,13 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
     }
     if (usernameTaken) {
       return Response.json(
-        { error: "Username is already taken", code: "username_taken" },
+        { error: "Username is already taken", code: KHORA_ERROR_CODE.username_taken },
         { status: 409 },
       );
     }
     if (e instanceof Error) {
       return authErrorResponse(e);
     }
-    return jsonError(msg, 400);
+    return jsonError(msg, 400, KHORA_ERROR_CODE.invalid_request);
   }
 }

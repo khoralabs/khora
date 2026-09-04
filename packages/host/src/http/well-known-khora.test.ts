@@ -16,6 +16,8 @@ describe("well-known khora", () => {
       ctx: {
         hostSpec,
         adminStats: { registeredPrincipalCount: () => populationCurrent },
+        search: undefined,
+        host: { inboxHub: {} },
       } as unknown as KhoraHostContext,
       rateLimiters: {} as HostRouteDeps["rateLimiters"],
       adminTokenAuth: null,
@@ -74,6 +76,11 @@ describe("well-known khora", () => {
         register: "/v1/register",
       },
       population: { current: 0 },
+      features: {
+        search: false,
+        invitesRequired: false,
+        inbox: true,
+      },
     });
   });
 

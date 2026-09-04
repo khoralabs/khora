@@ -388,8 +388,9 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 | `@khoralabs/colonnade` | `packages/colonnade/` | Cell cluster, outbox/inbox, PostOperation |
 | `@khoralabs/khora-auth` | `packages/auth/` | DID auth + nonce store |
 | `@khoralabs/khora-host` | `packages/host/src/invites/` | Invite tokens repo + env |
-| `@khoralabs/khora-contracts` | `packages/contracts/` | Profile/post Zod schemas |
-| `@khoralabs/khora-client/transport` | `packages/client/` | Inbox WS, unary HTTP |
+| `@khoralabs/khora-contracts` | `packages/contracts/` | Profile/post Zod schemas, byte-stream, inbox wire |
+| `@khoralabs/khora-auth` | `packages/auth/` | DID auth + post content signing |
+| `@khoralabs/khora-client/transport` | `packages/client/` | Client HTTP/WS adapters (host no longer imports this) |
 
 ## Build & publish
 

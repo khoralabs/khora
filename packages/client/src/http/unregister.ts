@@ -2,6 +2,7 @@ import {
   type KhoraUnregisterRequestBody,
   zKhoraUnregisterRequestBody,
 } from "@khoralabs/khora-contracts";
+import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
 import type { KhoraUnaryTransport } from "../transport";
 
 export type UnregisterBody = Omit<KhoraUnregisterRequestBody, "did"> & {
@@ -13,5 +14,5 @@ export async function unregister(t: KhoraUnaryTransport, body: UnregisterBody = 
     ...body,
     did: t.did,
   });
-  await t.requestVoid("POST", "/v1/unregister", { body: finalBody });
+  await t.requestVoid("POST", KHORA_HTTP_PATH.unregister, { body: finalBody });
 }

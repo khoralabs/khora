@@ -65,7 +65,6 @@ export function publishedDependencies(
       };
     case "khora-host":
       return {
-        "@khoralabs/khora-client": version,
         "@khoralabs/khora-registry": version,
         "@khoralabs/memories-node": "^0.10.0",
         "@khoralabs/memories-service": "^0.10.0",

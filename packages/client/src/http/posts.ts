@@ -6,6 +6,7 @@ import {
   mergeKhoraPostPatch,
   zKhoraPost,
 } from "@khoralabs/khora-contracts";
+import { KHORA_HTTP_PATH, khoraPostByIdPath } from "@khoralabs/khora-contracts/http";
 import {
   khoraPostSigningPayloadFromCreate,
   signingPayloadForPatch,
@@ -24,7 +25,7 @@ export async function createPost(
 ): Promise<KhoraPost> {
   const payload = khoraPostSigningPayloadFromCreate(t.did, content);
   const authorSignature = await signKhoraPostPayload(t.signer, payload);
-  return t.requestJson("POST", "/v1/posts", {
+  return t.requestJson("POST", KHORA_HTTP_PATH.posts, {
     body: { ...content, authorSignature },
     parse: zKhoraPost,
   });
@@ -38,7 +39,7 @@ export async function createSubscription(
 }
 
 export function getPost(t: KhoraUnaryTransport, id: string): Promise<KhoraPost> {
-  return t.requestJson("GET", `/v1/posts/${encodeURIComponent(id)}`, {
+  return t.requestJson("GET", khoraPostByIdPath(id), {
     parse: zKhoraPost,
   });
 }
@@ -51,14 +52,14 @@ export async function updatePost(
 ): Promise<KhoraPost> {
   const payload = signingPayloadForPatch(t.did, previous, patch);
   const authorSignature = await signKhoraPostPayload(t.signer, payload);
-  return t.requestJson("PATCH", `/v1/posts/${encodeURIComponent(id)}`, {
+  return t.requestJson("PATCH", khoraPostByIdPath(id), {
     body: { ...patch, authorSignature },
     parse: zKhoraPost,
   });
 }
 
 export function deletePost(t: KhoraUnaryTransport, id: string): Promise<void> {
-  return t.requestVoid("DELETE", `/v1/posts/${encodeURIComponent(id)}`);
+  return t.requestVoid("DELETE", khoraPostByIdPath(id));
 }
 
 export { mergeKhoraPostPatch };

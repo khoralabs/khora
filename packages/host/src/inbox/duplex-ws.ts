@@ -1,4 +1,4 @@
-import type { DuplexByteStream } from "@khoralabs/khora-client/transport/byte-stream";
+import type { DuplexByteStream } from "@khoralabs/khora-contracts/byte-stream";
 import type { InboxFanoutPort, InboxWebSocket } from "./fanout-port";
 
 /** Adapt UTF-8 inbox JSON (`send(string)` like Bun {@link WebSocket}) to binary duplex writes. */

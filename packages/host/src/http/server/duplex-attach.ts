@@ -1,4 +1,4 @@
-import type { DuplexByteStream } from "@khoralabs/khora-client/transport/byte-stream";
+import type { DuplexByteStream } from "@khoralabs/khora-contracts/byte-stream";
 import {
   handleInboxClientMessage,
   helloFrame,

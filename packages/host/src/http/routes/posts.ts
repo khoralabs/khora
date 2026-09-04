@@ -1,11 +1,11 @@
-import { AuthStrategyError } from "@khoralabs/khora-auth";
 import {
+  AuthStrategyError,
   khoraPostSigningPayloadFromCreate,
   signingPayloadForPatch,
   verifyKhoraPostSignature,
-} from "@khoralabs/khora-client";
-import { formatThrownError } from "@khoralabs/khora-client/transport";
+} from "@khoralabs/khora-auth";
 import {
+  formatThrownError,
   KHORA_AGGREGATE_DOMAIN,
   KHORA_EVENT_KIND,
   khoraPostCreateSigningContent,
@@ -16,6 +16,7 @@ import {
   zKhoraPostCreate,
   zKhoraPostPatch,
 } from "@khoralabs/khora-contracts";
+import { KHORA_ERROR_CODE } from "@khoralabs/khora-contracts/http";
 import z from "zod";
 import {
   assignPostAddress,
@@ -34,7 +35,11 @@ function postHandlerError(e: unknown, context: string): Response {
   if (status >= 500) {
     logger.error({ err: e, context }, "posts handler error");
   }
-  return jsonError(msg, status);
+  return jsonError(
+    msg,
+    status,
+    status >= 500 ? KHORA_ERROR_CODE.internal_error : KHORA_ERROR_CODE.invalid_request,
+  );
 }
 
 export async function handleGetPost(
@@ -55,7 +60,7 @@ export async function handleGetPost(
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
     const post = await resolvePostById(ctx.cluster, id);
     if (post === undefined) {
-      return jsonError("Post not found", 404);
+      return jsonError("Post not found", 404, KHORA_ERROR_CODE.not_found);
     }
     if (
       !canReadPost({
@@ -64,7 +69,7 @@ export async function handleGetPost(
         social: ctx.social,
       })
     ) {
-      return jsonError("Forbidden", 403);
+      return jsonError("Forbidden", 403, KHORA_ERROR_CODE.forbidden);
     }
     return Response.json(post);
   } catch (e) {
@@ -89,7 +94,7 @@ export async function handleCreatePost(
   if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
-    return jsonError("Register before creating posts", 400);
+    return jsonError("Register before creating posts", 400, KHORA_ERROR_CODE.not_registered);
   }
   try {
     const raw = JSON.parse(bodyText) as unknown;
@@ -103,7 +108,7 @@ export async function handleCreatePost(
       });
     } catch (e) {
       if (e instanceof AuthStrategyError) {
-        return jsonError(e.message, 401);
+        return jsonError(e.message, 401, KHORA_ERROR_CODE.unauthorized);
       }
       throw e;
     }
@@ -157,18 +162,18 @@ export async function handleUpdatePost(
   if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const agentProfileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (agentProfileId === undefined) {
-    return jsonError("Register before updating posts", 400);
+    return jsonError("Register before updating posts", 400, KHORA_ERROR_CODE.not_registered);
   }
   const previous = await resolvePostById(ctx.cluster, id);
   if (previous === undefined) {
-    return jsonError("Post not found", 404);
+    return jsonError("Post not found", 404, KHORA_ERROR_CODE.not_found);
   }
   if (previous.id !== id) {
     return jsonError("Stored post id mismatch", 500);
   }
   const authorId = previous.authorProfileId;
   if (authorId === undefined || authorId.length === 0 || authorId !== agentProfileId) {
-    return jsonError("Forbidden", 403);
+    return jsonError("Forbidden", 403, KHORA_ERROR_CODE.forbidden);
   }
   try {
     const patchRaw = JSON.parse(bodyText) as unknown;
@@ -185,7 +190,7 @@ export async function handleUpdatePost(
       });
     } catch (e) {
       if (e instanceof AuthStrategyError) {
-        return jsonError(e.message, 401);
+        return jsonError(e.message, 401, KHORA_ERROR_CODE.unauthorized);
       }
       throw e;
     }
@@ -234,15 +239,15 @@ export async function handleDeletePost(
   if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const agentProfileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (agentProfileId === undefined) {
-    return jsonError("Register before deleting posts", 400);
+    return jsonError("Register before deleting posts", 400, KHORA_ERROR_CODE.not_registered);
   }
   const post = await resolvePostById(ctx.cluster, id);
   if (post === undefined) {
-    return jsonError("Post not found", 404);
+    return jsonError("Post not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const authorId = post.authorProfileId;
   if (authorId === undefined || authorId.length === 0 || authorId !== agentProfileId) {
-    return jsonError("Forbidden", 403);
+    return jsonError("Forbidden", 403, KHORA_ERROR_CODE.forbidden);
   }
   await ctx.host.notify({
     kind: KHORA_EVENT_KIND.POST_DELETED,
@@ -271,7 +276,7 @@ export async function handleAgentStatus(
   if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
-    return jsonError("Register first", 400);
+    return jsonError("Register first", 400, KHORA_ERROR_CODE.not_registered);
   }
   const authorCellId = ctx.cluster.assignPrincipalToCell(did);
   const rows = await listAuthorOutboxRecords({

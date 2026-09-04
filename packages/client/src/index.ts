@@ -35,6 +35,7 @@ export {
   zKhoraAppConfigBase,
   zKhoraAppPluginMap,
 } from "./config/index";
+export { type DiscoverHostOptions, discoverHost } from "./discover-host";
 export { discoverRegisteredHostSlugs } from "./discover-registered-hosts";
 export {
   type AuthorSubscriptionsSnapshot,
@@ -73,6 +74,7 @@ export type {
   InboxConnectionHandle,
   InboxWsHandlers,
   KhoraFetch,
+  KhoraHttpUnaryTransport,
   KhoraTransportBundle,
   KhoraUnaryTransport,
 } from "./transport";

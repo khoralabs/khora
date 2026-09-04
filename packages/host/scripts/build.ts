@@ -7,7 +7,6 @@ await buildPublishableLib({
   packageDir: path.resolve(import.meta.dir, ".."),
   repoRoot,
   externals: [
-    "@khoralabs/khora-client",
     "@khoralabs/khora-registry",
     "@khoralabs/memories-node",
     "@khoralabs/memories-service",

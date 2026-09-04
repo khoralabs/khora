@@ -32,7 +32,7 @@ Future slots (not implemented): `http/message-signatures/` (RFC 9421), `jose/jws
 
 Identity file helpers re-export `@khoralabs/did-key-identity`. Product default path `~/.khora/identity.json` lives in apps (cli/daemon), not here.
 
-Post **content** signing lives in `@khoralabs/khora-client` (`posts/signing`). Host `AuthPreflight` typing lives in `@khoralabs/khora-host`.
+Post **content** signing lives in `@khoralabs/khora-auth` (`posts/signing`). Host `AuthPreflight` typing lives in `@khoralabs/khora-host`.
 
 ## Host wiring
 

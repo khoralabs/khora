@@ -1,3 +1,4 @@
+export type { DuplexByteStream } from "@khoralabs/khora-contracts/byte-stream";
 export type {
   CreateHttpKhoraTransportBundleOptions,
   CreateKhoraTransportBundleFromEnvOptions,
@@ -7,7 +8,6 @@ export {
   createHttpKhoraTransportBundle,
   createKhoraTransportBundleFromEnv,
 } from "./bundle";
-export type { DuplexByteStream } from "./byte-stream/index";
 export {
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,
@@ -15,9 +15,11 @@ export {
   type KhoraDerivedInboxEvent,
 } from "./client-events";
 export type {
+  ConnectInboxCall,
   KhoraDuplexTransport,
   WebSocketByteDuplexArgs,
   WebSocketByteDuplexHandle,
+  WsKhoraDuplexTransportOptions,
 } from "./duplex-ws";
 export {
   openWebSocketByteDuplex,
@@ -38,12 +40,9 @@ export type {
 } from "./inbox-ws";
 export { parseInboxWebSocketMessage } from "./inbox-ws";
 export type {
-  KhoraWsData,
-  KhoraWsUpgradePort,
-} from "./khora-host-ws-transport";
-export type {
   CreateHttpTransportOptions,
   KhoraFetch,
+  KhoraHttpUnaryTransport,
   KhoraUnaryTransport,
   RequestJsonOptions,
   RequestQuery,
@@ -51,5 +50,6 @@ export type {
 } from "./unary-http";
 export {
   createHttpKhoraUnaryTransport,
+  readErrorEnvelope,
   readErrorMessage,
 } from "./unary-http";

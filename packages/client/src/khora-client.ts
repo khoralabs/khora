@@ -1,5 +1,6 @@
 import type { Signer } from "@khoralabs/did-key-identity";
 import type {
+  KhoraHostDiscovery,
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
   KhoraPost,
@@ -13,6 +14,7 @@ import type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
+import { type DiscoverHostOptions, discoverHost } from "./discover-host";
 import { getAgentStatus } from "./http/agent";
 import {
   type AuthorSubscriptionsSnapshot,
@@ -73,7 +75,6 @@ export type KhoraClientOptions = {
 export class KhoraClient {
   private readonly transport: KhoraUnaryTransport;
   private readonly duplex: KhoraDuplexTransport;
-  private readonly WebSocketCtor: typeof WebSocket;
   private readonly eventListeners: Array<(event: KhoraClientEvent) => void> = [];
   private readonly pluginHandles: KhoraPluginHandle[] = [];
 
@@ -92,11 +93,11 @@ export class KhoraClient {
         fetch: options.fetch,
         nowMs: options.nowMs,
         nonceFactory: options.nonceFactory,
+        WebSocket: options.WebSocket,
       });
     }
     this.transport = bundle.unary;
     this.duplex = bundle.duplex;
-    this.WebSocketCtor = options.WebSocket ?? globalThis.WebSocket;
     const resolvePath = createKhoraResolvePath(options.dataDir);
     for (const installer of options.plugins ?? []) {
       this.pluginHandles.push(installer({ client: this, resolvePath }));
@@ -175,6 +176,14 @@ export class KhoraClient {
     return httpLookupProfileByDid(this.transport, did);
   }
 
+  /** Fetch and validate host discovery metadata (`GET /.well-known/khora`). */
+  static discover(
+    baseUrl: string,
+    opts?: Omit<DiscoverHostOptions, "baseUrl">,
+  ): Promise<KhoraHostDiscovery> {
+    return discoverHost({ baseUrl, ...opts });
+  }
+
   async createPost(body: KhoraPostCreateContent): Promise<KhoraPost> {
     const post = await createPost(this.transport, body);
     this.emit({ type: "post:created", post, did: this.did });
@@ -215,16 +224,10 @@ export class KhoraClient {
     handlers: InboxWsHandlers,
     signers?: readonly Signer[],
   ): Promise<InboxConnectionHandle> {
-    return this.duplex.connectInbox(
-      {
-        base: this.transport.base,
-        signers: signers ?? [this.transport.signer],
-        now: this.transport.now,
-        nonce: this.transport.nonce,
-        WebSocketCtor: this.WebSocketCtor,
-        emit: this.emit,
-      },
+    return this.duplex.connectInbox({
       handlers,
-    );
+      signers,
+      emit: this.emit,
+    });
   }
 }

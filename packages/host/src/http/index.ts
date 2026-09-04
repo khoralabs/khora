@@ -46,3 +46,4 @@ export {
   createInboxDrainWebSocketHandlers,
   createInboxDrainWebSocketHandlersForDeps,
 } from "./ws/inbox";
+export type { KhoraWsData, KhoraWsUpgradePort } from "./ws/types";

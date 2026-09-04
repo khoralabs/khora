@@ -2,7 +2,7 @@ import { logger } from "../logger";
 import type { HostRouteDeps } from "./deps";
 
 export function handleHealth(): Response {
-  return new Response("ok", { status: 200 });
+  return Response.json({ ok: true as const });
 }
 
 export function handleReady(deps: HostRouteDeps): Response {

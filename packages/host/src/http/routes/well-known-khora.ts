@@ -8,6 +8,8 @@ export function handleWellKnownKhora(deps: HostRouteDeps): Response {
   const doc = buildKhoraHostDiscovery({
     hostSpec: deps.ctx.hostSpec,
     populationCurrent,
+    searchEnabled: deps.ctx.search !== undefined,
+    inboxEnabled: deps.ctx.host.inboxHub !== undefined,
   });
   return Response.json(doc, {
     headers: { "Content-Type": "application/json" },

@@ -126,6 +126,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/did-key-identity": "catalog:",
+        "@khoralabs/khora-contracts": "workspace:*",
         "@noble/ed25519": "catalog:",
         "@scure/base": "^1.2.6",
         "lru-cache": "^11.5.1",
@@ -192,7 +193,6 @@
       "dependencies": {
         "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
-        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-registry": "workspace:*",
         "@khoralabs/memories-node": "catalog:",
@@ -206,6 +206,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@khoralabs/khora-client": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },

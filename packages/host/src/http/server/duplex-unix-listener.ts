@@ -1,5 +1,5 @@
 import { AuthError } from "@khoralabs/khora-auth";
-import type { DuplexByteStream } from "@khoralabs/khora-client/transport/byte-stream";
+import type { DuplexByteStream } from "@khoralabs/khora-contracts/byte-stream";
 import type { Socket } from "bun";
 import { logger } from "../logger";
 import type { HostRouteDeps } from "../routes/deps";

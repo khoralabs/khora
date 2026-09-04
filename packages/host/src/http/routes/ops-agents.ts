@@ -1,3 +1,4 @@
+import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
 import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
@@ -5,8 +6,8 @@ import { jsonError } from "./responses";
 function parseDidFromPath(
   pathname: string,
 ): { did: string; action: string | undefined } | undefined {
-  if (!pathname.startsWith("/v1/ops/agents/")) return undefined;
-  const suffix = pathname.slice("/v1/ops/agents/".length);
+  if (!pathname.startsWith(KHORA_HTTP_PATH.opsAgentsPrefix)) return undefined;
+  const suffix = pathname.slice(KHORA_HTTP_PATH.opsAgentsPrefix.length);
   const parts = suffix.split("/").filter((part) => part.length > 0);
   const rawDid = parts[0];
   if (rawDid === undefined || rawDid.length === 0) return undefined;

@@ -32,6 +32,16 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./byte-stream": {
+      "types": "./src/byte-stream/index.ts",
+      "import": "./src/byte-stream/index.ts",
+      "default": "./src/byte-stream/index.ts"
+    },
+    "./http": {
+      "types": "./src/http/index.ts",
+      "import": "./src/http/index.ts",
+      "default": "./src/http/index.ts"
     }
   },
   "scripts": {

@@ -64,13 +64,21 @@ export {
   signAgentRequest,
   signInboxBind,
 } from "./http/signed-request/sign";
-
+export {
+  canonicalKhoraPostSigningPayload,
+  KHORA_POST_SIGNATURE_V1,
+  type KhoraPostSigningPayloadV1,
+  khoraPostSigningPayloadFromCreate,
+  khoraPostSigningPayloadFromPatch,
+  signingPayloadForPatch,
+  signKhoraPostPayload,
+  verifyKhoraPostSignature,
+} from "./posts/signing";
 export {
   clientIpFromRequest,
   createRateLimiter,
   type RateLimitCheck,
   type RateLimitRule,
 } from "./rate-limit/sliding-window";
-
 export { createMemoryNonceStore } from "./replay/memory-nonce-store";
 export type { NonceStore } from "./replay/nonce-store";

@@ -1,7 +1,10 @@
 import type { AgentRequestEnvelope } from "@khoralabs/khora-auth";
+import { bindErrorFrame, boundFrame, drainFrame, helloFrame } from "@khoralabs/khora-contracts";
 import type { KhoraHostContext } from "../host/context";
 import { popInboxDrainItemsForDid } from "./drain";
 import type { InboxFanoutPort, InboxWebSocket } from "./fanout-port";
+
+export { bindErrorFrame, boundFrame, drainFrame, helloFrame };
 
 export const INBOX_DRAIN_CONCURRENCY = 4;
 
@@ -17,29 +20,6 @@ export function newInboxConnectionId(): string {
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-export function helloFrame(connectionId: string): string {
-  return JSON.stringify({ type: "hello", connection_id: connectionId });
-}
-
-export function boundFrame(did: string): string {
-  return JSON.stringify({ type: "bound", did });
-}
-
-export function bindErrorFrame(did: string | undefined, error: string): string {
-  return JSON.stringify({
-    type: "bind_error",
-    ...(did !== undefined ? { did } : {}),
-    error,
-  });
-}
-
-export function drainFrame(
-  did: string,
-  items: Awaited<ReturnType<typeof popInboxDrainItemsForDid>>,
-): string {
-  return JSON.stringify({ type: "drain", did, items });
 }
 
 type BindPrincipalWire = {
