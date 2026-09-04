@@ -141,7 +141,7 @@
     },
     "packages/client": {
       "name": "@khoralabs/khora-client",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "dependencies": {
         "@khoralabs/did-key-identity": "catalog:",
         "@khoralabs/khora-auth": "workspace:*",
@@ -189,7 +189,7 @@
     },
     "packages/host": {
       "name": "@khoralabs/khora-host",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "dependencies": {
         "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
@@ -230,7 +230,7 @@
     },
     "packages/registry": {
       "name": "@khoralabs/khora-registry",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "dependencies": {
         "@khoralabs/colonnade": "workspace:*",
         "@khoralabs/did-key-identity": "catalog:",
