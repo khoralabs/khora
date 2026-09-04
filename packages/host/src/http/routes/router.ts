@@ -1,9 +1,9 @@
-import type { KhoraWsUpgradePort } from "@khoralabs/khora-client/transport";
 import type { KhoraHostSpecPort } from "../..";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { maybeRegistryOptInOnStartup } from "../registry-opt-in";
 import { handleInboxWsUpgrade } from "../ws/inbox";
+import type { KhoraWsUpgradePort } from "../ws/types";
 import { handleListAuthorSubscriptions } from "./authors";
 import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";

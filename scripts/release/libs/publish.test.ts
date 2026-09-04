@@ -36,7 +36,7 @@ describe("publish khora libs helpers", () => {
 
   test("host pins sibling libs to lockstep version", () => {
     const deps = publishedDependencies("khora-host", "9.9.9");
-    expect(deps["@khoralabs/khora-client"]).toBe("9.9.9");
+    expect(deps["@khoralabs/khora-client"]).toBeUndefined();
     expect(deps["@khoralabs/khora-registry"]).toBe("9.9.9");
     expect(deps["@khoralabs/colonnade"]).toBeUndefined();
   });
@@ -98,7 +98,7 @@ describe("publish khora libs helpers", () => {
         dependencies: Record<string, string>;
         license?: string;
       };
-      expect(mid.dependencies["@khoralabs/khora-client"]).toBe(version);
+      expect(mid.dependencies["@khoralabs/khora-client"]).toBeUndefined();
       expect(mid.dependencies["@khoralabs/khora-registry"]).toBe(version);
       expect(mid.dependencies["@khoralabs/colonnade"]).toBeUndefined();
       expect(mid.dependencies["@khoralabs/percolator"]).toBeUndefined();

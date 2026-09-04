@@ -1,4 +1,3 @@
-import type { KhoraWsUpgradePort } from "@khoralabs/khora-client/transport";
 import type { WebSocketHandler } from "bun";
 import type { KhoraHostContext } from "../..";
 import {
@@ -11,6 +10,7 @@ import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import type { HostRouteDeps } from "../routes/deps";
 import { jsonError, rateLimitedResponse } from "../routes/responses";
+import type { KhoraWsUpgradePort } from "./types";
 
 export async function handleInboxWsUpgrade(
   req: Request,

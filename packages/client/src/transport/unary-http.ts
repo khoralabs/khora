@@ -34,8 +34,8 @@ export type RequestVoidOptions = {
   body?: unknown;
 };
 
-/** Unary host RPC surface (default binding: signed HTTP). */
-export type KhoraUnaryTransport = {
+/** Unary host RPC surface — explicitly HTTP-shaped (signed fetch). */
+export type KhoraHttpUnaryTransport = {
   readonly base: string;
   readonly did: string;
   readonly signer: Signer;
@@ -45,6 +45,9 @@ export type KhoraUnaryTransport = {
   requestJson<T>(method: string, path: string, opts: RequestJsonOptions<T>): Promise<T>;
   requestVoid(method: string, path: string, opts?: RequestVoidOptions): Promise<void>;
 };
+
+/** @deprecated Prefer {@link KhoraHttpUnaryTransport}; alias kept for compatibility. */
+export type KhoraUnaryTransport = KhoraHttpUnaryTransport;
 
 export type CreateHttpTransportOptions = {
   baseUrl: string;
@@ -57,7 +60,7 @@ export type CreateHttpTransportOptions = {
 /** Creates the default HTTP unary transport with DID-signed requests. */
 export function createHttpKhoraUnaryTransport(
   opts: CreateHttpTransportOptions,
-): KhoraUnaryTransport {
+): KhoraHttpUnaryTransport {
   const base = opts.baseUrl.trim().replace(/\/$/, "");
   const fetchFn: KhoraFetch = opts.fetch ?? globalThis.fetch;
   const signer = opts.signer;

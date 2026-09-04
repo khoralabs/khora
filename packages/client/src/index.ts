@@ -73,6 +73,7 @@ export type {
   InboxConnectionHandle,
   InboxWsHandlers,
   KhoraFetch,
+  KhoraHttpUnaryTransport,
   KhoraTransportBundle,
   KhoraUnaryTransport,
 } from "./transport";

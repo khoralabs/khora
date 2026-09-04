@@ -397,7 +397,6 @@ if (import.meta.main) {
       packageDir: path.join(repoRoot, "packages/host"),
       repoRoot,
       externals: [
-        "@khoralabs/khora-client",
         "@khoralabs/khora-registry",
         "@khoralabs/memories-node",
         "@khoralabs/memories-service",

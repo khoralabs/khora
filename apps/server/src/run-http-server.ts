@@ -3,8 +3,8 @@ import path from "node:path";
 
 const { dirname } = path;
 
-import type { KhoraWsData } from "@khoralabs/khora-client/transport";
 import { bootstrapKhoraEncryption } from "@khoralabs/khora-host/bootstrap";
+import type { KhoraWsData } from "@khoralabs/khora-host/http";
 import {
   createHostRouteDepsFromEnv,
   runWithRequestPeerIp,

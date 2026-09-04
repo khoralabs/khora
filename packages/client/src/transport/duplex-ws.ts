@@ -1,5 +1,6 @@
-import { Buffer } from "node:buffer";
+import type { Signer } from "@khoralabs/khora-auth";
 import { createWebSocketDuplexByteStream, type DuplexByteStream } from "./byte-stream/index";
+import type { KhoraClientEvent } from "./client-events";
 import {
   type ConnectInboxOptions,
   connectInbox,
@@ -85,24 +86,64 @@ export async function openWebSocketByteDuplex(
   };
 }
 
+export type ConnectInboxCall = {
+  handlers: InboxWsHandlers;
+  /** Defaults to the transport's configured signer. */
+  signers?: readonly Signer[];
+  /** Application event sink (KhoraClient). */
+  emit: (event: KhoraClientEvent) => void;
+};
+
+/**
+ * Duplex port: byte channel + inbox subscription.
+ * Connection credentials (base URL, signer, clock, nonce, WebSocket ctor) are owned by the adapter.
+ */
 export interface KhoraDuplexTransport {
   openByteDuplex(args: WebSocketByteDuplexArgs): Promise<WebSocketByteDuplexHandle>;
-  connectInbox(
-    opts: ConnectInboxOptions,
-    handlers: InboxWsHandlers,
-  ): Promise<InboxConnectionHandle>;
+  connectInbox(call: ConnectInboxCall): Promise<InboxConnectionHandle>;
 }
+
+export type WsKhoraDuplexTransportOptions = {
+  base: string;
+  signer: Signer;
+  now: () => number;
+  nonce: () => string;
+  WebSocketCtor?: typeof WebSocket;
+};
 
 /** Default duplex binding: WebSocket byte channel + inbox subscription. */
 export class WsKhoraDuplexTransport implements KhoraDuplexTransport {
+  readonly #cfg: {
+    base: string;
+    signer: Signer;
+    now: () => number;
+    nonce: () => string;
+    WebSocketCtor: typeof WebSocket;
+  };
+
+  constructor(opts: WsKhoraDuplexTransportOptions) {
+    this.#cfg = {
+      base: opts.base.trim().replace(/\/$/, ""),
+      signer: opts.signer,
+      now: opts.now,
+      nonce: opts.nonce,
+      WebSocketCtor: opts.WebSocketCtor ?? globalThis.WebSocket,
+    };
+  }
+
   async openByteDuplex(args: WebSocketByteDuplexArgs): Promise<WebSocketByteDuplexHandle> {
     return openWebSocketByteDuplex(args);
   }
 
-  connectInbox(
-    opts: ConnectInboxOptions,
-    handlers: InboxWsHandlers,
-  ): Promise<InboxConnectionHandle> {
-    return connectInbox(opts, handlers);
+  connectInbox(call: ConnectInboxCall): Promise<InboxConnectionHandle> {
+    const opts: ConnectInboxOptions = {
+      base: this.#cfg.base,
+      signers: call.signers ?? [this.#cfg.signer],
+      now: this.#cfg.now,
+      nonce: this.#cfg.nonce,
+      WebSocketCtor: this.#cfg.WebSocketCtor,
+      emit: call.emit,
+    };
+    return connectInbox(opts, call.handlers);
   }
 }

@@ -1,6 +1,5 @@
 import { mkdirSync, unlinkSync } from "node:fs";
 import path from "node:path";
-import type { KhoraWsData } from "@khoralabs/khora-client/transport";
 import type { Logger } from "@khoralabs/observability/logger";
 import type { Server } from "bun";
 import { logger as defaultLogger } from "../logger";
@@ -8,6 +7,7 @@ import { runWithRequestPeerIp } from "../rate-limit";
 import type { HostRouteDeps } from "../routes/deps";
 import { createHostRouter } from "../routes/router";
 import { createInboxDrainWebSocketHandlersForDeps } from "../ws/inbox";
+import type { KhoraWsData } from "../ws/types";
 import { startDuplexUnixIngress } from "./duplex-unix-listener";
 import { startStdioUnaryIngress } from "./stdio-unary-listener";
 

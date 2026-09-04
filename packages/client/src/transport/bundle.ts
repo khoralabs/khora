@@ -1,27 +1,36 @@
 import type { Signer } from "@khoralabs/khora-auth";
-import type { KhoraDuplexTransport } from "./duplex-ws";
-import { WsKhoraDuplexTransport } from "./duplex-ws";
+import { type KhoraDuplexTransport, WsKhoraDuplexTransport } from "./duplex-ws";
 import {
   type CreateHttpTransportOptions,
   createHttpKhoraUnaryTransport,
   type KhoraFetch,
-  type KhoraUnaryTransport,
+  type KhoraHttpUnaryTransport,
 } from "./unary-http";
 
 export type KhoraTransportBundle = {
-  unary: KhoraUnaryTransport;
+  /** Explicitly HTTP-shaped unary binding. */
+  unary: KhoraHttpUnaryTransport;
   duplex: KhoraDuplexTransport;
 };
 
-export type CreateHttpKhoraTransportBundleOptions = CreateHttpTransportOptions;
+export type CreateHttpKhoraTransportBundleOptions = CreateHttpTransportOptions & {
+  WebSocket?: typeof WebSocket;
+};
 
 /** HTTP unary + WebSocket duplex — production default. */
 export function createHttpKhoraTransportBundle(
   opts: CreateHttpKhoraTransportBundleOptions,
 ): KhoraTransportBundle {
+  const unary = createHttpKhoraUnaryTransport(opts);
   return {
-    unary: createHttpKhoraUnaryTransport(opts),
-    duplex: new WsKhoraDuplexTransport(),
+    unary,
+    duplex: new WsKhoraDuplexTransport({
+      base: unary.base,
+      signer: opts.signer,
+      now: unary.now,
+      nonce: unary.nonce,
+      WebSocketCtor: opts.WebSocket,
+    }),
   };
 }
 
@@ -32,6 +41,7 @@ export type CreateKhoraTransportBundleFromEnvOptions = {
   fetch?: KhoraFetch;
   nowMs?: () => number;
   nonceFactory?: () => string;
+  WebSocket?: typeof WebSocket;
   env?: NodeJS.ProcessEnv;
 };
 
@@ -51,6 +61,7 @@ export function createKhoraTransportBundleFromEnv(
       fetch: opts.fetch,
       nowMs: opts.nowMs,
       nonceFactory: opts.nonceFactory,
+      WebSocket: opts.WebSocket,
     });
   }
   throw new Error(

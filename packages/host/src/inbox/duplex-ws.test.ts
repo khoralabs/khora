@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoryDuplexByteStreamPair } from "@khoralabs/khora-client/transport/byte-stream";
+import { createMemoryDuplexByteStreamPair } from "@khoralabs/khora-contracts/byte-stream";
 import { runInboxDuplexAttachment } from "./duplex-ws";
 import { createInboxWsHub } from "./ws-hub";
 

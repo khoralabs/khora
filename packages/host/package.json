@@ -94,7 +94,6 @@
   "dependencies": {
     "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
-    "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/memories-node": "catalog:",
     "@khoralabs/memories-service": "catalog:",

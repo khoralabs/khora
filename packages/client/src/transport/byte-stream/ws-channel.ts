@@ -1,10 +1,10 @@
 import {
   DEFAULT_MAX_INBOUND_QUEUE_DEPTH,
+  type DuplexByteStream,
   enqueueInbound,
   type InboundSide,
   wakeInboundWaiters,
-} from "./bounded-inbound";
-import type { DuplexByteStream } from "./duplex-byte-stream";
+} from "@khoralabs/khora-contracts/byte-stream";
 
 export type WebSocketDuplexByteSend = (bytes: Uint8Array) => void | Promise<void>;
 
