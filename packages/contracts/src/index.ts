@@ -1,6 +1,7 @@
 export * from "./byte-stream/index";
 export * from "./format-thrown-error";
 export * from "./host-types";
+export * from "./http/index";
 export * from "./inbox-protocol";
 export * from "./khora-author-subscriptions";
 export * from "./khora-host-discovery";

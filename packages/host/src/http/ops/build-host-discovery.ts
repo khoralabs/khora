@@ -1,4 +1,5 @@
 import { type KhoraHostDiscovery, zKhoraHostDiscovery } from "@khoralabs/khora-contracts";
+import { KHORA_DISCOVERY_ENDPOINTS } from "@khoralabs/khora-contracts/http";
 import type { KhoraHostSpecPort } from "../..";
 
 export function buildKhoraHostDiscovery(params: {
@@ -19,11 +20,7 @@ export function buildKhoraHostDiscovery(params: {
   const doc: KhoraHostDiscovery = {
     version: 1,
     baseUrl: effective.publicBaseUrl,
-    endpoints: {
-      health: "/health",
-      ready: "/ready",
-      register: "/v1/register",
-    },
+    endpoints: { ...KHORA_DISCOVERY_ENDPOINTS },
     population,
   };
   if (effective.slug !== undefined) {

@@ -52,8 +52,10 @@ export async function signAgentRequest(input: SignAgentRequestInput): Promise<Si
   };
 }
 
+import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
+
 /** Inbox multiplex WebSocket path (upgrade has no query auth; bind happens after `hello`). */
-export const INBOX_WS_PATH = "/v1/inbox/ws";
+export const INBOX_WS_PATH = KHORA_HTTP_PATH.inboxWs;
 
 /** HTTP-ish method string inside the canonical bind signature. */
 export const INBOX_BIND_METHOD = "BIND";

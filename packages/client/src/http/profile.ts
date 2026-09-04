@@ -5,6 +5,11 @@ import {
   zKhoraProfile,
   zKhoraProfilePatch,
 } from "@khoralabs/khora-contracts";
+import {
+  KHORA_HTTP_PATH,
+  khoraProfileByDidPath,
+  khoraProfileByUsernamePath,
+} from "@khoralabs/khora-contracts/http";
 import { KhoraClientError, type KhoraUnaryTransport } from "../transport";
 
 export function updateProfile(
@@ -12,7 +17,7 @@ export function updateProfile(
   patch: KhoraProfilePatch,
 ): Promise<KhoraProfile> {
   const normalized = zKhoraProfilePatch.parse(patch);
-  return t.requestJson("PATCH", "/v1/profile", {
+  return t.requestJson("PATCH", KHORA_HTTP_PATH.profile, {
     body: normalized,
     parse: zKhoraProfile,
   });
@@ -31,11 +36,9 @@ export async function lookupProfileByUsername(
 ): Promise<PublicProfileResult | null> {
   const normalized = normalizeUsername(username);
   try {
-    const profile = await t.requestJson(
-      "GET",
-      `/v1/profile/by-username/${encodeURIComponent(normalized)}`,
-      { parse: zKhoraProfile },
-    );
+    const profile = await t.requestJson("GET", khoraProfileByUsernamePath(normalized), {
+      parse: zKhoraProfile,
+    });
     return { profile };
   } catch (e) {
     if (e instanceof KhoraClientError && e.status === 404) return null;
@@ -49,7 +52,7 @@ export async function lookupProfileByDid(
   did: string,
 ): Promise<PublicProfileResult | null> {
   try {
-    const profile = await t.requestJson("GET", `/v1/profile/by-did/${encodeURIComponent(did)}`, {
+    const profile = await t.requestJson("GET", khoraProfileByDidPath(did), {
       parse: zKhoraProfile,
     });
     return { profile, did };

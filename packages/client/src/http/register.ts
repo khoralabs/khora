@@ -4,6 +4,7 @@ import {
   zKhoraRegisterResult,
   zKhoraRegistrationRequestBody,
 } from "@khoralabs/khora-contracts";
+import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
 import type { KhoraUnaryTransport } from "../transport";
 
 export type RegisterBody = Omit<KhoraRegistrationRequestBody, "did"> & {
@@ -18,7 +19,7 @@ export async function register(
     ...body,
     did: t.did,
   });
-  const result = await t.requestJson("POST", "/v1/register", {
+  const result = await t.requestJson("POST", KHORA_HTTP_PATH.register, {
     body: finalBody,
     parse: zKhoraRegisterResult,
   });

@@ -4,6 +4,7 @@ import {
   type KhoraSearchResponse,
   zKhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
+import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
 import type { KhoraUnaryTransport } from "../transport";
 
 export function searchGet(
@@ -17,7 +18,7 @@ export function searchGet(
   if (params.namespace !== undefined && params.namespace.length > 0) {
     query.namespace = params.namespace;
   }
-  return t.requestJson("GET", "/v1/search", {
+  return t.requestJson("GET", KHORA_HTTP_PATH.search, {
     query,
     signedQueryKeys: [],
     parse: zKhoraSearchResponse,
@@ -28,5 +29,5 @@ export function searchPost(
   t: KhoraUnaryTransport,
   body: KhoraSearchRequest,
 ): Promise<KhoraSearchResponse> {
-  return t.requestJson("POST", "/v1/search", { body, parse: zKhoraSearchResponse });
+  return t.requestJson("POST", KHORA_HTTP_PATH.search, { body, parse: zKhoraSearchResponse });
 }

@@ -1,3 +1,4 @@
+import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
 import type { KhoraHostSpecPort } from "../..";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
@@ -68,77 +69,83 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
     upgradePort: KhoraWsUpgradePort | undefined,
     deps: HostRouteDeps,
   ): Promise<Response | undefined> {
-    if (req.method === "GET" && url.pathname === "/health") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.health) {
       return handleHealth();
     }
 
-    if (req.method === "GET" && url.pathname === "/.well-known/khora") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.wellKnown) {
       return handleWellKnownKhora(deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/ready") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.ready) {
       return handleReady(deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/host/registry") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.hostRegistry) {
       return handleAdminRegistryGet(req, deps);
     }
 
-    if (req.method === "PUT" && url.pathname === "/v1/host/registry/config") {
+    if (req.method === "PUT" && url.pathname === KHORA_HTTP_PATH.hostRegistryConfig) {
       return handleAdminRegistryConfigPut(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/host/registry/register") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.hostRegistryRegister) {
       return handleAdminRegistryRegisterPost(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/host/registry/claim") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.hostRegistryClaim) {
       return handleAdminRegistryClaimPost(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/host/registry/origin-requests") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.hostRegistryOriginRequests) {
       return handleAdminRegistryOriginRequestPost(req, deps);
     }
 
-    if (req.method === "DELETE" && url.pathname.startsWith("/v1/host/registry/origin-requests/")) {
-      const requestId = url.pathname.slice("/v1/host/registry/origin-requests/".length);
+    if (
+      req.method === "DELETE" &&
+      url.pathname.startsWith(`${KHORA_HTTP_PATH.hostRegistryOriginRequests}/`)
+    ) {
+      const requestId = url.pathname.slice(`${KHORA_HTTP_PATH.hostRegistryOriginRequests}/`.length);
       if (requestId.length > 0) {
         return handleAdminRegistryOriginRequestDelete(req, deps, requestId);
       }
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/host/registry/quota-requests") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.hostRegistryQuotaRequests) {
       return handleAdminRegistryQuotaRequestPost(req, deps);
     }
 
-    if (req.method === "DELETE" && url.pathname.startsWith("/v1/host/registry/quota-requests/")) {
-      const requestId = url.pathname.slice("/v1/host/registry/quota-requests/".length);
+    if (
+      req.method === "DELETE" &&
+      url.pathname.startsWith(`${KHORA_HTTP_PATH.hostRegistryQuotaRequests}/`)
+    ) {
+      const requestId = url.pathname.slice(`${KHORA_HTTP_PATH.hostRegistryQuotaRequests}/`.length);
       if (requestId.length > 0) {
         return handleAdminRegistryQuotaRequestDelete(req, deps, requestId);
       }
     }
 
-    if (req.method === "DELETE" && url.pathname === "/v1/host/registry/origins") {
+    if (req.method === "DELETE" && url.pathname === KHORA_HTTP_PATH.hostRegistryOrigins) {
       return handleAdminRegistryOriginDelete(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/ops/invites/mint") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.opsInvitesMint) {
       return handleAdminInvitesMint(req, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/ops/invites") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.opsInvites) {
       return handleAdminInvitesList(req, url, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/ops/host/config") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.opsHostConfig) {
       return handleAdminHostConfigGet(req, deps);
     }
 
-    if (req.method === "PATCH" && url.pathname === "/v1/ops/host/config") {
+    if (req.method === "PATCH" && url.pathname === KHORA_HTTP_PATH.opsHostConfig) {
       return handleAdminHostConfigPatch(req, deps);
     }
 
-    if (url.pathname.startsWith("/v1/ops/agents/")) {
+    if (url.pathname.startsWith(KHORA_HTTP_PATH.opsAgentsPrefix)) {
       return handleAdminAgentsRoute(req, url, deps);
     }
 
@@ -149,42 +156,42 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
       return rateLimitedResponse(ipRl.retryAfterSec);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/register") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.register) {
       return handleRegister(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/unregister") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.unregister) {
       return handleUnregister(req, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/search") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.search) {
       return handleSearchPost(req, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/search") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.search) {
       return handleSearchGet(req, url, deps);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/invite/preview") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.invitePreview) {
       return handleInvitePreview(req, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/invites") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.invites) {
       return handleListInvites(req, url, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/authors/subscriptions") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.authorsSubscriptions) {
       return handleListAuthorSubscriptions(req, url, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.inboxWs) {
       if (upgradePort === undefined) {
         return jsonError("WebSocket upgrade requires HTTP transport", 501);
       }
       return handleInboxWsUpgrade(req, url, upgradePort, deps);
     }
 
-    if (req.method === "PATCH" && url.pathname === "/v1/profile") {
+    if (req.method === "PATCH" && url.pathname === KHORA_HTTP_PATH.profile) {
       return handleProfilePatch(req, url, deps);
     }
 
@@ -198,11 +205,11 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
       return handleProfileByUsername(req, url, deps, byUser[1]);
     }
 
-    if (req.method === "POST" && url.pathname === "/v1/posts") {
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.posts) {
       return handleCreatePost(req, url, deps);
     }
 
-    if (req.method === "GET" && url.pathname === "/v1/agent/status") {
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.agentStatus) {
       return handleAgentStatus(req, url, deps);
     }
 
