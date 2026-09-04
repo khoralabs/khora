@@ -66,8 +66,8 @@ export function publishedDependencies(
     case "khora-host":
       return {
         "@khoralabs/khora-registry": version,
-        "@khoralabs/memories-node": "^0.11.0",
-        "@khoralabs/memories-service": "^0.11.0",
+        "@khoralabs/memories-node": "^0.12.0",
+        "@khoralabs/memories-service": "^0.12.0",
         "@khoralabs/sourcemaps": "^0.1.0",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         zod: "^4",
