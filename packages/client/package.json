@@ -1,6 +1,6 @@
 {
   "name": "@khoralabs/khora-client",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Typed HTTP/WS client for Khora hosts.",
   "license": "MIT",
   "type": "module",
