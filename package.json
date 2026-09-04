@@ -49,7 +49,7 @@
     "catalog": {
       "@types/bun": "latest",
       "typescript": "^5",
-      "@khoralabs/did-key-identity": "^0.1.0",
+      "@khoralabs/did-key-identity": "^0.2.0",
       "@khoralabs/sqlite-crypto": "^0.1.0",
       "@khoralabs/sqlite-migrate": "^0.1.0",
       "@khoralabs/sourcemaps": "^0.1.0",

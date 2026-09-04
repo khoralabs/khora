@@ -129,7 +129,6 @@
         "@khoralabs/khora-contracts": "workspace:*",
         "@noble/ed25519": "catalog:",
         "@scure/base": "^1.2.6",
-        "lru-cache": "^11.5.1",
       },
       "devDependencies": {
         "@types/bun": "catalog:",
@@ -296,7 +295,7 @@
     "kysely": "0.28.17",
   },
   "catalog": {
-    "@khoralabs/did-key-identity": "^0.1.0",
+    "@khoralabs/did-key-identity": "^0.2.0",
     "@khoralabs/memories-node": "^0.11.0",
     "@khoralabs/memories-service": "^0.11.0",
     "@khoralabs/sourcemaps": "^0.1.0",
@@ -427,7 +426,7 @@
 
     "@khoralabs/colonnade": ["@khoralabs/colonnade@workspace:packages/colonnade"],
 
-    "@khoralabs/did-key-identity": ["@khoralabs/did-key-identity@0.1.0", "", { "dependencies": { "@noble/ed25519": "^3.1.0", "@noble/hashes": "^2.2.0", "iso-base": "^4.2.1", "iso-signatures": "^0.5.1" }, "peerDependencies": { "typescript": "^5" } }, "sha512-ALGgj7L6iTBuEvQ0hnu1FLArd/69rjUKXBfUx1ZhN8JmOPU7NM+XK9HnbLBeg65/5q+CHaNl+KMdDq0i9uW/oA=="],
+    "@khoralabs/did-key-identity": ["@khoralabs/did-key-identity@0.2.0", "", { "dependencies": { "@noble/ed25519": "^3.1.0", "@noble/hashes": "^2.2.0", "iso-base": "^4.2.1", "iso-signatures": "^0.5.1", "lru-cache": "^11.5.1" }, "peerDependencies": { "typescript": "^5" } }, "sha512-C0lEQIWnkhCRR22n4ew4J2c8iTsDPqwAsqOpasNZ+fGqQ9qR5ZRo7TRSzsd3jcPiXdi0P/pqx7/EUHo7UtZDcA=="],
 
     "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/auth"],
 
@@ -759,7 +758,7 @@
 
     "@types/argparse": ["@types/argparse@1.0.38", "", {}, "sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA=="],
 
-    "@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+    "@types/bun": ["@types/bun@1.4.1", "", { "dependencies": { "bun-types": "1.4.1" } }, "sha512-0AVGiTXGajf1rgKom3N+c5L7CBxuoyyv1i44M0nX4UDK0G/fnRAMiri93nHuVPIb429KKtAgj7HatVmmOjeQLA=="],
 
     "@types/node": ["@types/node@26.1.1", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw=="],
 
@@ -823,7 +822,7 @@
 
     "bun-plugin-tailwind": ["bun-plugin-tailwind@0.1.2", "", { "peerDependencies": { "bun": ">=1.0.0" } }, "sha512-41jNC1tZRSK3s1o7pTNrLuQG8kL/0vR/JgiTmZAJ1eHwe0w5j6HFPKeqEk0WAD13jfrUC7+ULuewFBBCoADPpg=="],
 
-    "bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
+    "bun-types": ["bun-types@1.4.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-loKuVrAFZKfEv+JvWkHRS9GW5IqLuLRjVXN9p+vZvBN86O5hf/pBZQ5hSoyipsrMmWObZBDvWnlmKvjKTM0PdA=="],
 
     "chownr": ["chownr@1.1.4", "", {}, "sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg=="],
 
@@ -1229,6 +1228,8 @@
 
     "@khoralabs/agent-review/ai": ["ai@7.0.28", "", { "dependencies": { "@ai-sdk/gateway": "4.0.20", "@ai-sdk/provider": "4.0.3", "@ai-sdk/provider-utils": "5.0.10" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-RtynA4e6rWH2YiMX0OJz2h2i+sdJgiItuwqmstYZAiTZ0ZkZzQ8s4KVh7tQfZuDCfzIhRTg+q1h1xirT8AClkw=="],
 
+    "@khoralabs/cli-kit/@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
+
     "@khoralabs/memories-node/ai": ["ai@7.0.89", "", { "dependencies": { "@ai-sdk/gateway": "4.0.71", "@ai-sdk/provider": "4.0.10", "@ai-sdk/provider-utils": "5.0.35" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-Bzbw9HNUhKaawU5tJ2mONfhC5UeWlfJEe5OL/f+KVn20l2TfkbkvILSLk4hDGWbBrl+hz/tRmTC9de8tOFOQNA=="],
 
     "@microsoft/api-extractor/minimatch": ["minimatch@10.2.3", "", { "dependencies": { "brace-expansion": "^5.0.2" } }, "sha512-Rwi3pnapEqirPSbWbrZaa6N3nmqq4Xer/2XooiOKyV3q12ML06f7MOuc5DVH8ONZIFhwIYQ3yzPH4nt7iWHaTg=="],
@@ -1344,6 +1345,8 @@
     "@khoralabs/agent-review/ai/@ai-sdk/provider": ["@ai-sdk/provider@4.0.3", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw=="],
 
     "@khoralabs/agent-review/ai/@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@5.0.10", "", { "dependencies": { "@ai-sdk/provider": "4.0.3", "@standard-schema/spec": "^1.1.0", "@workflow/serde": "4.1.0", "eventsource-parser": "^3.0.8" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-uPyec0+85dwxZYXtb8qe8gCjhjDfxP4LCDo/uRQS/iG+FIgYbHPRhr/ys281udG90bTaE18+5cxWraYaf8oHCw=="],
+
+    "@khoralabs/cli-kit/@types/bun/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@khoralabs/memories-node/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.71", "", { "dependencies": { "@ai-sdk/provider": "4.0.10", "@ai-sdk/provider-utils": "5.0.35", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-QSkcaJkJl4Gn8DuLlRi6xVbty5grQ71VlIt90Grd79lJ4y2KOixiLjQNU2n3mDNFKTKzIdFynzM6fUSuawKhmQ=="],
 

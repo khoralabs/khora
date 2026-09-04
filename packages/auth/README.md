@@ -30,7 +30,7 @@ Future slots (not implemented): `http/message-signatures/` (RFC 9421), `jose/jws
 | Replay | `NonceStore`, `createMemoryNonceStore` — **storage backends live in the host** (`createSqliteNonceStore` on `@khoralabs/khora-host/sqlite`) |
 | Testing | `@khoralabs/khora-auth/testing` → `runNonceStoreContractTests` |
 
-Identity file helpers re-export `@khoralabs/did-key-identity`. Product default path `~/.khora/identity.json` lives in apps (cli/daemon), not here.
+Identity file helpers and `did:key` pubkey decode (`ed25519PublicKeyBytesFromDid` via `publicKeyForDid`) come from `@khoralabs/did-key-identity`. Product default path `~/.khora/identity.json` lives in apps (cli/daemon), not here.
 
 Post **content** signing lives in `@khoralabs/khora-auth` (`posts/signing`). Host `AuthPreflight` typing lives in `@khoralabs/khora-host`.
 

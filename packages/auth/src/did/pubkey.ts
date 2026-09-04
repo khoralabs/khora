@@ -1,4 +1,5 @@
-import { ed25519PublicKeyBytesFromDid } from "./did";
+import { ed25519PublicKeyBytesFromDid } from "@khoralabs/did-key-identity";
+
 import { AuthStrategyError } from "./strategy";
 
 /** Resolve a `did:key` Ed25519 public key for signature verification. */

@@ -30,7 +30,7 @@ describe("publish khora libs helpers", () => {
   test("client does not depend on workspace contracts package", () => {
     const deps = publishedDependencies("khora-client", "1.2.3");
     expect(deps["@khoralabs/khora-contracts"]).toBeUndefined();
-    expect(deps["@khoralabs/did-key-identity"]).toBe("^0.1.0");
+    expect(deps["@khoralabs/did-key-identity"]).toBe("^0.2.0");
     expect(deps.zod).toBe("^4");
   });
 
@@ -55,7 +55,7 @@ describe("publish khora libs helpers", () => {
       expect(mid.main).toBe("./dist/index.js");
       expect(mid.dependencies["@khoralabs/khora-auth"]).toBeUndefined();
       expect(mid.dependencies["@khoralabs/khora-contracts"]).toBeUndefined();
-      expect(mid.dependencies["@khoralabs/did-key-identity"]).toBe("^0.1.0");
+      expect(mid.dependencies["@khoralabs/did-key-identity"]).toBe("^0.2.0");
       expect((mid.exports["."] as Record<string, string>).import).toBe("./dist/index.js");
       expect(JSON.stringify(mid)).not.toContain("./src/");
       expect(JSON.stringify(mid.dependencies)).not.toContain("catalog:");

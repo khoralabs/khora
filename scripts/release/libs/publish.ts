@@ -55,7 +55,7 @@ export function publishedDependencies(
   switch (pkg) {
     case "khora-client":
       return {
-        "@khoralabs/did-key-identity": "^0.1.0",
+        "@khoralabs/did-key-identity": "^0.2.0",
         zod: "^4",
       };
     case "khora-registry":
