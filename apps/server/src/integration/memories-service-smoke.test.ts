@@ -11,13 +11,15 @@ import { createNoneAuthStrategy } from "@khoralabs/memories-service/auth";
 import {
   createRemoteMemoriesReadClient,
   discoverMemoriesService,
-  MEMORIES_ERROR_CODE,
-  MEMORIES_HTTP_PATH,
   MemoriesServiceClient,
   MemoriesServiceClientError,
   type MemoriesServiceFetch,
 } from "@khoralabs/memories-service/client";
 import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service/http";
+import {
+  MEMORIES_ERROR_CODE,
+  MEMORIES_HTTP_PATH,
+} from "@khoralabs/memories-service/http/contracts";
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { KHORA_HOST_MEMORIES_DATABASE_ID } from "../services/memories";
 
