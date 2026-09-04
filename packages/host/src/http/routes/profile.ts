@@ -4,6 +4,7 @@ import {
   zKhoraProfile,
   zKhoraProfilePatch,
 } from "@khoralabs/khora-contracts";
+import { KHORA_ERROR_CODE } from "@khoralabs/khora-contracts/http";
 import z from "zod";
 import { HOST_AGGREGATE_DOMAIN, HOST_EVENT_KIND } from "../..";
 import type { HostRouteDeps } from "./deps";
@@ -26,11 +27,11 @@ export async function handleProfileByDid(
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
-    return jsonError("Not found", 404);
+    return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const row = ctx.host.persistenceClient.getProfileById(profileId);
   if (row === undefined) {
-    return jsonError("Not found", 404);
+    return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const profile = zKhoraProfile.parse(JSON.parse(row.bodyJson));
   return Response.json(profile);
@@ -52,19 +53,19 @@ export async function handleProfileByUsername(
   try {
     normalized = normalizeUsername(decodeURIComponent(usernameRaw));
   } catch {
-    return jsonError("Not found", 404);
+    return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const principalId = ctx.lookupPrincipalIdByNormalizedUsername(normalized);
   if (principalId === undefined) {
-    return jsonError("Not found", 404);
+    return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(principalId);
   if (profileId === undefined) {
-    return jsonError("Not found", 404);
+    return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const row = ctx.host.persistenceClient.getProfileById(profileId);
   if (row === undefined) {
-    return jsonError("Not found", 404);
+    return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const profile = zKhoraProfile.parse(JSON.parse(row.bodyJson));
   return Response.json(profile);
@@ -87,11 +88,11 @@ export async function handleProfilePatch(
   if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
-    return jsonError("Register first", 400);
+    return jsonError("Register first", 400, KHORA_ERROR_CODE.not_registered);
   }
   const row = ctx.host.persistenceClient.getProfileById(profileId);
   if (row === undefined) {
-    return jsonError("Profile not found", 404);
+    return jsonError("Profile not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const previous = zKhoraProfile.parse(JSON.parse(row.bodyJson));
   try {
@@ -107,7 +108,7 @@ export async function handleProfilePatch(
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("unavailable")) {
-          return jsonError(msg, 409);
+          return jsonError(msg, 409, KHORA_ERROR_CODE.username_taken);
         }
         throw e;
       }
@@ -126,6 +127,10 @@ export async function handleProfilePatch(
     return Response.json(merged);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+    return jsonError(
+      msg,
+      e instanceof z.ZodError ? 400 : 500,
+      e instanceof z.ZodError ? KHORA_ERROR_CODE.invalid_request : KHORA_ERROR_CODE.internal_error,
+    );
   }
 }

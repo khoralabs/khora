@@ -50,5 +50,6 @@ export type {
 } from "./unary-http";
 export {
   createHttpKhoraUnaryTransport,
+  readErrorEnvelope,
   readErrorMessage,
 } from "./unary-http";

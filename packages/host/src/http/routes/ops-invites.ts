@@ -1,3 +1,4 @@
+import { KHORA_ERROR_CODE } from "@khoralabs/khora-contracts/http";
 import { KHORA_HOST_ADMIN_MINTER_DID } from "../../invites";
 import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
@@ -20,7 +21,11 @@ export async function handleAdminInvitesMint(req: Request, deps: HostRouteDeps):
   return withAdminTokenAuth(req, deps, async () => {
     const { invitesRepo } = deps.ctx;
     if (invitesRepo === undefined) {
-      return jsonError("Invite minting is not configured", 503);
+      return jsonError(
+        "Invite minting is not configured",
+        503,
+        KHORA_ERROR_CODE.invites_not_configured,
+      );
     }
 
     let body: unknown = {};

@@ -1,5 +1,6 @@
 import { AuthError } from "@khoralabs/khora-auth";
 import type { KhoraSearchRequest } from "@khoralabs/khora-contracts";
+import { KHORA_ERROR_CODE } from "@khoralabs/khora-contracts/http";
 import { executeHostSearch, hostSearchRequestFromGetQuery } from "../..";
 import type { HostRouteDeps } from "./deps";
 import { authErrorResponse, jsonError } from "./responses";
@@ -23,16 +24,20 @@ async function optionalReaderDid(
 export async function handleSearchPost(req: Request, deps: HostRouteDeps): Promise<Response> {
   const memories = deps.ctx.search;
   if (memories === undefined) {
-    return jsonError("Memories search is disabled (set KHORA_MEMORIES=1)", 503);
+    return jsonError(
+      "Memories search is disabled (set KHORA_MEMORIES=1)",
+      503,
+      KHORA_ERROR_CODE.search_disabled,
+    );
   }
   let body: KhoraSearchRequest;
   try {
     body = (await req.json()) as KhoraSearchRequest;
   } catch {
-    return jsonError("Invalid JSON body", 400);
+    return jsonError("Invalid JSON body", 400, KHORA_ERROR_CODE.invalid_request);
   }
   if (body.content === undefined) {
-    return jsonError("content is required", 400);
+    return jsonError("content is required", 400, KHORA_ERROR_CODE.invalid_request);
   }
   let readerPrincipalId: string | undefined;
   try {
@@ -54,7 +59,7 @@ export async function handleSearchPost(req: Request, deps: HostRouteDeps): Promi
     return Response.json(result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return jsonError(msg, 500);
+    return jsonError(msg, 500, KHORA_ERROR_CODE.internal_error);
   }
 }
 
@@ -65,7 +70,11 @@ export async function handleSearchGet(
 ): Promise<Response> {
   const memories = deps.ctx.search;
   if (memories === undefined) {
-    return jsonError("Memories search is disabled (set KHORA_MEMORIES=1)", 503);
+    return jsonError(
+      "Memories search is disabled (set KHORA_MEMORIES=1)",
+      503,
+      KHORA_ERROR_CODE.search_disabled,
+    );
   }
   const q = url.searchParams.get("q")?.trim() ?? "";
   if (q.length === 0) {
@@ -100,6 +109,6 @@ export async function handleSearchGet(
     return Response.json(result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return jsonError(msg, 500);
+    return jsonError(msg, 500, KHORA_ERROR_CODE.internal_error);
   }
 }

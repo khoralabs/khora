@@ -1,4 +1,4 @@
-import { KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
+import { KHORA_ERROR_CODE, KHORA_HTTP_PATH } from "@khoralabs/khora-contracts/http";
 import type { KhoraHostSpecPort } from "../..";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
@@ -186,7 +186,11 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
 
     if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.inboxWs) {
       if (upgradePort === undefined) {
-        return jsonError("WebSocket upgrade requires HTTP transport", 501);
+        return jsonError(
+          "WebSocket upgrade requires HTTP transport",
+          501,
+          KHORA_ERROR_CODE.upgrade_unsupported,
+        );
       }
       return handleInboxWsUpgrade(req, url, upgradePort, deps);
     }

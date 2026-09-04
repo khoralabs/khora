@@ -4,6 +4,8 @@ import {
   type Signer,
   signAgentRequest,
 } from "@khoralabs/khora-auth";
+import type { KhoraErrorCode } from "@khoralabs/khora-contracts/http";
+import { zKhoraErrorCode } from "@khoralabs/khora-contracts/http";
 import type z from "zod";
 import { formatThrownError, KhoraClientError } from "./errors";
 
@@ -134,7 +136,9 @@ export function createHttpKhoraUnaryTransport(
       body: bodyText.length > 0 ? bodyText : undefined,
     });
     if (!res.ok) {
-      throw new KhoraClientError(await readErrorMessage(res), res.status);
+      const env = await readErrorEnvelope(res);
+      const code = parseOptionalErrorCode(env.code);
+      throw new KhoraClientError(env.message, res.status, env.bodyText, code);
     }
     const text = await res.text();
     let json: unknown;
@@ -177,7 +181,9 @@ export function createHttpKhoraUnaryTransport(
       body: bodyText.length > 0 ? bodyText : undefined,
     });
     if (!res.ok) {
-      throw new KhoraClientError(await readErrorMessage(res), res.status);
+      const env = await readErrorEnvelope(res);
+      const code = parseOptionalErrorCode(env.code);
+      throw new KhoraClientError(env.message, res.status, env.bodyText, code);
     }
   }
 
@@ -204,6 +210,12 @@ function looksLikeHtml(text: string): boolean {
   );
 }
 
+function parseOptionalErrorCode(code: string | undefined): KhoraErrorCode | undefined {
+  if (code === undefined) return undefined;
+  const parsed = zKhoraErrorCode.safeParse(code);
+  return parsed.success ? parsed.data : undefined;
+}
+
 function htmlErrorSummary(text: string, res: Response): string {
   const title = /<title[^>]*>([^<]+)<\/title>/i.exec(text)?.[1]?.trim();
   const h1 = /<h1[^>]*>([^<]+)<\/h1>/i.exec(text)?.[1]?.trim();
@@ -215,7 +227,7 @@ function htmlErrorSummary(text: string, res: Response): string {
 export async function readErrorMessage(res: Response): Promise<string> {
   const text = await res.text();
   try {
-    const j = JSON.parse(text) as { error?: unknown };
+    const j = JSON.parse(text) as { error?: unknown; code?: unknown };
     if (typeof j.error === "string" && j.error.length > 0) return j.error;
   } catch {
     /* ignore */
@@ -227,4 +239,33 @@ export async function readErrorMessage(res: Response): Promise<string> {
     return `${res.status} ${res.statusText}`.trim();
   }
   return text.length > 0 ? text : res.statusText;
+}
+
+export async function readErrorEnvelope(
+  res: Response,
+): Promise<{ message: string; code?: string; bodyText: string }> {
+  const text = await res.text();
+  try {
+    const j = JSON.parse(text) as { error?: unknown; code?: unknown };
+    const message =
+      typeof j.error === "string" && j.error.length > 0
+        ? j.error
+        : text.length > 0
+          ? text
+          : res.statusText;
+    const code = typeof j.code === "string" && j.code.length > 0 ? j.code : undefined;
+    return { message, bodyText: text, ...(code !== undefined ? { code } : {}) };
+  } catch {
+    /* ignore */
+  }
+  if (looksLikeHtml(text)) {
+    return { message: htmlErrorSummary(text, res), bodyText: text };
+  }
+  if (text.length > 400) {
+    return { message: `${res.status} ${res.statusText}`.trim(), bodyText: text };
+  }
+  return {
+    message: text.length > 0 ? text : res.statusText,
+    bodyText: text,
+  };
 }
