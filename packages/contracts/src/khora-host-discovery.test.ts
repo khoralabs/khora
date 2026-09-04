@@ -25,6 +25,17 @@ describe("zKhoraHostDiscovery", () => {
     expect(doc.population.limit).toBeUndefined();
   });
 
+  test("parses optional features", () => {
+    const doc = zKhoraHostDiscovery.parse({
+      version: 1,
+      baseUrl: "https://host.example.com",
+      endpoints: { health: "/health", ready: "/ready", register: "/v1/register" },
+      population: { current: 0 },
+      features: { search: true, invitesRequired: false, inbox: true },
+    });
+    expect(doc.features?.search).toBe(true);
+  });
+
   test("rejects negative current", () => {
     expect(() =>
       zKhoraHostDiscovery.parse({
