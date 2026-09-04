@@ -206,6 +206,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@khoralabs/khora-client": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },
