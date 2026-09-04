@@ -10,6 +10,11 @@ import {
 import { createNoneAuthStrategy } from "@khoralabs/memories-service/auth";
 import {
   createRemoteMemoriesReadClient,
+  discoverMemoriesService,
+  MEMORIES_ERROR_CODE,
+  MEMORIES_HTTP_PATH,
+  MemoriesServiceClient,
+  MemoriesServiceClientError,
   type MemoriesServiceFetch,
 } from "@khoralabs/memories-service/client";
 import { handleMemoriesServiceHttpRequest } from "@khoralabs/memories-service/http";
@@ -72,5 +77,42 @@ describe("host memories-service smoke", () => {
     expect(Array.isArray(layout.edges)).toBe(true);
 
     await handle.close();
+  });
+
+  memoriesTest("health, discovery, and client error codes via MEMORIES_HTTP_PATH", async () => {
+    const stack = createLocalSqliteServiceStack({ dataDir: `${dataDir}-boundary` });
+    const fetchImpl: MemoriesServiceFetch = async (url, init) => {
+      const req = new Request(url, init);
+      return handleMemoriesServiceHttpRequest(req, {
+        service: stack.service,
+        auth: createNoneAuthStrategy(),
+        ontology: stack.ontology,
+        catalog: stack.catalog,
+        discoveryAuthScheme: "none",
+      });
+    };
+
+    const base = "http://localhost";
+    const healthRes = await fetchImpl(`${base}${MEMORIES_HTTP_PATH.health}`);
+    expect(healthRes.status).toBe(200);
+    expect(await healthRes.json()).toEqual({ ok: true });
+
+    const doc = await discoverMemoriesService({
+      baseUrl: base,
+      fetch: fetchImpl,
+      requireAuthScheme: "none",
+    });
+    expect(doc.version).toBe(1);
+    expect(doc.endpoints.health).toBe(MEMORIES_HTTP_PATH.health);
+
+    const client = new MemoriesServiceClient({ baseUrl: base, fetch: fetchImpl });
+    try {
+      await client.postJson("/no-such-route", {});
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(MemoriesServiceClientError);
+      expect((e as MemoriesServiceClientError).status).toBe(404);
+      expect((e as MemoriesServiceClientError).code).toBe(MEMORIES_ERROR_CODE.not_found);
+    }
   });
 });
