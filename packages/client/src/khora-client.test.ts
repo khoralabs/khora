@@ -602,6 +602,48 @@ describe("KhoraClient", () => {
     });
   });
 
+  test("inviteTree signs GET /v1/invites/tree", async () => {
+    const signer = staticSigner("did:key:a");
+    const tree = {
+      rootDid: "did:key:a",
+      descendants: [],
+      ancestors: [],
+      truncated: false,
+    };
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/invites/tree?depth=2");
+      expectAuthHeaders(init, "did:key:a");
+      return Response.json(tree);
+    });
+    const c = new KhoraClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    await expect(c.inviteTree({ depth: 2 })).resolves.toEqual(tree);
+  });
+
+  test("inviteTree without options omits depth query", async () => {
+    const signer = staticSigner("did:key:a");
+    const tree = {
+      rootDid: "did:key:a",
+      descendants: [],
+      ancestors: [],
+      truncated: false,
+    };
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/invites/tree");
+      expectAuthHeaders(init, "did:key:a");
+      return Response.json(tree);
+    });
+    const c = new KhoraClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    await expect(c.inviteTree()).resolves.toEqual(tree);
+  });
+
   test("createRelationship / listRelationships / accept / decline / revoke / delete", async () => {
     const signer = staticSigner("did:key:a");
     const calls: string[] = [];

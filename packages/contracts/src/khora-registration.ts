@@ -57,6 +57,25 @@ export const zKhoraInvitePreviewResponse = z.object({
 
 export type KhoraInvitePreviewResponse = z.infer<typeof zKhoraInvitePreviewResponse>;
 
+export const zKhoraInviteTreeNode = z.object({
+  did: z.string(),
+  depth: z.number().int().nonnegative(),
+  inviterDid: z.string().nullable(),
+  invitedAtMs: z.number(),
+  kind: z.string(),
+  active: z.boolean(),
+});
+
+export const zKhoraInviteTreeResponse = z.object({
+  rootDid: z.string(),
+  descendants: z.array(zKhoraInviteTreeNode),
+  ancestors: z.array(zKhoraInviteTreeNode),
+  truncated: z.boolean(),
+});
+
+export type KhoraInviteTreeNode = z.infer<typeof zKhoraInviteTreeNode>;
+export type KhoraInviteTreeResponse = z.infer<typeof zKhoraInviteTreeResponse>;
+
 /** HTTP uses `did`; host uses opaque `principalId` (same string at runtime). */
 export type KhoraRegistrationResult = Omit<
   PrincipalRegistrationResult<KhoraProfile>,

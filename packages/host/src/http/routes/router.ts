@@ -8,10 +8,14 @@ import type { KhoraWsUpgradePort } from "../ws/types";
 import { handleListAuthorSubscriptions } from "./authors";
 import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";
-import { handleInvitePreview, handleListInvites } from "./invites";
+import { handleInvitePreview, handleInviteTree, handleListInvites } from "./invites";
 import { handleAdminAgentsRoute } from "./ops-agents";
 import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./ops-host-config";
-import { handleAdminInvitesList, handleAdminInvitesMint } from "./ops-invites";
+import {
+  handleAdminInvitesList,
+  handleAdminInvitesMint,
+  handleAdminInviteTree,
+} from "./ops-invites";
 import {
   handleAgentStatus,
   handleCreatePost,
@@ -145,6 +149,10 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
       return handleAdminInvitesList(req, url, deps);
     }
 
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.opsInviteTree) {
+      return handleAdminInviteTree(req, url, deps);
+    }
+
     if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.opsHostConfig) {
       return handleAdminHostConfigGet(req, deps);
     }
@@ -186,6 +194,10 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
 
     if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.invites) {
       return handleListInvites(req, url, deps);
+    }
+
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.inviteTree) {
+      return handleInviteTree(req, url, deps);
     }
 
     if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.authorsSubscriptions) {

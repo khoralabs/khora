@@ -2,6 +2,12 @@ import { KHORA_ERROR_CODE } from "@khoralabs/khora-contracts/http";
 import { KHORA_HOST_ADMIN_MINTER_DID } from "../../invites";
 import { withAdminTokenAuth } from "./admin-token-guard";
 import type { HostRouteDeps } from "./deps";
+import {
+  buildInviteTreeForDid,
+  buildInviteTreeFromRoots,
+  INVITE_TREE_DEFAULT_DEPTH,
+  INVITE_TREE_MAX_DEPTH,
+} from "./invites";
 import { jsonError } from "./responses";
 
 const MAX_MINT_COUNT = 10;
@@ -15,6 +21,14 @@ function parseMintCount(body: unknown): number {
     return 1;
   }
   return Math.min(MAX_MINT_COUNT, Math.max(1, Math.floor(raw)));
+}
+
+function parseOpsTreeDepth(url: URL): number {
+  const raw = url.searchParams.get("depth");
+  if (raw === null || raw === "") return INVITE_TREE_DEFAULT_DEPTH;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n)) return INVITE_TREE_DEFAULT_DEPTH;
+  return Math.min(INVITE_TREE_MAX_DEPTH, Math.max(1, n));
 }
 
 export async function handleAdminInvitesMint(req: Request, deps: HostRouteDeps): Promise<Response> {
@@ -61,5 +75,29 @@ export async function handleAdminInvitesList(
 
     const invites = invitesRepo.listAllInviteTokens({ limit, mintedByDid });
     return Response.json({ invites, configured: true });
+  });
+}
+
+export async function handleAdminInviteTree(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Promise<Response> {
+  return withAdminTokenAuth(req, deps, () => {
+    const { invitesRepo } = deps.ctx;
+    if (invitesRepo === undefined) {
+      return Response.json({
+        rootDid: "",
+        descendants: [],
+        ancestors: [],
+        truncated: false,
+      });
+    }
+    const depth = parseOpsTreeDepth(url);
+    const did = url.searchParams.get("did")?.trim();
+    if (did !== undefined && did.length > 0) {
+      return Response.json(buildInviteTreeForDid(deps, invitesRepo, did, depth));
+    }
+    return Response.json(buildInviteTreeFromRoots(deps, invitesRepo, depth));
   });
 }

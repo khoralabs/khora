@@ -3,6 +3,7 @@ import type {
   KhoraHostDiscovery,
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
+  KhoraInviteTreeResponse,
   KhoraPost,
   KhoraPostCreateContent,
   KhoraPostPatch,
@@ -24,7 +25,7 @@ import {
   listAuthorSubscriptions as httpListAuthorSubscriptions,
 } from "./http/authors";
 import { health } from "./http/health";
-import { listInvites, previewInvite } from "./http/invites";
+import { inviteTree, listInvites, previewInvite } from "./http/invites";
 import {
   createPost,
   deletePost,
@@ -171,6 +172,10 @@ export class KhoraClient {
 
   previewInvite(token: string): Promise<KhoraInvitePreviewResponse> {
     return previewInvite(this.transport, token);
+  }
+
+  inviteTree(opts?: { depth?: number }): Promise<KhoraInviteTreeResponse> {
+    return inviteTree(this.transport, opts);
   }
 
   createRelationship(body: KhoraRelationshipCreate): Promise<KhoraRelationshipResponse> {
