@@ -2,7 +2,7 @@
 /**
  * Publish canonical khora-cli skills into khoralabs/skills on CLI release.
  *
- * Clones the skills repo with SKILLS_REPO_TOKEN, replaces `khora-cli/` wholesale,
+ * Clones the skills repo with SKILLS_REPO_TOKEN, replaces `skills/khora-cli/` wholesale,
  * writes skill-source.json, and pushes. No-ops when the token is unset.
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 export const SKILLS_REPO = "khoralabs/skills";
-export const SKILL_DEST_NAME = "khora-cli";
+export const SKILL_DEST_NAME = "skills/khora-cli";
 export const SKILL_SOURCE_REL = "apps/cli/assets/skills/khora-cli";
 export const PACKAGE_NAME = "@khoralabs/khora-cli";
 export const SOURCE_REPO = "khoralabs/khora";
