@@ -15,9 +15,19 @@ Types: `@khoralabs/khora-host/persistence`.
 
 Backends apply schema via `ensure*` helpers over shared DDL in `./core/schema`. Wire codecs live in `./core/row-map.ts`.
 
+## Invites port (`KhoraInvitesRepo`)
+
+Both strategies (in-memory + sqlite) must implement the full invites port:
+
+- Mint / consume / rollback / preview / list (live `khora_invite_tokens` bank)
+- `mintStandardInviteTokens(..., opts?: { parentPlaintext })` — stamps `parent_token_hash` on children
+- `tryConsumeInviteToken` writes an append-only **lineage** row; `rollbackInviteConsumption` removes that lineage row
+- `inviteDescendants` / `inviteAncestors` / `inviteRootFrontier` walk durable lineage
+- `deleteTokensForPrincipal` deletes **live tokens only** — lineage is append-only provenance and **must survive** principal teardown
+
 ## Validate strategies
 
-Call `runHostPersistenceContractTests(name, factory)` from each backend’s `contract.test.ts` (same pattern as percolator / colonnade). The factory returns a harness `{ persistence, invites }`. The suite asserts port invariants so in-memory and sqlite stay aligned.
+Call `runHostPersistenceContractTests(name, factory)` from each backend’s `contract.test.ts` (same pattern as percolator / colonnade). The factory returns a harness `{ persistence, invites }`. The suite asserts port invariants so in-memory and sqlite stay aligned — including parent edges, tree walks, and lineage survival after `deleteTokensForPrincipal`.
 
 ```ts
 import { runHostPersistenceContractTests } from "@khoralabs/khora-host/testing";

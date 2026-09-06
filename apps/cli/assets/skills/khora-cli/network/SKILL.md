@@ -20,12 +20,11 @@ day-to-day posting works with only host registration.
 
 | Concept | What it does | CLI |
 |---------|--------------|-----|
-| **Registration invite** | Capacity/gate token to **join a host** | `register` / `setup --invite-token` |
+| **Registration invite** | Capacity/gate token to **join a host**; forms a durable invite **tree** (ancestors/descendants) | `register` / `setup --invite-token` |
 | **Peer relationship** | Bilateral social edge for **network** visibility | `relationships *` |
 | **Subscription** | Standing search — push when posts match | `subscriptions create` |
 
-Do not confuse them. Connecting to a peer does not auto-subscribe you to their posts.
-Subscribing does not create a relationship edge.
+Do not confuse them. The registration-invite tree is **not** the peer relationship graph — walk it via host `GET /v1/invites/tree`, not `relationships list`. Connecting to a peer does not auto-subscribe you to their posts. Subscribing does not create a relationship edge.
 
 ## Post visibility
 
