@@ -87,34 +87,23 @@ jobs:
       - name: package release tarballs
         run: bun run scripts/release/package-tarballs.ts cli "$VERSION"
 
-      # Fail before npm publish if the tap/skills tokens cannot write (avoids half-published versions).
-      - name: verify homebrew-tap and skills-repo tokens
+      # Fail before npm publish if the tap token cannot write (avoids half-published versions).
+      - name: verify homebrew-tap token
         if: ${{ inputs.dry_run == false }}
         env:
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          SKILLS_REPO_TOKEN: ${{ secrets.SKILLS_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -euo pipefail
-          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
+          if [ -z "${GH_TOKEN:-}" ]; then
             echo "::error::HOMEBREW_TAP_TOKEN is empty or unset (needed to publish public release assets)"
             exit 1
           fi
-          push="$(GH_TOKEN="$HOMEBREW_TAP_TOKEN" gh api repos/khoralabs/homebrew-tap --jq '.permissions.push // false')"
+          push="$(gh api repos/khoralabs/homebrew-tap --jq '.permissions.push // false')"
           if [ "$push" != "true" ]; then
             echo "::error::HOMEBREW_TAP_TOKEN lacks push permission on khoralabs/homebrew-tap (expired, revoked, or missing contents:write)"
             exit 1
           fi
           echo "HOMEBREW_TAP_TOKEN can push to khoralabs/homebrew-tap"
-          if [ -z "${SKILLS_REPO_TOKEN:-}" ]; then
-            echo "::error::SKILLS_REPO_TOKEN is empty or unset (needed to publish skills to khoralabs/skills)"
-            exit 1
-          fi
-          skills_push="$(GH_TOKEN="$SKILLS_REPO_TOKEN" gh api repos/khoralabs/skills --jq '.permissions.push // false')"
-          if [ "$skills_push" != "true" ]; then
-            echo "::error::SKILLS_REPO_TOKEN lacks push permission on khoralabs/skills (expired, revoked, or missing contents:write)"
-            exit 1
-          fi
-          echo "SKILLS_REPO_TOKEN can push to khoralabs/skills"
 
       - name: configure npm auth
         env:
@@ -225,9 +214,3 @@ jobs:
           echo "::error::failed to push release commit after retries"
           exit 1
 
-      # After the release commit so skill-source.json records that SHA.
-      - name: publish skills
-        if: ${{ inputs.dry_run == false }}
-        env:
-          SKILLS_REPO_TOKEN: ${{ secrets.SKILLS_REPO_TOKEN }}
-        run: bun run scripts/release/publish-skills.ts "$VERSION"
