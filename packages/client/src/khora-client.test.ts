@@ -584,6 +584,70 @@ describe("KhoraClient", () => {
     });
   });
 
+  test("createRelationship / listRelationships / accept / decline / revoke / delete", async () => {
+    const signer = staticSigner("did:key:a");
+    const calls: string[] = [];
+    const relationship = {
+      channelId: "ch1",
+      peerDid: "did:key:b",
+      role: "creator" as const,
+      status: "pending" as const,
+      createdAtMs: 1,
+    };
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      calls.push(`${method} ${url}`);
+      expectAuthHeaders(init, "did:key:a");
+      if (method === "POST" && url === "http://h/v1/relationships") {
+        expect(JSON.parse(String(init?.body))).toEqual({ peerDid: "did:key:b" });
+        return Response.json({ relationship }, { status: 201 });
+      }
+      if (method === "GET" && url === "http://h/v1/relationships") {
+        return Response.json({ relationships: [relationship] });
+      }
+      if (method === "POST" && url === "http://h/v1/relationships/ch1/accept") {
+        return Response.json({
+          relationship: { ...relationship, status: "accepted", role: "peer" },
+        });
+      }
+      if (
+        method === "POST" &&
+        (url === "http://h/v1/relationships/ch1/decline" ||
+          url === "http://h/v1/relationships/ch1/revoke")
+      ) {
+        return new Response(null, { status: 204 });
+      }
+      if (method === "DELETE" && url === "http://h/v1/relationships/ch1") {
+        return new Response(null, { status: 204 });
+      }
+      throw new Error(`unexpected ${method} ${url}`);
+    });
+    const c = new KhoraClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    await expect(c.createRelationship({ peerDid: "did:key:b" })).resolves.toEqual({
+      relationship,
+    });
+    await expect(c.listRelationships()).resolves.toEqual({ relationships: [relationship] });
+    await expect(c.acceptRelationship("ch1")).resolves.toEqual({
+      relationship: { ...relationship, status: "accepted", role: "peer" },
+    });
+    await expect(c.declineRelationship("ch1")).resolves.toBeUndefined();
+    await expect(c.revokeRelationship("ch1")).resolves.toBeUndefined();
+    await expect(c.deleteRelationship("ch1")).resolves.toBeUndefined();
+    expect(calls).toEqual([
+      "POST http://h/v1/relationships",
+      "GET http://h/v1/relationships",
+      "POST http://h/v1/relationships/ch1/accept",
+      "POST http://h/v1/relationships/ch1/decline",
+      "POST http://h/v1/relationships/ch1/revoke",
+      "DELETE http://h/v1/relationships/ch1",
+    ]);
+  });
+
   test("search GET /v1/search with query params and auth headers", async () => {
     const signer = staticSigner("did:key:a");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {

@@ -10,6 +10,9 @@ import type {
   KhoraProfilePatch,
   KhoraRegistrationRequestBody,
   KhoraRegistrationResult,
+  KhoraRelationshipCreate,
+  KhoraRelationshipListResponse,
+  KhoraRelationshipResponse,
   KhoraSearchQuery,
   KhoraSearchRequest,
   KhoraSearchResponse,
@@ -37,6 +40,14 @@ import {
   updateProfile,
 } from "./http/profile";
 import { register } from "./http/register";
+import {
+  acceptRelationship as httpAcceptRelationship,
+  createRelationship as httpCreateRelationship,
+  declineRelationship as httpDeclineRelationship,
+  deleteRelationship as httpDeleteRelationship,
+  listRelationships as httpListRelationships,
+  revokeRelationship as httpRevokeRelationship,
+} from "./http/relationships";
 import { searchGet as httpSearchGet, searchPost as httpSearchPost } from "./http/search";
 import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister";
 import {
@@ -160,6 +171,30 @@ export class KhoraClient {
 
   previewInvite(token: string): Promise<KhoraInvitePreviewResponse> {
     return previewInvite(this.transport, token);
+  }
+
+  createRelationship(body: KhoraRelationshipCreate): Promise<KhoraRelationshipResponse> {
+    return httpCreateRelationship(this.transport, body);
+  }
+
+  listRelationships(): Promise<KhoraRelationshipListResponse> {
+    return httpListRelationships(this.transport);
+  }
+
+  acceptRelationship(channelId: string): Promise<KhoraRelationshipResponse> {
+    return httpAcceptRelationship(this.transport, channelId);
+  }
+
+  declineRelationship(channelId: string): Promise<void> {
+    return httpDeclineRelationship(this.transport, channelId);
+  }
+
+  revokeRelationship(channelId: string): Promise<void> {
+    return httpRevokeRelationship(this.transport, channelId);
+  }
+
+  deleteRelationship(channelId: string): Promise<void> {
+    return httpDeleteRelationship(this.transport, channelId);
   }
 
   async updateProfile(patch: KhoraProfilePatch): Promise<KhoraProfile> {
