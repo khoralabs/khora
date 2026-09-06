@@ -2,9 +2,24 @@ import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/khora-contracts";
 import { NAMESPACE_SOCIAL_RELATIONSHIP } from "../core/id-conventions";
 import type { SocialRelationshipPersistence, SocialRelationshipRow } from "../core/port";
-import { parseRelationshipRow } from "../core/row-map";
+import { intendedPeerPrincipalIdFromMetadata, parseRelationshipRow } from "../core/row-map";
 import type { ProjectionStore } from "./projection-store";
 import type { SocialPrincipalChannelStore } from "./social-principal-channel-store";
+
+function mergeCreateMetadata(params: {
+  intendedPeerPrincipalId?: PrincipalId;
+  metadata?: unknown;
+}): unknown | undefined {
+  const { intendedPeerPrincipalId, metadata } = params;
+  if (intendedPeerPrincipalId === undefined) return metadata;
+  const base =
+    metadata !== null && typeof metadata === "object" && !Array.isArray(metadata)
+      ? { ...(metadata as Record<string, unknown>) }
+      : metadata !== undefined
+        ? { value: metadata }
+        : {};
+  return { ...base, intendedPeerPrincipalId };
+}
 
 export function createSocialRelationshipPersistence(deps: {
   projectionStore: ProjectionStore;
@@ -27,13 +42,14 @@ export function createSocialRelationshipPersistence(deps: {
   return {
     createRelationship(params): void {
       const now = Date.now();
+      const metadata = mergeCreateMetadata(params);
       const row: SocialRelationshipRow = {
         channelId: params.channelId,
         creatorPrincipalId: params.creatorPrincipalId,
         peerPrincipalId: null,
         createdAtMs: now,
         ...(params.expiresAtMs !== undefined ? { expiresAtMs: params.expiresAtMs } : {}),
-        ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
+        ...(metadata !== undefined ? { metadata } : {}),
       };
       hostDb.transaction(() => {
         store.upsert({
@@ -43,6 +59,13 @@ export function createSocialRelationshipPersistence(deps: {
           projection: row,
         });
         principalChannelStore.insertChannel(tenantKey, params.creatorPrincipalId, params.channelId);
+        if (params.intendedPeerPrincipalId !== undefined) {
+          principalChannelStore.insertChannel(
+            tenantKey,
+            params.intendedPeerPrincipalId,
+            params.channelId,
+          );
+        }
       })();
     },
 
@@ -110,6 +133,10 @@ export function createSocialRelationshipPersistence(deps: {
         principalChannelStore.deleteChannel(tenantKey, r.creatorPrincipalId, channelId);
         if (r.peerPrincipalId !== null) {
           principalChannelStore.deleteChannel(tenantKey, r.peerPrincipalId, channelId);
+        }
+        const intended = intendedPeerPrincipalIdFromMetadata(r.metadata);
+        if (intended !== undefined) {
+          principalChannelStore.deleteChannel(tenantKey, intended, channelId);
         }
       })();
       return r;

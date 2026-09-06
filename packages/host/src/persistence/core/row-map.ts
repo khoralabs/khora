@@ -51,3 +51,28 @@ export function parseRelationshipRow(
     ...(metadata !== undefined ? { metadata } : {}),
   };
 }
+
+/** Intended invitee from pending-row metadata (peer invite flow). */
+export function intendedPeerPrincipalIdFromMetadata(metadata: unknown): PrincipalId | undefined {
+  if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return undefined;
+  }
+  const id = (metadata as Record<string, unknown>).intendedPeerPrincipalId;
+  if (typeof id !== "string" || id.trim().length === 0) return undefined;
+  return id as PrincipalId;
+}
+
+/** Bound peer, else intended invitee from metadata. */
+export function relationshipCounterpartyPrincipalId(
+  row: SocialRelationshipRow,
+  viewerPrincipalId: PrincipalId,
+): PrincipalId | undefined {
+  if (row.peerPrincipalId !== null) {
+    return row.peerPrincipalId === viewerPrincipalId ? row.creatorPrincipalId : row.peerPrincipalId;
+  }
+  const intended = intendedPeerPrincipalIdFromMetadata(row.metadata);
+  if (intended === undefined) return undefined;
+  if (viewerPrincipalId === row.creatorPrincipalId) return intended;
+  if (viewerPrincipalId === intended) return row.creatorPrincipalId;
+  return undefined;
+}

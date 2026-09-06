@@ -37,4 +37,9 @@ export type {
   SocialRelationshipRow,
   UsernameIndexPort,
 } from "./port";
-export { parseEntityRow, parseRelationshipRow } from "./row-map";
+export {
+  intendedPeerPrincipalIdFromMetadata,
+  parseEntityRow,
+  parseRelationshipRow,
+  relationshipCounterpartyPrincipalId,
+} from "./row-map";

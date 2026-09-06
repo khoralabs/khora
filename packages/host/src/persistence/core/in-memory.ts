@@ -9,6 +9,7 @@ import type {
   SocialRegisterAgentInput,
   SocialRelationshipRow,
 } from "./port";
+import { intendedPeerPrincipalIdFromMetadata } from "./row-map";
 
 type TeardownJob = {
   principalId: PrincipalId;
@@ -84,16 +85,32 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
     social: {
       createRelationship(params): void {
         const now = Date.now();
+        const metadata =
+          params.intendedPeerPrincipalId === undefined
+            ? params.metadata
+            : {
+                ...(params.metadata !== null &&
+                typeof params.metadata === "object" &&
+                !Array.isArray(params.metadata)
+                  ? (params.metadata as Record<string, unknown>)
+                  : params.metadata !== undefined
+                    ? { value: params.metadata }
+                    : {}),
+                intendedPeerPrincipalId: params.intendedPeerPrincipalId,
+              };
         const row: SocialRelationshipRow = {
           channelId: params.channelId,
           creatorPrincipalId: params.creatorPrincipalId,
           peerPrincipalId: null,
           createdAtMs: now,
           ...(params.expiresAtMs !== undefined ? { expiresAtMs: params.expiresAtMs } : {}),
-          ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
         };
         relationships.set(params.channelId, row);
         addChannelIndex(params.creatorPrincipalId, params.channelId);
+        if (params.intendedPeerPrincipalId !== undefined) {
+          addChannelIndex(params.intendedPeerPrincipalId, params.channelId);
+        }
       },
 
       getRelationship(channelId: string): SocialRelationshipRow | undefined {
@@ -149,6 +166,10 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
         removeChannelIndex(r.creatorPrincipalId, channelId);
         if (r.peerPrincipalId !== null) {
           removeChannelIndex(r.peerPrincipalId, channelId);
+        }
+        const intended = intendedPeerPrincipalIdFromMetadata(r.metadata);
+        if (intended !== undefined) {
+          removeChannelIndex(intended, channelId);
         }
         return { ...r };
       },

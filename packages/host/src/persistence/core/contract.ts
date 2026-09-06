@@ -100,6 +100,28 @@ export function runHostPersistenceContractTests(
       expect(p.social.listRelationshipsForPrincipal(creator)).toHaveLength(0);
     });
 
+    test("social pending invite indexes intended peer and clears on delete", async () => {
+      const { persistence: p } = await create();
+      const creator = "did:test:creator2" as PrincipalId;
+      const peer = "did:test:peer2" as PrincipalId;
+      p.social.createRelationship({
+        channelId: "ch-pending",
+        creatorPrincipalId: creator,
+        intendedPeerPrincipalId: peer,
+      });
+      const row = p.social.getRelationship("ch-pending");
+      expect(row?.peerPrincipalId).toBeNull();
+      expect(
+        (row?.metadata as { intendedPeerPrincipalId?: string } | undefined)
+          ?.intendedPeerPrincipalId,
+      ).toBe(peer);
+      expect(p.social.listRelationshipsForPrincipal(creator)).toHaveLength(1);
+      expect(p.social.listRelationshipsForPrincipal(peer)).toHaveLength(1);
+      p.social.deleteRelationship("ch-pending");
+      expect(p.social.listRelationshipsForPrincipal(creator)).toHaveLength(0);
+      expect(p.social.listRelationshipsForPrincipal(peer)).toHaveLength(0);
+    });
+
     test("agent account status set / get / clear", async () => {
       const { persistence: p } = await create();
       expect(p.agentAccountStatus.getStatus("did:x")).toBeUndefined();

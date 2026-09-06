@@ -13,7 +13,9 @@ export function connectedPeerPrincipalIds(
 ): Set<PrincipalId> {
   const peers = new Set<PrincipalId>();
   for (const row of social.listRelationshipsForPrincipal(authorPrincipalId)) {
-    if (row.peerPrincipalId !== null && row.peerPrincipalId !== authorPrincipalId) {
+    // Pending invites (unbound) must not expand network visibility.
+    if (row.peerPrincipalId === null) continue;
+    if (row.peerPrincipalId !== authorPrincipalId) {
       peers.add(row.peerPrincipalId);
     }
     if (row.creatorPrincipalId !== authorPrincipalId) {

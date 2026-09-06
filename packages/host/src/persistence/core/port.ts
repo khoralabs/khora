@@ -45,6 +45,11 @@ export type SocialRelationshipPersistence = {
   createRelationship(params: {
     channelId: string;
     creatorPrincipalId: PrincipalId;
+    /**
+     * When set (peer invite flow), stored in metadata and indexed so the invitee
+     * can list the pending relationship before {@link bindPeer}.
+     */
+    intendedPeerPrincipalId?: PrincipalId;
     expiresAtMs?: number;
     metadata?: unknown;
   }): void;
