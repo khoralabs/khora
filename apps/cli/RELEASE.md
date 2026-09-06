@@ -105,10 +105,18 @@ brew install khora
 
 ## Skills publish (`khoralabs/skills`)
 
-After the release commit, CI runs `scripts/release/publish-skills.ts <version>` to replace [`khora-cli/`](https://github.com/khoralabs/skills/tree/main/khora-cli) in [`khoralabs/skills`](https://github.com/khoralabs/skills) from `apps/cli/assets/skills/khora-cli/`.
+Skills publish is a **separate** workflow ([`publish-khora-cli-skills.yml`](../../.github/workflows/publish-khora-cli-skills.yml)), not part of the CLI release job. After a successful release, dispatch it with the same semver (and preferably the release tag as `ref`). It runs `scripts/release/publish-skills.ts <version>` to replace [`skills/khora-cli/`](https://github.com/khoralabs/skills/tree/main/skills/khora-cli) from `apps/cli/assets/skills/khora-cli/`.
 
 | Secret | Purpose |
 | --- | --- |
-| `SKILLS_REPO_TOKEN` | Fine-grained PAT with **Contents: Write** on `khoralabs/skills` only |
+| `SKILLS_REPO_TOKEN` | Fine-grained PAT with **Contents: Write** on `khoralabs/skills` only (required for the publish-skills workflow, not for release) |
 
-CLI release preflight fails if this secret is missing or cannot push. Reuse the same PAT across `khora`, `agent-review`, and `vellum` as a repository secret named `SKILLS_REPO_TOKEN`. See [skills CONTRIBUTING](https://github.com/khoralabs/skills/blob/main/CONTRIBUTING.md).
+Reuse the same PAT across `khora`, `agent-review`, and `vellum`. See [skills CONTRIBUTING](https://github.com/khoralabs/skills/blob/main/CONTRIBUTING.md).
+
+Install skills for agents:
+
+```bash
+bunx skills add khoralabs/skills --skill khora-cli -y
+# or via the CLI wrapper (bundled assets, version-matched):
+khora skills install -y
+```

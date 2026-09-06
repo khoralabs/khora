@@ -1,109 +1,107 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+#!/usr/bin/env bun
+/**
+ * Install the bundled khora-cli skill via `bunx skills` (vercel-labs/skills).
+ *
+ * Expects a catalog-shaped tree: `<skillsSourceDir>/skills/khora-cli/SKILL.md`.
+ * For the CLI package that is `apps/cli/assets` (or `$KHORA_CLI_ASSETS_DIR`).
+ */
+import { existsSync, rmSync } from "node:fs";
+import path from "node:path";
 
-/** Authoritative skills root relative to home or project cwd. */
 export const AGENTS_SKILLS_CANONICAL = path.join(".agents", "skills");
-
 export const KHORA_CLI_SKILL_NAME = "khora-cli";
-
-/** Other tools' global skill roots — symlinked to the canonical root when safe (global install only). */
-export const AGENT_SKILL_SYMLINK_ROOTS = [
-  path.join(".cursor", "skills"),
-  path.join(".gemini", "skills"),
-  path.join(".agent", "skills"),
-  path.join(".gemini", "antigravity", "skills"),
-] as const;
-
-export type AgentSkillSymlinkStatus =
-  | "created"
-  | "already_linked"
-  | "skipped_exists"
-  | "skipped_different_link"
-  | "skipped_error";
 
 export type AgentSkillInstallStatus = "copied" | "skipped_exists" | "overwritten";
 
 export type AgentSkillInstallResult = {
   skillDir: string;
   status: AgentSkillInstallStatus;
+  /** Always empty; retained for JSON compatibility with prior installer. */
   copied: string[];
   global: boolean;
-  symlinks: { path: string; status: AgentSkillSymlinkStatus }[];
+  /** Always empty; `bunx skills` owns multi-agent placement. */
+  symlinks: { path: string; status: string }[];
 };
 
-function copyDirRecursive(src: string, dest: string, copied: string[], rel = ""): void {
-  fs.mkdirSync(dest, { recursive: true });
-  for (const name of fs.readdirSync(src)) {
-    const srcPath = path.join(src, name);
-    const destPath = path.join(dest, name);
-    const relPath = rel.length > 0 ? `${rel}/${name}` : name;
-    const stat = fs.statSync(srcPath);
-    if (stat.isDirectory()) {
-      copyDirRecursive(srcPath, destPath, copied, relPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-      copied.push(relPath);
-    }
-  }
-}
+export type SkillsCliResult = {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+};
 
-function rmDirRecursive(dir: string): void {
-  fs.rmSync(dir, { recursive: true, force: true });
-}
+export type SkillsCliRunner = (
+  args: string[],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv },
+) => SkillsCliResult;
 
-function resolveExistingLink(target: string): string | null {
+/** Default runner: `bunx skills …`. */
+export function defaultSkillsCliRunner(
+  args: string[],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv } = {},
+): SkillsCliResult {
   try {
-    return fs.realpathSync(target);
-  } catch {
-    return null;
-  }
-}
-
-export function linkAgentSkillsRoot(
-  alternatePath: string,
-  canonicalPath: string,
-): AgentSkillSymlinkStatus {
-  const canonicalReal = resolveExistingLink(canonicalPath) ?? canonicalPath;
-
-  if (fs.existsSync(alternatePath)) {
-    const stat = fs.lstatSync(alternatePath);
-    if (stat.isSymbolicLink()) {
-      const target = resolveExistingLink(alternatePath);
-      if (target === canonicalReal) return "already_linked";
-      return "skipped_different_link";
-    }
-    return "skipped_exists";
-  }
-
-  fs.mkdirSync(path.dirname(alternatePath), { recursive: true });
-  try {
-    fs.symlinkSync(canonicalPath, alternatePath, "dir");
-    return "created";
-  } catch {
-    return "skipped_error";
+    const result = Bun.spawnSync(["bunx", "skills", ...args], {
+      cwd: opts.cwd,
+      env: opts.env ?? process.env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    return {
+      exitCode: result.exitCode ?? 1,
+      stdout: result.stdout.toString(),
+      stderr: result.stderr.toString(),
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { exitCode: 1, stdout: "", stderr: `failed to spawn bunx skills: ${message}` };
   }
 }
 
 export type InstallKhoraCliSkillOptions = {
+  /**
+   * Absolute path to the skill leaf (`…/skills/khora-cli`), or to the catalog root
+   * that contains `skills/khora-cli`. Prefer the leaf path from resolveSkillAssetsDir.
+   */
   skillAssetsDir: string;
-  /** Home directory (required when `global` is true for symlink roots). */
   home?: string;
-  /** Project cwd for local installs (default process.cwd()). */
   cwd?: string;
-  /** When true, install under `home/.agents/skills`; otherwise under `cwd/.agents/skills`. */
   global?: boolean;
-  /** When true, replace an existing skill directory. */
   force?: boolean;
+  /** Injectable for tests. */
+  runSkillsCli?: SkillsCliRunner;
 };
 
+/** Resolve catalog root that contains `skills/khora-cli` from a leaf or root path. */
+export function resolveSkillsCatalogRoot(skillAssetsDir: string): string {
+  const normalized = path.resolve(skillAssetsDir);
+  if (
+    path.basename(normalized) === KHORA_CLI_SKILL_NAME &&
+    path.basename(path.dirname(normalized)) === "skills"
+  ) {
+    return path.dirname(path.dirname(normalized));
+  }
+  const nested = path.join(normalized, "skills", KHORA_CLI_SKILL_NAME);
+  if (existsSync(path.join(nested, "SKILL.md"))) {
+    return normalized;
+  }
+  throw new Error(
+    `skill assets must live at <catalog>/skills/${KHORA_CLI_SKILL_NAME} (got ${skillAssetsDir})`,
+  );
+}
+
+function skillLeafDir(catalogRoot: string): string {
+  return path.join(catalogRoot, "skills", KHORA_CLI_SKILL_NAME);
+}
+
 /**
- * Install the bundled khora-cli skill tree.
- * Default target is `<cwd>/.agents/skills/khora-cli`. With `global: true`, uses `~/.agents/skills`
- * and optionally links other agent skill roots to that canonical directory.
+ * Install the bundled khora-cli skill tree via `bunx skills add`.
+ * Default target is `<cwd>/.agents/skills/khora-cli`. With `global: true`, uses `~/.agents/skills`.
  */
 export function installKhoraCliSkill(opts: InstallKhoraCliSkillOptions): AgentSkillInstallResult {
-  if (!fs.existsSync(opts.skillAssetsDir)) {
-    throw new Error(`agent skill assets not found at ${opts.skillAssetsDir}`);
+  const catalogRoot = resolveSkillsCatalogRoot(opts.skillAssetsDir);
+  const leaf = skillLeafDir(catalogRoot);
+  if (!existsSync(path.join(leaf, "SKILL.md"))) {
+    throw new Error(`agent skill assets not found at ${leaf}`);
   }
 
   const isGlobal = opts.global === true;
@@ -112,11 +110,11 @@ export function installKhoraCliSkill(opts: InstallKhoraCliSkillOptions): AgentSk
     throw new Error("HOME / USERPROFILE not set; cannot install global skills");
   }
   const rootBase = isGlobal ? home : (opts.cwd ?? process.cwd());
-  const canonicalRoot = path.join(rootBase, AGENTS_SKILLS_CANONICAL);
-  const skillDir = path.join(canonicalRoot, KHORA_CLI_SKILL_NAME);
+  const skillDir = path.join(rootBase, AGENTS_SKILLS_CANONICAL, KHORA_CLI_SKILL_NAME);
   const force = opts.force === true;
+  const run = opts.runSkillsCli ?? defaultSkillsCliRunner;
 
-  if (fs.existsSync(skillDir) && !force) {
+  if (existsSync(skillDir) && !force) {
     return {
       skillDir,
       status: "skipped_exists",
@@ -126,37 +124,56 @@ export function installKhoraCliSkill(opts: InstallKhoraCliSkillOptions): AgentSk
     };
   }
 
-  const status: AgentSkillInstallStatus = fs.existsSync(skillDir) ? "overwritten" : "copied";
-  if (fs.existsSync(skillDir)) {
-    rmDirRecursive(skillDir);
+  const status: AgentSkillInstallStatus = existsSync(skillDir) ? "overwritten" : "copied";
+  const scopeFlags = isGlobal ? (["--global"] as const) : ([] as const);
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  if (isGlobal) {
+    env.HOME = home;
+    env.USERPROFILE = home;
   }
 
-  fs.mkdirSync(canonicalRoot, { recursive: true });
-  const copied: string[] = [];
-  copyDirRecursive(opts.skillAssetsDir, skillDir, copied);
+  if (force && existsSync(skillDir)) {
+    const remove = run(["remove", KHORA_CLI_SKILL_NAME, "-y", ...scopeFlags], {
+      cwd: opts.cwd ?? process.cwd(),
+      env,
+    });
+    if (remove.exitCode !== 0) {
+      console.warn(
+        `skills remove exited ${remove.exitCode}: ${remove.stderr.trim() || remove.stdout.trim()}`,
+      );
+      rmSync(skillDir, { recursive: true, force: true });
+    }
+  }
 
-  const symlinks = isGlobal
-    ? AGENT_SKILL_SYMLINK_ROOTS.map((rel) => {
-        const alternatePath = path.join(home, rel);
-        return {
-          path: alternatePath,
-          status: linkAgentSkillsRoot(alternatePath, canonicalRoot),
-        };
-      })
-    : [];
+  const add = run(["add", catalogRoot, "--skill", KHORA_CLI_SKILL_NAME, "-y", ...scopeFlags], {
+    cwd: opts.cwd ?? process.cwd(),
+    env,
+  });
+  if (add.exitCode !== 0) {
+    throw new Error(
+      `bunx skills add failed (${add.exitCode}): ${add.stderr.trim() || add.stdout.trim()}`,
+    );
+  }
+  if (!existsSync(path.join(skillDir, "SKILL.md"))) {
+    throw new Error(
+      `bunx skills add reported success but ${skillDir}/SKILL.md is missing:\n${add.stdout}\n${add.stderr}`,
+    );
+  }
 
-  return { skillDir, status, copied, global: isGlobal, symlinks };
+  return { skillDir, status, copied: [], global: isGlobal, symlinks: [] };
 }
 
 /** @deprecated Prefer {@link installKhoraCliSkill} with `global: true`. */
 export function runAgentSkillSetup(opts: {
   skillAssetsDir: string;
   home: string;
+  runSkillsCli?: SkillsCliRunner;
 }): AgentSkillInstallResult {
   return installKhoraCliSkill({
     skillAssetsDir: opts.skillAssetsDir,
     home: opts.home,
     global: true,
     force: true,
+    runSkillsCli: opts.runSkillsCli,
   });
 }
