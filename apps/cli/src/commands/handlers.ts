@@ -18,6 +18,7 @@ import {
 } from "./relationships";
 import { handleSearch } from "./search";
 import { runSetupCommand } from "./setup";
+import { handleSkillsInstall } from "./skills";
 import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions";
 import { handleUnregister } from "./unregister";
 import { handleVersion } from "./version";
@@ -32,6 +33,11 @@ export async function dispatch(
 
   if (a === "setup") {
     await runSetupCommand(flags);
+    return;
+  }
+
+  if (a === "skills" && b === "install") {
+    await handleSkillsInstall(flags);
     return;
   }
 

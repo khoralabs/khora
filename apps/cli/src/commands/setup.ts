@@ -5,10 +5,7 @@ import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 import { generateIdentity, loadIdentity, saveIdentity } from "@khoralabs/did-key-identity";
 import { KhoraClient } from "@khoralabs/khora-client";
 import { fetchHosts } from "@khoralabs/khora-registry/agent-client";
-import {
-  type AgentSkillInstallResult,
-  runAgentSkillSetup,
-} from "../../scripts/install-agent-skill";
+import type { AgentSkillInstallResult } from "../../scripts/install-agent-skill";
 import {
   type KhoraSetupResult,
   POSTINSTALL_SCHEMA_FILE,
@@ -25,6 +22,7 @@ import { runRegisterInteractiveFlow } from "../flows/register-flow";
 import { nameFromFlags } from "../lib/flags";
 import { style, symbols } from "../lib/style";
 import { cliRegistryUrl } from "../registry/config";
+import { installBundledKhoraCliSkill, printSkillInstallResult } from "./skills";
 
 const ASSETS_DIR_ENV = "KHORA_CLI_ASSETS_DIR";
 
@@ -93,15 +91,7 @@ export function printSetupSummary(result: KhoraSetupResult, skill?: AgentSkillIn
   console.log(`${symbols.info} ${style.muted(`at ${result.destDir}`)}`);
 
   if (skill !== undefined) {
-    console.log(`${symbols.success} wrote agent skill ${style.muted("khora-cli")}`);
-    console.log(`${symbols.info} ${style.muted(`at ${skill.skillDir}`)}`);
-    for (const link of skill.symlinks) {
-      if (link.status === "created") {
-        console.log(`${symbols.success} linked ${style.muted(link.path)} → ~/.agents/skills`);
-      } else if (link.status === "already_linked") {
-        console.log(`${symbols.info} ${style.muted(`${link.path} already linked`)}`);
-      }
-    }
+    printSkillInstallResult(skill);
   }
 }
 
@@ -121,7 +111,7 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
     );
   }
 
-  // Step 1: install config files + skill (existing behaviour)
+  // Step 1: install config files; skills only when -y (opt-in)
   const result = runKhoraConfigSetup({
     configsDir: assets.configsDir,
     schemaPath: assets.schemaPath,
@@ -129,8 +119,14 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
     force,
   });
   let skill: AgentSkillInstallResult | undefined;
-  if (existsSync(assets.skillAssetsDir)) {
-    skill = runAgentSkillSetup({ skillAssetsDir: assets.skillAssetsDir, home });
+  if (yes && existsSync(assets.skillAssetsDir)) {
+    const globalSkills = boolFlag(flags, "global", "g");
+    skill = installBundledKhoraCliSkill({
+      global: globalSkills,
+      force: false,
+      home,
+      cwd: process.cwd(),
+    });
   }
   if (asJson) {
     // JSON mode: emit the file-install result now; onboarding below may overwrite with richer output
@@ -350,9 +346,7 @@ export function maybeBootstrapKhoraHome(
       home,
       force: false,
     });
-    if (existsSync(assets.skillAssetsDir)) {
-      runAgentSkillSetup({ skillAssetsDir: assets.skillAssetsDir, home });
-    }
+    // Skills are opt-in via `khora setup -y` or `khora skills install -y` — not on first-run bootstrap.
   } catch (e) {
     err(
       style.error(

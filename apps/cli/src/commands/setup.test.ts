@@ -88,10 +88,10 @@ describe("runSetupCommand", () => {
     process.env = origEnv;
   });
 
-  test("creates ~/.khora on first run", async () => {
+  test("creates ~/.khora on first run without installing skills", async () => {
     await runSetupCommand({});
     expect(existsSync(path.join(home, ".khora"))).toBe(true);
-    expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(true);
+    expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(false);
   });
 
   test("idempotent: second run still succeeds", async () => {
@@ -111,8 +111,39 @@ describe("runSetupCommand", () => {
     } finally {
       console.log = log;
     }
-    const parsed = JSON.parse(lines.join("\n")) as { destDir: string };
+    const parsed = JSON.parse(lines.join("\n")) as { destDir: string; skill?: unknown };
     expect(parsed.destDir).toBe(path.join(home, ".khora"));
+    expect(parsed.skill).toBeUndefined();
+  });
+
+  test("-y installs skills under cwd by default", async () => {
+    const cwd = path.join(workspace, "project");
+    mkdirSync(cwd, { recursive: true });
+    const prev = process.cwd();
+    process.chdir(cwd);
+    try {
+      await expect(runSetupCommand({ yes: true, username: "ada", name: "Ada" })).rejects.toThrow();
+      expect(existsSync(path.join(cwd, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(true);
+      expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(false);
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
+  test("-y -g installs skills under home", async () => {
+    const cwd = path.join(workspace, "project");
+    mkdirSync(cwd, { recursive: true });
+    const prev = process.cwd();
+    process.chdir(cwd);
+    try {
+      await expect(
+        runSetupCommand({ yes: true, global: true, username: "ada", name: "Ada" }),
+      ).rejects.toThrow();
+      expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(true);
+      expect(existsSync(path.join(cwd, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(false);
+    } finally {
+      process.chdir(prev);
+    }
   });
 });
 
@@ -140,13 +171,13 @@ describe("maybeBootstrapKhoraHome", () => {
     rmSync(workspace, { recursive: true, force: true });
   });
 
-  test("creates ~/.khora on first invocation in a packaged install", () => {
+  test("creates ~/.khora on first invocation without installing skills", () => {
     const errors: string[] = [];
     maybeBootstrapKhoraHome({ KHORA_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
       errors.push(line),
     );
     expect(existsSync(path.join(home, ".khora", "cli.config.json"))).toBe(true);
-    expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(true);
+    expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(false);
     expect(errors).toEqual([]);
   });
 

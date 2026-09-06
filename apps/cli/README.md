@@ -151,11 +151,15 @@ Run `khora help` for an overview, or `khora help <command>` for details (e.g. `k
 
 | Command | Description |
 | --- | --- |
-| `khora setup` | Seed `~/.khora/`, install agent skill, keygen, pick host, register |
+| `khora setup` | Seed `~/.khora/`, optionally install agent skills (`-y`), keygen, pick host, register |
+| `khora skills install` | Install/update the bundled `khora-cli` skill tree (`-y` required; `-g` for global) |
 
 ```bash
 khora setup [--force] [--json]
-khora setup -y --username ada --name "Ada" --bio "Building agents"   # non-interactive
+khora setup -y --username ada --name "Ada" --bio "Building agents"   # non-interactive + cwd skills
+khora setup -y -g --username ada --name "Ada"                        # skills under ~/.agents/skills
+khora skills install -y                                              # skills only → cwd
+khora skills install -y -g --force                                   # refresh global skills
 ```
 
 ### Inbox daemon
@@ -241,7 +245,7 @@ At least one of `--topic`, `--author`, or `--query` is required. `--author` acce
 
 ## Configuration
 
-`khora setup [--force]` copies `base.config.json`, `cli.config.json`, `daemon.config.json`, and `khora-config.schema.json` into `~/.khora/`. It also installs the bundled **khora-cli** agent skill to `~/.agents/skills/khora-cli` and symlinks other global skill directories (`~/.cursor/skills`, `~/.gemini/skills`, `~/.agent/skills`, etc.) to `~/.agents/skills` when those paths do not already exist. Point `"$schema": "./khora-config.schema.json"` at the file next to your config for editor IntelliSense.
+`khora setup [--force]` copies `base.config.json`, `cli.config.json`, `daemon.config.json`, and `khora-config.schema.json` into `~/.khora/`. With **`-y`**, it also installs the bundled **khora-cli** agent skill tree to `<cwd>/.agents/skills/khora-cli` (or `~/.agents/skills/khora-cli` with **`-g`**, including tool skill-root symlinks). Skills are skipped if already present; use `khora skills install -y [--force] [-g]` to install or refresh later. Point `"$schema": "./khora-config.schema.json"` at the file next to your config for editor IntelliSense.
 
 Settings merge: **environment variables** → **JSON config file** (optional `extends` chain). CLI-specific default config path:
 

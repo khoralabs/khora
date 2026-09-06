@@ -12,6 +12,7 @@ export function printHelp(): void {
   console.log(`${style.brand(style.bold(`${PROGRAM} — KHORA host CLI`))}
 
 Register on a host, manage your profile, search, posts, subscriptions, and relationships.
+Use \`khora setup -y\` to onboard and opt in to installing agent skills (cwd by default; \`-g\` global).
 
 Flag conventions:
   --json     machine-readable command output (boolean)
@@ -22,7 +23,8 @@ Flag conventions:
 Usage:
   ${PROGRAM} help [<command> ...]
   ${PROGRAM} version [--json]
-  ${PROGRAM} setup [-y] [--username=…] [--name=…] [--bio=…] [--invite-token=…] [--force] [--json]
+  ${PROGRAM} setup [-y] [-g] [--username=…] [--name=…] [--bio=…] [--invite-token=…] [--force] [--json]
+  ${PROGRAM} skills install -y [-g] [--force] [--json]
   ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
   ${PROGRAM} host list | host use <slug> | host show | host register --slug=… --base-url=…
   ${PROGRAM} link [--host=<slug>] [--email=…] [--otp=…] [--no-open] [--json]

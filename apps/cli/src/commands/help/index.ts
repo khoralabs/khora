@@ -16,6 +16,7 @@ import {
 } from "./relationships.help";
 import { searchHelp } from "./search.help";
 import { setupHelp } from "./setup.help";
+import { skillsInstallHelp } from "./skills.help";
 import { subscriptionsCreateHelp, subscriptionsListHelp } from "./subscriptions.help";
 import { unregisterHelp } from "./unregister.help";
 import { versionHelp } from "./version.help";
@@ -23,6 +24,7 @@ import { whoamiHelp } from "./whoami.help";
 
 export const allCommandHelp: readonly CommandHelp[] = [
   setupHelp,
+  skillsInstallHelp,
   versionHelp,
   keygenHelp,
   hostListHelp,

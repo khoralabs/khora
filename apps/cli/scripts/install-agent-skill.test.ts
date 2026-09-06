@@ -15,21 +15,27 @@ import path from "node:path";
 import {
   AGENT_SKILL_SYMLINK_ROOTS,
   AGENTS_SKILLS_CANONICAL,
+  installKhoraCliSkill,
   linkAgentSkillsRoot,
   runAgentSkillSetup,
 } from "./install-agent-skill";
 
-describe("runAgentSkillSetup", () => {
+describe("installKhoraCliSkill", () => {
   let workspace: string;
   let home: string;
+  let cwd: string;
   let skillAssets: string;
 
   beforeEach(() => {
     workspace = mkdtempSync(path.join(tmpdir(), "khora-skill-"));
     home = path.join(workspace, "home");
+    cwd = path.join(workspace, "project");
     skillAssets = path.join(workspace, "assets", "khora-cli");
+    mkdirSync(cwd, { recursive: true });
+    mkdirSync(path.join(skillAssets, "how-to"), { recursive: true });
     mkdirSync(path.join(skillAssets, "references"), { recursive: true });
     writeFileSync(path.join(skillAssets, "SKILL.md"), "# khora-cli\n");
+    writeFileSync(path.join(skillAssets, "how-to", "SKILL.md"), "# how-to\n");
     writeFileSync(path.join(skillAssets, "references", "commands.md"), "# commands\n");
   });
 
@@ -37,18 +43,30 @@ describe("runAgentSkillSetup", () => {
     rmSync(workspace, { recursive: true, force: true });
   });
 
-  test("installs skill under ~/.agents/skills/khora-cli", () => {
-    const result = runAgentSkillSetup({ skillAssetsDir: skillAssets, home });
-    expect(result.skillDir).toBe(path.join(home, AGENTS_SKILLS_CANONICAL, "khora-cli"));
-    expect(readFileSync(path.join(result.skillDir, "SKILL.md"), "utf8")).toContain("khora-cli");
-    expect(readFileSync(path.join(result.skillDir, "references", "commands.md"), "utf8")).toContain(
-      "commands",
+  test("installs under cwd/.agents/skills by default", () => {
+    const result = installKhoraCliSkill({
+      skillAssetsDir: skillAssets,
+      home,
+      cwd,
+    });
+    expect(result.global).toBe(false);
+    expect(result.status).toBe("copied");
+    expect(result.skillDir).toBe(path.join(cwd, AGENTS_SKILLS_CANONICAL, "khora-cli"));
+    expect(readFileSync(path.join(result.skillDir, "how-to", "SKILL.md"), "utf8")).toContain(
+      "how-to",
     );
-    expect(result.copied).toContain("SKILL.md");
+    expect(result.symlinks).toEqual([]);
   });
 
-  test("creates symlinks for alternate agent skill roots", () => {
-    runAgentSkillSetup({ skillAssetsDir: skillAssets, home });
+  test("global install writes home and creates symlinks", () => {
+    const result = installKhoraCliSkill({
+      skillAssetsDir: skillAssets,
+      home,
+      cwd,
+      global: true,
+    });
+    expect(result.global).toBe(true);
+    expect(result.skillDir).toBe(path.join(home, AGENTS_SKILLS_CANONICAL, "khora-cli"));
     const canonical = path.join(home, AGENTS_SKILLS_CANONICAL);
     for (const rel of AGENT_SKILL_SYMLINK_ROOTS) {
       const alt = path.join(home, rel);
@@ -58,18 +76,27 @@ describe("runAgentSkillSetup", () => {
     }
   });
 
-  test("does not replace an existing real skills directory", () => {
-    const cursorSkills = path.join(home, ".cursor", "skills");
-    mkdirSync(path.join(cursorSkills, "other-skill"), { recursive: true });
-    writeFileSync(path.join(cursorSkills, "other-skill", "SKILL.md"), "keep\n");
+  test("skips when skill dir exists unless force", () => {
+    installKhoraCliSkill({ skillAssetsDir: skillAssets, home, cwd });
+    writeFileSync(path.join(cwd, AGENTS_SKILLS_CANONICAL, "khora-cli", "SKILL.md"), "# kept\n");
+    const skipped = installKhoraCliSkill({ skillAssetsDir: skillAssets, home, cwd });
+    expect(skipped.status).toBe("skipped_exists");
+    expect(readFileSync(path.join(skipped.skillDir, "SKILL.md"), "utf8")).toBe("# kept\n");
 
+    const forced = installKhoraCliSkill({
+      skillAssetsDir: skillAssets,
+      home,
+      cwd,
+      force: true,
+    });
+    expect(forced.status).toBe("overwritten");
+    expect(readFileSync(path.join(forced.skillDir, "SKILL.md"), "utf8")).toContain("khora-cli");
+  });
+
+  test("runAgentSkillSetup remains global force install", () => {
     const result = runAgentSkillSetup({ skillAssetsDir: skillAssets, home });
-    const cursorLink = result.symlinks.find((s) => s.path === cursorSkills);
-    expect(cursorLink?.status).toBe("skipped_exists");
-    expect(readFileSync(path.join(cursorSkills, "other-skill", "SKILL.md"), "utf8")).toBe("keep\n");
-    expect(existsSync(path.join(home, AGENTS_SKILLS_CANONICAL, "khora-cli", "SKILL.md"))).toBe(
-      true,
-    );
+    expect(result.global).toBe(true);
+    expect(result.status).toBe("copied");
   });
 });
 
