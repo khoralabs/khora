@@ -1,4 +1,5 @@
 import type { PrincipalId } from "./host-types";
+import type { KhoraConnectionRequestPayload } from "./khora-relationships";
 
 export type InboxSubscriptionMatch = {
   subscriptionId: string;
@@ -12,7 +13,9 @@ export type InboxPostNotificationPayload = {
   subscriptionMatches: InboxSubscriptionMatch[];
 };
 
+export type { KhoraConnectionRequestPayload };
+
 export type KhoraInboxNotification =
-  | { kind: "connection_request"; payload: unknown }
+  | { kind: "connection_request"; payload: KhoraConnectionRequestPayload }
   | { kind: "host"; payload: unknown }
   | { kind: "inbox_post"; payload: InboxPostNotificationPayload };

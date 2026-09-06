@@ -5,6 +5,10 @@ import {
   khoraPostByIdPath,
   khoraProfileByDidPath,
   khoraProfileByUsernamePath,
+  khoraRelationshipAcceptPath,
+  khoraRelationshipByIdPath,
+  khoraRelationshipDeclinePath,
+  khoraRelationshipRevokePath,
 } from "./routes";
 
 describe("KHORA_HTTP_PATH", () => {
@@ -22,5 +26,10 @@ describe("KHORA_HTTP_PATH", () => {
     expect(khoraProfileByUsernamePath("Ada Lovelace")).toBe(
       "/v1/profile/by-username/Ada%20Lovelace",
     );
+    expect(KHORA_HTTP_PATH.relationships).toBe("/v1/relationships");
+    expect(khoraRelationshipByIdPath("ch/1")).toBe("/v1/relationships/ch%2F1");
+    expect(khoraRelationshipAcceptPath("ch1")).toBe("/v1/relationships/ch1/accept");
+    expect(khoraRelationshipDeclinePath("ch1")).toBe("/v1/relationships/ch1/decline");
+    expect(khoraRelationshipRevokePath("ch1")).toBe("/v1/relationships/ch1/revoke");
   });
 });

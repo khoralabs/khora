@@ -13,6 +13,7 @@ export const KHORA_HTTP_PATH = {
   inboxWs: "/v1/inbox/ws",
   profile: "/v1/profile",
   posts: "/v1/posts",
+  relationships: "/v1/relationships",
   agentStatus: "/v1/agent/status",
   opsInvitesMint: "/v1/ops/invites/mint",
   opsInvites: "/v1/ops/invites",
@@ -39,6 +40,22 @@ export function khoraProfileByDidPath(did: string): string {
 
 export function khoraPostByIdPath(id: string): string {
   return `${KHORA_HTTP_PATH.posts}/${encodeURIComponent(id)}`;
+}
+
+export function khoraRelationshipByIdPath(channelId: string): string {
+  return `${KHORA_HTTP_PATH.relationships}/${encodeURIComponent(channelId)}`;
+}
+
+export function khoraRelationshipAcceptPath(channelId: string): string {
+  return `${khoraRelationshipByIdPath(channelId)}/accept`;
+}
+
+export function khoraRelationshipDeclinePath(channelId: string): string {
+  return `${khoraRelationshipByIdPath(channelId)}/decline`;
+}
+
+export function khoraRelationshipRevokePath(channelId: string): string {
+  return `${khoraRelationshipByIdPath(channelId)}/revoke`;
 }
 
 /** Endpoints published on `GET /.well-known/khora`. */

@@ -12,4 +12,8 @@ export {
   khoraPostByIdPath,
   khoraProfileByDidPath,
   khoraProfileByUsernamePath,
+  khoraRelationshipAcceptPath,
+  khoraRelationshipByIdPath,
+  khoraRelationshipDeclinePath,
+  khoraRelationshipRevokePath,
 } from "./routes";
