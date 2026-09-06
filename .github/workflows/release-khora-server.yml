@@ -40,12 +40,17 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: test packaging helpers
-        run: bun test scripts/release/homebrew-formula.test.ts scripts/release/server/stage.test.ts
+        run: bun test scripts/release/homebrew-formula.test.ts scripts/release/server/stage.test.ts scripts/release/apps/bump-versions.test.ts
 
       - name: install system sqlite libs (smoke host)
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libsqlcipher1 libsqlite3-0
+
+      - name: bump app versions
+        run: |
+          bun run scripts/release/apps/bump-versions.ts server "$VERSION"
+          bun install
 
       - name: cross-compile server binaries
         run: |
@@ -137,14 +142,14 @@ jobs:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: bun run scripts/release/bump-homebrew-formula.ts server "$VERSION"
 
-      - name: commit homebrew formula
+      - name: commit release artifacts
         if: ${{ inputs.dry_run == false }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add homebrew-tap/Formula/khora-server.rb homebrew-tap/scripts/install-khora-server.sh
-          git diff --staged --quiet || HUSKY=0 git commit -m "chore(homebrew): khora-server@${VERSION}"
+          git add homebrew-tap/Formula/khora-server.rb homebrew-tap/scripts/install-khora-server.sh apps/server/package.json bun.lock
+          git diff --staged --quiet || HUSKY=0 git commit -m "chore(release): khora-server@${VERSION}"
           # Other release workflows may push to main concurrently; rebase and retry.
           # --autostash: release builds leave unstaged artifacts that block rebase.
           branch="$(git rev-parse --abbrev-ref HEAD)"
@@ -157,5 +162,5 @@ jobs:
             git rebase --autostash "origin/${branch}"
             sleep $((attempt * 2))
           done
-          echo "::error::failed to push homebrew formula after retries"
+          echo "::error::failed to push release commit after retries"
           exit 1
