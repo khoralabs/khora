@@ -10,7 +10,8 @@ describe("dispatch", () => {
     console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
     try {
       await dispatch(ctx, ["version"], {});
-      expect(logs).toEqual(["0.0.0"]);
+      expect(logs).toHaveLength(1);
+      expect(logs[0]).toMatch(/^\d+\.\d+\.\d+(?:-[\w.-]+)?(?:\+[\w.-]+)?$/);
     } finally {
       console.log = orig;
       ctx.closeReadline();

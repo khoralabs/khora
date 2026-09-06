@@ -55,11 +55,16 @@ jobs:
 
       - name: test
         run: |
-          bun test apps/cli apps/daemon scripts/release/cli/stage.test.ts scripts/release/homebrew-formula.test.ts
+          bun test apps/cli apps/daemon scripts/release/cli/stage.test.ts scripts/release/homebrew-formula.test.ts scripts/release/publish-skills.test.ts scripts/release/apps/bump-versions.test.ts
           bun test packages/client
 
       - name: build json schema
         run: bun run --cwd packages/client build:schema
+
+      - name: bump app versions
+        run: |
+          bun run scripts/release/apps/bump-versions.ts cli "$VERSION"
+          bun install
 
       - name: cross-compile native binaries
         run: |
@@ -82,23 +87,34 @@ jobs:
       - name: package release tarballs
         run: bun run scripts/release/package-tarballs.ts cli "$VERSION"
 
-      # Fail before npm publish if the tap token cannot write releases (avoids half-published versions).
-      - name: verify homebrew-tap token
+      # Fail before npm publish if the tap/skills tokens cannot write (avoids half-published versions).
+      - name: verify homebrew-tap and skills-repo tokens
         if: ${{ inputs.dry_run == false }}
         env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          SKILLS_REPO_TOKEN: ${{ secrets.SKILLS_REPO_TOKEN }}
         run: |
           set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ]; then
+          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
             echo "::error::HOMEBREW_TAP_TOKEN is empty or unset (needed to publish public release assets)"
             exit 1
           fi
-          push="$(gh api repos/khoralabs/homebrew-tap --jq '.permissions.push // false')"
+          push="$(GH_TOKEN="$HOMEBREW_TAP_TOKEN" gh api repos/khoralabs/homebrew-tap --jq '.permissions.push // false')"
           if [ "$push" != "true" ]; then
             echo "::error::HOMEBREW_TAP_TOKEN lacks push permission on khoralabs/homebrew-tap (expired, revoked, or missing contents:write)"
             exit 1
           fi
           echo "HOMEBREW_TAP_TOKEN can push to khoralabs/homebrew-tap"
+          if [ -z "${SKILLS_REPO_TOKEN:-}" ]; then
+            echo "::error::SKILLS_REPO_TOKEN is empty or unset (needed to publish skills to khoralabs/skills)"
+            exit 1
+          fi
+          skills_push="$(GH_TOKEN="$SKILLS_REPO_TOKEN" gh api repos/khoralabs/skills --jq '.permissions.push // false')"
+          if [ "$skills_push" != "true" ]; then
+            echo "::error::SKILLS_REPO_TOKEN lacks push permission on khoralabs/skills (expired, revoked, or missing contents:write)"
+            exit 1
+          fi
+          echo "SKILLS_REPO_TOKEN can push to khoralabs/skills"
 
       - name: configure npm auth
         env:
@@ -186,14 +202,14 @@ jobs:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: bun run scripts/release/bump-homebrew-formula.ts cli "$VERSION"
 
-      - name: commit homebrew formula
+      - name: commit release artifacts
         if: ${{ inputs.dry_run == false }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add homebrew-tap/Formula/khora.rb
-          git diff --staged --quiet || HUSKY=0 git commit -m "chore(homebrew): khora-cli@${VERSION}"
+          git add homebrew-tap/Formula/khora.rb apps/cli/package.json apps/daemon/package.json bun.lock
+          git diff --staged --quiet || HUSKY=0 git commit -m "chore(release): khora-cli@${VERSION}"
           # Other release workflows may push to main concurrently; rebase and retry.
           # --autostash: release builds leave unstaged artifacts that block rebase.
           branch="$(git rev-parse --abbrev-ref HEAD)"
@@ -206,5 +222,12 @@ jobs:
             git rebase --autostash "origin/${branch}"
             sleep $((attempt * 2))
           done
-          echo "::error::failed to push homebrew formula after retries"
+          echo "::error::failed to push release commit after retries"
           exit 1
+
+      # After the release commit so skill-source.json records that SHA.
+      - name: publish skills
+        if: ${{ inputs.dry_run == false }}
+        env:
+          SKILLS_REPO_TOKEN: ${{ secrets.SKILLS_REPO_TOKEN }}
+        run: bun run scripts/release/publish-skills.ts "$VERSION"

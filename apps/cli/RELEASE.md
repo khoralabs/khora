@@ -102,3 +102,13 @@ Install:
 brew tap khoralabs/tap
 brew install khora
 ```
+
+## Skills publish (`khoralabs/skills`)
+
+After the release commit, CI runs `scripts/release/publish-skills.ts <version>` to replace [`khora-cli/`](https://github.com/khoralabs/skills/tree/main/khora-cli) in [`khoralabs/skills`](https://github.com/khoralabs/skills) from `apps/cli/assets/skills/khora-cli/`.
+
+| Secret | Purpose |
+| --- | --- |
+| `SKILLS_REPO_TOKEN` | Fine-grained PAT with **Contents: Write** on `khoralabs/skills` only |
+
+CLI release preflight fails if this secret is missing or cannot push. Reuse the same PAT across `khora`, `agent-review`, and `vellum` as a repository secret named `SKILLS_REPO_TOKEN`. See [skills CONTRIBUTING](https://github.com/khoralabs/skills/blob/main/CONTRIBUTING.md).
