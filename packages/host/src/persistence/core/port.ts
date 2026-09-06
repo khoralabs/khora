@@ -176,18 +176,57 @@ export type InvitePreviewResult =
     }
   | { ok: false };
 
+/** One node in an invitation tree walk (from durable lineage, survives teardown). */
+export type KhoraInviteTreeNode = {
+  did: string;
+  depth: number;
+  inviterDid: string | null;
+  invitedAtMs: number;
+  kind: string;
+};
+
+export type MintStandardInviteOpts = {
+  /** Plaintext of the invite that was just consumed; stamps parent_token_hash on minted children. */
+  parentPlaintext?: string;
+};
+
+export type InviteDescendantsOpts = {
+  maxDepth: number;
+  maxNodes: number;
+};
+
+export type InviteAncestorsOpts = {
+  maxDepth: number;
+};
+
 export type KhoraInvitesRepo = {
   insertSeedInviteTokens(plaintexts: string[]): number;
   ensureRootInviteIfAbsent(): string | undefined;
   tryConsumeInviteToken(plaintext: string, consumerDid: string): boolean;
   rollbackInviteConsumption(plaintext: string, consumerDid: string): void;
-  mintStandardInviteTokens(mintedByDid: string, count: number): string[];
+  mintStandardInviteTokens(
+    mintedByDid: string,
+    count: number,
+    opts?: MintStandardInviteOpts,
+  ): string[];
   listInvitesMintedForDid(minterDid: string): KhoraInviteListRow[];
   listAllInviteTokens(params?: { limit?: number; mintedByDid?: string }): KhoraInviteAdminListRow[];
   previewInviteToken(
     plaintext: string,
     loadProfileForDid: (did: string) => unknown | null | undefined,
   ): InvitePreviewResult;
-  /** Delete all invite tokens minted by or consumed by the given principal (called on principal teardown). */
+  /**
+   * Delete live invite tokens minted by or consumed by the given principal (called on principal
+   * teardown). Does not touch `khora_invite_lineage` — lineage is append-only provenance.
+   */
   deleteTokensForPrincipal(did: string): void;
+  /** Walk descendants via durable lineage (inviter → invitee). */
+  inviteDescendants(did: string, opts: InviteDescendantsOpts): KhoraInviteTreeNode[];
+  /** Walk ancestors via durable lineage (invitee → inviter). */
+  inviteAncestors(did: string, opts: InviteAncestorsOpts): KhoraInviteTreeNode[];
+  /**
+   * Invitees who consumed root/seed (null-inviter) tokens. Used by ops tree when `did` is omitted.
+   * Nodes have depth 1 and `inviterDid: null`.
+   */
+  inviteRootFrontier(maxNodes: number): KhoraInviteTreeNode[];
 };

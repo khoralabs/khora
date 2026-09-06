@@ -91,6 +91,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
       inviteTokens = ctx.invitesRepo.mintStandardInviteTokens(
         swarmReq.principalId,
         invitesPerRegistrationFromEnv(),
+        { parentPlaintext: consumedInvitePlain },
       );
     }
     const payload = zKhoraRegisterResult.parse({

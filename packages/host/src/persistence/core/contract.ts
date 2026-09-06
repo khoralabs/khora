@@ -192,9 +192,85 @@ export function runHostPersistenceContractTests(
       if (mintedToken === undefined) {
         throw new Error("expected minted invite token");
       }
+      expect(invites.tryConsumeInviteToken(mintedToken, "did:test:child")).toBe(true);
       invites.deleteTokensForPrincipal("did:test:gone");
       expect(invites.listInvitesMintedForDid("did:test:gone")).toHaveLength(0);
       expect(invites.tryConsumeInviteToken(mintedToken, "did:x")).toBe(false);
+      // Lineage survives teardown of the minter.
+      const descendants = invites.inviteDescendants("did:test:gone", {
+        maxDepth: 3,
+        maxNodes: 100,
+      });
+      expect(descendants).toHaveLength(1);
+      expect(descendants[0]?.did).toBe("did:test:child");
+    });
+
+    test("invites parent edges, tree walk, rollback clears lineage", async () => {
+      const { invites } = await create();
+      const [parentTok] = invites.mintStandardInviteTokens("did:test:a", 1);
+      if (parentTok === undefined) throw new Error("expected parent token");
+      expect(invites.tryConsumeInviteToken(parentTok, "did:test:b")).toBe(true);
+
+      const childToks = invites.mintStandardInviteTokens("did:test:b", 1, {
+        parentPlaintext: parentTok,
+      });
+      const [childTok] = childToks;
+      if (childTok === undefined) throw new Error("expected child token");
+      expect(invites.tryConsumeInviteToken(childTok, "did:test:c")).toBe(true);
+
+      const descendants = invites.inviteDescendants("did:test:a", {
+        maxDepth: 5,
+        maxNodes: 100,
+      });
+      expect(descendants.map((n) => n.did)).toEqual(["did:test:b", "did:test:c"]);
+      expect(descendants[0]?.depth).toBe(1);
+      expect(descendants[1]?.depth).toBe(2);
+
+      const depth1 = invites.inviteDescendants("did:test:a", {
+        maxDepth: 1,
+        maxNodes: 100,
+      });
+      expect(depth1.map((n) => n.did)).toEqual(["did:test:b"]);
+
+      const ancestors = invites.inviteAncestors("did:test:c", { maxDepth: 5 });
+      expect(ancestors.map((n) => n.did)).toEqual(["did:test:b", "did:test:a"]);
+
+      const capped = invites.inviteDescendants("did:test:a", {
+        maxDepth: 5,
+        maxNodes: 1,
+      });
+      expect(capped).toHaveLength(1);
+
+      const [rollbackTok] = invites.mintStandardInviteTokens("did:test:b", 1, {
+        parentPlaintext: parentTok,
+      });
+      if (rollbackTok === undefined) throw new Error("expected rollback token");
+      expect(invites.tryConsumeInviteToken(rollbackTok, "did:test:rollback")).toBe(true);
+      expect(
+        invites
+          .inviteDescendants("did:test:b", { maxDepth: 2, maxNodes: 100 })
+          .some((n) => n.did === "did:test:rollback"),
+      ).toBe(true);
+      invites.rollbackInviteConsumption(rollbackTok, "did:test:rollback");
+      expect(
+        invites
+          .inviteDescendants("did:test:b", { maxDepth: 2, maxNodes: 100 })
+          .some((n) => n.did === "did:test:rollback"),
+      ).toBe(false);
+
+      // Mismatched consumer DID must not clear lineage for a different invitee.
+      expect(invites.tryConsumeInviteToken(childTok, "did:test:c")).toBe(false);
+      const [otherTok] = invites.mintStandardInviteTokens("did:test:b", 1, {
+        parentPlaintext: parentTok,
+      });
+      if (otherTok === undefined) throw new Error("expected other token");
+      expect(invites.tryConsumeInviteToken(otherTok, "did:test:keep")).toBe(true);
+      invites.rollbackInviteConsumption(otherTok, "did:test:wrong");
+      expect(
+        invites
+          .inviteDescendants("did:test:b", { maxDepth: 2, maxNodes: 100 })
+          .some((n) => n.did === "did:test:keep"),
+      ).toBe(true);
     });
   });
 }
