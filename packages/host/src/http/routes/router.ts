@@ -32,6 +32,14 @@ import {
   handleAdminRegistryQuotaRequestPost,
   handleAdminRegistryRegisterPost,
 } from "./registry-ops";
+import {
+  handleAcceptRelationship,
+  handleCreateRelationship,
+  handleDeclineRelationship,
+  handleDeleteRelationship,
+  handleListRelationships,
+  handleRevokeRelationship,
+} from "./relationships";
 import { jsonError, rateLimitedResponse } from "./responses";
 import { handleSearchGet, handleSearchPost } from "./search";
 import { handleUnregister } from "./unregister";
@@ -215,6 +223,39 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
 
     if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.agentStatus) {
       return handleAgentStatus(req, url, deps);
+    }
+
+    if (req.method === "POST" && url.pathname === KHORA_HTTP_PATH.relationships) {
+      return handleCreateRelationship(req, url, deps);
+    }
+
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.relationships) {
+      return handleListRelationships(req, url, deps);
+    }
+
+    const relationshipAction = /^\/v1\/relationships\/([^/]+)\/(accept|decline|revoke)$/.exec(
+      url.pathname,
+    );
+    if (
+      req.method === "POST" &&
+      relationshipAction !== null &&
+      relationshipAction[1] !== undefined &&
+      relationshipAction[2] !== undefined
+    ) {
+      const id = decodeURIComponent(relationshipAction[1]);
+      const action = relationshipAction[2];
+      if (action === "accept") return handleAcceptRelationship(req, url, deps, id);
+      if (action === "decline") return handleDeclineRelationship(req, url, deps, id);
+      return handleRevokeRelationship(req, url, deps, id);
+    }
+
+    const relationshipIdMatch = /^\/v1\/relationships\/([^/]+)$/.exec(url.pathname);
+    if (
+      req.method === "DELETE" &&
+      relationshipIdMatch !== null &&
+      relationshipIdMatch[1] !== undefined
+    ) {
+      return handleDeleteRelationship(req, url, deps, decodeURIComponent(relationshipIdMatch[1]));
     }
 
     const postIdMatch = /^\/v1\/posts\/([^/]+)$/.exec(url.pathname);
