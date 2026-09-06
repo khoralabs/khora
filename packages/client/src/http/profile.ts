@@ -10,6 +10,7 @@ import {
   khoraProfileByDidPath,
   khoraProfileByUsernamePath,
 } from "@khoralabs/khora-contracts/http";
+import z from "zod";
 import { KhoraClientError, type KhoraUnaryTransport } from "../transport";
 
 export function updateProfile(
@@ -23,11 +24,28 @@ export function updateProfile(
   });
 }
 
-/** v2 host returns a bare {@link KhoraProfile}; `did` is included when resolved via by-did. */
+/** Public profile lookup; `did` is set when the host returns it (by-username envelope or by-did). */
 export type PublicProfileResult = {
   profile: KhoraProfile;
   did?: string | undefined;
 };
+
+const zPublicProfileEnvelope = z.object({
+  did: z.string().min(1),
+  profile: zKhoraProfile,
+});
+
+function parsePublicProfileBody(body: unknown, fallbackDid?: string): PublicProfileResult {
+  const enveloped = zPublicProfileEnvelope.safeParse(body);
+  if (enveloped.success) {
+    return { profile: enveloped.data.profile, did: enveloped.data.did };
+  }
+  const profile = zKhoraProfile.parse(body);
+  return {
+    profile,
+    ...(fallbackDid !== undefined ? { did: fallbackDid } : {}),
+  };
+}
 
 /** Resolve a username to its public profile. Returns `null` on 404. */
 export async function lookupProfileByUsername(
@@ -36,10 +54,10 @@ export async function lookupProfileByUsername(
 ): Promise<PublicProfileResult | null> {
   const normalized = normalizeUsername(username);
   try {
-    const profile = await t.requestJson("GET", khoraProfileByUsernamePath(normalized), {
-      parse: zKhoraProfile,
+    const body = await t.requestJson("GET", khoraProfileByUsernamePath(normalized), {
+      parse: z.unknown(),
     });
-    return { profile };
+    return parsePublicProfileBody(body);
   } catch (e) {
     if (e instanceof KhoraClientError && e.status === 404) return null;
     throw e;
@@ -52,10 +70,10 @@ export async function lookupProfileByDid(
   did: string,
 ): Promise<PublicProfileResult | null> {
   try {
-    const profile = await t.requestJson("GET", khoraProfileByDidPath(did), {
-      parse: zKhoraProfile,
+    const body = await t.requestJson("GET", khoraProfileByDidPath(did), {
+      parse: z.unknown(),
     });
-    return { profile, did };
+    return parsePublicProfileBody(body, did);
   } catch (e) {
     if (e instanceof KhoraClientError && e.status === 404) return null;
     throw e;

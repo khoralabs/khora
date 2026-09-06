@@ -6,6 +6,14 @@ import { linkHelp } from "./link.help";
 import { postsCreateHelp, postsDeleteHelp, postsGetHelp, postsUpdateHelp } from "./posts.help";
 import { profileUpdateHelp } from "./profile.help";
 import { registerHelp } from "./register.help";
+import {
+  relationshipsAcceptHelp,
+  relationshipsDeclineHelp,
+  relationshipsDeleteHelp,
+  relationshipsInviteHelp,
+  relationshipsListHelp,
+  relationshipsRevokeHelp,
+} from "./relationships.help";
 import { searchHelp } from "./search.help";
 import { setupHelp } from "./setup.help";
 import { subscriptionsCreateHelp, subscriptionsListHelp } from "./subscriptions.help";
@@ -32,6 +40,12 @@ export const allCommandHelp: readonly CommandHelp[] = [
   inboxStatusHelp,
   subscriptionsListHelp,
   subscriptionsCreateHelp,
+  relationshipsListHelp,
+  relationshipsInviteHelp,
+  relationshipsAcceptHelp,
+  relationshipsDeclineHelp,
+  relationshipsRevokeHelp,
+  relationshipsDeleteHelp,
   postsCreateHelp,
   postsGetHelp,
   postsUpdateHelp,

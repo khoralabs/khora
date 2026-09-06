@@ -336,6 +336,24 @@ describe("KhoraClient", () => {
     expect(out?.profile.username).toBe("ada-99");
   });
 
+  test("lookupProfileByUsername reads did from envelope", async () => {
+    const signer = staticSigner("did:key:a");
+    const fetchMock = mock(async () =>
+      Response.json({
+        did: "did:key:peer",
+        profile: { id: "p2", username: "ada-99", displayName: "Ada" },
+      }),
+    );
+    const c = new KhoraClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    const out = await c.lookupProfileByUsername("ada-99");
+    expect(out?.did).toBe("did:key:peer");
+    expect(out?.profile.username).toBe("ada-99");
+  });
+
   test("lookupProfileByUsername returns null on 404", async () => {
     const signer = staticSigner("did:key:a");
     const fetchMock = mock(async () => Response.json({ error: "nope" }, { status: 404 }));

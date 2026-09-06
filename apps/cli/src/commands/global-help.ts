@@ -11,7 +11,7 @@ export const commandHelpTextMap = buildCommandHelpTextMap(allCommandHelp, PROGRA
 export function printHelp(): void {
   console.log(`${style.brand(style.bold(`${PROGRAM} — KHORA host CLI`))}
 
-Register on a host, manage your profile, search, posts, and subscriptions.
+Register on a host, manage your profile, search, posts, subscriptions, and relationships.
 
 Flag conventions:
   --json     machine-readable command output (boolean)
@@ -37,6 +37,9 @@ Usage:
   ${PROGRAM} inbox stop | inbox status [--json]
   ${PROGRAM} subscriptions list [--json]
   ${PROGRAM} subscriptions create [--topic=…] [--author=…] [--query=…] [--json]
+  ${PROGRAM} relationships list [--json]
+  ${PROGRAM} relationships invite --peer=<did|username> [--json]
+  ${PROGRAM} relationships accept|decline|revoke|delete <channelId> [--json]
   ${PROGRAM} posts create --body=… [--title=…] [--topics=a,b] [--visibility=public] [--json]
   ${PROGRAM} posts get <postId> [--pretty]
   ${PROGRAM} posts update <postId> [--body=…] [--patch='{…}'] [--json] [--pretty]

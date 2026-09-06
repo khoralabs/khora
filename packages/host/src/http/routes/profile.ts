@@ -68,7 +68,7 @@ export async function handleProfileByUsername(
     return jsonError("Not found", 404, KHORA_ERROR_CODE.not_found);
   }
   const profile = zKhoraProfile.parse(JSON.parse(row.bodyJson));
-  return Response.json(profile);
+  return Response.json({ did: principalId, profile });
 }
 
 export async function handleProfilePatch(

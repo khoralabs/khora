@@ -8,6 +8,14 @@ import { handleLink, handleLinkStatus, handleLinkUnlink } from "./link";
 import { handlePostsCreate, handlePostsDelete, handlePostsGet, handlePostsUpdate } from "./posts";
 import { handleProfileUpdate } from "./profile";
 import { handleRegister } from "./register";
+import {
+  handleRelationshipsAccept,
+  handleRelationshipsDecline,
+  handleRelationshipsDelete,
+  handleRelationshipsInvite,
+  handleRelationshipsList,
+  handleRelationshipsRevoke,
+} from "./relationships";
 import { handleSearch } from "./search";
 import { runSetupCommand } from "./setup";
 import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions";
@@ -119,6 +127,36 @@ export async function dispatch(
 
   if (a === "subscriptions" && b === "create") {
     await handleSubscriptionsCreate(ctx, positional, flags);
+    return;
+  }
+
+  if (a === "relationships" && b === "list") {
+    await handleRelationshipsList(flags);
+    return;
+  }
+
+  if (a === "relationships" && b === "invite") {
+    await handleRelationshipsInvite(flags);
+    return;
+  }
+
+  if (a === "relationships" && b === "accept") {
+    await handleRelationshipsAccept(positional, flags);
+    return;
+  }
+
+  if (a === "relationships" && b === "decline") {
+    await handleRelationshipsDecline(positional, flags);
+    return;
+  }
+
+  if (a === "relationships" && b === "revoke") {
+    await handleRelationshipsRevoke(positional, flags);
+    return;
+  }
+
+  if (a === "relationships" && b === "delete") {
+    await handleRelationshipsDelete(positional, flags);
     return;
   }
 
