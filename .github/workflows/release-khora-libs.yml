@@ -110,7 +110,7 @@ jobs:
             echo "::warning::version unchanged"
             exit 0
           fi
-          HUSKY=0 git commit -m "release khora-libs v${VERSION}"
+          HUSKY=0 git commit -m "chore(packages): bump khora-libs v${VERSION}"
           branch="$(git rev-parse --abbrev-ref HEAD)"
           for attempt in 1 2 3 4 5; do
             if HUSKY=0 git push origin "HEAD:refs/heads/${branch}"; then
