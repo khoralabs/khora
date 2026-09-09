@@ -22,6 +22,15 @@ export {
 } from "./namespace";
 export { khoraOntology } from "./ontology";
 export {
+  createSqliteOperatorPostFeedReader,
+  OperatorPostFeedBadRequest,
+  type OperatorPostFeedListParams,
+  type OperatorPostFeedNewerCountParams,
+  type OperatorPostFeedReader,
+  OperatorPostFeedUnavailable,
+  type SqliteOperatorPostFeedReaderDeps,
+} from "./operator-post-feed";
+export {
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
   type PendingEmbeddingQueueHandle,

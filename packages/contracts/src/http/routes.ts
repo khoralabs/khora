@@ -20,6 +20,8 @@ export const KHORA_HTTP_PATH = {
   opsInvites: "/v1/ops/invites",
   opsInviteTree: "/v1/ops/invites/tree",
   opsHostConfig: "/v1/ops/host/config",
+  opsPosts: "/v1/ops/posts",
+  opsPostsNewerCount: "/v1/ops/posts/newer-count",
   opsAgentsPrefix: "/v1/ops/agents/",
   hostRegistry: "/v1/host/registry",
   hostRegistryConfig: "/v1/host/registry/config",

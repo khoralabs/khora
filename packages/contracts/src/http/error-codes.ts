@@ -21,6 +21,7 @@ export const KHORA_ERROR_CODE = {
   internal_error: "internal_error",
   bad_gateway: "bad_gateway",
   conflict: "conflict",
+  operator_post_feed_disabled: "operator_post_feed_disabled",
 } as const;
 
 export type KhoraErrorCode = (typeof KHORA_ERROR_CODE)[keyof typeof KHORA_ERROR_CODE];
@@ -45,6 +46,7 @@ export const zKhoraErrorCode = z.enum([
   KHORA_ERROR_CODE.internal_error,
   KHORA_ERROR_CODE.bad_gateway,
   KHORA_ERROR_CODE.conflict,
+  KHORA_ERROR_CODE.operator_post_feed_disabled,
 ]);
 
 export const zKhoraErrorEnvelope = z.object({

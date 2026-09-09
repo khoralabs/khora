@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import type { MemoriesPersistenceAsync } from "@khoralabs/memories-node";
 import { MemoriesClientAsync } from "@khoralabs/memories-node";
 import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
@@ -7,6 +8,10 @@ import { createHostSearchCanonicalStore, type HostSearchCanonicalStore } from ".
 import { DEFAULT_HOST_SEARCH_NAMESPACE_ROOT } from "./config";
 import { createHostSearchIndexer, type HostSearchIndexer } from "./indexer";
 import { khoraOntology } from "./ontology";
+import {
+  createSqliteOperatorPostFeedReader,
+  type OperatorPostFeedReader,
+} from "./operator-post-feed";
 
 export type HostSearch = {
   client: MemoriesClientAsync<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
@@ -15,6 +20,8 @@ export type HostSearch = {
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
   indexer: HostSearchIndexer;
+  /** Present when {@link BootstrapHostSearchOpts.memoriesDb} was provided. */
+  operatorPostFeed?: OperatorPostFeedReader;
   close(): void | Promise<void>;
 };
 
@@ -25,6 +32,8 @@ export type BootstrapHostSearchOpts = {
   postResolver: PostResolver;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;
+  /** When set, enables the operator chronological post feed reader. */
+  memoriesDb?: Database;
   onEmbeddingFailure?: (input: {
     namespace: string;
     memoryKey: string;
@@ -51,6 +60,16 @@ export function bootstrapHostSearch(opts: BootstrapHostSearchOpts): HostSearch {
       ? { onEmbeddingFailure: opts.onEmbeddingFailure }
       : {}),
   });
+  const operatorPostFeed =
+    opts.memoriesDb !== undefined
+      ? createSqliteOperatorPostFeedReader({
+          db: opts.memoriesDb,
+          postResolver: opts.postResolver,
+          namespaceRoot,
+          profileIdForPrincipal: (principalId) =>
+            opts.persistenceClient.profileIdForPrincipal(principalId),
+        })
+      : undefined;
   return {
     client,
     store,
@@ -58,6 +77,7 @@ export function bootstrapHostSearch(opts: BootstrapHostSearchOpts): HostSearch {
     embeddingModel: opts.embeddingModel,
     namespaceRoot,
     indexer,
+    ...(operatorPostFeed !== undefined ? { operatorPostFeed } : {}),
     close: opts.close,
   };
 }

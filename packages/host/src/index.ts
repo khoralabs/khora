@@ -16,6 +16,7 @@ export {
   bootstrapHostSearch,
   createHostSearchCanonicalStore,
   createHostSearchIndexer,
+  createSqliteOperatorPostFeedReader,
   DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,

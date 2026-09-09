@@ -8,6 +8,7 @@ export * from "./khora-host-discovery";
 export * from "./khora-host-events";
 export * from "./khora-host-spec";
 export * from "./khora-inbox-notifications";
+export * from "./khora-operator-post-feed";
 export * from "./khora-post";
 export * from "./khora-profile";
 export * from "./khora-registration";
