@@ -6,6 +6,7 @@ import {
   KHORA_LIB_PUBLISH_ORDER,
   publishedDependencies,
   publishedExports,
+  REQUIRED_PACK_PATHS,
 } from "./publish";
 
 const repoRoot = path.resolve(import.meta.dir, "../../..");
@@ -109,5 +110,9 @@ describe("publish khora libs helpers", () => {
       restore();
     }
     expect(readFileSync(pkgPath, "utf8")).toBe(before);
+  });
+
+  test("host requires sqlite cell worker sidecar in pack", () => {
+    expect(REQUIRED_PACK_PATHS["khora-host"]).toEqual(["dist/sqlite-cell-worker.js"]);
   });
 });

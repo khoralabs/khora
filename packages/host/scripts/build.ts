@@ -24,4 +24,15 @@ await buildPublishableLib({
       name: "@khoralabs/observability",
     },
   ],
+  runtimeSidecars: [
+    {
+      sourceFile: path.join(
+        repoRoot,
+        "packages/colonnade/src/persistence/sqlite/sqlite-cell-worker.ts",
+      ),
+      distFile: "sqlite-cell-worker.js",
+    },
+  ],
 });
+
+await Bun.$`bun run ${path.join(repoRoot, "scripts/release/libs/host-sqlite-worker-smoke.ts")}`;
