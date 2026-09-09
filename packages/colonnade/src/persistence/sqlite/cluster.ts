@@ -20,6 +20,7 @@ import type { OutboxPayloadCodec } from "../../crypto";
 import type { CatalogPersistence, CellPersistence, ResolveCell } from "../core";
 import { defaultNoopCatalogPersistence } from "../core";
 import { createSqliteCellBackendFactory } from "./sqlite-cell-backend-factory";
+import type { SqliteCellWorkerFactory } from "./worker-backed-cell-persistence";
 
 export type SqliteColonnadeClusterEncryptionOptions = {
   /** When set, encrypt cell DBs with SQLCipher; omit for plaintext. */
@@ -37,6 +38,11 @@ export type SqliteColonnadeClusterOptions = {
   readonly placement?: ColonnadePlacementStore;
   /** One Bun **`Worker`** per opened cell (SQLite runs off the main thread). */
   readonly useCellWorkers?: boolean;
+  /**
+   * Optional Bun Worker factory when `useCellWorkers` is set.
+   * Defaults to the package-local `sqlite-cell-worker.js` entry.
+   */
+  readonly cellWorkerFactory?: SqliteCellWorkerFactory;
   readonly encryption: SqliteColonnadeClusterEncryptionOptions;
 };
 
@@ -80,6 +86,7 @@ export function createSqliteColonnadeCluster(
     outboxPayloadCodec: opts.encryption.outboxPayloadCodec,
     outboxKeyHex: opts.encryption.outboxKeyHex,
     useCellWorkers: opts.useCellWorkers,
+    ...(opts.cellWorkerFactory !== undefined ? { cellWorkerFactory: opts.cellWorkerFactory } : {}),
   });
   const factory = createCompositeBackendFactory({ sqlite: sqliteFactory });
   const resolver = createCellBackendResolver({ placement, factory });

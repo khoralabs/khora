@@ -2,7 +2,10 @@ import type { Database } from "bun:sqlite";
 import { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
 import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade/crypto";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
+import {
+  createSqliteColonnadeCluster,
+  type SqliteCellWorkerFactory,
+} from "@khoralabs/colonnade/sqlite";
 import { AuthError, createSignedRequestAuth, type SignedRequestAuth } from "@khoralabs/khora-auth";
 import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
@@ -48,6 +51,12 @@ export type CreateSqliteKhoraHostFoundationOpts = {
   percolatorDbPath: string;
   cellsDir: string;
   useCellWorkers: boolean;
+  /**
+   * Optional Bun Worker factory when `useCellWorkers` is set.
+   * Defaults to the Colonnade/package-local `sqlite-cell-worker.js` entry
+   * (published host ships it as `dist/sqlite-cell-worker.js`).
+   */
+  cellWorkerFactory?: SqliteCellWorkerFactory;
   tenantKey?: string;
   encryption: SqliteKhoraHostFoundationEncryption;
   /** Optional embedding model for percolator standing queries. */
@@ -108,6 +117,7 @@ export async function createSqliteKhoraHostFoundation(
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     useCellWorkers: opts.useCellWorkers,
+    ...(opts.cellWorkerFactory !== undefined ? { cellWorkerFactory: opts.cellWorkerFactory } : {}),
     encryption: {
       sqlCipherKey: encryption.sqlCipherKey,
       outboxPayloadCodec: encryption.outboxPayloadCodec,

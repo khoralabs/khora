@@ -31,13 +31,28 @@ type RpcReq = {
 type RpcOk = { readonly kind: "rpc_ok"; readonly id: number; readonly result: unknown };
 type RpcErr = { readonly kind: "rpc_err"; readonly id: number; readonly error: string };
 
+/** Creates a Bun Worker that speaks the SQLite cell RPC protocol. */
+export type SqliteCellWorkerFactory = () => Worker;
+
+/** Default factory: stable `.js` entry beside this module (source shim or published sidecar). */
+export function createDefaultSqliteCellWorker(): Worker {
+  return new Worker(new URL("./sqlite-cell-worker.js", import.meta.url));
+}
+
+export type WorkerBackedCellInit = {
+  readonly sqlCipherKey?: string;
+  readonly outboxKeyHex: string;
+  readonly cellWorkerFactory?: SqliteCellWorkerFactory;
+};
+
 function spawnCellWorker(
   cellId: string,
   dbPath: string,
-  init: { sqlCipherKey?: string; outboxKeyHex: string },
+  init: WorkerBackedCellInit,
 ): Promise<Worker> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./sqlite-cell-worker.ts", import.meta.url));
+    const createWorker = init.cellWorkerFactory ?? createDefaultSqliteCellWorker;
+    const worker = createWorker();
     const onMsg = (ev: MessageEvent<{ readonly kind?: string }>) => {
       const d = ev.data;
       if (d.kind === "ready") {
@@ -47,7 +62,13 @@ function spawnCellWorker(
     };
     worker.addEventListener("message", onMsg as EventListener);
     worker.addEventListener("error", (e) => reject(e));
-    worker.postMessage({ kind: "init", cellId, dbPath, ...init });
+    worker.postMessage({
+      kind: "init",
+      cellId,
+      dbPath,
+      sqlCipherKey: init.sqlCipherKey,
+      outboxKeyHex: init.outboxKeyHex,
+    });
   });
 }
 
@@ -82,7 +103,7 @@ export class WorkerBackedCellPersistence implements CellPersistence, SqliteCellB
   static async create(
     cellId: string,
     dbPath: string,
-    init: { sqlCipherKey?: string; outboxKeyHex: string },
+    init: WorkerBackedCellInit,
   ): Promise<WorkerBackedCellPersistence> {
     const worker = await spawnCellWorker(cellId, dbPath, init);
     return new WorkerBackedCellPersistence(worker);
@@ -176,11 +197,7 @@ export class LazyWorkerBackedCellPersistence implements CellPersistence, SqliteC
   private inner?: WorkerBackedCellPersistence;
   private readonly boot: Promise<WorkerBackedCellPersistence>;
 
-  constructor(
-    cellId: string,
-    dbPath: string,
-    init: { sqlCipherKey?: string; outboxKeyHex: string },
-  ) {
+  constructor(cellId: string, dbPath: string, init: WorkerBackedCellInit) {
     this.boot = WorkerBackedCellPersistence.create(cellId, dbPath, init).then((s) => {
       this.inner = s;
       return s;
