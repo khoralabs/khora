@@ -106,6 +106,11 @@ export function runColonnadePersistenceContractTests(
         `cptr_0000_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
       await catalog.upsertCatalogPointer({
         catalog_pointer_id: id,
+        tenant_key: "tenant",
+        publication_key: "pub-1",
+        publisher_principal_id: "alice",
+        published_at_ms: 1,
+        tags: ["alpha"],
         locator: {
           cell_id: "cell-a",
           record_key: "rk",
@@ -120,6 +125,106 @@ export function runColonnadePersistenceContractTests(
       });
       expect(resolved.locator.cell_id).toBe("cell-a");
       expect(resolved.locator.record_key).toBe("rk");
+    });
+
+    test("catalog publication feed list, tags AND, cursor, count, delete", async () => {
+      const { catalog } = await create();
+      const mkId = (n: number) =>
+        catalog.nextCatalogPointerId?.("tenant") ?? `cptr_0000_${String(n).padStart(24, "0")}`;
+      const hash = sha256HexLower(new TextEncoder().encode("feed"));
+      const pubs = [
+        {
+          id: mkId(1),
+          key: "p1",
+          publisher: "alice",
+          at: 300,
+          tags: ["a", "b"],
+        },
+        {
+          id: mkId(2),
+          key: "p2",
+          publisher: "bob",
+          at: 200,
+          tags: ["a"],
+        },
+        {
+          id: mkId(3),
+          key: "p3",
+          publisher: "alice",
+          at: 100,
+          tags: ["a", "b", "c"],
+        },
+      ];
+      for (const p of pubs) {
+        await catalog.upsertCatalogPointer({
+          catalog_pointer_id: p.id,
+          tenant_key: "tenant",
+          publication_key: p.key,
+          publisher_principal_id: p.publisher,
+          published_at_ms: p.at,
+          tags: p.tags,
+          locator: { cell_id: "cell-a", record_key: p.key, cell_pool_count: POOL },
+          content_hash: hash,
+          public_projection: { k: p.key },
+        });
+      }
+
+      const page1 = await catalog.listPublicationPointers({
+        tenant_key: "tenant",
+        limit: 2,
+      });
+      expect(page1.entries.map((e) => e.publication_key)).toEqual(["p1", "p2"]);
+      expect(page1.next_cursor.length).toBeGreaterThan(0);
+
+      const page2 = await catalog.listPublicationPointers({
+        tenant_key: "tenant",
+        limit: 2,
+        cursor: page1.next_cursor,
+      });
+      expect(page2.entries.map((e) => e.publication_key)).toEqual(["p3"]);
+      expect(page2.next_cursor).toBe("");
+
+      const tagged = await catalog.listPublicationPointers({
+        tenant_key: "tenant",
+        limit: 10,
+        tags_all: ["a", "b"],
+      });
+      expect(tagged.entries.map((e) => e.publication_key)).toEqual(["p1", "p3"]);
+
+      const byAuthor = await catalog.listPublicationPointers({
+        tenant_key: "tenant",
+        limit: 10,
+        publisher_principal_id: "alice",
+      });
+      expect(byAuthor.entries.map((e) => e.publication_key)).toEqual(["p1", "p3"]);
+
+      const newer = await catalog.countPublicationPointersAfter({
+        tenant_key: "tenant",
+        after_ms: 150,
+      });
+      expect(newer.count).toBe(2);
+
+      const del = await catalog.deletePublicationPointer({
+        tenant_key: "tenant",
+        publication_key: "p2",
+      });
+      expect(del.deleted).toBe(true);
+      const afterDel = await catalog.listPublicationPointers({
+        tenant_key: "tenant",
+        limit: 10,
+      });
+      expect(afterDel.entries.map((e) => e.publication_key)).toEqual(["p1", "p3"]);
+
+      const bulk = await catalog.deletePublicationPointersByPublisher({
+        tenant_key: "tenant",
+        publisher_principal_id: "alice",
+      });
+      expect(bulk.deleted_count).toBe(2);
+      const empty = await catalog.listPublicationPointers({
+        tenant_key: "tenant",
+        limit: 10,
+      });
+      expect(empty.entries).toEqual([]);
     });
 
     test("cell outbox append + fetch + inbox pointer drain", async () => {

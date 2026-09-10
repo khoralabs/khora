@@ -1,6 +1,7 @@
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
 import type { SignedRequestAuth } from "@khoralabs/khora-auth";
+import type { PublicPostFeedReader } from "../discovery/feed/public-post-feed";
 import type { HostSearch } from "../discovery/search/bootstrap";
 import type { HostSubscriptions } from "../discovery/subscriptions/bootstrap";
 import type { KhoraHostPersistence, KhoraInvitesRepo } from "../persistence/core/port";
@@ -23,6 +24,7 @@ export type KhoraHostDeps = {
   principalLifecycle: PrincipalLifecycle;
   invitesRepo?: KhoraInvitesRepo;
   search?: HostSearch;
+  publicPostFeed: PublicPostFeedReader;
   subscriptions: HostSubscriptions;
   health: KhoraHostHealthPort;
   adminStats: KhoraAdminStatsPort;

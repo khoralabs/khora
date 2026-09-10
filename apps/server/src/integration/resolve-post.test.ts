@@ -59,7 +59,7 @@ test("resolvePostById reads author outbox; delete leaves ghost", async () => {
     payload_bytes: new TextEncoder().encode(JSON.stringify(post)),
     payload_metadata: { postId, postKind: "post" },
     outbox_record_key: recordKey,
-    routing: { replicate_to_catalog: false, catalog_envelope: {}, fan_out_targets: [] },
+    routing: { fan_out_targets: [] },
   });
 
   const loaded = await resolvePostById(ctx.cluster, postId);

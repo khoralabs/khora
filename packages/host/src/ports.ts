@@ -1,5 +1,5 @@
 import type { OutboxListedRecord } from "@khoralabs/colonnade";
-import type { CellPersistence } from "@khoralabs/colonnade/persistence";
+import type { CatalogPersistence, CellPersistence } from "@khoralabs/colonnade/persistence";
 import type {
   EffectiveKhoraHostSpec,
   KhoraHostSpec,
@@ -10,6 +10,8 @@ import type {
 export type KhoraColonnadeCluster = {
   /** Topology pin for pointer `cell_pool_count` (always `1` under placement isolation). */
   readonly cellPoolCount: number;
+  /** Public publication catalog (may be noop when not wired). */
+  readonly catalog: CatalogPersistence;
   resolveCell(cellId: string): CellPersistence;
   assignPrincipalToCell(principalId: string): string;
   close(): void;

@@ -14,6 +14,12 @@ export {
   defaultNoopCatalogPersistence,
   NoopCatalogPersistence,
 } from "./noop-catalog-persistence";
+export {
+  decodePublicationFeedCursor,
+  encodePublicationFeedCursor,
+  type PublicationFeedCursor,
+  publicationMatchesTagsAll,
+} from "./publication-feed-query";
 export { ShardingCatalogPersistence } from "./sharding-catalog-persistence";
 export {
   inboxStagingFromBlob,

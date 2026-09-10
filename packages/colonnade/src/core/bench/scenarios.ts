@@ -146,8 +146,6 @@ export async function benchPostOutboxOnly(params: BenchRunParams): Promise<Bench
         payload_bytes: bytes,
         payload_metadata: BENCH_PAYLOAD_META,
         routing: {
-          replicate_to_catalog: false,
-          catalog_envelope: {},
           fan_out_targets: [],
         },
       });
@@ -192,8 +190,11 @@ export async function benchPostCatalogFanout(params: BenchRunParams): Promise<Be
         payload_bytes: bytes,
         payload_metadata: BENCH_PAYLOAD_META,
         routing: {
-          replicate_to_catalog: true,
-          catalog_envelope: { b: seed },
+          catalog_publication: {
+            publication_key: `bench-pub-${seed}`,
+            tags: [],
+            public_projection: { b: seed },
+          },
           fan_out_targets: recipients.map((recipient_cell_id, i) => ({
             recipient_cell_id,
             recipient_principal_id: `bench-sub-${i}-${seed}`,

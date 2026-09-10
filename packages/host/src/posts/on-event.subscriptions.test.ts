@@ -3,6 +3,7 @@ import { describe, expect, mock, test } from "bun:test";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import { principalHomeCellId } from "@khoralabs/colonnade";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
+import { InMemoryCatalogPersistence } from "@khoralabs/colonnade/persistence";
 import {
   authorSubscriptionSearch,
   KHORA_EVENT_KIND,
@@ -22,6 +23,7 @@ import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-e
 function stubCluster(cellPoolCount = 1): KhoraColonnadeCluster {
   return {
     cellPoolCount,
+    catalog: new InMemoryCatalogPersistence(),
     resolveCell() {
       throw new Error("stubCluster: resolveCell not used in percolator tests");
     },

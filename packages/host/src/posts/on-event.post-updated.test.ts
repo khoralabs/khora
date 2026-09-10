@@ -2,6 +2,7 @@ import { describe, expect, mock, test } from "bun:test";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import { principalHomeCellId } from "@khoralabs/colonnade";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
+import { InMemoryCatalogPersistence } from "@khoralabs/colonnade/persistence";
 import {
   authorSubscriptionSearch,
   KHORA_EVENT_KIND,
@@ -65,6 +66,7 @@ describe("POST_UPDATED cleanup", () => {
     const deletedRecordKeys: string[] = [];
     const cluster: KhoraColonnadeCluster = {
       cellPoolCount: 1,
+      catalog: new InMemoryCatalogPersistence(),
       resolveCell() {
         return {
           deleteOutboxRecord: async (params: { record_key: string }) => {
@@ -160,6 +162,7 @@ describe("POST_UPDATED cleanup", () => {
     const deletedRecordKeys: string[] = [];
     const cluster: KhoraColonnadeCluster = {
       cellPoolCount: 1,
+      catalog: new InMemoryCatalogPersistence(),
       resolveCell() {
         return {
           deleteOutboxRecord: async (params: { record_key: string }) => {

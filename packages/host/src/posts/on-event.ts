@@ -141,6 +141,19 @@ async function publishPost(params: {
       }))
     : [];
 
+  const visibility = post.visibility ?? "public";
+  const catalog_publication =
+    visibility === "public"
+      ? {
+          publication_key: post.id,
+          tags: post.topics ?? [],
+          public_projection: {
+            kind: post.kind,
+            ...(typeof post.title === "string" ? { title: post.title } : {}),
+          },
+        }
+      : undefined;
+
   const output = await publicationClient.postOperation({
     author_principal_id: authorPrincipalId,
     author_cell_id: authorCellId,
@@ -150,8 +163,7 @@ async function publishPost(params: {
     payload_metadata: { postId: post.id, postKind: post.kind },
     outbox_record_key: address.recordKey,
     routing: {
-      replicate_to_catalog: false,
-      catalog_envelope: {},
+      ...(catalog_publication !== undefined ? { catalog_publication } : {}),
       fan_out_targets,
     },
   });
@@ -286,6 +298,10 @@ export function createKhoraRelayOnEvent(deps: {
         await subscriptions.percolator.deactivateQuery(previous.id);
       }
       await deletePostOutboxRecord(cluster, previous.id);
+      await cluster.catalog.deletePublicationPointer({
+        tenant_key: tenantKey,
+        publication_key: previous.id,
+      });
       if (post.kind === "subscription" && subscriptions !== undefined && address !== undefined) {
         await registerSubscriptionQuery(subscriptions, post, address.authorPrincipalId);
       }
@@ -309,6 +325,10 @@ export function createKhoraRelayOnEvent(deps: {
         await subscriptions.percolator.deactivateQuery(post.id);
       }
       await deletePostOutboxRecord(cluster, post.id);
+      await cluster.catalog.deletePublicationPointer({
+        tenant_key: tenantKey,
+        publication_key: post.id,
+      });
       if (search !== undefined) {
         await search.indexer.deletePost(post);
       }

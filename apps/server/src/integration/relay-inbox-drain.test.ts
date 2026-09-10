@@ -65,8 +65,6 @@ test("popInboxDrainItemsForDid drops cell inbox row when author unregistered (ph
     payload_metadata: { postId, postKind: "post" },
     outbox_record_key: recordKey,
     routing: {
-      replicate_to_catalog: false,
-      catalog_envelope: {},
       fan_out_targets: [
         {
           recipient_cell_id: ctx.cluster.assignPrincipalToCell("did:sub"),

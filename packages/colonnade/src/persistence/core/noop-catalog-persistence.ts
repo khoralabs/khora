@@ -3,8 +3,16 @@ import type {
   BatchLookupSourceMapPointersOutput,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
+  CountPublicationPointersAfterInput,
+  CountPublicationPointersAfterOutput,
+  DeletePublicationPointerInput,
+  DeletePublicationPointerOutput,
+  DeletePublicationPointersByPublisherInput,
+  DeletePublicationPointersByPublisherOutput,
   IssueConnectionTokenInput,
   IssueConnectionTokenOutput,
+  ListPublicationPointersInput,
+  ListPublicationPointersOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
   PointerRef,
@@ -29,7 +37,7 @@ const MISS_POINTER: PointerRef = {
   cell_pool_count: 1,
 };
 
-/** Default when `PostOperation` runs with `replicate_to_catalog: false` (no discovery/pointer writes). */
+/** Default when `PostOperation` omits `catalog_publication` (no discovery/pointer writes). */
 export class NoopCatalogPersistence implements CatalogPersistence {
   async upsertDiscoveryDocument(
     _input: UpsertDiscoveryDocumentInput,
@@ -49,6 +57,18 @@ export class NoopCatalogPersistence implements CatalogPersistence {
     throw new Error(
       `NoopCatalogPersistence: unknown catalog_pointer_id ${input.catalog_pointer_id}`,
     );
+  }
+
+  async deletePublicationPointer(
+    _input: DeletePublicationPointerInput,
+  ): Promise<DeletePublicationPointerOutput> {
+    return { deleted: false };
+  }
+
+  async deletePublicationPointersByPublisher(
+    _input: DeletePublicationPointersByPublisherInput,
+  ): Promise<DeletePublicationPointersByPublisherOutput> {
+    return { deleted_count: 0 };
   }
 
   async upsertSourceMapPointerRow(
@@ -85,6 +105,18 @@ export class NoopCatalogPersistence implements CatalogPersistence {
     input: ComputeSourceRowContentHashInput,
   ): Promise<ComputeSourceRowContentHashOutput> {
     return { content_hash: sha256HexLower(input.canonical_row_bytes) };
+  }
+
+  async listPublicationPointers(
+    _input: ListPublicationPointersInput,
+  ): Promise<ListPublicationPointersOutput> {
+    return { entries: [], next_cursor: "" };
+  }
+
+  async countPublicationPointersAfter(
+    _input: CountPublicationPointersAfterInput,
+  ): Promise<CountPublicationPointersAfterOutput> {
+    return { count: 0 };
   }
 
   async issueConnectionToken(

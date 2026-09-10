@@ -1,4 +1,4 @@
-export { CATALOG_TABLES_DDL } from "./catalog-ddl";
+export { CATALOG_FEED_INDEXES_DDL, CATALOG_TABLES_DDL } from "./catalog-ddl";
 export {
   CELL_BASE_TABLES_DDL,
   CELL_INBOX_DDL,
