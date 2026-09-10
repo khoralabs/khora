@@ -6,6 +6,7 @@ import {
   exportKeyToDistBase,
   mapSrcTypesPathToDist,
   parseTsExportEntries,
+  runtimeSidecarOutfile,
 } from "./build-publishable-lib";
 
 const repoRoot = path.resolve(import.meta.dir, "../../..");
@@ -15,6 +16,26 @@ describe("exportKeyToDistBase", () => {
     expect(exportKeyToDistBase(".")).toBe("index");
     expect(exportKeyToDistBase("./sqlite")).toBe("sqlite");
     expect(exportKeyToDistBase("./discovery/search")).toBe("discovery/search");
+  });
+});
+
+describe("runtimeSidecarOutfile", () => {
+  test("joins distDir with sidecar distFile", () => {
+    expect(
+      runtimeSidecarOutfile("/tmp/pkg/dist", {
+        sourceFile: "/tmp/src/sqlite-cell-worker.ts",
+        distFile: "sqlite-cell-worker.js",
+      }),
+    ).toBe(path.join("/tmp/pkg/dist", "sqlite-cell-worker.js"));
+  });
+
+  test("preserves nested sidecar paths", () => {
+    expect(
+      runtimeSidecarOutfile("/tmp/pkg/dist", {
+        sourceFile: "/tmp/src/w.ts",
+        distFile: "sqlite/worker.js",
+      }),
+    ).toBe(path.join("/tmp/pkg/dist", "sqlite/worker.js"));
   });
 });
 

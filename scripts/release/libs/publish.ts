@@ -10,7 +10,7 @@
  * Expects versions already bumped and packages built.
  */
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parseTsExportEntries } from "./build-publishable-lib";
 
@@ -24,6 +24,11 @@ export const PKG_DIR: Record<KhoraLibPackage, string> = {
   "khora-client": "packages/client",
   "khora-registry": "packages/registry",
   "khora-host": "packages/host",
+};
+
+/** Runtime sidecars that must appear in the packed tarball (relative to package root). */
+export const REQUIRED_PACK_PATHS: Partial<Record<KhoraLibPackage, readonly string[]>> = {
+  "khora-host": ["dist/sqlite-cell-worker.js"],
 };
 
 /** Dist exports keyed by export path (same layout as build-publishable-lib). */
@@ -130,6 +135,39 @@ export function bumpLibVersions(workspaceRoot: string, version: string): void {
   }
 }
 
+function assertRequiredPackPaths(pkg: KhoraLibPackage, pkgDir: string): void {
+  const required = REQUIRED_PACK_PATHS[pkg];
+  if (required === undefined) return;
+  for (const rel of required) {
+    const abs = path.join(pkgDir, rel);
+    if (!existsSync(abs)) {
+      throw new Error(`pack precondition failed for ${pkg}: missing ${rel}`);
+    }
+  }
+}
+
+function assertPackedTarballContains(pkg: KhoraLibPackage, pkgDir: string): void {
+  const required = REQUIRED_PACK_PATHS[pkg];
+  if (required === undefined) return;
+  const tgz = readdirSync(pkgDir).find((n) => n.endsWith(".tgz"));
+  if (tgz === undefined) {
+    throw new Error(`pack produced no tarball for ${pkg}`);
+  }
+  const listed = spawnSync("tar", ["-tzf", path.join(pkgDir, tgz)], {
+    encoding: "utf8",
+  });
+  if (listed.status !== 0) {
+    throw new Error(`failed to list tarball for ${pkg}`);
+  }
+  const entries = listed.stdout.split("\n");
+  for (const rel of required) {
+    const needle = `package/${rel}`;
+    if (!entries.some((e) => e === needle || e.endsWith(`/${rel}`))) {
+      throw new Error(`packed ${pkg} missing ${rel} (expected ${needle})`);
+    }
+  }
+}
+
 function publishOne(
   workspaceRoot: string,
   pkg: KhoraLibPackage,
@@ -139,6 +177,7 @@ function publishOne(
   let restore: (() => void) | undefined;
   try {
     restore = applyPublishedPackageJson(workspaceRoot, pkg);
+    assertRequiredPackPaths(pkg, pkgDir);
     if (opts.dryRun) {
       console.log(`(dry-run) ${pkg}: bun pm pack`);
       const pack = spawnSync("bun", ["pm", "pack", "--quiet"], {
@@ -148,6 +187,7 @@ function publishOne(
       if (pack.status !== 0) {
         throw new Error(`pack failed for ${pkg}`);
       }
+      assertPackedTarballContains(pkg, pkgDir);
       return;
     }
     const args = ["publish", "--access", "public"];

@@ -22,6 +22,9 @@ export {
   supportsSqliteCellBatch,
 } from "./sqlite-cell-persistence";
 export {
+  createDefaultSqliteCellWorker,
   LazyWorkerBackedCellPersistence,
+  type SqliteCellWorkerFactory,
+  type WorkerBackedCellInit,
   WorkerBackedCellPersistence,
 } from "./worker-backed-cell-persistence";

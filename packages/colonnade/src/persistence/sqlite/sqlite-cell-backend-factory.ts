@@ -12,13 +12,21 @@ import type { OutboxPayloadCodec } from "../../crypto";
 import { openMaybeEncryptedDatabaseSync } from "../../crypto";
 import type { CellPersistence } from "../core";
 import { SqliteCellPersistence } from "./sqlite-cell-persistence";
-import { LazyWorkerBackedCellPersistence } from "./worker-backed-cell-persistence";
+import {
+  LazyWorkerBackedCellPersistence,
+  type SqliteCellWorkerFactory,
+} from "./worker-backed-cell-persistence";
 
 export type SqliteCellBackendFactoryOptions = {
   readonly outboxPayloadCodec: OutboxPayloadCodec;
   /** Hex-encoded 32-byte outbox key for worker init. */
   readonly outboxKeyHex: string;
   readonly useCellWorkers?: boolean;
+  /**
+   * Optional Bun Worker factory for cell DBs. Defaults to the package-local
+   * `sqlite-cell-worker.js` entry. Inject when rebundling or relocating the sidecar.
+   */
+  readonly cellWorkerFactory?: SqliteCellWorkerFactory;
 };
 
 /**
@@ -49,6 +57,9 @@ export function createSqliteCellBackendFactory(
             w = new LazyWorkerBackedCellPersistence(cellId, path, {
               sqlCipherKey: sqliteStrategy.sqlCipherKey,
               outboxKeyHex: opts.outboxKeyHex,
+              ...(opts.cellWorkerFactory !== undefined
+                ? { cellWorkerFactory: opts.cellWorkerFactory }
+                : {}),
             });
             lazyWorkersById.set(cellId, w);
           }

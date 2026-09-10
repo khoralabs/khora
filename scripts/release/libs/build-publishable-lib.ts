@@ -20,6 +20,13 @@ export type BundledPackage = {
   name: string;
 };
 
+export type RuntimeSidecarEntry = {
+  /** Absolute path to the worker/runtime source entry */
+  sourceFile: string;
+  /** Relative path under dist/ including extension (e.g. sqlite-cell-worker.js) */
+  distFile: string;
+};
+
 export type PublishableLibBuildOptions = {
   packageDir: string;
   repoRoot: string;
@@ -27,7 +34,17 @@ export type PublishableLibBuildOptions = {
   externals: string[];
   /** Private workspace packages inlined into JS and rolled into .d.ts */
   bundledPackages: BundledPackage[];
+  /**
+   * Runtime assets that must ship beside export bundles (e.g. Bun Worker entrypoints).
+   * Built with the same externals policy; missing outputs fail the build.
+   */
+  runtimeSidecars?: RuntimeSidecarEntry[];
 };
+
+/** Resolve a sidecar outfile relative to dist/. */
+export function runtimeSidecarOutfile(distDir: string, sidecar: RuntimeSidecarEntry): string {
+  return path.join(distDir, sidecar.distFile);
+}
 
 type ExportEntry = {
   exportKey: string;
@@ -197,6 +214,34 @@ async function buildJs(opts: {
   }
 }
 
+async function buildRuntimeSidecars(opts: {
+  packageDir: string;
+  distDir: string;
+  externals: string[];
+  sidecars: RuntimeSidecarEntry[];
+}): Promise<void> {
+  const { packageDir, distDir, externals, sidecars } = opts;
+  const externalFlags = externals.flatMap((e) => ["--external", e]);
+  for (const sidecar of sidecars) {
+    if (!existsSync(sidecar.sourceFile)) {
+      throw new Error(`runtime sidecar source missing: ${sidecar.sourceFile}`);
+    }
+    const outfile = runtimeSidecarOutfile(distDir, sidecar);
+    mkdirSync(path.dirname(outfile), { recursive: true });
+    const result =
+      await Bun.$`bun build ${sidecar.sourceFile} --outfile=${outfile} --target=bun --format=esm ${externalFlags}`
+        .cwd(packageDir)
+        .nothrow();
+    if (result.exitCode !== 0) {
+      console.error(result.stderr.toString() || result.stdout.toString());
+      throw new Error(`bun build failed for runtime sidecar ${sidecar.distFile}`);
+    }
+    if (!existsSync(outfile) || !Bun.file(outfile).size) {
+      throw new Error(`runtime sidecar missing after build: ${outfile}`);
+    }
+  }
+}
+
 async function emitMainDts(opts: { packageDir: string; dtsOutDir: string }): Promise<void> {
   const { packageDir, dtsOutDir } = opts;
   rmSync(dtsOutDir, { recursive: true, force: true });
@@ -320,6 +365,7 @@ async function runApiExtractorPerEntry(opts: {
 
 export async function buildPublishableLib(opts: PublishableLibBuildOptions): Promise<void> {
   const { packageDir, externals, bundledPackages } = opts;
+  const runtimeSidecars = opts.runtimeSidecars ?? [];
   const distDir = path.join(packageDir, "dist");
   const dtsOutDir = path.join(packageDir, ".dts-build");
 
@@ -330,6 +376,12 @@ export async function buildPublishableLib(opts: PublishableLibBuildOptions): Pro
   mkdirSync(distDir, { recursive: true });
 
   await buildJs({ packageDir, entries, distDir, externals });
+  await buildRuntimeSidecars({
+    packageDir,
+    distDir,
+    externals,
+    sidecars: runtimeSidecars,
+  });
 
   const restores: Array<() => void> = [];
   try {
@@ -358,6 +410,13 @@ export async function buildPublishableLib(opts: PublishableLibBuildOptions): Pro
       rmSync(path.join(pkg.dir, "dist"), { recursive: true, force: true });
     }
     rmSync(dtsOutDir, { recursive: true, force: true });
+  }
+
+  for (const sidecar of runtimeSidecars) {
+    const outfile = runtimeSidecarOutfile(distDir, sidecar);
+    if (!existsSync(outfile)) {
+      throw new Error(`runtime sidecar missing from dist: ${outfile}`);
+    }
   }
 
   const built = readdirSync(distDir, { recursive: true })
@@ -412,6 +471,15 @@ if (import.meta.main) {
         {
           dir: path.join(repoRoot, "vendor/libs/packages/observability"),
           name: "@khoralabs/observability",
+        },
+      ],
+      runtimeSidecars: [
+        {
+          sourceFile: path.join(
+            repoRoot,
+            "packages/colonnade/src/persistence/sqlite/sqlite-cell-worker.ts",
+          ),
+          distFile: "sqlite-cell-worker.js",
         },
       ],
     },
