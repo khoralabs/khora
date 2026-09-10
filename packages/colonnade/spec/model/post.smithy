@@ -5,12 +5,19 @@ namespace khora.colonnade
 use smithy.api#Blob
 use smithy.api#Document
 
+structure CatalogPublication {
+    /// Stable application publication id (e.g. Khora post id). Unique per tenant.
+    publication_key: String
+    /// Normalized tags for feed filtering (AND semantics on list).
+    tags: StringList
+    /// Lightweight public stub (kind, title, …) — never the full payload.
+    public_projection: Document
+}
+
 structure PublicationRouting {
-    /// When **`true`**, implementations MUST upsert discovery metadata / catalog pointers per **`catalog_envelope`** after outbox commit.
-    /// **`fan_out_targets`** MUST be supplied by product/adapters before **`PostOperation`** (typically using deterministic cell routing such as **`derivePoolHomeCell`**); durable delivery proof is per-recipient inbox rows, not catalog documents.
-    replicate_to_catalog: Boolean
-    /// Opaque catalog projection (author ref, topics, probe hooks, embedding pointers, etc.).
-    catalog_envelope: Document
+    /// When set, implementations MUST upsert a public catalog pointer after outbox commit.
+    /// Omit for outbox/fan-out only (private/network or non-discoverable publishes).
+    catalog_publication: CatalogPublication
     /// When non-empty, enqueue **`EnqueueInboxWrite`** / pointer rows on each listed recipient cell.
     fan_out_targets: FanOutTargetList
 }
@@ -38,17 +45,17 @@ list GeneratedInboxRefList {
 structure PostOperationOutput {
     outbox_record_key: OutboxRecordKey
     content_hash: ContentHash
-    /// Set only when **`replicate_to_catalog`** was requested and catalog accepts pointer projection.
+    /// Set only when **`catalog_publication`** was requested and catalog accepts pointer projection.
     catalog_pointer_id: CatalogPointerId = ""
     generated_inbox_refs: GeneratedInboxRefList
 }
 
 @documentation("""
-**Post operation** — orchestrates **author outbox persistence** then optional **catalog replication** and/or **fan-out** to subscriber cells.
+**Post operation** — orchestrates **author outbox persistence** then optional **catalog publication** and/or **fan-out** to subscriber cells.
 
 **Normative ordering:**
-1. **`AppendOutboxRecord`** (same semantic as **`WriteOp.append_outbox`**) MUST commit payload bytes and derive **`content_hash`** before fan-out/catalog side-effects become durable.
-2. If **`replicate_to_catalog`**, implementations MUST upsert discovery docs / **`UpsertCatalogPointer`** as policy requires (full payload is **not** required on catalog — pointers + hashes suffice).
+1. **`AppendOutboxRecord`** (same semantic as **`WriteOp.append_outbox`**) MUST commit payload bytes and derive **`content_hash`** / **`committed_at_ms`** before fan-out/catalog side-effects become durable.
+2. If **`catalog_publication`** is set, implementations MUST upsert discovery docs / **`UpsertCatalogPointer`** (full payload is **not** required on catalog — pointers + hashes + timeline metadata suffice). Catalog **`published_at_ms`** MUST equal the outbox **`committed_at_ms`**.
 3. For each **`FanOutTarget`**, implementations MUST **`EnqueueInboxDelivery`** with **`InboxStagingPayload.pointer`** referencing the author's **`OutboxLocator`**, unless an implementation-defined inline threshold allows **`inline`** payloads.
 
 **Decision split:** This operation encodes **whether** catalog and/or fan-out occur; matching recipients via percolation MAY precede construction of **`fan_out_targets`** in embedding adapters.

@@ -268,6 +268,11 @@ export type UpsertDiscoveryDocumentOutput = {
 
 export type UpsertCatalogPointerInput = {
   readonly catalog_pointer_id: CatalogPointerId;
+  readonly tenant_key: TenantKey;
+  readonly publication_key: string;
+  readonly publisher_principal_id: PrincipalId;
+  readonly published_at_ms: number;
+  readonly tags: readonly string[];
   readonly locator: OutboxLocator;
   readonly content_hash: ContentHash;
   readonly public_projection: JsonDocument;
@@ -340,11 +345,72 @@ export type ComputeSourceRowContentHashOutput = {
   readonly content_hash: ContentHash;
 };
 
+export type DeletePublicationPointerInput = {
+  readonly tenant_key: TenantKey;
+  readonly publication_key: string;
+};
+
+export type DeletePublicationPointerOutput = {
+  readonly deleted: boolean;
+};
+
+export type DeletePublicationPointersByPublisherInput = {
+  readonly tenant_key: TenantKey;
+  readonly publisher_principal_id: PrincipalId;
+};
+
+export type DeletePublicationPointersByPublisherOutput = {
+  readonly deleted_count: number;
+};
+
+export type ListPublicationPointersInput = {
+  readonly tenant_key: TenantKey;
+  readonly limit: number;
+  readonly cursor?: string;
+  readonly publisher_principal_id?: PrincipalId;
+  /** AND semantics: every listed tag must be present. */
+  readonly tags_all?: readonly string[];
+};
+
+export type PublicationPointerEntry = {
+  readonly catalog_pointer_id: CatalogPointerId;
+  readonly publication_key: string;
+  readonly publisher_principal_id: PrincipalId;
+  readonly published_at_ms: number;
+  readonly tags: readonly string[];
+  readonly locator: OutboxLocator;
+  readonly content_hash: ContentHash;
+  readonly public_projection: JsonDocument;
+};
+
+export type ListPublicationPointersOutput = {
+  readonly entries: readonly PublicationPointerEntry[];
+  /** Empty when no further pages. */
+  readonly next_cursor: string;
+};
+
+export type CountPublicationPointersAfterInput = {
+  readonly tenant_key: TenantKey;
+  readonly after_ms: number;
+  readonly publisher_principal_id?: PrincipalId;
+  readonly tags_all?: readonly string[];
+};
+
+export type CountPublicationPointersAfterOutput = {
+  readonly count: number;
+};
+
 // --- Publication ---
 
+/** When set on routing, PostOperation indexes a public catalog pointer after outbox commit. */
+export type CatalogPublication = {
+  readonly publication_key: string;
+  readonly tags: readonly string[];
+  readonly public_projection: JsonDocument;
+};
+
 export type PublicationRouting = {
-  readonly replicate_to_catalog: boolean;
-  readonly catalog_envelope: JsonDocument;
+  readonly catalog_publication?: CatalogPublication;
   readonly fan_out_targets: readonly FanOutTarget[];
 };
 

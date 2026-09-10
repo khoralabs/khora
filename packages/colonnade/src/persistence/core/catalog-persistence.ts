@@ -3,8 +3,16 @@ import type {
   BatchLookupSourceMapPointersOutput,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
+  CountPublicationPointersAfterInput,
+  CountPublicationPointersAfterOutput,
+  DeletePublicationPointerInput,
+  DeletePublicationPointerOutput,
+  DeletePublicationPointersByPublisherInput,
+  DeletePublicationPointersByPublisherOutput,
   IssueConnectionTokenInput,
   IssueConnectionTokenOutput,
+  ListPublicationPointersInput,
+  ListPublicationPointersOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
   ResolveCatalogPointerInput,
@@ -39,6 +47,12 @@ export interface CatalogPersistence {
   upsertSourceMapPointerRow(
     input: UpsertSourceMapPointerRowInput,
   ): Promise<UpsertSourceMapPointerRowOutput>;
+  deletePublicationPointer(
+    input: DeletePublicationPointerInput,
+  ): Promise<DeletePublicationPointerOutput>;
+  deletePublicationPointersByPublisher(
+    input: DeletePublicationPointersByPublisherInput,
+  ): Promise<DeletePublicationPointersByPublisherOutput>;
 
   lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput>;
   batchLookupSourceMapPointers(
@@ -47,6 +61,12 @@ export interface CatalogPersistence {
   computeSourceRowContentHash(
     input: ComputeSourceRowContentHashInput,
   ): Promise<ComputeSourceRowContentHashOutput>;
+  listPublicationPointers(
+    input: ListPublicationPointersInput,
+  ): Promise<ListPublicationPointersOutput>;
+  countPublicationPointersAfter(
+    input: CountPublicationPointersAfterInput,
+  ): Promise<CountPublicationPointersAfterOutput>;
 
   issueConnectionToken(input: IssueConnectionTokenInput): Promise<IssueConnectionTokenOutput>;
 }

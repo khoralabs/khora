@@ -68,8 +68,6 @@ describe("SQLite Colonnade cluster", () => {
         payload_bytes: body,
         payload_metadata: { kind: "sqlite-test" },
         routing: {
-          replicate_to_catalog: false,
-          catalog_envelope: {},
           fan_out_targets: [{ recipient_cell_id: bobCell, recipient_principal_id: "bob" }],
         },
       });
@@ -158,8 +156,11 @@ describe("SQLite Colonnade cluster", () => {
         payload_bytes: body,
         payload_metadata: {},
         routing: {
-          replicate_to_catalog: true,
-          catalog_envelope: { title: "x" },
+          catalog_publication: {
+            publication_key: `pub-${tenant_key}`,
+            tags: [],
+            public_projection: { title: "x" },
+          },
           fan_out_targets: [
             { recipient_cell_id: recipientCell, recipient_principal_id: "recipient" },
           ],
@@ -233,8 +234,6 @@ describe("SQLite Colonnade cluster", () => {
             payload_bytes: body,
             payload_metadata: {},
             routing: {
-              replicate_to_catalog: false,
-              catalog_envelope: {},
               fan_out_targets: [{ recipient_cell_id: bobCell, recipient_principal_id: "bob" }],
             },
           });

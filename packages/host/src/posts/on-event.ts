@@ -150,8 +150,6 @@ async function publishPost(params: {
     payload_metadata: { postId: post.id, postKind: post.kind },
     outbox_record_key: address.recordKey,
     routing: {
-      replicate_to_catalog: false,
-      catalog_envelope: {},
       fan_out_targets,
     },
   });
