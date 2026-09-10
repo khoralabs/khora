@@ -151,6 +151,10 @@ export async function createSqliteKhoraHostFoundation(
       for (const query of await subscriptions.percolator.listQueriesByOwner(principalId)) {
         await subscriptions.percolator.deactivateQuery(query.id);
       }
+      await cluster.catalog.deletePublicationPointersByPublisher({
+        tenant_key: tenantKey,
+        publisher_principal_id: principalId,
+      });
       await opts.onPrincipalTeardown?.(principalId, profileId);
     },
     onPhase1Teardown(principalId, profileId) {
