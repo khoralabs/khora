@@ -10,6 +10,7 @@ export * from "./khora-host-spec";
 export * from "./khora-inbox-notifications";
 export * from "./khora-post";
 export * from "./khora-profile";
+export * from "./khora-public-post-feed";
 export * from "./khora-registration";
 export * from "./khora-relationships";
 export * from "./khora-search";

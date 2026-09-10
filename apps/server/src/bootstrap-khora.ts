@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import {
   bootstrapHostSearch,
+  createCatalogPublicPostFeedReader,
   createKhoraHost,
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
@@ -136,6 +137,12 @@ export async function bootstrapKhoraHost(
     });
   }
 
+  const publicPostFeed = createCatalogPublicPostFeedReader({
+    catalog: foundation.cluster.catalog,
+    tenantKey: foundation.tenantKey,
+    postResolver: foundation.postResolver,
+  });
+
   const ctx = createKhoraHost({
     persistence: foundation.persistence,
     tenantKey: foundation.tenantKey,
@@ -150,6 +157,7 @@ export async function bootstrapKhoraHost(
     hostSpec: foundation.hostSpec,
     outboxPayloadCodec: foundation.outboxPayloadCodec,
     subscriptions: foundation.subscriptions,
+    publicPostFeed,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { search: memories } : {}),
     ...(opts.startPrincipalTeardownWorker !== undefined

@@ -16,6 +16,7 @@ import {
   handleAdminInvitesMint,
   handleAdminInviteTree,
 } from "./ops-invites";
+import { handleOpsPostsList, handleOpsPostsNewerCount } from "./ops-posts";
 import {
   handleAgentStatus,
   handleCreatePost,
@@ -159,6 +160,14 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
 
     if (req.method === "PATCH" && url.pathname === KHORA_HTTP_PATH.opsHostConfig) {
       return handleAdminHostConfigPatch(req, deps);
+    }
+
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.opsPosts) {
+      return handleOpsPostsList(req, url, deps);
+    }
+
+    if (req.method === "GET" && url.pathname === KHORA_HTTP_PATH.opsPostsNewerCount) {
+      return handleOpsPostsNewerCount(req, url, deps);
     }
 
     if (url.pathname.startsWith(KHORA_HTTP_PATH.opsAgentsPrefix)) {
