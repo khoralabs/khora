@@ -194,4 +194,117 @@ describe("catalog publication lifecycle", () => {
     });
     expect(listed.entries).toEqual([]);
   });
+
+  test("POST_UPDATED public to network removes catalog row and omits catalog_publication", async () => {
+    const authorProfile: KhoraProfile = {
+      id: "prof-author",
+      username: "author",
+      displayName: "Author",
+    };
+    const persistence = createInMemoryKhoraHostPersistence();
+    persistence.profiles.upsert({
+      id: authorProfile.id,
+      bodyJson: JSON.stringify(authorProfile),
+    });
+    persistence.registrations.upsert("did:author", authorProfile.id);
+    const persistenceClient = createHostPersistenceClient(persistence);
+    const catalog = new InMemoryCatalogPersistence();
+    const cluster: KhoraColonnadeCluster = {
+      cellPoolCount: 1,
+      catalog,
+      resolveCell() {
+        return {
+          deleteOutboxRecord: async () => {},
+        } as never;
+      },
+      assignPrincipalToCell(principalId: string) {
+        return principalHomeCellId(principalId);
+      },
+      close() {},
+    };
+
+    const authorPrincipalId = "did:author";
+    const previousAddr = assignPostAddress({ cluster, authorPrincipalId });
+    const previousId = encodePostId({
+      authorPrincipalId,
+      recordKey: previousAddr.recordKey,
+      cellPoolCount: previousAddr.cellPoolCount,
+    });
+    const previous: KhoraPost = {
+      id: previousId,
+      authorProfileId: authorProfile.id,
+      kind: "post",
+      topics: ["climate"],
+      title: "Hello",
+      body: "world",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public",
+    };
+    await catalog.upsertCatalogPointer({
+      catalog_pointer_id: "cptr_0000_cccccccccccccccccccccccc",
+      tenant_key: "relay",
+      publication_key: previousId,
+      publisher_principal_id: authorPrincipalId,
+      published_at_ms: 1,
+      tags: ["climate"],
+      locator: {
+        cell_id: "c",
+        record_key: previousAddr.recordKey,
+        cell_pool_count: 1,
+      },
+      content_hash: "0".repeat(64),
+      public_projection: { kind: "post", title: "Hello" },
+    });
+
+    const nextAddr = assignPostAddress({ cluster, authorPrincipalId });
+    const nextId = encodePostId({
+      authorPrincipalId,
+      recordKey: nextAddr.recordKey,
+      cellPoolCount: nextAddr.cellPoolCount,
+    });
+    const next: KhoraPost = {
+      id: nextId,
+      authorProfileId: authorProfile.id,
+      kind: "post",
+      topics: ["climate"],
+      title: "Hello",
+      body: "world",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "network",
+    };
+
+    const captured: Array<{ catalog_publication?: unknown }> = [];
+    const onEvent = createKhoraRelayOnEvent({
+      registration: {} as never,
+      tenantKey: "relay",
+      cluster,
+      publicationClient: {
+        postOperation: mock(async (op) => {
+          captured.push({ catalog_publication: op.routing.catalog_publication });
+          return {
+            outbox_record_key: nextAddr.recordKey,
+            content_hash: "0".repeat(64),
+            catalog_pointer_id: "",
+            generated_inbox_refs: [],
+          };
+        }),
+      } as unknown as ColonnadePublicationClient,
+    });
+
+    await onEvent(
+      { persistence, persistenceClient } as HostRuntimeEventHandlerCtx,
+      {
+        kind: KHORA_EVENT_KIND.POST_UPDATED,
+        payload: { post: next, previous },
+      } as never,
+    );
+
+    const listed = await catalog.listPublicationPointers({
+      tenant_key: "relay",
+      limit: 10,
+    });
+    expect(listed.entries).toEqual([]);
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.catalog_publication).toBeUndefined();
+  });
 });
