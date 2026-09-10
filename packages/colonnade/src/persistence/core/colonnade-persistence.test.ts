@@ -339,8 +339,11 @@ describe("ColonnadePublicationClient", () => {
       payload_bytes: body,
       payload_metadata: { kind: "test" },
       routing: {
-        replicate_to_catalog: true,
-        catalog_envelope: { title: "t" },
+        catalog_publication: {
+          publication_key: "pub-test",
+          tags: [],
+          public_projection: { title: "t" },
+        },
         fan_out_targets: [{ recipient_cell_id: "cell-b", recipient_principal_id: "bob" }],
       },
     });
@@ -363,7 +366,7 @@ describe("ColonnadePublicationClient", () => {
     expect(listed.entries[0]?.staging.kind).toBe("pointer");
   });
 
-  test("resolveCell-only constructor uses noop catalog when replicate_to_catalog is false", async () => {
+  test("resolveCell-only constructor uses noop catalog when catalog_publication is omitted", async () => {
     const cellA = testCell("cell-a");
     const resolve: ResolveCell = (id) => {
       if (id === "cell-a") return cellA;
@@ -377,7 +380,7 @@ describe("ColonnadePublicationClient", () => {
       cell_pool_count: POOL,
       payload_bytes: new TextEncoder().encode("{}"),
       payload_metadata: {},
-      routing: { replicate_to_catalog: false, catalog_envelope: {}, fan_out_targets: [] },
+      routing: { fan_out_targets: [] },
     });
     expect(res.catalog_pointer_id).toBe("");
     expect(res.outbox_record_key.length).toBeGreaterThan(0);

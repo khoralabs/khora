@@ -114,3 +114,7 @@ list SourceMapEntryKeyList {
 list SourceMapPointerHitList {
     member: SourceMapPointerHit
 }
+
+list StringList {
+    member: String
+}

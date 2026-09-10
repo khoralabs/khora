@@ -62,6 +62,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     outboxPayloadCodec: deps.outboxPayloadCodec,
     principalTeardownWorker,
     subscriptions: deps.subscriptions,
+    publicPostFeed: deps.publicPostFeed,
     ...(deps.search !== undefined ? { search: deps.search } : {}),
     ...deps.registration,
   };

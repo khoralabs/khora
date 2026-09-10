@@ -3,8 +3,16 @@ import type {
   BatchLookupSourceMapPointersOutput,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
+  CountPublicationPointersAfterInput,
+  CountPublicationPointersAfterOutput,
+  DeletePublicationPointerInput,
+  DeletePublicationPointerOutput,
+  DeletePublicationPointersByPublisherInput,
+  DeletePublicationPointersByPublisherOutput,
   IssueConnectionTokenInput,
   IssueConnectionTokenOutput,
+  ListPublicationPointersInput,
+  ListPublicationPointersOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
   ResolveCatalogPointerInput,
@@ -63,6 +71,18 @@ export class CatalogPersistenceClient implements CatalogPersistence {
     return out;
   }
 
+  deletePublicationPointer(
+    input: DeletePublicationPointerInput,
+  ): Promise<DeletePublicationPointerOutput> {
+    return this.strategy.deletePublicationPointer(input);
+  }
+
+  deletePublicationPointersByPublisher(
+    input: DeletePublicationPointersByPublisherInput,
+  ): Promise<DeletePublicationPointersByPublisherOutput> {
+    return this.strategy.deletePublicationPointersByPublisher(input);
+  }
+
   async lookupSourceMapPointer(
     input: LookupSourceMapPointerInput,
   ): Promise<LookupSourceMapPointerOutput> {
@@ -91,6 +111,18 @@ export class CatalogPersistenceClient implements CatalogPersistence {
     const out = await this.strategy.computeSourceRowContentHash(input);
     assertContentHash(out.content_hash);
     return out;
+  }
+
+  listPublicationPointers(
+    input: ListPublicationPointersInput,
+  ): Promise<ListPublicationPointersOutput> {
+    return this.strategy.listPublicationPointers(input);
+  }
+
+  countPublicationPointersAfter(
+    input: CountPublicationPointersAfterInput,
+  ): Promise<CountPublicationPointersAfterOutput> {
+    return this.strategy.countPublicationPointersAfter(input);
   }
 
   issueConnectionToken(input: IssueConnectionTokenInput): Promise<IssueConnectionTokenOutput> {

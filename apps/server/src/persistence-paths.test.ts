@@ -5,6 +5,7 @@ import { KHORA_PERSISTENCE_REL, resolveKhoraPersistencePaths } from "./persisten
 const ENV_KEYS = [
   "KHORA_DATA_DIR",
   "KHORA_HOST_DB_PATH",
+  "KHORA_CATALOG_DB_PATH",
   "KHORA_AUTH_NONCES_DB_PATH",
   "KHORA_PERCOLATOR_DB_PATH",
   "KHORA_CELLS_DIR",
@@ -27,10 +28,11 @@ function restoreEnv(prev: Record<string, string | undefined>): void {
 }
 
 describe("resolveKhoraPersistencePaths", () => {
-  test("KHORA_DATA_DIR alone derives host, auth nonces, percolator, cells, and memories paths", () => {
+  test("KHORA_DATA_DIR alone derives host, catalog, auth nonces, percolator, cells, and memories paths", () => {
     const prev = snapshotEnv();
     try {
       delete process.env.KHORA_HOST_DB_PATH;
+      delete process.env.KHORA_CATALOG_DB_PATH;
       delete process.env.KHORA_AUTH_NONCES_DB_PATH;
       delete process.env.KHORA_PERCOLATOR_DB_PATH;
       delete process.env.KHORA_CELLS_DIR;
@@ -39,6 +41,7 @@ describe("resolveKhoraPersistencePaths", () => {
       const p = resolveKhoraPersistencePaths(process.env, cwd);
       expect(p.dataDir).toBe(path.join(cwd, "my-data"));
       expect(p.hostDbPath).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.hostDb));
+      expect(p.catalogDbPath).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.catalogDb));
       expect(p.authNoncesDbPath).toBe(
         path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.authNoncesDb),
       );
@@ -59,6 +62,7 @@ describe("resolveKhoraPersistencePaths", () => {
       const p = resolveKhoraPersistencePaths(process.env, "/w");
       expect(p.dataDir).toBe(path.join("/w", "data"));
       expect(p.hostDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.hostDb));
+      expect(p.catalogDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.catalogDb));
       expect(p.authNoncesDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.authNoncesDb));
       expect(p.percolatorDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.percolatorDb));
       expect(p.memoriesDataDir).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.memoriesDir));
@@ -74,11 +78,13 @@ describe("resolveKhoraPersistencePaths", () => {
       process.env.KHORA_CELLS_DIR = "/custom/cells";
       process.env.KHORA_AUTH_NONCES_DB_PATH = "/custom/nonces.sqlite";
       process.env.KHORA_PERCOLATOR_DB_PATH = "/custom/percolator.sqlite";
+      process.env.KHORA_CATALOG_DB_PATH = "/custom/catalog.sqlite";
       delete process.env.KHORA_HOST_DB_PATH;
       const p = resolveKhoraPersistencePaths(process.env, "/w");
       expect(p.cellsDir).toBe("/custom/cells");
       expect(p.authNoncesDbPath).toBe("/custom/nonces.sqlite");
       expect(p.percolatorDbPath).toBe("/custom/percolator.sqlite");
+      expect(p.catalogDbPath).toBe("/custom/catalog.sqlite");
       expect(p.hostDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.hostDb));
     } finally {
       restoreEnv(prev);
@@ -91,12 +97,14 @@ describe("resolveKhoraPersistencePaths", () => {
       delete process.env.KHORA_DATA_DIR;
       process.env.KHORA_HOST_DB_PATH = "/custom/host.sqlite";
       process.env.KHORA_CELLS_DIR = "/custom/cells";
+      delete process.env.KHORA_CATALOG_DB_PATH;
       delete process.env.KHORA_AUTH_NONCES_DB_PATH;
       delete process.env.KHORA_PERCOLATOR_DB_PATH;
       const p = resolveKhoraPersistencePaths(process.env, "/w");
       expect(p.dataDir).toBe(path.join("/w", "data"));
       expect(p.hostDbPath).toBe("/custom/host.sqlite");
       expect(p.cellsDir).toBe("/custom/cells");
+      expect(p.catalogDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.catalogDb));
       expect(p.authNoncesDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.authNoncesDb));
       expect(p.percolatorDbPath).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.percolatorDb));
       expect(p.memoriesDataDir).toBe(path.join("/w", "data", KHORA_PERSISTENCE_REL.memoriesDir));

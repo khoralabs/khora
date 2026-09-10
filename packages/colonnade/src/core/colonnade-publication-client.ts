@@ -75,25 +75,31 @@ export class ColonnadePublicationClient {
     });
 
     let catalogPointerId = "";
+    const publication = input.routing.catalog_publication;
 
-    if (input.routing.replicate_to_catalog) {
+    if (publication !== undefined) {
       const discoveryKey = `colonnade:publication:${input.tenant_key}:${appendOut.content_hash}`;
       catalogPointerId = this.catalog.nextCatalogPointerId?.(input.tenant_key) ?? randomId("cptr");
 
       const replicate = async () => {
         await this.catalog.upsertDiscoveryDocument({
           document_key: discoveryKey,
-          body: input.routing.catalog_envelope,
+          body: publication.public_projection,
         });
         await this.catalog.upsertCatalogPointer({
           catalog_pointer_id: catalogPointerId,
+          tenant_key: input.tenant_key,
+          publication_key: publication.publication_key,
+          publisher_principal_id: input.author_principal_id,
+          published_at_ms: appendOut.committed_at_ms,
+          tags: publication.tags,
           locator: {
             cell_id: input.author_cell_id,
             record_key: appendOut.record_key,
             cell_pool_count: input.cell_pool_count,
           },
           content_hash: appendOut.content_hash,
-          public_projection: input.routing.catalog_envelope,
+          public_projection: publication.public_projection,
         });
       };
 

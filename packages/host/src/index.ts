@@ -11,6 +11,14 @@ export {
   topicSubscriptionSearch,
 } from "@khoralabs/khora-contracts";
 export {
+  type CatalogPublicPostFeedReaderDeps,
+  createCatalogPublicPostFeedReader,
+  PublicPostFeedBadRequest,
+  type PublicPostFeedListParams,
+  type PublicPostFeedNewerCountParams,
+  type PublicPostFeedReader,
+} from "./discovery/feed";
+export {
   agentScope,
   type BootstrapHostSearchOpts,
   bootstrapHostSearch,

@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import {
   bootstrapHostSearch,
+  createCatalogPublicPostFeedReader,
   createKhoraHost,
   enqueuePendingEmbedding,
   ensurePendingEmbeddingsTable,
@@ -28,6 +29,8 @@ import {
 
 export type BootstrapKhoraHostOpts = {
   hostDbPath: string;
+  /** Colonnade publication catalog (separate from host meta). */
+  catalogDbPath: string;
   /** Auth nonce replay store (separate from host meta). */
   authNoncesDbPath: string;
   /** Percolator standing_queries (separate from host meta). */
@@ -59,6 +62,7 @@ export async function bootstrapKhoraHost(
 
   const foundation = await createSqliteKhoraHostFoundation({
     hostDbPath: opts.hostDbPath,
+    catalogDbPath: opts.catalogDbPath,
     authNoncesDbPath: opts.authNoncesDbPath,
     percolatorDbPath: opts.percolatorDbPath,
     cellsDir: opts.cellsDir,
@@ -133,6 +137,12 @@ export async function bootstrapKhoraHost(
     });
   }
 
+  const publicPostFeed = createCatalogPublicPostFeedReader({
+    catalog: foundation.cluster.catalog,
+    tenantKey: foundation.tenantKey,
+    postResolver: foundation.postResolver,
+  });
+
   const ctx = createKhoraHost({
     persistence: foundation.persistence,
     tenantKey: foundation.tenantKey,
@@ -147,6 +157,7 @@ export async function bootstrapKhoraHost(
     hostSpec: foundation.hostSpec,
     outboxPayloadCodec: foundation.outboxPayloadCodec,
     subscriptions: foundation.subscriptions,
+    publicPostFeed,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { search: memories } : {}),
     ...(opts.startPrincipalTeardownWorker !== undefined

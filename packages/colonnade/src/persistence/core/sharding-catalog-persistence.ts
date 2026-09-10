@@ -3,8 +3,16 @@ import type {
   BatchLookupSourceMapPointersOutput,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
+  CountPublicationPointersAfterInput,
+  CountPublicationPointersAfterOutput,
+  DeletePublicationPointerInput,
+  DeletePublicationPointerOutput,
+  DeletePublicationPointersByPublisherInput,
+  DeletePublicationPointersByPublisherOutput,
   IssueConnectionTokenInput,
   IssueConnectionTokenOutput,
+  ListPublicationPointersInput,
+  ListPublicationPointersOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
   ResolveCatalogPointerInput,
@@ -129,6 +137,18 @@ export class ShardingCatalogPersistence implements CatalogPersistence {
     return this.shardForTenantKey(input.tenant_key).upsertSourceMapPointerRow(input);
   }
 
+  deletePublicationPointer(
+    input: DeletePublicationPointerInput,
+  ): Promise<DeletePublicationPointerOutput> {
+    return this.shardForTenantKey(input.tenant_key).deletePublicationPointer(input);
+  }
+
+  deletePublicationPointersByPublisher(
+    input: DeletePublicationPointersByPublisherInput,
+  ): Promise<DeletePublicationPointersByPublisherOutput> {
+    return this.shardForTenantKey(input.tenant_key).deletePublicationPointersByPublisher(input);
+  }
+
   lookupSourceMapPointer(
     input: LookupSourceMapPointerInput,
   ): Promise<LookupSourceMapPointerOutput> {
@@ -149,6 +169,18 @@ export class ShardingCatalogPersistence implements CatalogPersistence {
       throw new Error("ShardingCatalogPersistence: no shards");
     }
     return head.computeSourceRowContentHash(input);
+  }
+
+  listPublicationPointers(
+    input: ListPublicationPointersInput,
+  ): Promise<ListPublicationPointersOutput> {
+    return this.shardForTenantKey(input.tenant_key).listPublicationPointers(input);
+  }
+
+  countPublicationPointersAfter(
+    input: CountPublicationPointersAfterInput,
+  ): Promise<CountPublicationPointersAfterOutput> {
+    return this.shardForTenantKey(input.tenant_key).countPublicationPointersAfter(input);
   }
 
   issueConnectionToken(input: IssueConnectionTokenInput): Promise<IssueConnectionTokenOutput> {

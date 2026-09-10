@@ -1,7 +1,7 @@
 class KhoraServer < Formula
   desc "Headless Khora agent host server"
   homepage "https://github.com/khoralabs/homebrew-tap"
-  version "0.1.20"
+  version "0.1.21"
   license "MIT"
 
   depends_on "sqlcipher"
@@ -9,19 +9,19 @@ class KhoraServer < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v0.1.20/khora-server-darwin-arm64.tar.gz"
-      sha256 "05a8e405e4e542421a56e333aa2ac00d06ad624d3dc5e7b6c10fbecec737f25b"
+      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v0.1.21/khora-server-darwin-arm64.tar.gz"
+      sha256 "fdc67d2f1451d6f973770b40a54e192f55cf0194bc411cf8f323d316a98deca6"
     end
   end
 
   on_linux do
     on_intel do
-      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v0.1.20/khora-server-linux-x64.tar.gz"
-      sha256 "3b3c51a02635566a4e68811fb5686c9dfdfcb9967b767daeb09a5443e8861389"
+      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v0.1.21/khora-server-linux-x64.tar.gz"
+      sha256 "f1f43bcdaa4e76150a5d01978c840d9a16c92f15fd49b7cbc52fbc95b9f93dba"
     end
     on_arm do
-      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v0.1.20/khora-server-linux-arm64.tar.gz"
-      sha256 "9765585ea96b2a670eab5f185cf54457f42282a66ffc598c7c67764fc64d3a3e"
+      url "https://github.com/khoralabs/homebrew-tap/releases/download/khora-server-v0.1.21/khora-server-linux-arm64.tar.gz"
+      sha256 "cef0bd7471f3ee9a9a671d8cb42b518ff50c4fdf5b17e3eb4fa684189e857c16"
     end
   end
 

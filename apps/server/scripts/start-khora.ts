@@ -39,6 +39,7 @@ async function ensurePersistenceDirs(): Promise<void> {
 
   mkdirSync(dataDirAbs, { recursive: true });
   mkdirSync(path.dirname(persistencePaths.hostDbPath), { recursive: true });
+  mkdirSync(path.dirname(persistencePaths.catalogDbPath), { recursive: true });
   mkdirSync(path.dirname(persistencePaths.authNoncesDbPath), { recursive: true });
   mkdirSync(path.dirname(persistencePaths.percolatorDbPath), { recursive: true });
   mkdirSync(cellsAbs, { recursive: true });
