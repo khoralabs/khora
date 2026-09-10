@@ -1,6 +1,6 @@
 {
   "name": "@khoralabs/khora-host",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Khora host domain library.",
   "license": "MIT",
   "type": "module",
