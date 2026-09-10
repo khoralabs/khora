@@ -5,6 +5,7 @@ import { bootstrapKhoraHost } from "../bootstrap-khora";
 
 export type CreateTestKhoraHostOpts = {
   hostDbPath: string;
+  catalogDbPath?: string;
   authNoncesDbPath?: string;
   percolatorDbPath?: string;
   cellsDir: string;
@@ -21,6 +22,7 @@ export async function createTestKhoraHost(
   const dataDir = path.dirname(opts.hostDbPath);
   const { ctx } = await bootstrapKhoraHost({
     hostDbPath: opts.hostDbPath,
+    catalogDbPath: opts.catalogDbPath ?? path.join(dataDir, "khora-catalog.sqlite"),
     authNoncesDbPath: opts.authNoncesDbPath ?? path.join(dataDir, "khora-auth-nonces.sqlite"),
     percolatorDbPath: opts.percolatorDbPath ?? path.join(dataDir, "khora-percolator.sqlite"),
     cellsDir: opts.cellsDir,

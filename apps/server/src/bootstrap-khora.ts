@@ -28,6 +28,8 @@ import {
 
 export type BootstrapKhoraHostOpts = {
   hostDbPath: string;
+  /** Colonnade publication catalog (separate from host meta). */
+  catalogDbPath: string;
   /** Auth nonce replay store (separate from host meta). */
   authNoncesDbPath: string;
   /** Percolator standing_queries (separate from host meta). */
@@ -59,6 +61,7 @@ export async function bootstrapKhoraHost(
 
   const foundation = await createSqliteKhoraHostFoundation({
     hostDbPath: opts.hostDbPath,
+    catalogDbPath: opts.catalogDbPath,
     authNoncesDbPath: opts.authNoncesDbPath,
     percolatorDbPath: opts.percolatorDbPath,
     cellsDir: opts.cellsDir,

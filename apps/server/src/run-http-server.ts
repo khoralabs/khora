@@ -38,10 +38,12 @@ export async function runHttpServer(): Promise<void> {
   validateEnv(appRoot);
 
   const persistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
-  const { hostDbPath, authNoncesDbPath, percolatorDbPath, cellsDir, dataDir } = persistencePaths;
+  const { hostDbPath, catalogDbPath, authNoncesDbPath, percolatorDbPath, cellsDir, dataDir } =
+    persistencePaths;
   const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(dirname(hostDbPath), { recursive: true });
+  mkdirSync(dirname(catalogDbPath), { recursive: true });
   mkdirSync(dirname(authNoncesDbPath), { recursive: true });
   mkdirSync(dirname(percolatorDbPath), { recursive: true });
   mkdirSync(cellsDir, { recursive: true });
@@ -53,6 +55,7 @@ export async function runHttpServer(): Promise<void> {
   const encryption = await bootstrapKhoraEncryption();
   const { ctx } = await bootstrapKhoraHost({
     hostDbPath,
+    catalogDbPath,
     authNoncesDbPath,
     percolatorDbPath,
     cellsDir,

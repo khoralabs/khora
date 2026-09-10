@@ -2,7 +2,10 @@ import type { Database } from "bun:sqlite";
 import { ColonnadePublicationClient } from "@khoralabs/colonnade";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade/crypto";
 import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade/crypto";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade/sqlite";
+import {
+  createSqliteColonnadeCluster,
+  SqliteCatalogPersistence,
+} from "@khoralabs/colonnade/sqlite";
 import { AuthError, createSignedRequestAuth, type SignedRequestAuth } from "@khoralabs/khora-auth";
 import type { PrincipalId } from "@khoralabs/khora-contracts";
 import type { EmbeddingModel } from "@khoralabs/memories-node/helpers";
@@ -44,6 +47,7 @@ export type SqliteKhoraHostFoundationEncryption = {
 
 export type CreateSqliteKhoraHostFoundationOpts = {
   hostDbPath: string;
+  catalogDbPath: string;
   authNoncesDbPath: string;
   percolatorDbPath: string;
   cellsDir: string;
@@ -65,6 +69,7 @@ export type CreateSqliteKhoraHostFoundationOpts = {
 
 export type SqliteKhoraHostFoundation = {
   hostDb: Database;
+  catalogDb: Database;
   persistence: KhoraHostPersistence;
   persistenceClient: HostPersistenceClient;
   tenantKey: string;
@@ -89,7 +94,7 @@ function openSideDb(path: string, sqlCipherKey?: string): Database {
 }
 
 /**
- * Open host/auth/percolator SQLite, Colonnade cells, and wire registration/auth/ops ports.
+ * Open host/catalog/auth/percolator SQLite, Colonnade cells, and wire registration/auth/ops ports.
  * App bootstrap adds invites, memories search, then {@link createKhoraHost}.
  */
 export async function createSqliteKhoraHostFoundation(
@@ -101,11 +106,14 @@ export async function createSqliteKhoraHostFoundation(
     sqlCipherKey: encryption.sqlCipherKey,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
+  const catalogDb = openSideDb(opts.catalogDbPath, encryption.sqlCipherKey);
+  const catalog = new SqliteCatalogPersistence(catalogDb);
   const authNoncesDb = openSideDb(opts.authNoncesDbPath, encryption.sqlCipherKey);
   const percolatorDb = openSideDb(opts.percolatorDbPath, encryption.sqlCipherKey);
   ensurePercolatorSchema(percolatorDb);
   const tenantKey = opts.tenantKey ?? "khora";
-  const cluster = createSqliteColonnadeCluster({
+  const baseCluster = createSqliteColonnadeCluster({
+    catalog,
     cellsDirectory: opts.cellsDir,
     useCellWorkers: opts.useCellWorkers,
     encryption: {
@@ -114,8 +122,17 @@ export async function createSqliteKhoraHostFoundation(
       outboxKeyHex: encryption.outboxKeyHex,
     },
   });
+  // Catalog DB is foundation-owned; close it with the cell cluster (hostDb is not).
+  const cluster = {
+    ...baseCluster,
+    close() {
+      baseCluster.close();
+      catalogDb.close();
+    },
+  };
   const cellPoolCount = cluster.cellPoolCount;
   const publicationClient = new ColonnadePublicationClient(
+    cluster.catalog,
     cluster.resolveCell,
     cluster.inboxDelivery,
   );
@@ -156,6 +173,7 @@ export async function createSqliteKhoraHostFoundation(
 
   return {
     hostDb,
+    catalogDb,
     persistence,
     persistenceClient,
     tenantKey,
