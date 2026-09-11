@@ -30,6 +30,10 @@ export {
 } from "./khora-persistence";
 export { createSqliteNonceStore } from "./nonce-store";
 export {
+  createPendingEmbeddingQueue,
+  ensurePendingEmbeddingsSchema,
+} from "./pending-embeddings-queue";
+export {
   escapeSqlLikeLiteral,
   type ProjectionListedRow,
   ProjectionStore,

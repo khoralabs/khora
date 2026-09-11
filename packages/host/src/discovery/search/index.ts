@@ -22,15 +22,10 @@ export {
 } from "./namespace";
 export { khoraOntology } from "./ontology";
 export {
-  enqueuePendingEmbedding,
-  ensurePendingEmbeddingsTable,
   type PendingEmbeddingQueueHandle,
   type PendingEmbeddingQueueSummary,
   type PendingEmbeddingQueueSummaryRow,
-  purgeEmptyPendingEmbeddings,
   type RunPendingEmbeddingRetryBatchResult,
-  readPendingEmbeddingQueueSummary,
-  resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
   startEmbeddingRetryWorker,
 } from "./pending-embeddings";

@@ -1,4 +1,3 @@
-import { Database } from "bun:sqlite";
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,11 +5,8 @@ import path from "node:path";
 import {
   agentScope,
   DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
-  enqueuePendingEmbedding,
-  ensurePendingEmbeddingsTable,
   khoraOntology,
   PROFILE_MEMORY_KEY,
-  readPendingEmbeddingQueueSummary,
 } from "@khoralabs/khora-host";
 import { MemoriesClientAsync } from "@khoralabs/memories-node";
 import {
@@ -75,53 +71,5 @@ describe("memories 0.10.0 schema migration", () => {
       expect(hits.some((h) => h.memory.key === PROFILE_MEMORY_KEY)).toBe(true);
       memoriesDb.close();
     }
-  });
-
-  test("migrates legacy pending_embeddings table to source_key schema", () => {
-    const db = new Database(":memory:");
-    db.run(`
-      CREATE TABLE pending_embeddings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        namespace TEXT NOT NULL,
-        memory_key TEXT NOT NULL,
-        text TEXT NOT NULL,
-        attempts INTEGER NOT NULL DEFAULT 0,
-        last_attempt_at INTEGER,
-        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-        UNIQUE(namespace, memory_key)
-      );
-    `);
-    db.query(`INSERT INTO pending_embeddings (namespace, memory_key, text) VALUES (?, ?, ?)`).run(
-      "global/agents/alice",
-      "profile",
-      "legacy row",
-    );
-
-    ensurePendingEmbeddingsTable(db);
-
-    const cols = db
-      .query<{ name: string }, []>("PRAGMA table_info(pending_embeddings)")
-      .all()
-      .map((c) => c.name);
-    expect(cols).toContain("source_key");
-
-    const summary = readPendingEmbeddingQueueSummary(db);
-    expect(summary.pending).toBe(1);
-    expect(summary.rows[0]?.sourceKey).toBe("body");
-    expect(summary.rows[0]?.memoryKey).toBe("profile");
-
-    enqueuePendingEmbedding(db, {
-      namespace: "global/agents/alice/posts",
-      memoryKey: "post-1",
-      sourceKey: "query",
-      text: "platform pilots",
-    });
-    enqueuePendingEmbedding(db, {
-      namespace: "global/agents/alice/posts",
-      memoryKey: "post-1",
-      sourceKey: "body",
-      text: "hello",
-    });
-    expect(readPendingEmbeddingQueueSummary(db).pending).toBe(3);
   });
 });

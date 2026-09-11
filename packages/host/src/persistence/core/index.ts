@@ -16,6 +16,7 @@ export {
 } from "./id-conventions";
 export { createInMemoryKhoraHostPersistence } from "./in-memory";
 export { createInMemoryKhoraInvitesRepo } from "./in-memory-invites";
+export { createInMemoryPendingEmbeddingQueue } from "./in-memory-pending-embeddings";
 export type {
   AgentAccountStatus,
   AgentAccountStatusPort,
@@ -34,6 +35,11 @@ export type {
   KhoraInvitesRepo,
   KhoraInviteTreeNode,
   MintStandardInviteOpts,
+  PendingEmbeddingDueRow,
+  PendingEmbeddingEnqueueInput,
+  PendingEmbeddingQueuePort,
+  PendingEmbeddingQueueSummary,
+  PendingEmbeddingQueueSummaryRow,
   PrincipalTeardownQueuePort,
   SocialAgentIdentity,
   SocialRegisterAgentInput,
