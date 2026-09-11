@@ -16,6 +16,7 @@ export {
 } from "./id-conventions";
 export { createInMemoryKhoraHostPersistence } from "./in-memory";
 export { createInMemoryKhoraInvitesRepo } from "./in-memory-invites";
+export { createInMemoryPendingEmbeddingQueue } from "./in-memory-pending-embeddings";
 export { createNoopPendingEmbeddingQueue } from "./noop-pending-embeddings";
 export type {
   AgentAccountStatus,

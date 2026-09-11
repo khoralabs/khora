@@ -158,6 +158,38 @@ export function runHostPersistenceContractTests(
       expect(p.teardownQueue.tryClaimNext(4_000)?.profileId).toBe("prof");
     });
 
+    test("pendingEmbeddings enqueue / listDue / complete / fail / reset / summary", async () => {
+      const { persistence: p } = await create();
+      const q = p.pendingEmbeddings;
+      q.enqueue({
+        namespace: "ns",
+        memoryKey: "m1",
+        sourceKey: "body",
+        text: "hello",
+      });
+      q.enqueue({
+        namespace: "ns",
+        memoryKey: "m1",
+        sourceKey: "body",
+        text: "updated",
+      });
+      const nowSec = Math.floor(Date.now() / 1000);
+      const due = q.listDue({ maxAttempts: 5, nowSec, limit: 10 });
+      expect(due).toHaveLength(1);
+      expect(due[0]?.text).toBe("updated");
+      const id = due[0]?.id;
+      if (id === undefined) throw new Error("expected due id");
+
+      q.markAttemptFailed(id, nowSec);
+      expect(q.summary({ maxAttempts: 1 }).failed).toBe(1);
+      expect(q.resetFailed(1)).toBe(1);
+      expect(q.summary({ maxAttempts: 1 }).pending).toBe(1);
+      expect(q.purgeEmpty()).toBe(0);
+
+      q.complete(id);
+      expect(q.summary().pending).toBe(0);
+    });
+
     test("invites mint / consume / rollback / preview", async () => {
       const { invites } = await create();
       const minted = invites.mintStandardInviteTokens("did:test:minter", 2);
