@@ -135,14 +135,70 @@ export type PrincipalTeardownQueuePort = {
   failAndRequeue(principalId: PrincipalId, nowMs: number, error: string): void;
 };
 
+/** Input for enqueueing a failed embedding for later retry. */
+export type PendingEmbeddingEnqueueInput = {
+  namespace: string;
+  memoryKey: string;
+  sourceKey: string;
+  text: string;
+};
+
+export type PendingEmbeddingQueueSummaryRow = {
+  id: number;
+  namespace: string;
+  memoryKey: string;
+  sourceKey: string;
+  attempts: number;
+  lastAttemptAt: number | null;
+  createdAt: number;
+};
+
+export type PendingEmbeddingQueueSummary = {
+  pending: number;
+  failed: number;
+  rows: PendingEmbeddingQueueSummaryRow[];
+};
+
+/** Due row returned for embedding retry workers (includes text payload). */
+export type PendingEmbeddingDueRow = {
+  id: number;
+  namespace: string;
+  memoryKey: string;
+  sourceKey: string;
+  text: string;
+  attempts: number;
+  lastAttemptAt: number | null;
+  createdAt: number;
+};
+
+/**
+ * Host-owned durable queue for embedding retry (driver-free).
+ * Storage lives on host meta persistence, not the memories backend.
+ */
+export type PendingEmbeddingQueuePort = {
+  enqueue(input: PendingEmbeddingEnqueueInput): void;
+  listDue(opts: {
+    maxAttempts: number;
+    /** Unix seconds; rows with lastAttemptAt null or <= nowSec are eligible. */
+    nowSec: number;
+    limit: number;
+  }): PendingEmbeddingDueRow[];
+  complete(id: number): void;
+  markAttemptFailed(id: number, nowSec: number): void;
+  purgeEmpty(): number;
+  resetFailed(maxAttempts: number): number;
+  summary(opts?: { maxAttempts?: number; limit?: number }): PendingEmbeddingQueueSummary;
+};
+
 /**
  * Khora host persistence contract.
- * Extends HostPersistence with username indexing, teardown queue, and
- * two compound operations that require cross-store atomicity.
+ * Extends HostPersistence with username indexing, teardown queue, pending
+ * embeddings queue, and two compound operations that require cross-store atomicity.
  */
 export type KhoraHostPersistence = HostPersistence & {
   usernameIndex: UsernameIndexPort;
   teardownQueue: PrincipalTeardownQueuePort;
+  pendingEmbeddings: PendingEmbeddingQueuePort;
   /**
    * Atomically upsert profile entity, registration mapping, and username index.
    * Throws if the username is already taken by a different principal.

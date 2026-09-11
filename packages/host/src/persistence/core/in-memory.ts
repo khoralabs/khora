@@ -1,4 +1,5 @@
 import { normalizeUsername, type PrincipalId } from "@khoralabs/khora-contracts";
+import { createNoopPendingEmbeddingQueue } from "./noop-pending-embeddings";
 import type {
   AgentAccountStatus,
   ClaimedTeardownJob,
@@ -263,6 +264,8 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
         job.lastError = error;
       },
     },
+
+    pendingEmbeddings: createNoopPendingEmbeddingQueue(),
 
     registerAgent(input: SocialRegisterAgentInput): SocialAgentIdentity {
       const username = normalizeUsername(input.username);
