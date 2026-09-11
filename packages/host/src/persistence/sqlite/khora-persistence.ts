@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { NAMESPACE_ENTITY_PROFILE } from "../core/id-conventions";
-import { createNoopPendingEmbeddingQueue } from "../core/noop-pending-embeddings";
 import type { KhoraHostPersistence } from "../core/port";
 import { createAgentAccountStatusPort } from "./agent-account-status";
 import { createEntityAdapter } from "./entity-adapter";
+import { createPendingEmbeddingQueue } from "./pending-embeddings-queue";
 import { ProjectionStore } from "./projection-store";
 import { createRegistrationAdapter } from "./registration-adapter";
 import { SocialPrincipalChannelStore } from "./social-principal-channel-store";
@@ -37,7 +37,7 @@ export function createKhoraHostSqlitePersistence(
   const agentAccountStatus = createAgentAccountStatusPort(hostDb);
   const usernameIndex = createUsernameIndex(projectionStore);
   const teardownQueue = createPrincipalTeardownQueue(hostDb);
-  const pendingEmbeddings = createNoopPendingEmbeddingQueue();
+  const pendingEmbeddings = createPendingEmbeddingQueue(hostDb);
 
   const persistence: KhoraHostPersistence = {
     profiles,
