@@ -104,6 +104,7 @@ apps/server/src/run-http-server.ts
     createSqliteKhoraHostFoundation()              // @khoralabs/khora-host/sqlite (app chose SQLite)
     createKhoraInvitesSqliteRepo()                 // if invite pepper set
     createLocalSqliteServiceStack() + bootstrapHostSearch()  // if memories on
+      // pendingEmbeddings queue lives on host persistence (not memories DB)
     createKhoraHost(deps)
   createHostRouteDepsFromEnv({ ctx })            // @khoralabs/khora-host/http
   serveKhoraHttp({ deps, port, fetch: otelWrap… }) // package serve; app OTel via fetch
@@ -134,7 +135,7 @@ apps/server/src/run-http-server.ts
 
 | Store | Default file | Role |
 |-------|--------------|------|
-| Host projections | `{KHORA_DATA_DIR}/khora-host.sqlite` | Profiles, registrations, social graph, invites, teardown |
+| Host projections | `{KHORA_DATA_DIR}/khora-host.sqlite` | Profiles, registrations, social graph, invites, teardown, **pending embeddings queue** |
 | Publication catalog | `{KHORA_DATA_DIR}/khora-catalog.sqlite` (`KHORA_CATALOG_DB_PATH`) | Public post **timeline** (`catalog_pointers`); bodies hydrate from outbox |
 
 | Tier | Storage | What lives there |
@@ -198,6 +199,8 @@ Opened lazily by `createSqliteColonnadeCluster()` as `{cellsDir}/{stem}.sqlite`.
 ## 4. Memories search (default on)
 
 When `KHORA_MEMORIES` is enabled (default), the server boots an in-process memories-service stack under `{KHORA_DATA_DIR}/memories` (id `{ kind: "host", ownerKey: "khora" }`), opens a shared handle for the indexer via `bootstrapHostSearch({ persistence, postResolver, … })`, and exposes `GET /v1/search` / `POST /v1/search`.
+
+Search/indexing uses `MemoriesPersistenceAsync` only (strategy-agnostic). Failed embedding retries go through `KhoraHostPersistence.pendingEmbeddings` on the **host meta DB**, not the memories file. `startEmbeddingRetryWorker({ queue, client, … })` is orchestration-only.
 
 Memories is **search-only** — not the public timeline (that is the publication catalog + ops feed).
 
