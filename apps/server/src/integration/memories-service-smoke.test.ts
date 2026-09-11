@@ -2,7 +2,6 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ensurePendingEmbeddingsTable } from "@khoralabs/khora-host";
 import {
   createSqliteGraphProjectionSource,
   getMemoriesSqliteDatabase,
@@ -44,17 +43,6 @@ describe("host memories-service smoke", () => {
     const handle = await stack.service.getHandle(KHORA_HOST_MEMORIES_DATABASE_ID);
     expect(handle.persistence).toBeDefined();
     expect(handle.sync?.syncPersistence).toBeDefined();
-
-    // Host bootstrap must unwrap via sync.syncPersistence — handle.persistence is an
-    // async wrapper whose getDatabase() returns Promise<Database>, not Database.
-    const sync = handle.sync?.syncPersistence;
-    if (sync === undefined) {
-      throw new Error("missing sync sqlite persistence");
-    }
-    const db = getMemoriesSqliteDatabase(sync);
-    expect(typeof db.run).toBe("function");
-    expect(db).not.toBeInstanceOf(Promise);
-    ensurePendingEmbeddingsTable(db);
 
     const fetchImpl: MemoriesServiceFetch = async (url, init) => {
       const req = new Request(url, init);

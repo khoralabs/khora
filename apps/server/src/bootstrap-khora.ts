@@ -1,10 +1,7 @@
-import type { Database } from "bun:sqlite";
 import {
   bootstrapHostSearch,
   createCatalogPublicPostFeedReader,
   createKhoraHost,
-  enqueuePendingEmbedding,
-  ensurePendingEmbeddingsTable,
   type KhoraHostContext,
   parseInviteSeedTokens,
   readInvitePepper,
@@ -16,10 +13,7 @@ import {
   createKhoraInvitesSqliteRepo,
   createSqliteKhoraHostFoundation,
 } from "@khoralabs/khora-host/sqlite";
-import {
-  ensureCustomSqliteForExtensions,
-  getMemoriesSqliteDatabase,
-} from "@khoralabs/memories-node/sqlite";
+import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-node/sqlite";
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { logger } from "./logger";
 import {
@@ -98,8 +92,6 @@ export async function bootstrapKhoraHost(
     invitesRepoValue = repo;
   }
 
-  let memoriesSqliteDb: Database | undefined;
-
   if (opts.memories !== undefined) {
     assertKhoraMemoriesDbPathUnset();
 
@@ -109,19 +101,13 @@ export async function bootstrapKhoraHost(
     });
 
     const handle = await stack.service.getHandle(opts.memories.databaseId);
-    // Use sync.syncPersistence — handle.persistence is an async wrapper that
-    // promisifies getDatabase(), so getMemoriesSqliteDatabase(handle.persistence)
-    // (or getMemoriesSyncPersistenceFromAsync) yields a Promise, not Database.
-    const syncPersistence = handle.sync?.syncPersistence;
-    if (syncPersistence === undefined) {
-      throw new Error("Host memories handle is missing sync SQLite persistence");
-    }
-    memoriesSqliteDb = getMemoriesSqliteDatabase(syncPersistence);
-    ensurePendingEmbeddingsTable(memoriesSqliteDb);
+    const pendingEmbeddings = foundation.persistence.pendingEmbeddings;
+    let embeddingRetryWorker: ReturnType<typeof startEmbeddingRetryWorker> | undefined;
 
     memories = bootstrapHostSearch({
       persistence: handle.persistence,
       close: () => {
+        embeddingRetryWorker?.stop();
         void handle.close();
       },
       persistenceClient: foundation.persistenceClient,
@@ -129,12 +115,11 @@ export async function bootstrapKhoraHost(
       embeddingModel: opts.memories.embeddingModel,
       namespaceRoot: opts.memories.namespaceRoot,
       onEmbeddingFailure: ({ namespace, memoryKey, sourceKey, text }) => {
-        if (!memoriesSqliteDb) return;
-        enqueuePendingEmbedding(memoriesSqliteDb, { namespace, memoryKey, sourceKey, text });
+        pendingEmbeddings.enqueue({ namespace, memoryKey, sourceKey, text });
       },
     });
-    startEmbeddingRetryWorker({
-      db: memoriesSqliteDb,
+    embeddingRetryWorker = startEmbeddingRetryWorker({
+      queue: pendingEmbeddings,
       client: memories.client,
       embeddingModel: opts.memories.embeddingModel,
     });
