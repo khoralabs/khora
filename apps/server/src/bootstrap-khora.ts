@@ -13,9 +13,13 @@ import {
   createKhoraInvitesSqliteRepo,
   createSqliteKhoraHostFoundation,
 } from "@khoralabs/khora-host/sqlite";
-import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-node/sqlite";
+import {
+  ensureCustomSqliteForExtensions,
+  getMemoriesSqliteDatabase,
+} from "@khoralabs/memories-node/sqlite";
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { logger } from "./logger";
+import { migrateLegacyPendingEmbeddingsFromMemoriesDb } from "./migrate-legacy-pending-embeddings";
 import {
   assertKhoraMemoriesDbPathUnset,
   type KhoraMemoriesBootstrapConfig,
@@ -102,6 +106,16 @@ export async function bootstrapKhoraHost(
 
     const handle = await stack.service.getHandle(opts.memories.databaseId);
     const pendingEmbeddings = foundation.persistence.pendingEmbeddings;
+    const syncPersistence = handle.sync?.syncPersistence;
+    if (syncPersistence !== undefined) {
+      const migrated = migrateLegacyPendingEmbeddingsFromMemoriesDb(
+        getMemoriesSqliteDatabase(syncPersistence),
+        pendingEmbeddings,
+      );
+      if (migrated > 0) {
+        logger.info({ migrated }, "migrated legacy pending embeddings from memories sqlite");
+      }
+    }
     let embeddingRetryWorker: ReturnType<typeof startEmbeddingRetryWorker> | undefined;
 
     memories = bootstrapHostSearch({
