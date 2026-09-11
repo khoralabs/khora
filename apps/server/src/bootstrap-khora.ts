@@ -109,6 +109,9 @@ export async function bootstrapKhoraHost(
     });
 
     const handle = await stack.service.getHandle(opts.memories.databaseId);
+    // Use sync.syncPersistence — handle.persistence is an async wrapper that
+    // promisifies getDatabase(), so getMemoriesSqliteDatabase(handle.persistence)
+    // (or getMemoriesSyncPersistenceFromAsync) yields a Promise, not Database.
     const syncPersistence = handle.sync?.syncPersistence;
     if (syncPersistence === undefined) {
       throw new Error("Host memories handle is missing sync SQLite persistence");
