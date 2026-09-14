@@ -7,7 +7,8 @@ import type { TursoClients } from "../client";
 import { execMultiple, queryAll } from "../client";
 import { batchWriteStatements } from "../transactions";
 
-export const COLONNADE_CELL_SCHEMA_VERSION = "0.1.0";
+export const COLONNADE_CELL_SCHEMA_VERSION = "0.2.0";
+const PREVIOUS_CELL_SCHEMA_VERSION = "0.1.0";
 
 function splitStatements(sql: string): string[] {
   return sql
@@ -36,8 +37,16 @@ export async function migrateCellTursoServerless(db: TursoClients): Promise<void
   const stmts = [
     ...splitStatements(TURSO_PRAGMAS_DDL),
     ...splitStatements(SCHEMA_VERSION_TABLE_DDL),
-    ...splitStatements(CELL_BASE_TABLES_DDL),
   ];
+  if (applied.has(PREVIOUS_CELL_SCHEMA_VERSION)) {
+    stmts.push(
+      `ALTER TABLE inbox ADD COLUMN delivery_id TEXT`,
+      `UPDATE inbox SET delivery_id = 'legacy:' || inbox_entry_id WHERE delivery_id IS NULL`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS inbox_delivery_id_uq ON inbox(delivery_id)`,
+    );
+  } else {
+    stmts.push(...splitStatements(CELL_BASE_TABLES_DDL));
+  }
   await batchWriteStatements(db.batch, stmts);
   const now = Date.now();
   await execMultiple(

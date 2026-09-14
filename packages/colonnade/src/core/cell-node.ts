@@ -2,12 +2,10 @@ import type { CellPersistence } from "../persistence/core/cell-persistence";
 import { supportsCellBatch } from "../persistence/core/cell-persistence";
 import type {
   EnqueueInboxDeliveryInput,
-  EnqueueInboxDeliveryOutput,
   FanOutTarget,
-  GeneratedInboxRef,
   InboxStagingPayload,
 } from "./colonnade-types";
-import { randomId } from "./hash";
+import { deterministicInboxDeliveryId } from "./hash";
 import type { InboxDelivery, InboxDeliveryInput, InboxDeliveryResult } from "./inbox-delivery";
 import type { CellRoute, CellRouteResolver } from "./placement";
 
@@ -17,11 +15,20 @@ export type CellNodeBatch = {
   readonly deliveries: readonly EnqueueInboxDeliveryInput[];
 };
 
+export type CellNodeBatchFailure = {
+  readonly index: number;
+  readonly error: string;
+  readonly retryable: boolean;
+};
+
+export type CellNodeBatchResult = {
+  readonly delivered_count: number;
+  readonly success_bitmap: Uint8Array;
+  readonly failures?: readonly CellNodeBatchFailure[];
+};
+
 export interface CellNodeClient {
-  enqueueMany(
-    route: CellRoute,
-    batch: CellNodeBatch,
-  ): Promise<readonly EnqueueInboxDeliveryOutput[]>;
+  enqueueMany(route: CellRoute, batch: CellNodeBatch): Promise<CellNodeBatchResult>;
 }
 
 export class StaleCellRouteEpochError extends Error {
@@ -60,7 +67,7 @@ export class GroupedPartitionPersistence {
     this.epoch = epoch;
   }
 
-  async enqueueMany(batch: CellNodeBatch): Promise<readonly EnqueueInboxDeliveryOutput[]> {
+  async enqueueMany(batch: CellNodeBatch): Promise<CellNodeBatchResult> {
     if (batch.partitionId !== this.partitionId) {
       throw new Error(`Unknown partition ${batch.partitionId}`);
     }
@@ -68,7 +75,8 @@ export class GroupedPartitionPersistence {
       throw new StaleCellRouteEpochError(batch.epoch, this.epoch);
     }
 
-    const outputs = new Array<EnqueueInboxDeliveryOutput>(batch.deliveries.length);
+    const success_bitmap = new Uint8Array(Math.ceil(batch.deliveries.length / 8));
+    const failures: CellNodeBatchFailure[] = [];
     const groups = new Map<
       CellPersistence,
       Array<{ index: number; input: EnqueueInboxDeliveryInput }>
@@ -94,17 +102,29 @@ export class GroupedPartitionPersistence {
 
     await Promise.all(
       [...groups.entries()].map(async ([home, group]) => {
-        const results =
-          supportsCellBatch(home) && group.length > 1
-            ? await home.enqueueInboxDeliveriesBatch(group.map((entry) => entry.input))
-            : await Promise.all(group.map((entry) => home.enqueueInboxDelivery(entry.input)));
-        group.forEach((entry, index) => {
-          const output = results[index];
-          if (output !== undefined) outputs[entry.index] = output;
-        });
+        try {
+          if (supportsCellBatch(home) && group.length > 1) {
+            await home.enqueueInboxDeliveriesBatch(group.map((entry) => entry.input));
+          } else {
+            await Promise.all(group.map((entry) => home.enqueueInboxDelivery(entry.input)));
+          }
+          for (const entry of group) setBit(success_bitmap, entry.index);
+        } catch (error) {
+          for (const entry of group) {
+            failures.push({
+              index: entry.index,
+              error: error instanceof Error ? error.message : String(error),
+              retryable: false,
+            });
+          }
+        }
       }),
     );
-    return outputs;
+    return {
+      delivered_count: batch.deliveries.length - failures.length,
+      success_bitmap,
+      ...(failures.length > 0 ? { failures } : {}),
+    };
   }
 }
 
@@ -151,9 +171,15 @@ export class RoutedInboxDelivery implements InboxDelivery {
     const routes = await this.opts.placement.resolveMany([
       ...new Set(input.targets.map((target) => target.recipient_cell_id)),
     ]);
-    const groups = new Map<string, { route: CellRoute; targets: FanOutTarget[] }>();
+    const groups = new Map<
+      string,
+      { route: CellRoute; targets: Array<{ index: number; target: FanOutTarget }> }
+    >();
     const failures: NonNullable<InboxDeliveryResult["failures"]>[number][] = [];
-    for (const target of input.targets) {
+    const success_bitmap = new Uint8Array(Math.ceil(input.targets.length / 8));
+    for (let index = 0; index < input.targets.length; index++) {
+      const target = input.targets[index];
+      if (target === undefined) continue;
       const route = routes.get(target.recipient_cell_id);
       if (route === undefined) {
         failures.push({ ...targetFailure(target, new Error("No cell route")), retryable: true });
@@ -161,41 +187,54 @@ export class RoutedInboxDelivery implements InboxDelivery {
       }
       const key = `${route.nodeId}\0${route.partitionId}\0${route.epoch}`;
       const group = groups.get(key) ?? { route, targets: [] };
-      group.targets.push(target);
+      group.targets.push({ index, target });
       groups.set(key, group);
     }
 
-    const jobs: Array<() => Promise<GeneratedInboxRef[]>> = [];
+    const jobs: Array<() => Promise<void>> = [];
     for (const { route, targets } of groups.values()) {
       for (let offset = 0; offset < targets.length; offset += this.maxBatchSize) {
         const chunk = targets.slice(offset, offset + this.maxBatchSize);
         jobs.push(async () => {
-          const deliveries = chunk.map((target) => deliveryFor(input, target));
+          const deliveries = chunk.map(({ target }) => deliveryFor(input, target));
           try {
-            const outputs = await this.opts.client.enqueueMany(route, {
+            const result = await this.opts.client.enqueueMany(route, {
               partitionId: route.partitionId,
               epoch: route.epoch,
               deliveries,
             });
-            if (outputs.length !== chunk.length) throw new Error("Cell node result count mismatch");
-            return chunk.map((target, index) => ({
-              inbox_entry_id: outputs[index]?.inbox_entry_id ?? "",
-              recipient_cell_id: target.recipient_cell_id,
-              recipient_principal_id: target.recipient_principal_id,
-            }));
+            if (result.success_bitmap.length !== Math.ceil(chunk.length / 8)) {
+              throw new Error("Cell node result bitmap size mismatch");
+            }
+            for (let index = 0; index < chunk.length; index++) {
+              const entry = chunk[index];
+              if (entry !== undefined && hasBit(result.success_bitmap, index)) {
+                setBit(success_bitmap, entry.index);
+              }
+            }
+            for (const failure of result.failures ?? []) {
+              const target = chunk[failure.index]?.target;
+              if (target !== undefined) {
+                failures.push({
+                  ...targetFailure(target, new Error(failure.error)),
+                  retryable: failure.retryable,
+                });
+              }
+            }
           } catch (error) {
             const retryable = error instanceof StaleCellRouteEpochError;
             failures.push(
-              ...chunk.map((target) => ({ ...targetFailure(target, error), retryable })),
+              ...chunk.map(({ target }) => ({ ...targetFailure(target, error), retryable })),
             );
-            return [];
           }
         });
       }
     }
-    const refs = (await runBounded(jobs, this.concurrency)).flat();
+    await runBounded(jobs, this.concurrency);
     return {
-      generated_inbox_refs: refs,
+      target_count: input.targets.length,
+      delivered_count: countBits(success_bitmap),
+      success_bitmap,
       ...(failures.length > 0 ? { failures } : {}),
     };
   }
@@ -209,13 +248,40 @@ function deliveryFor(input: InboxDeliveryInput, target: FanOutTarget): EnqueueIn
       ...(target.inbox_metadata !== undefined ? { metadata: target.inbox_metadata } : {}),
     },
   };
+  const delivery_id = deterministicInboxDeliveryId({
+    tenant_key: input.tenant_key,
+    pointer: input.pointer,
+    target,
+  });
   return {
     cell_id: target.recipient_cell_id,
     tenant_key: input.tenant_key,
     recipient_principal_id: target.recipient_principal_id,
     staging,
-    correlation_id: randomId("fan"),
+    delivery_id,
+    correlation_id: delivery_id,
   };
+}
+
+function setBit(bitmap: Uint8Array, index: number): void {
+  const byte = index >> 3;
+  bitmap[byte] = (bitmap[byte] ?? 0) | (1 << (index & 7));
+}
+
+function hasBit(bitmap: Uint8Array, index: number): boolean {
+  return ((bitmap[index >> 3] ?? 0) & (1 << (index & 7))) !== 0;
+}
+
+function countBits(bitmap: Uint8Array): number {
+  let count = 0;
+  for (const byte of bitmap) {
+    let value = byte;
+    while (value > 0) {
+      value &= value - 1;
+      count++;
+    }
+  }
+  return count;
 }
 
 function targetFailure(target: FanOutTarget, error: unknown) {

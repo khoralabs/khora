@@ -259,13 +259,17 @@ export function runColonnadePersistenceContractTests(
         content_hash: out.content_hash,
         cell_pool_count: POOL,
       };
-      const { inbox_entry_id } = await recipientCell.enqueueInboxDelivery({
+      const delivery = {
         cell_id: recipientCellId,
         tenant_key: "tenant",
         recipient_principal_id: "bob",
         staging: { kind: "pointer", pointer: { pointer: ptr } },
+        delivery_id: "delivery-c1",
         correlation_id: "c1",
-      });
+      } as const;
+      const { inbox_entry_id } = await recipientCell.enqueueInboxDelivery(delivery);
+      const duplicate = await recipientCell.enqueueInboxDelivery(delivery);
+      expect(duplicate.inbox_entry_id).toBe(inbox_entry_id);
 
       const listed = await recipientCell.listPendingInboxEntries({
         cell_id: recipientCellId,
@@ -275,6 +279,7 @@ export function runColonnadePersistenceContractTests(
         cursor: "",
       });
       expect(listed.entries.some((e) => e.inbox_entry_id === inbox_entry_id)).toBe(true);
+      expect(listed.entries.filter((e) => e.inbox_entry_id === inbox_entry_id)).toHaveLength(1);
 
       const drain = await recipientCell.verifyAndDrainInboxBatch({
         cell_id: recipientCellId,
@@ -346,6 +351,7 @@ export function runColonnadePersistenceContractTests(
             content_hash: sha256HexLower(bytes),
           },
         },
+        delivery_id: "delivery-disc-1",
         correlation_id: "disc-1",
       });
       await recipientCell.discardInboxEntries({

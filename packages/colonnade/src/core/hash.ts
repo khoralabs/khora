@@ -2,7 +2,7 @@ import * as nodeCrypto from "node:crypto";
 import { createHash, randomBytes } from "node:crypto";
 import type { ContentHash } from "@khoralabs/sourcemaps";
 
-import type { PointerRef } from "./colonnade-types";
+import type { FanOutTarget, PointerRef } from "./colonnade-types";
 
 const HASH_RE = /^[0-9a-f]{64}$/;
 
@@ -86,6 +86,30 @@ export function canonicalSourceMapRowBytes(params: {
     projection: params.projection,
   };
   return new TextEncoder().encode(stableStringify(obj));
+}
+
+/** Stable idempotency key for one logical post delivery target. */
+export function deterministicInboxDeliveryId(params: {
+  tenant_key: string;
+  pointer: PointerRef;
+  target: FanOutTarget;
+}): string {
+  const bytes = new TextEncoder().encode(
+    stableStringify({
+      v: 1,
+      tenant_key: params.tenant_key,
+      post: {
+        source_cell_id: params.pointer.source_cell_id,
+        source_record_key: params.pointer.source_record_key,
+        content_hash: params.pointer.content_hash,
+      },
+      target: {
+        recipient_cell_id: params.target.recipient_cell_id,
+        recipient_principal_id: params.target.recipient_principal_id,
+      },
+    }),
+  );
+  return `fan_${sha256HexLower(bytes)}`;
 }
 
 export function assertContentHash(hash: string): asserts hash is ContentHash {

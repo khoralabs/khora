@@ -1,10 +1,10 @@
 import {
   type CellNodeBatch,
+  type CellNodeBatchResult,
   type CellNodeClient,
   type GroupedPartitionPersistence,
   StaleCellRouteEpochError,
 } from "./cell-node";
-import type { EnqueueInboxDeliveryOutput } from "./colonnade-types";
 import type { CellRoute } from "./placement";
 
 export type HttpCellNodeClientOptions = {
@@ -21,10 +21,7 @@ export class HttpCellNodeClient implements CellNodeClient {
     this.fetch = opts.fetch ?? ((url, init) => globalThis.fetch(url, init));
   }
 
-  async enqueueMany(
-    route: CellRoute,
-    batch: CellNodeBatch,
-  ): Promise<readonly EnqueueInboxDeliveryOutput[]> {
+  async enqueueMany(route: CellRoute, batch: CellNodeBatch): Promise<CellNodeBatchResult> {
     const response = await this.fetch(
       `${route.endpoint.replace(/\/$/, "")}/v1/cell-node/inbox-deliveries`,
       {
@@ -39,7 +36,7 @@ export class HttpCellNodeClient implements CellNodeClient {
     const text = await response.text();
     let parsed: unknown;
     try {
-      parsed = JSON.parse(text);
+      parsed = parseWire(text);
     } catch {
       throw new Error(`Cell node HTTP ${response.status}: non-JSON response`);
     }
@@ -47,7 +44,7 @@ export class HttpCellNodeClient implements CellNodeClient {
       throw new Error(`Cell node HTTP ${response.status}: invalid response`);
     }
     const body = parsed as {
-      outputs?: EnqueueInboxDeliveryOutput[];
+      result?: CellNodeBatchResult;
       error?: string;
       expectedEpoch?: number;
       actualEpoch?: number;
@@ -55,10 +52,10 @@ export class HttpCellNodeClient implements CellNodeClient {
     if (response.status === 409 && body.error === "stale_epoch") {
       throw new StaleCellRouteEpochError(body.expectedEpoch ?? batch.epoch, body.actualEpoch ?? -1);
     }
-    if (!response.ok || body.outputs === undefined) {
+    if (!response.ok || body.result === undefined) {
       throw new Error(body.error ?? `Cell node HTTP ${response.status}`);
     }
-    return body.outputs;
+    return body.result;
   }
 }
 
@@ -103,7 +100,9 @@ export function createCellNodeHttpHandler(
       return Response.json({ error: "unknown_partition" }, { status: 404 });
     }
     try {
-      return Response.json({ outputs: await partition.enqueueMany(batch) });
+      return new Response(stringifyWire({ result: await partition.enqueueMany(batch) }), {
+        headers: { "content-type": "application/json" },
+      });
     } catch (error) {
       if (error instanceof StaleCellRouteEpochError) {
         return Response.json(

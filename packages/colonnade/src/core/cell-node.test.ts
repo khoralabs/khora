@@ -8,6 +8,7 @@ import {
   StaleCellRouteEpochError,
 } from "./cell-node";
 import { createCellNodeHttpHandler, HttpCellNodeClient } from "./cell-node-http";
+import { deterministicInboxDeliveryId } from "./hash";
 import { type CellRoute, createInMemoryPlacementStore } from "./placement";
 import { principalHomeCellId } from "./routing/principal-cell-id";
 
@@ -23,13 +24,34 @@ const routeB: CellRoute = { ...routeA, nodeId: "node-b", partitionId: "p-b" };
 function fakeHome(_cellId: string, seen: string[]): CellPersistence {
   return {
     async enqueueInboxDelivery(input) {
-      seen.push(input.recipient_principal_id);
+      seen.push(`${input.recipient_principal_id}:${input.delivery_id}`);
       return { inbox_entry_id: `ib-${seen.length}` };
     },
   } as CellPersistence;
 }
 
 describe("cell-node placement", () => {
+  test("delivery ids are deterministic and target-bound", () => {
+    const pointer = {
+      source_cell_id: "source",
+      source_record_key: "post",
+      content_hash: "a".repeat(64),
+      cell_pool_count: 1,
+    };
+    const input = {
+      tenant_key: "tenant",
+      pointer,
+      target: { recipient_cell_id: "cell", recipient_principal_id: "alice" },
+    };
+    expect(deterministicInboxDeliveryId(input)).toBe(deterministicInboxDeliveryId(input));
+    expect(deterministicInboxDeliveryId(input)).not.toBe(
+      deterministicInboxDeliveryId({
+        ...input,
+        target: { ...input.target, recipient_principal_id: "bob" },
+      }),
+    );
+  });
+
   test("resolveMany uses stable virtual routes and principal overrides", async () => {
     const placement = createInMemoryPlacementStore({
       defaultStrategy: { kind: "sqlite", dataDir: "." },
@@ -67,7 +89,9 @@ describe("cell-node placement", () => {
           sizes.push(batch.deliveries.length);
           await Promise.resolve();
           active--;
-          return batch.deliveries.map((_, i) => ({ inbox_entry_id: `ib-${i}` }));
+          const success_bitmap = new Uint8Array(Math.ceil(batch.deliveries.length / 8));
+          success_bitmap.fill(0xff);
+          return { delivered_count: batch.deliveries.length, success_bitmap };
         },
       },
     });
@@ -85,7 +109,13 @@ describe("cell-node placement", () => {
       },
       targets,
     });
-    expect(result.generated_inbox_refs).toHaveLength(1_026);
+    expect(result.delivered_count).toBe(1_026);
+    expect(result.success_bitmap).toHaveLength(Math.ceil(1_026 / 8));
+    expect(
+      new Set(
+        targets.map((_, i) => i).map((i) => (result.success_bitmap[i >> 3] ?? 0) & (1 << (i & 7))),
+      ),
+    ).not.toContain(0);
     expect(Math.max(...sizes)).toBeLessThanOrEqual(512);
     expect(peak).toBeLessThanOrEqual(2);
   });
@@ -110,6 +140,7 @@ describe("cell-node placement", () => {
             kind: "inline" as const,
             inline: { bytes: new Uint8Array([1, 2]), content_hash: "x" },
           },
+          delivery_id: "delivery-c",
           correlation_id: "c",
         },
       ],
@@ -123,8 +154,10 @@ describe("cell-node placement", () => {
       token: "secret",
       fetch: (url, init) => handler(new Request(url, init)),
     });
-    await http.enqueueMany(routeA, batch);
-    expect(seen).toEqual(["alice", "alice"]);
+    const httpResult = await http.enqueueMany(routeA, batch);
+    expect(httpResult.delivered_count).toBe(1);
+    expect(httpResult.success_bitmap).toEqual(new Uint8Array([1]));
+    expect(seen).toEqual(["alice:delivery-c", "alice:delivery-c"]);
 
     const unauthorized = await createCellNodeHttpHandler({
       token: "secret",

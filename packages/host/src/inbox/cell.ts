@@ -18,12 +18,14 @@ export async function enqueueCellInboxInline(
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   const content_hash = sha256HexLower(bytes);
   const { cellId, cell } = recipientCell(ctx, recipientDid);
+  const deliveryId = correlationId ?? randomId("inbox");
   const out = await cell.enqueueInboxDelivery({
     cell_id: cellId,
     tenant_key: ctx.tenantKey,
     recipient_principal_id: recipientDid,
     staging: { kind: "inline", inline: { bytes, content_hash } },
-    correlation_id: correlationId ?? randomId("inbox"),
+    delivery_id: deliveryId,
+    correlation_id: deliveryId,
   });
   return out.inbox_entry_id;
 }

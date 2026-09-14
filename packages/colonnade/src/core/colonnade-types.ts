@@ -15,6 +15,7 @@ export type TenantKey = string;
 export type PrincipalId = string;
 export type DrainCursor = string;
 export type WriteCorrelationId = string;
+export type InboxDeliveryId = string;
 export type InboxEntryId = string;
 export type OutboxRecordKey = string;
 export type CatalogPointerId = string;
@@ -175,6 +176,8 @@ export type EnqueueInboxDeliveryInput = {
   readonly tenant_key: TenantKey;
   readonly recipient_principal_id: PrincipalId;
   readonly staging: InboxStagingPayload;
+  /** Stable idempotency key for this post/recipient delivery. */
+  readonly delivery_id: InboxDeliveryId;
   readonly correlation_id: WriteCorrelationId;
 };
 

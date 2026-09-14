@@ -190,6 +190,7 @@ describe("InMemoryCellPersistence", () => {
       tenant_key: "tenant",
       recipient_principal_id: "bob",
       staging: { kind: "pointer", pointer: { pointer: ptr } },
+      delivery_id: "delivery-c1",
       correlation_id: "c1",
     });
 

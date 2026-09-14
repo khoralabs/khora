@@ -39,6 +39,7 @@ export class InMemoryCellPersistence implements CellPersistence {
   private readonly cellId: CellId;
   private readonly outbox = new Map<string, OutboxRow>();
   private readonly inbox = new Map<string, PendingInboxEntry & { tenant_key: string }>();
+  private readonly inboxByDelivery = new Map<string, string>();
   private logSeq = 0;
   private readonly log: WriteLogRecord[] = [];
   private appliedThrough = "";
@@ -77,7 +78,9 @@ export class InMemoryCellPersistence implements CellPersistence {
     input: EnqueueInboxDeliveryInput,
   ): Promise<EnqueueInboxDeliveryOutput> {
     this.assertCell(input.cell_id);
-    const inbox_entry_id = randomId("ib");
+    const prior = this.inboxByDelivery.get(input.delivery_id);
+    if (prior !== undefined) return { inbox_entry_id: prior };
+    const inbox_entry_id = `ib_${sha256HexLower(new TextEncoder().encode(input.delivery_id))}`;
     const enqueued_at_ms = Date.now();
     this.inbox.set(inbox_entry_id, {
       inbox_entry_id,
@@ -86,6 +89,7 @@ export class InMemoryCellPersistence implements CellPersistence {
       enqueued_at_ms,
       tenant_key: input.tenant_key,
     });
+    this.inboxByDelivery.set(input.delivery_id, inbox_entry_id);
     return { inbox_entry_id };
   }
 
