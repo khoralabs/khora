@@ -1,6 +1,19 @@
 import type { ColonnadeDatabaseId, ColonnadeDatabaseListFilter } from "../database-id";
 import { databaseKey, parseDatabaseKey } from "../database-key";
+import { decodeCellId } from "../owner-key-encoder";
 import type { ColonnadeBackendStrategy } from "./strategy";
+
+export type CellRoute = {
+  readonly nodeId: string;
+  readonly endpoint: string;
+  readonly partitionId: string;
+  readonly backendKind: string;
+  readonly epoch: number;
+};
+
+export type CellRouteResolver = {
+  resolveMany(logicalCellIds: readonly string[]): Promise<ReadonlyMap<string, CellRoute>>;
+};
 
 /**
  * Control-plane placement lookup: default strategy + per-id overrides.
@@ -15,6 +28,11 @@ export type ColonnadePlacementStore = {
   listOverrides(
     filter?: ColonnadeDatabaseListFilter,
   ): Promise<Array<{ id: ColonnadeDatabaseId; strategy: ColonnadeBackendStrategy }>>;
+  /** Resolve logical homes to cell-node routes when virtual partitions are configured. */
+  resolveMany?(logicalCellIds: readonly string[]): Promise<ReadonlyMap<string, CellRoute>>;
+  setDefaultRoutes?(routes: readonly CellRoute[]): Promise<void>;
+  setPrincipalRoute?(principalId: string, route: CellRoute): Promise<void>;
+  removePrincipalRoute?(principalId: string): Promise<void>;
 };
 
 /**
@@ -40,6 +58,8 @@ export function isSyncPlacementStore(
 
 export type InMemoryPlacementStoreOptions = {
   readonly defaultStrategy: ColonnadeBackendStrategy;
+  readonly defaultRoutes?: readonly CellRoute[];
+  readonly principalRoutes?: Readonly<Record<string, CellRoute>>;
 };
 
 export function createInMemoryPlacementStore(
@@ -47,6 +67,8 @@ export function createInMemoryPlacementStore(
 ): SyncColonnadePlacementStore {
   let defaultStrategy = opts.defaultStrategy;
   const overrides = new Map<string, ColonnadeBackendStrategy>();
+  let defaultRoutes = [...(opts.defaultRoutes ?? [])];
+  const principalRoutes = new Map(Object.entries(opts.principalRoutes ?? {}));
 
   return {
     getDefaultStrategySync() {
@@ -80,5 +102,46 @@ export function createInMemoryPlacementStore(
       }
       return entries;
     },
+    async resolveMany(logicalCellIds) {
+      const routes = new Map<string, CellRoute>();
+      for (const logicalCellId of logicalCellIds) {
+        const principalId = principalIdFromHome(logicalCellId);
+        const override = principalId === undefined ? undefined : principalRoutes.get(principalId);
+        const route =
+          override ??
+          (defaultRoutes.length === 0
+            ? undefined
+            : defaultRoutes[hashString(logicalCellId) % defaultRoutes.length]);
+        if (route !== undefined) routes.set(logicalCellId, route);
+      }
+      return routes;
+    },
+    async setDefaultRoutes(routes) {
+      defaultRoutes = [...routes];
+    },
+    async setPrincipalRoute(principalId, route) {
+      principalRoutes.set(principalId, route);
+    },
+    async removePrincipalRoute(principalId) {
+      principalRoutes.delete(principalId);
+    },
   };
+}
+
+function principalIdFromHome(cellId: string): string | undefined {
+  try {
+    const id = decodeCellId(cellId);
+    return id?.kind === "principal" ? id.ownerKey : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }

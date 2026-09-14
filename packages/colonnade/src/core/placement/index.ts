@@ -5,6 +5,8 @@ export type {
 } from "./backend";
 export { createCompositeBackendFactory, UnknownBackendStrategyError } from "./backend";
 export type {
+  CellRoute,
+  CellRouteResolver,
   ColonnadePlacementStore,
   InMemoryPlacementStoreOptions,
   SyncColonnadePlacementStore,

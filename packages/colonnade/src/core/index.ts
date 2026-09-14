@@ -1,3 +1,20 @@
+export {
+  type CellNodeBatch,
+  type CellNodeClient,
+  GroupedPartitionPersistence,
+  type GroupedPartitionPersistenceOptions,
+  InProcessCellNodeClient,
+  RoutedInboxDelivery,
+  type RoutedInboxDeliveryOptions,
+  StaleCellRouteEpochError,
+} from "./cell-node";
+export {
+  type CellNodeFetch,
+  type CellNodeHttpHandlerOptions,
+  createCellNodeHttpHandler,
+  HttpCellNodeClient,
+  type HttpCellNodeClientOptions,
+} from "./cell-node-http";
 export { ColonnadePublicationClient } from "./colonnade-publication-client";
 export { ColonnadeRouter } from "./colonnade-router";
 export type * from "./colonnade-types";
@@ -45,6 +62,8 @@ export {
   resolveEncodedDatabasePath,
 } from "./owner-key-encoder";
 export type {
+  CellRoute,
+  CellRouteResolver,
   ColonnadeBackendStrategy,
   ColonnadeCellBackend,
   ColonnadeCellBackendFactory,
