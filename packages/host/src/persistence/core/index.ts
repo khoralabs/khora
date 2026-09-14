@@ -40,6 +40,7 @@ export type {
   PendingEmbeddingQueuePort,
   PendingEmbeddingQueueSummary,
   PendingEmbeddingQueueSummaryRow,
+  PrincipalOrdinalPort,
   PrincipalTeardownQueuePort,
   SocialAgentIdentity,
   SocialRegisterAgentInput,

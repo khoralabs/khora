@@ -25,9 +25,10 @@ export async function createPercolatorTursoPersistence(
         await execSql(
           db.write,
           `INSERT INTO percolator_filter_queries (${FILTER_COLS})
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              owner_id = excluded.owner_id,
+             owner_ordinal = excluded.owner_ordinal,
              search_json = excluded.search_json,
              min_score = excluded.min_score,
              active = excluded.active,
@@ -36,6 +37,7 @@ export async function createPercolatorTursoPersistence(
           [
             query.id,
             query.ownerId,
+            query.ownerOrdinal,
             searchToJson(query),
             query.minScore,
             query.active ? 1 : 0,
@@ -50,9 +52,10 @@ export async function createPercolatorTursoPersistence(
         await execSql(
           db.write,
           `INSERT INTO percolator_semantic_queries (${SEMANTIC_COLS})
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              owner_id = excluded.owner_id,
+             owner_ordinal = excluded.owner_ordinal,
              search_json = excluded.search_json,
              vector = excluded.vector,
              min_score = excluded.min_score,
@@ -62,6 +65,7 @@ export async function createPercolatorTursoPersistence(
           [
             query.id,
             query.ownerId,
+            query.ownerOrdinal,
             searchToJson(query),
             vec !== undefined && vec.length > 0 ? encodeVector(vec) : null,
             query.minScore,

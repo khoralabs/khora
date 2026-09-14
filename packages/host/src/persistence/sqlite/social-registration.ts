@@ -17,6 +17,7 @@ export function registerAgentOnPersistence(
   hostDb.transaction(() => {
     persistence.profiles.upsert(input.profileUpsert);
     persistence.registrations.upsert(input.principalId, profileId);
+    persistence.principalOrdinals.getOrCreate(input.principalId);
 
     const existingPrincipal = persistence.usernameIndex.lookupByUsername(username);
     if (existingPrincipal !== undefined && existingPrincipal !== input.principalId) {

@@ -5,6 +5,7 @@ import type { PrincipalLifecycle } from "./lifecycle";
 export type KhoraRegistrationApi = {
   lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined;
   lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined;
+  ordinalForPrincipal(principalId: string): number;
   rollbackUsernameMapsAfterFailedRegistration(
     principalId: string,
     priorNormalizedUsername: string | undefined,
@@ -29,6 +30,10 @@ export function createKhoraRegistrationApi(deps: {
 
     lookupNormalizedUsernameForPrincipal(principalId) {
       return persistence.usernameIndex.lookupByPrincipal(principalId);
+    },
+
+    ordinalForPrincipal(principalId) {
+      return persistence.principalOrdinals.getOrCreate(principalId);
     },
 
     rollbackUsernameMapsAfterFailedRegistration(principalId, priorNormalizedUsername) {

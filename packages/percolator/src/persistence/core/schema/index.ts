@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS standing_queries;
 CREATE TABLE IF NOT EXISTS percolator_filter_queries (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL,
+  owner_ordinal INTEGER NOT NULL DEFAULT 0,
   search_json TEXT NOT NULL,
   min_score REAL NOT NULL,
   active INTEGER NOT NULL DEFAULT 1,
@@ -13,11 +14,13 @@ CREATE TABLE IF NOT EXISTS percolator_filter_queries (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pfilter_owner ON percolator_filter_queries(owner_id);
-CREATE INDEX IF NOT EXISTS idx_pfilter_active ON percolator_filter_queries(active, expires_at_ms);
+CREATE INDEX IF NOT EXISTS idx_pfilter_active
+  ON percolator_filter_queries(active, expires_at_ms, owner_ordinal, id);
 
 CREATE TABLE IF NOT EXISTS percolator_semantic_queries (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL,
+  owner_ordinal INTEGER NOT NULL DEFAULT 0,
   search_json TEXT NOT NULL,
   vector BLOB,
   min_score REAL NOT NULL,
@@ -28,5 +31,6 @@ CREATE TABLE IF NOT EXISTS percolator_semantic_queries (
 );
 
 CREATE INDEX IF NOT EXISTS idx_psemantic_owner ON percolator_semantic_queries(owner_id);
-CREATE INDEX IF NOT EXISTS idx_psemantic_active ON percolator_semantic_queries(active, expires_at_ms);
+CREATE INDEX IF NOT EXISTS idx_psemantic_active
+  ON percolator_semantic_queries(active, expires_at_ms, owner_ordinal, id);
 `.trim();

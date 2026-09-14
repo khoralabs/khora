@@ -174,11 +174,13 @@ function registerSubscriptionQuery(
   subscriptions: HostSubscriptions,
   post: KhoraPost,
   ownerPrincipalId: string,
+  ownerOrdinal: number,
 ): Promise<StandingQuery | undefined> {
   if (post.kind !== "subscription" || post.search === undefined) return Promise.resolve(undefined);
   return subscriptions.percolator.registerQuery({
     id: post.id,
     ownerId: ownerPrincipalId,
+    ownerOrdinal,
     search: toPercolatorSearch(post.search),
     ...(post.search.options?.minScore !== undefined
       ? { minScore: post.search.options.minScore }
@@ -249,7 +251,12 @@ export function createKhoraRelayOnEvent(deps: {
       const post = event.payload.post;
       const address = decodePostId(post.id);
       if (post.kind === "subscription" && subscriptions !== undefined && address !== undefined) {
-        await registerSubscriptionQuery(subscriptions, post, address.authorPrincipalId);
+        await registerSubscriptionQuery(
+          subscriptions,
+          post,
+          address.authorPrincipalId,
+          registration.ordinalForPrincipal(address.authorPrincipalId),
+        );
       }
       const result = await publishPost({
         ctx,
@@ -303,7 +310,12 @@ export function createKhoraRelayOnEvent(deps: {
         publication_key: previous.id,
       });
       if (post.kind === "subscription" && subscriptions !== undefined && address !== undefined) {
-        await registerSubscriptionQuery(subscriptions, post, address.authorPrincipalId);
+        await registerSubscriptionQuery(
+          subscriptions,
+          post,
+          address.authorPrincipalId,
+          registration.ordinalForPrincipal(address.authorPrincipalId),
+        );
       }
       await publishPost({
         ctx,

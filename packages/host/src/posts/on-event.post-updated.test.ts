@@ -120,6 +120,7 @@ describe("POST_UPDATED cleanup", () => {
     await subscriptions.percolator.registerQuery({
       id: previousId,
       ownerId: authorPrincipalId,
+      ownerOrdinal: 1,
       search: { content: {}, options: { labels: { some: ["khora_topic:old"] } } },
     });
     expect((await subscriptions.percolator.getQuery(previousId))?.active).toBe(true);
@@ -129,7 +130,7 @@ describe("POST_UPDATED cleanup", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -214,7 +215,7 @@ describe("POST_UPDATED cleanup", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,

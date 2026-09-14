@@ -15,6 +15,7 @@ function filterQuery(
   return {
     id,
     ownerId,
+    ownerOrdinal: ownerId === "owner-a" ? 1 : 2,
     search: { content: {}, options: { labels: { some: ["post"] } } },
     minScore: 0,
     active: true,
@@ -34,6 +35,7 @@ function semanticQuery(
   return {
     id,
     ownerId,
+    ownerOrdinal: ownerId === "owner-a" ? 1 : 2,
     search: { content: { text }, options: { minScore: 0.01 } },
     minScore: 0.01,
     active: true,

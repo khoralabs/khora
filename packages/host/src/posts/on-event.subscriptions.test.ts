@@ -176,6 +176,7 @@ describe("percolator inbox subscriptionMatches", () => {
     await subscriptions.percolator.registerQuery({
       id: "sub-query-1",
       ownerId: "did:sub",
+      ownerOrdinal: 1,
       search: {
         content: {},
         options: { labels: { some: ["khora_topic:platform"] } },
@@ -205,7 +206,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -252,6 +253,7 @@ describe("percolator inbox subscriptionMatches", () => {
     await subscriptions.percolator.registerQuery({
       id: "sub-query-topic",
       ownerId: "did:sub",
+      ownerOrdinal: 1,
       search: {
         content: {},
         options: { labels: { some: ["khora_topic:climate-tech"] } },
@@ -281,7 +283,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -326,6 +328,7 @@ describe("percolator inbox subscriptionMatches", () => {
     await subscriptions.percolator.registerQuery({
       id: "sub-query-author",
       ownerId: "did:sub",
+      ownerOrdinal: 1,
       search: toPercolatorSearch(authorSubscriptionSearch(authorProfile.id, root)),
     });
 
@@ -348,7 +351,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -392,6 +395,7 @@ describe("percolator inbox subscriptionMatches", () => {
     await subscriptions.percolator.registerQuery({
       id: "sub-query-private",
       ownerId: "did:sub",
+      ownerOrdinal: 1,
       search: {
         content: {},
         options: { labels: { some: ["khora_topic:secret"] } },
@@ -418,7 +422,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -467,6 +471,7 @@ describe("percolator inbox subscriptionMatches", () => {
     await subscriptions.percolator.registerQuery({
       id: "sub-query-peer",
       ownerId: "did:peer",
+      ownerOrdinal: 1,
       search: {
         content: {},
         options: { labels: { some: ["khora_topic:network"] } },
@@ -475,6 +480,7 @@ describe("percolator inbox subscriptionMatches", () => {
     await subscriptions.percolator.registerQuery({
       id: "sub-query-stranger",
       ownerId: "did:stranger",
+      ownerOrdinal: 2,
       search: {
         content: {},
         options: { labels: { some: ["khora_topic:network"] } },
@@ -501,7 +507,7 @@ describe("percolator inbox subscriptionMatches", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
@@ -559,7 +565,7 @@ describe("percolator inbox subscriptionMatches", () => {
     };
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,

@@ -9,6 +9,7 @@ describe("createPercolator", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: {
         content: {},
         options: { labels: { some: ["post"] } },
@@ -33,6 +34,7 @@ describe("createPercolator", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: {
         content: {},
         options: { labels: { some: ["post"] } },
@@ -55,6 +57,7 @@ describe("createPercolator", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: {
         namespace: "global/agents/alice",
         content: {},
@@ -78,11 +81,13 @@ describe("createPercolator", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: { content: { text: "platform beta" }, options: { minScore: 0.001 } },
     });
     await percolator.registerQuery({
       id: "q2",
       ownerId: "owner-b",
+      ownerOrdinal: 2,
       search: { content: { text: "platform partners" }, options: { minScore: 0.001 } },
     });
     const matches = await percolator.evaluateCandidate({
@@ -104,6 +109,7 @@ describe("createPercolator", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: { content: { text: "platform" } },
       minScore: 10,
     });
@@ -124,6 +130,7 @@ describe("createPercolator", () => {
     const q = await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: { content: { text: "alpha" }, options: { minScore: 0.5 } },
       minScore: 0.001,
     });
@@ -147,6 +154,7 @@ describe("createPercolator", () => {
       {
         id: "expired",
         ownerId: "owner-a",
+        ownerOrdinal: 1,
         search: { content: {} },
         expiresAtMs: now - 1,
       },
@@ -156,6 +164,7 @@ describe("createPercolator", () => {
       {
         id: "active",
         ownerId: "owner-b",
+        ownerOrdinal: 2,
         search: { content: {} },
       },
       now,
@@ -181,6 +190,7 @@ describe("createPercolator", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: { content: {} },
     });
     const matches = await percolator.evaluateCandidate({

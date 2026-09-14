@@ -40,6 +40,26 @@ export function runHostPersistenceContractTests(
       expect(p.usernameIndex.lookupByUsername("alice")).toBe(principalId);
       expect(p.usernameIndex.lookupByPrincipal(principalId)).toBe("alice");
       expect(p.profiles.getById("profile-alice")?.bodyJson).toBe('{"n":"alice"}');
+      const ordinal = p.principalOrdinals.getByDid(principalId);
+      expect(ordinal).toBeGreaterThan(0);
+      expect(p.principalOrdinals.resolveMany([ordinal ?? 0]).get(ordinal ?? 0)).toBe(principalId);
+    });
+
+    test("principal ordinals are stable, unique, and batch resolvable", async () => {
+      const { persistence: p } = await create();
+      const alice = p.principalOrdinals.getOrCreate("did:test:ordinal-alice");
+      const bob = p.principalOrdinals.getOrCreate("did:test:ordinal-bob");
+      expect(p.principalOrdinals.getOrCreate("did:test:ordinal-alice")).toBe(alice);
+      expect(bob).not.toBe(alice);
+      expect(
+        p.principalOrdinals.getManyByDid(["did:test:ordinal-bob"]).get("did:test:ordinal-bob"),
+      ).toBe(bob);
+      expect(p.principalOrdinals.resolveMany([alice, bob])).toEqual(
+        new Map([
+          [alice, "did:test:ordinal-alice"],
+          [bob, "did:test:ordinal-bob"],
+        ]),
+      );
     });
 
     test("registerAgent rejects username taken by another principal", async () => {

@@ -3,6 +3,7 @@ import type { StandingSearchRequest } from "./search-request";
 export type StandingQueryCreate = {
   id: string;
   ownerId: string;
+  ownerOrdinal: number;
   search: StandingSearchRequest;
   /** Poster-published threshold; falls back to search.options.minScore, then package default. */
   minScore?: number;

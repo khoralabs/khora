@@ -19,9 +19,10 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
 
   const upsertFilterStmt = db.prepare(`
     INSERT INTO percolator_filter_queries (${FILTER_COLS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       owner_id = excluded.owner_id,
+      owner_ordinal = excluded.owner_ordinal,
       search_json = excluded.search_json,
       min_score = excluded.min_score,
       active = excluded.active,
@@ -31,9 +32,10 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
 
   const upsertSemanticStmt = db.prepare(`
     INSERT INTO percolator_semantic_queries (${SEMANTIC_COLS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       owner_id = excluded.owner_id,
+      owner_ordinal = excluded.owner_ordinal,
       search_json = excluded.search_json,
       vector = excluded.vector,
       min_score = excluded.min_score,
@@ -84,6 +86,7 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
         upsertFilterStmt.run(
           query.id,
           query.ownerId,
+          query.ownerOrdinal,
           searchToJson(query),
           query.minScore,
           query.active ? 1 : 0,
@@ -97,6 +100,7 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
         upsertSemanticStmt.run(
           query.id,
           query.ownerId,
+          query.ownerOrdinal,
           searchToJson(query),
           vec !== undefined && vec.length > 0 ? encodeVector(vec) : null,
           query.minScore,

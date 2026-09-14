@@ -4,12 +4,13 @@ import type { KhoraHostPersistence } from "../core/port";
 import { createAgentAccountStatusPort } from "./agent-account-status";
 import { createEntityAdapter } from "./entity-adapter";
 import { createPendingEmbeddingQueue } from "./pending-embeddings-queue";
+import { backfillPrincipalOrdinals, createPrincipalOrdinalPort } from "./principal-ordinals";
 import { ProjectionStore } from "./projection-store";
 import { createRegistrationAdapter } from "./registration-adapter";
 import { SocialPrincipalChannelStore } from "./social-principal-channel-store";
 import { registerAgentOnPersistence } from "./social-registration";
 import { createSocialRelationshipPersistence } from "./social-relationship-persistence";
-import { openKhoraHostDb } from "./sqlite-setup";
+import { ensureKhoraHostProjectionsSchema, openKhoraHostDb } from "./sqlite-setup";
 import { createPrincipalTeardownQueue } from "./teardown-queue";
 import { createUsernameIndex } from "./username-index";
 
@@ -17,6 +18,7 @@ export function createKhoraHostSqlitePersistence(
   hostDb: Database,
   opts?: { tenantKey?: string },
 ): KhoraHostPersistence {
+  ensureKhoraHostProjectionsSchema(hostDb);
   const tenantKey = opts?.tenantKey ?? "khora";
   const projectionStore = new ProjectionStore(hostDb);
   const principalChannelStore = new SocialPrincipalChannelStore(hostDb);
@@ -38,6 +40,8 @@ export function createKhoraHostSqlitePersistence(
   const usernameIndex = createUsernameIndex(projectionStore);
   const teardownQueue = createPrincipalTeardownQueue(hostDb);
   const pendingEmbeddings = createPendingEmbeddingQueue(hostDb);
+  const principalOrdinals = createPrincipalOrdinalPort(hostDb);
+  backfillPrincipalOrdinals(hostDb, tenantKey, principalOrdinals);
 
   const persistence: KhoraHostPersistence = {
     profiles,
@@ -47,6 +51,7 @@ export function createKhoraHostSqlitePersistence(
     usernameIndex,
     teardownQueue,
     pendingEmbeddings,
+    principalOrdinals,
     registerAgent(input) {
       return registerAgentOnPersistence(persistence, hostDb, input);
     },

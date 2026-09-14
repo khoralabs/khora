@@ -16,6 +16,7 @@ describe("createPercolatorSqlitePersistence", () => {
     await percolator.registerQuery({
       id: "q1",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search,
       minScore: 0.005,
     });
@@ -31,17 +32,20 @@ describe("createPercolatorSqlitePersistence", () => {
     await percolator.registerQuery({
       id: "filter",
       ownerId: "owner-a",
+      ownerOrdinal: 1,
       search: { content: {}, options: { labels: { some: ["post"] } } },
     });
     await percolator.registerQuery({
       id: "semantic-a",
       ownerId: "owner-b",
+      ownerOrdinal: 2,
       search: { content: { text: "platform" } },
       minScore: 0.001,
     });
     await percolator.registerQuery({
       id: "semantic-b",
       ownerId: "owner-c",
+      ownerOrdinal: 3,
       search: { content: { text: "beta" } },
       minScore: 0.001,
     });
@@ -64,7 +68,10 @@ describe("createPercolatorSqlitePersistence", () => {
     const persistence = createPercolatorSqlitePersistence(db);
     const percolator = createPercolator({ persistence });
     const now = 5_000;
-    await percolator.registerQuery({ id: "q1", ownerId: "owner-a", search: { content: {} } }, now);
+    await percolator.registerQuery(
+      { id: "q1", ownerId: "owner-a", ownerOrdinal: 1, search: { content: {} } },
+      now,
+    );
     await percolator.deactivateQuery("q1", now);
     const matches = await percolator.evaluateCandidate(
       {

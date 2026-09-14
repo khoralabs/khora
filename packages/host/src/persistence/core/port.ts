@@ -91,6 +91,14 @@ export type AgentAccountStatusPort = {
   clearStatus(did: string): void;
 };
 
+/** Stable dense identifier used by fan-out receipts and workload chunks. */
+export type PrincipalOrdinalPort = {
+  getOrCreate(did: string): number;
+  getByDid(did: string): number | undefined;
+  resolveMany(ordinals: readonly number[]): Map<number, string>;
+  getManyByDid(dids: readonly string[]): Map<string, number>;
+};
+
 /**
  * Host persistence facade: profile entities, principal registrations,
  * social graph, and account status.
@@ -197,6 +205,7 @@ export type PendingEmbeddingQueuePort = {
  */
 export type KhoraHostPersistence = HostPersistence & {
   usernameIndex: UsernameIndexPort;
+  principalOrdinals: PrincipalOrdinalPort;
   teardownQueue: PrincipalTeardownQueuePort;
   pendingEmbeddings: PendingEmbeddingQueuePort;
   /**

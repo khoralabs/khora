@@ -34,6 +34,11 @@ export {
   ensurePendingEmbeddingsSchema,
 } from "./pending-embeddings-queue";
 export {
+  backfillPrincipalOrdinals,
+  createPrincipalOrdinalPort,
+  ensurePrincipalOrdinalsSchema,
+} from "./principal-ordinals";
+export {
   escapeSqlLikeLiteral,
   type ProjectionListedRow,
   ProjectionStore,
