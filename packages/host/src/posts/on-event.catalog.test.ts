@@ -96,6 +96,7 @@ describe("catalog publication lifecycle", () => {
     expect(queued?.status).toBe("planning_pending");
     expect(queued?.sourceRecordKey).toBe("rk");
     expect(queued?.visibility).toBe("public");
+    expect(queued?.fanOutPolicy).toBe("push");
 
     const privateAddr = assignPostAddress({ cluster, authorPrincipalId });
     const privatePost: KhoraPost = {

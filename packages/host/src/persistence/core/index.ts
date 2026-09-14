@@ -30,6 +30,7 @@ export type {
   FanOutJob,
   FanOutJobStatus,
   FanOutPlanningJobInput,
+  FanOutPolicy,
   FanOutQueuePort,
   FanOutWorkloadChunk,
   HostEntityPersistence,

@@ -111,6 +111,7 @@ function toFeedPost(
   if (typeof post.authorProfileId === "string") item.authorProfileId = post.authorProfileId;
   if (typeof post.title === "string") item.title = post.title;
   if (typeof post.body === "string") item.body = post.body;
+  if (post.fanOutPolicy === "catalog-pull") item.fanOutPolicy = post.fanOutPolicy;
   if (item.kind === "subscription") {
     const search = asSearch(post.search);
     if (search !== undefined) item.search = search;

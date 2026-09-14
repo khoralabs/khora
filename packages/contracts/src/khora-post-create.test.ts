@@ -8,6 +8,25 @@ describe("zKhoraPostCreate", () => {
     const v = zKhoraPostCreate.parse({ body: "hello", authorSignature: SIG });
     expect(v.kind).toBe("post");
     expect(v.body).toBe("hello");
+    expect(v.fanOutPolicy).toBeUndefined();
+  });
+
+  test("catalog-pull is explicit and public-only", () => {
+    expect(
+      zKhoraPostCreate.parse({
+        body: "large broadcast",
+        fanOutPolicy: "catalog-pull",
+        authorSignature: SIG,
+      }).fanOutPolicy,
+    ).toBe("catalog-pull");
+    expect(() =>
+      zKhoraPostCreate.parse({
+        body: "private",
+        visibility: "private",
+        fanOutPolicy: "catalog-pull",
+        authorSignature: SIG,
+      }),
+    ).toThrow(/requires public catalog visibility/);
   });
 
   test("status shape without author allowed at create schema", () => {

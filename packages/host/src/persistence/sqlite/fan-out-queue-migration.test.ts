@@ -25,12 +25,42 @@ test("migrates legacy ordinal JSON workload chunks", () => {
       created_at_ms INTEGER NOT NULL,
       PRIMARY KEY (job_id, chunk_index)
     );
+    INSERT INTO fan_out_jobs VALUES (
+      'job', 'tenant', 'post', 'cell', 'record', 'hash', 1, 'author', 'post',
+      '{}', 'public', 'planning', 0, 0, 0, 0, NULL, NULL, 0, 0
+    );
     INSERT INTO fan_out_workload_chunks VALUES ('job', 0, '[2,7]', 'pending', 1);
   `);
 
   const queue = createSqliteFanOutQueue(db);
+  expect(
+    db.query<{ fan_out_policy: string }, []>("SELECT fan_out_policy FROM fan_out_jobs").get()
+      ?.fan_out_policy,
+  ).toBe("push");
   expect(queue.listWorkloadChunks("job")[0]?.records).toEqual([
     { ordinal: 2, subscriptionMatches: [] },
     { ordinal: 7, subscriptionMatches: [] },
   ]);
+});
+
+test("persists catalog-pull policy across queue restart", () => {
+  const db = new Database(":memory:");
+  const queue = createSqliteFanOutQueue(db);
+  const id = queue.enqueuePlanning(
+    {
+      tenantKey: "tenant",
+      postId: "post",
+      sourceCellId: "cell",
+      sourceRecordKey: "record",
+      sourceContentHash: "a".repeat(64),
+      cellPoolCount: 1,
+      authorPrincipalId: "author",
+      postKind: "post",
+      postMetadata: {},
+      visibility: "public",
+      fanOutPolicy: "catalog-pull",
+    },
+    0,
+  );
+  expect(createSqliteFanOutQueue(db).getJob(id)?.fanOutPolicy).toBe("catalog-pull");
 });

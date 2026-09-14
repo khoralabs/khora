@@ -28,6 +28,11 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
   const job = deps.queue.tryClaimPlanning(now, deps.leaseMs ?? 30_000);
   if (job === undefined) return false;
   try {
+    if (job.fanOutPolicy === "catalog-pull") {
+      deps.queue.completePlanning(job.id, 0, deps.now?.() ?? Date.now());
+      await writeEmptyReceipts(deps.receipts, job);
+      return true;
+    }
     const chunkSize = boundedChunkSize(deps.chunkSize);
     const candidate = await deps.candidateForJob(job);
     let chunk: Array<{ ordinal: number; subscriptionMatches: readonly unknown[] }> = [];
@@ -67,12 +72,7 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
     if (chunk.length > 0) deps.queue.appendWorkloadChunk(job.id, chunk, now);
     deps.queue.completePlanning(job.id, count, deps.now?.() ?? Date.now());
     if (count === 0 && deps.receipts !== undefined) {
-      await deps.receipts.write(
-        job.id,
-        { target: [], delivered: [], failed: [] },
-        job.createdAtMs,
-        { sorted: true },
-      );
+      await writeEmptyReceipts(deps.receipts, job);
     }
   } catch (error) {
     const terminal = job.attemptCount >= (deps.maxAttempts ?? 5);
@@ -84,6 +84,16 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
     );
   }
   return true;
+}
+
+async function writeEmptyReceipts(
+  receipts: DeliveryReceiptStore | undefined,
+  job: FanOutJob,
+): Promise<void> {
+  if (receipts === undefined) return;
+  await receipts.write(job.id, { target: [], delivered: [], failed: [] }, job.createdAtMs, {
+    sorted: true,
+  });
 }
 
 export type FanOutDeliveryDeps = {

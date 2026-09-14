@@ -1,5 +1,5 @@
 import z from "zod";
-import { zKhoraPostKind, zKhoraPostVisibility } from "./khora-post";
+import { zKhoraFanOutPolicy, zKhoraPostKind, zKhoraPostVisibility } from "./khora-post";
 import { zKhoraStandingSearchRequest } from "./khora-standing-search";
 
 /** Public global feed item (catalog pointer timeline + outbox hydrate). */
@@ -12,6 +12,8 @@ export const zPublicFeedPost = z.object({
   body: z.string().optional(),
   topics: z.array(z.string()),
   visibility: zKhoraPostVisibility,
+  /** Present for exceptional pull delivery; omission means normal push. */
+  fanOutPolicy: zKhoraFanOutPolicy.optional(),
   /** Outbox commit time copied onto the catalog pointer (`published_at_ms`). */
   publishedAtMs: z.number(),
   /** Present when `kind === "subscription"`. */

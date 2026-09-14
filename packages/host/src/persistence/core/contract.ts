@@ -75,6 +75,7 @@ export function runHostPersistenceContractTests(
         postKind: "post",
         postMetadata: { topics: ["x"] },
         visibility: "public",
+        fanOutPolicy: "push" as const,
       };
       const id = p.fanOutQueue.enqueuePlanning(input, 100);
       expect(p.fanOutQueue.enqueuePlanning(input, 101)).toBe(id);

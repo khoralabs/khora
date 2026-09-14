@@ -17,6 +17,7 @@ test("delivery claim and completion decode only the selected chunk", () => {
       postKind: "post",
       postMetadata: {},
       visibility: "public",
+      fanOutPolicy: "push",
     },
     0,
   );

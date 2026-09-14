@@ -107,6 +107,8 @@ export type FanOutJobStatus =
   | "completed"
   | "failed";
 
+export type FanOutPolicy = "push" | "catalog-pull";
+
 export type FanOutPlanningJobInput = {
   tenantKey: string;
   postId: string;
@@ -118,6 +120,7 @@ export type FanOutPlanningJobInput = {
   postKind: string;
   postMetadata: unknown;
   visibility: string;
+  fanOutPolicy: FanOutPolicy;
 };
 
 export type FanOutJob = FanOutPlanningJobInput & {

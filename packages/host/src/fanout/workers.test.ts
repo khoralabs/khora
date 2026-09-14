@@ -17,6 +17,7 @@ const input: FanOutPlanningJobInput = {
   postKind: "post",
   postMetadata: {},
   visibility: "public",
+  fanOutPolicy: "push",
 };
 
 function percolator(ordinals: number[]): Percolator {
@@ -121,6 +122,44 @@ test("zero-target planning writes an empty receipt manifest", async () => {
     receipts: { target: [], delivered: [], failed: [] },
   });
   expect(queue.getJob(id)?.status).toBe("completed");
+});
+
+test("catalog-pull completes durably without planning targets or pushing inboxes", async () => {
+  const queue = createInMemoryFanOutQueue();
+  const id = queue.enqueuePlanning({ ...input, fanOutPolicy: "catalog-pull" }, 0);
+  expect(queue.tryClaimPlanning(0, 10)).toBeDefined(); // simulate a restart with a stale lease
+  let evaluated = false;
+  const deps = {
+    queue,
+    percolator: {
+      async *evaluateCandidateStream() {
+        evaluated = true;
+        yield* [];
+      },
+    } as unknown as Percolator,
+    candidateForJob: () => {
+      throw new Error("catalog-pull must not build a candidate");
+    },
+  };
+  expect(await runNextFanOutPlanningJob({ ...deps, now: () => 9 })).toBe(false);
+  expect(await runNextFanOutPlanningJob({ ...deps, now: () => 10 })).toBe(true);
+  expect(evaluated).toBe(false);
+  expect(queue.getJob(id)).toMatchObject({
+    fanOutPolicy: "catalog-pull",
+    status: "completed",
+    attemptCount: 2,
+    plannedTargetCount: 0,
+    routedTargetCount: 0,
+  });
+  expect(queue.listWorkloadChunks(id)).toEqual([]);
+  expect(queue.tryClaimDelivery(1, 10)).toBeUndefined();
+});
+
+test("catalog-pull rejects non-public jobs", () => {
+  const queue = createInMemoryFanOutQueue();
+  expect(() =>
+    queue.enqueuePlanning({ ...input, visibility: "private", fanOutPolicy: "catalog-pull" }, 0),
+  ).toThrow(/requires public catalog visibility/);
 });
 
 test("in-memory delivery claim skips pending chunks owned by failed jobs", async () => {

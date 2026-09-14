@@ -14,6 +14,9 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
   const chunks = new Map<string, FanOutWorkloadChunk[]>();
   return {
     enqueuePlanning(input: FanOutPlanningJobInput, nowMs: number): string {
+      if (input.fanOutPolicy === "catalog-pull" && input.visibility !== "public") {
+        throw new Error("catalog-pull fan-out requires public catalog visibility");
+      }
       const id = fanOutJobId(input.tenantKey, input.postId);
       if (!jobs.has(id)) {
         jobs.set(id, {

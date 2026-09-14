@@ -16,6 +16,7 @@ type JobRow = {
   post_kind: string;
   post_metadata_json: string;
   visibility: string;
+  fan_out_policy: FanOutJob["fanOutPolicy"];
   status: FanOutJob["status"];
   planned_target_count: number;
   routed_target_count: number;
@@ -54,6 +55,7 @@ function mapJob(row: JobRow): FanOutJob {
     postKind: row.post_kind,
     postMetadata: JSON.parse(row.post_metadata_json),
     visibility: row.visibility,
+    fanOutPolicy: row.fan_out_policy,
     status: row.status,
     plannedTargetCount: row.planned_target_count,
     routedTargetCount: row.routed_target_count,
@@ -84,6 +86,13 @@ function mapChunk(row: ChunkRow): FanOutWorkloadChunk {
 
 export function ensureFanOutQueueSchema(db: Database): void {
   db.run(FAN_OUT_QUEUE_DDL);
+  const jobColumns = db
+    .query<{ name: string }, []>("PRAGMA table_info(fan_out_jobs)")
+    .all()
+    .map(({ name }) => name);
+  if (!jobColumns.includes("fan_out_policy")) {
+    db.run("ALTER TABLE fan_out_jobs ADD COLUMN fan_out_policy TEXT NOT NULL DEFAULT 'push'");
+  }
   const columns = db
     .query<{ name: string }, []>("PRAGMA table_info(fan_out_workload_chunks)")
     .all()
@@ -137,12 +146,15 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
   const select = "SELECT * FROM fan_out_jobs WHERE id = ?";
   return {
     enqueuePlanning(input, nowMs) {
+      if (input.fanOutPolicy === "catalog-pull" && input.visibility !== "public") {
+        throw new Error("catalog-pull fan-out requires public catalog visibility");
+      }
       const id = fanOutJobId(input.tenantKey, input.postId);
       db.query(`INSERT OR IGNORE INTO fan_out_jobs (
         id, tenant_key, post_id, source_cell_id, source_record_key, source_content_hash,
         cell_pool_count, author_principal_id, post_kind, post_metadata_json, visibility,
-        status, available_at_ms, created_at_ms, updated_at_ms
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planning_pending', ?, ?, ?)`).run(
+        fan_out_policy, status, available_at_ms, created_at_ms, updated_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planning_pending', ?, ?, ?)`).run(
         id,
         input.tenantKey,
         input.postId,
@@ -154,6 +166,7 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         input.postKind,
         JSON.stringify(input.postMetadata),
         input.visibility,
+        input.fanOutPolicy,
         nowMs,
         nowMs,
         nowMs,
