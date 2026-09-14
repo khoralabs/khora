@@ -37,7 +37,8 @@ async function waitForInboxPostId(
     if (
       (log.includes("inbox:post") ||
         log.includes("inbox_post") ||
-        log.includes('"type":"inbox:post"')) &&
+        log.includes('"type":"inbox:post"') ||
+        log.includes('"type":"inbox:drain"')) &&
       log.includes(postId)
     ) {
       return log;

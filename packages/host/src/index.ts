@@ -45,6 +45,7 @@ export {
 } from "./discovery/search";
 export {
   bootstrapHostSubscriptions,
+  buildPercolatorCandidateFromPost,
   type HostSubscriptions,
   topicSlugsToLabelKinds,
   topicSlugToLabelKind,

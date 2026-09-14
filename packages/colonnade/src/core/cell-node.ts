@@ -151,6 +151,13 @@ export type RoutedInboxDeliveryOptions = {
   readonly concurrency?: number;
   readonly maxBatchSize?: number;
   readonly maxTargets?: number;
+  readonly observeBatch?: (event: {
+    batchIndex: number;
+    targets: number;
+    active: number;
+    durationMs: number;
+    outcome: "success" | "failure";
+  }) => void;
 };
 
 export class RoutedInboxDelivery implements InboxDelivery {
@@ -192,10 +199,15 @@ export class RoutedInboxDelivery implements InboxDelivery {
     }
 
     const jobs: Array<() => Promise<void>> = [];
+    let active = 0;
     for (const { route, targets } of groups.values()) {
       for (let offset = 0; offset < targets.length; offset += this.maxBatchSize) {
         const chunk = targets.slice(offset, offset + this.maxBatchSize);
+        const batchIndex = jobs.length;
         jobs.push(async () => {
+          const started = performance.now();
+          active++;
+          let outcome: "success" | "failure" = "success";
           const deliveries = chunk.map(({ target }) => deliveryFor(input, target));
           try {
             const result = await this.opts.client.enqueueMany(route, {
@@ -222,10 +234,20 @@ export class RoutedInboxDelivery implements InboxDelivery {
               }
             }
           } catch (error) {
+            outcome = "failure";
             const retryable = error instanceof StaleCellRouteEpochError;
             failures.push(
               ...chunk.map(({ target }) => ({ ...targetFailure(target, error), retryable })),
             );
+          } finally {
+            observeBatch(this.opts.observeBatch, {
+              batchIndex,
+              targets: chunk.length,
+              active,
+              durationMs: performance.now() - started,
+              outcome,
+            });
+            active--;
           }
         });
       }
@@ -237,6 +259,17 @@ export class RoutedInboxDelivery implements InboxDelivery {
       success_bitmap,
       ...(failures.length > 0 ? { failures } : {}),
     };
+  }
+}
+
+function observeBatch(
+  observer: RoutedInboxDeliveryOptions["observeBatch"],
+  event: Parameters<NonNullable<RoutedInboxDeliveryOptions["observeBatch"]>>[0],
+): void {
+  try {
+    observer?.(event);
+  } catch {
+    // Observability must never change delivery behavior.
   }
 }
 

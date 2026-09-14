@@ -7,8 +7,46 @@ import type {
   PrincipalOrdinalPort,
 } from "../persistence/core/port";
 import type { DeliveryReceiptStore } from "../receipts/receipt-store";
-import { NoopDeliveryReceiptStore } from "../receipts/receipt-store";
 import { MAX_FAN_OUT_WORKLOAD_RECORDS } from "../receipts/workload-codec";
+
+export type FanOutWorkerEvent =
+  | {
+      type: "planning";
+      outcome: "success" | "failure";
+      jobId: string;
+      attempt: number;
+      queueLagMs: number;
+      leaseRecovered: boolean;
+      durationMs: number;
+      targets?: number;
+      chunks?: number;
+      retry?: boolean;
+      error?: string;
+    }
+  | {
+      type: "delivery";
+      outcome: "success" | "failure";
+      jobId: string;
+      chunkIndex: number;
+      attempt: number;
+      queueLagMs: number;
+      leaseRecovered: boolean;
+      durationMs: number;
+      targets: number;
+      delivered?: number;
+      failed?: number;
+      retry?: boolean;
+      error?: string;
+    }
+  | {
+      type: "receipt";
+      jobId: string;
+      available: boolean;
+      durationMs: number;
+      error?: string;
+    };
+
+export type FanOutObserver = (event: FanOutWorkerEvent) => void;
 
 export type FanOutPlannerDeps = {
   queue: FanOutQueuePort;
@@ -21,16 +59,25 @@ export type FanOutPlannerDeps = {
   retryDelayMs?: number;
   maxAttempts?: number;
   now?: () => number;
+  observe?: FanOutObserver;
 };
 
 export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise<boolean> {
   const now = deps.now?.() ?? Date.now();
   const job = deps.queue.tryClaimPlanning(now, deps.leaseMs ?? 30_000);
   if (job === undefined) return false;
+  const started = performance.now();
+  let chunks = 0;
   try {
     if (job.fanOutPolicy === "catalog-pull") {
       deps.queue.completePlanning(job.id, 0, deps.now?.() ?? Date.now());
-      await writeEmptyReceipts(deps.receipts, job);
+      await writeEmptyReceipts(deps.receipts, job, deps.observe);
+      observe(deps.observe, {
+        ...planningEvent(job, now, started),
+        outcome: "success",
+        targets: 0,
+        chunks: 0,
+      });
       return true;
     }
     const chunkSize = boundedChunkSize(deps.chunkSize);
@@ -61,6 +108,7 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
         chunk.push(pending);
         if (chunk.length === chunkSize) {
           deps.queue.appendWorkloadChunk(job.id, chunk, now);
+          chunks++;
           chunk = [];
         }
       }
@@ -69,19 +117,36 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
       count++;
     }
     if (pending !== undefined) chunk.push(pending);
-    if (chunk.length > 0) deps.queue.appendWorkloadChunk(job.id, chunk, now);
+    if (chunk.length > 0) {
+      deps.queue.appendWorkloadChunk(job.id, chunk, now);
+      chunks++;
+    }
     deps.queue.completePlanning(job.id, count, deps.now?.() ?? Date.now());
     if (count === 0 && deps.receipts !== undefined) {
-      await writeEmptyReceipts(deps.receipts, job);
+      await writeEmptyReceipts(deps.receipts, job, deps.observe);
     }
+    observe(deps.observe, {
+      ...planningEvent(job, now, started),
+      outcome: "success",
+      targets: count,
+      chunks,
+    });
   } catch (error) {
     const terminal = job.attemptCount >= (deps.maxAttempts ?? 5);
+    const message = errorMessage(error);
     deps.queue.failPlanning(
       job.id,
       deps.now?.() ?? Date.now(),
-      errorMessage(error),
+      message,
       terminal ? undefined : now + (deps.retryDelayMs ?? 1_000),
     );
+    observe(deps.observe, {
+      ...planningEvent(job, now, started),
+      outcome: "failure",
+      chunks,
+      retry: !terminal,
+      error: message,
+    });
   }
   return true;
 }
@@ -89,10 +154,24 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
 async function writeEmptyReceipts(
   receipts: DeliveryReceiptStore | undefined,
   job: FanOutJob,
+  observer?: FanOutObserver,
 ): Promise<void> {
   if (receipts === undefined) return;
-  await receipts.write(job.id, { target: [], delivered: [], failed: [] }, job.createdAtMs, {
-    sorted: true,
+  const started = performance.now();
+  const result = await receipts.write(
+    job.id,
+    { target: [], delivered: [], failed: [] },
+    job.createdAtMs,
+    {
+      sorted: true,
+    },
+  );
+  observe(observer, {
+    type: "receipt",
+    jobId: job.id,
+    available: result.available,
+    durationMs: performance.now() - started,
+    ...(!result.available && result.error !== undefined ? { error: result.error } : {}),
   });
 }
 
@@ -106,6 +185,8 @@ export type FanOutDeliveryDeps = {
   retryDelayMs?: number;
   maxAttempts?: number;
   now?: () => number;
+  observe?: FanOutObserver;
+  onDelivered?: (dids: readonly string[]) => void | Promise<void>;
 };
 
 export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Promise<boolean> {
@@ -114,6 +195,7 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
   if (chunk === undefined) return false;
   const job = deps.queue.getJob(chunk.jobId);
   if (job === undefined) return false;
+  const started = performance.now();
   try {
     const dids = deps.principalOrdinals.resolveMany(chunk.records.map(({ ordinal }) => ordinal));
     const records = chunk.records.filter(({ ordinal }) => dids.has(ordinal));
@@ -122,7 +204,13 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
       return {
         recipient_principal_id: did,
         recipient_cell_id: deps.cellIdForPrincipal(did),
-        inbox_metadata: { subscriptionMatches: record.subscriptionMatches },
+        inbox_metadata: {
+          postId: job.postId,
+          authorPrincipalId: job.authorPrincipalId,
+          postKind: job.postKind,
+          createdAtMs: job.createdAtMs,
+          subscriptionMatches: record.subscriptionMatches,
+        },
       };
     });
     const result = await deps.inboxDelivery.deliver({
@@ -152,6 +240,12 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
         "retryable fan-out delivery failure",
         terminal ? undefined : now + (deps.retryDelayMs ?? 1_000),
       );
+      observe(deps.observe, {
+        ...deliveryEvent(chunk, now, started),
+        outcome: "failure",
+        retry: !terminal,
+        error: "retryable fan-out delivery failure",
+      });
       return true;
     }
     const failed = records
@@ -172,15 +266,35 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
     if (completed?.status === "completed") {
       await writeReceipts(deps, completed);
     }
+    await notifyDelivered(
+      deps.onDelivered,
+      delivered.flatMap((ordinal) => {
+        const did = dids.get(ordinal);
+        return did === undefined ? [] : [did];
+      }),
+    );
+    observe(deps.observe, {
+      ...deliveryEvent(chunk, now, started),
+      outcome: "success",
+      delivered: delivered.length,
+      failed: failed.length,
+    });
   } catch (error) {
     const terminal = chunk.attemptCount >= (deps.maxAttempts ?? 5);
+    const message = errorMessage(error);
     deps.queue.failDelivery(
       chunk.jobId,
       chunk.chunkIndex,
       deps.now?.() ?? Date.now(),
-      errorMessage(error),
+      message,
       terminal ? undefined : now + (deps.retryDelayMs ?? 1_000),
     );
+    observe(deps.observe, {
+      ...deliveryEvent(chunk, now, started),
+      outcome: "failure",
+      retry: !terminal,
+      error: message,
+    });
   }
   return true;
 }
@@ -216,8 +330,10 @@ export function startFanOutWorkers(opts: {
 }
 
 async function writeReceipts(deps: FanOutDeliveryDeps, job: FanOutJob): Promise<void> {
-  const receipts = deps.receipts ?? new NoopDeliveryReceiptStore();
-  await receipts.write(
+  const receipts = deps.receipts;
+  if (receipts === undefined) return;
+  const started = performance.now();
+  const result = await receipts.write(
     job.id,
     {
       target: receiptOrdinals(deps.queue, job.id, (chunk) =>
@@ -229,6 +345,57 @@ async function writeReceipts(deps: FanOutDeliveryDeps, job: FanOutJob): Promise<
     job.createdAtMs,
     { sorted: true },
   );
+  observe(deps.observe, {
+    type: "receipt",
+    jobId: job.id,
+    available: result.available,
+    durationMs: performance.now() - started,
+    ...(!result.available && result.error !== undefined ? { error: result.error } : {}),
+  });
+}
+
+function planningEvent(job: FanOutJob, now: number, started: number) {
+  return {
+    type: "planning" as const,
+    jobId: job.id,
+    attempt: job.attemptCount,
+    queueLagMs: Math.max(0, now - job.availableAtMs),
+    leaseRecovered: job.attemptCount > 1 && job.lastError === null,
+    durationMs: performance.now() - started,
+  };
+}
+
+function deliveryEvent(chunk: FanOutWorkloadChunk, now: number, started: number) {
+  return {
+    type: "delivery" as const,
+    jobId: chunk.jobId,
+    chunkIndex: chunk.chunkIndex,
+    attempt: chunk.attemptCount,
+    queueLagMs: Math.max(0, now - chunk.availableAtMs),
+    leaseRecovered: chunk.attemptCount > 1 && chunk.lastError === null,
+    durationMs: performance.now() - started,
+    targets: chunk.records.length,
+  };
+}
+
+function observe(observer: FanOutObserver | undefined, event: FanOutWorkerEvent): void {
+  try {
+    observer?.(event);
+  } catch {
+    // Observability must never change durable fan-out behavior.
+  }
+}
+
+async function notifyDelivered(
+  callback: FanOutDeliveryDeps["onDelivered"],
+  dids: readonly string[],
+): Promise<void> {
+  if (dids.length === 0) return;
+  try {
+    await callback?.(dids);
+  } catch {
+    // Live notification is best-effort; durable inbox delivery already succeeded.
+  }
 }
 
 function* receiptOrdinals(

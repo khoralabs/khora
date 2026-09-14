@@ -4,7 +4,11 @@ import type { Percolator } from "@khoralabs/percolator";
 import { createInMemoryFanOutQueue } from "../persistence/core/in-memory-fan-out-queue";
 import type { FanOutPlanningJobInput, PrincipalOrdinalPort } from "../persistence/core/port";
 import { createDeliveryReceiptStore, NoopDeliveryReceiptStore } from "../receipts/receipt-store";
-import { runNextFanOutDeliveryChunk, runNextFanOutPlanningJob } from "./workers";
+import {
+  type FanOutWorkerEvent,
+  runNextFanOutDeliveryChunk,
+  runNextFanOutPlanningJob,
+} from "./workers";
 
 const input: FanOutPlanningJobInput = {
   tenantKey: "tenant",
@@ -252,4 +256,100 @@ test("delivery recovers stale leases, retries partial failures, and eventually c
   expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 14 })).toBe(false);
   expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 15 })).toBe(true);
   expect(queue.getJob(id)).toMatchObject({ status: "completed", routedTargetCount: 2 });
+});
+
+test("worker observations report bounds, retries, lease recovery, and receipt availability", async () => {
+  const queue = createInMemoryFanOutQueue();
+  queue.enqueuePlanning(input, 0);
+  expect(queue.tryClaimPlanning(0, 10)).toBeDefined();
+  const events: FanOutWorkerEvent[] = [];
+  const observe = (event: FanOutWorkerEvent) => events.push(event);
+  await runNextFanOutPlanningJob({
+    queue,
+    percolator: percolator([1, 2, 3]),
+    candidateForJob: () => ({
+      candidateId: "post",
+      authorId: "author",
+      namespace: "posts",
+      labelKinds: [],
+      content: {},
+      createdAtMs: 0,
+    }),
+    chunkSize: 2,
+    now: () => 10,
+    observe,
+  });
+  await runNextFanOutDeliveryChunk({
+    queue,
+    principalOrdinals: ordinals(),
+    inboxDelivery: {
+      async deliver({ targets }) {
+        return {
+          target_count: targets.length,
+          delivered_count: targets.length,
+          success_bitmap: new Uint8Array([3]),
+        };
+      },
+    },
+    cellIdForPrincipal: (did) => `cell:${did}`,
+    receipts: {
+      async write() {
+        return { available: false, error: "object store unavailable" };
+      },
+      async getManifest() {
+        return undefined;
+      },
+      async getFragment() {
+        return undefined;
+      },
+    },
+    now: () => 10,
+    observe,
+  });
+  await runNextFanOutDeliveryChunk({
+    queue,
+    principalOrdinals: ordinals(),
+    inboxDelivery: {
+      async deliver({ targets }) {
+        return {
+          target_count: targets.length,
+          delivered_count: targets.length,
+          success_bitmap: new Uint8Array([1]),
+        };
+      },
+    },
+    cellIdForPrincipal: (did) => `cell:${did}`,
+    receipts: {
+      async write() {
+        return { available: false, error: "object store unavailable" };
+      },
+      async getManifest() {
+        return undefined;
+      },
+      async getFragment() {
+        return undefined;
+      },
+    },
+    now: () => 10,
+    observe,
+  });
+
+  expect(events).toEqual([
+    expect.objectContaining({
+      type: "planning",
+      outcome: "success",
+      attempt: 2,
+      queueLagMs: 10,
+      leaseRecovered: true,
+      targets: 3,
+      chunks: 2,
+    }),
+    expect.objectContaining({ type: "delivery", outcome: "success", targets: 2, delivered: 2 }),
+    expect.objectContaining({
+      type: "receipt",
+      available: false,
+      error: "object store unavailable",
+    }),
+    expect.objectContaining({ type: "delivery", outcome: "success", targets: 1, delivered: 1 }),
+  ]);
 });

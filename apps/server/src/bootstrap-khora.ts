@@ -1,11 +1,18 @@
+import { createResolveCellInboxDelivery } from "@khoralabs/colonnade";
+import type { KhoraPost } from "@khoralabs/khora-contracts";
 import {
   bootstrapHostSearch,
+  buildPercolatorCandidateFromPost,
   createCatalogPublicPostFeedReader,
   createKhoraHost,
+  DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
+  type FanOutWorkerEvent,
   type KhoraHostContext,
   parseInviteSeedTokens,
+  popInboxDrainItemsForDid,
   readInvitePepper,
   startEmbeddingRetryWorker,
+  startFanOutWorkers,
   validateInviteEnvConfig,
 } from "@khoralabs/khora-host";
 import type { KhoraEncryptionContext } from "@khoralabs/khora-host/bootstrap";
@@ -144,7 +151,6 @@ export async function bootstrapKhoraHost(
     tenantKey: foundation.tenantKey,
     postResolver: foundation.postResolver,
   });
-
   const ctx = createKhoraHost({
     persistence: foundation.persistence,
     tenantKey: foundation.tenantKey,
@@ -166,5 +172,52 @@ export async function bootstrapKhoraHost(
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
   });
+  const fanOutWorkers = startFanOutWorkers({
+    planner: {
+      queue: foundation.persistence.fanOutQueue,
+      percolator: foundation.subscriptions.percolator,
+      candidateForJob(job) {
+        const post = job.postMetadata as KhoraPost;
+        return buildPercolatorCandidateFromPost({
+          post,
+          authorPrincipalId: job.authorPrincipalId,
+          authorProfileId: post.authorProfileId ?? job.authorPrincipalId,
+          namespaceRoot: opts.memories?.namespaceRoot ?? DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
+          lexicalText: JSON.stringify(post),
+          now: job.createdAtMs,
+        });
+      },
+      observe: observeFanOut,
+    },
+    delivery: {
+      queue: foundation.persistence.fanOutQueue,
+      principalOrdinals: foundation.persistence.principalOrdinals,
+      inboxDelivery: createResolveCellInboxDelivery(foundation.cluster.resolveCell),
+      cellIdForPrincipal: foundation.cluster.assignPrincipalToCell,
+      observe: observeFanOut,
+      async onDelivered(dids) {
+        await Promise.all(
+          dids.map(async (did) => {
+            if ((ctx.host.inboxHub?.listenerCount(did) ?? 0) === 0) return;
+            const items = await popInboxDrainItemsForDid(ctx, did);
+            ctx.host.inboxHub?.broadcast(did, { type: "drain", items });
+          }),
+        );
+      },
+    },
+  });
+  const closeCluster = foundation.cluster.close.bind(foundation.cluster);
+  foundation.cluster.close = () => {
+    fanOutWorkers.stop();
+    closeCluster();
+  };
   return { ctx };
+}
+
+function observeFanOut(event: FanOutWorkerEvent): void {
+  if (event.type === "receipt" && !event.available) {
+    logger.warn({ fanOut: event }, "fan-out receipt unavailable");
+  } else {
+    logger.debug({ fanOut: event }, "fan-out worker");
+  }
 }

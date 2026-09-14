@@ -93,6 +93,7 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "bench:fanout": "bun run src/fanout/fanout.bench.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },

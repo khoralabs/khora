@@ -285,6 +285,14 @@ HTTP create post
           3. fanOutInboxDeliveries() → pointer staging in recipient inbox tables
 ```
 
+### Durable fan-out operations
+
+`runNextFanOutPlanningJob` and `runNextFanOutDeliveryChunk` accept an optional `observe` hook. It reports planning/delivery outcomes and durations, queue lag, stale-lease recovery, attempts/retries, target/chunk counts, and receipt availability/write errors. `RoutedInboxDelivery.observeBatch` reports route batch size, active concurrency, duration, and outcome. Hooks are best-effort and cannot fail delivery.
+
+Tune `pageSize`, `chunkSize`, worker `leaseMs`/`retryDelayMs`/`maxAttempts`, and `RoutedInboxDelivery`'s `maxBatchSize` (capped at 512), `concurrency` (default 8), and `maxTargets` (default 10,000). Workload chunks are also capped by the receipt codec. Receipt object storage is optional: delivery still completes without it, while receipt reads report `receiptsAvailable: false`; alert on unavailable receipt events when object storage is configured.
+
+Run the repeatable structural benchmark with `bun run --cwd packages/host bench:fanout`. Optional arguments include `--targets=`, `--page-size=`, `--chunk-size=`, `--batch-size=`, and `--concurrency=`. Its JSON reports throughput and observed bounds; it verifies bounds and completion without machine-dependent timing thresholds.
+
 **Key files:**
 | Role | Path |
 |------|------|
