@@ -9,6 +9,7 @@ export {
   KHORA_DISCOVERY_ENDPOINTS,
   KHORA_HTTP_PATH,
   type KhoraHttpPathKey,
+  khoraDeliveryReceiptPath,
   khoraPostByIdPath,
   khoraProfileByDidPath,
   khoraProfileByUsernamePath,

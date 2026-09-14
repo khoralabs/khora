@@ -1,5 +1,8 @@
 import type { Signer } from "@khoralabs/did-key-identity";
 import type {
+  DeliveryReceiptContains,
+  DeliveryReceiptSummary,
+  DeliveryReceiptTargetsPage,
   KhoraHostDiscovery,
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
@@ -24,6 +27,11 @@ import {
   type AuthorSubscriptionsSnapshot,
   listAuthorSubscriptions as httpListAuthorSubscriptions,
 } from "./http/authors";
+import {
+  deliveryReceiptContains,
+  deliveryReceiptSummary,
+  deliveryReceiptTargets,
+} from "./http/delivery-receipts";
 import { health } from "./http/health";
 import { inviteTree, listInvites, previewInvite } from "./http/invites";
 import {
@@ -82,6 +90,8 @@ export type KhoraClientOptions = {
   nonceFactory?: () => string;
   dataDir?: string;
   plugins?: readonly KhoraPluginInstaller[];
+  /** Root admin token required by ops-only methods. */
+  adminToken?: string;
 };
 
 export class KhoraClient {
@@ -89,6 +99,7 @@ export class KhoraClient {
   private readonly duplex: KhoraDuplexTransport;
   private readonly eventListeners: Array<(event: KhoraClientEvent) => void> = [];
   private readonly pluginHandles: KhoraPluginHandle[] = [];
+  private readonly adminToken?: string;
 
   constructor(options: KhoraClientOptions) {
     let bundle: KhoraTransportBundle;
@@ -110,6 +121,7 @@ export class KhoraClient {
     }
     this.transport = bundle.unary;
     this.duplex = bundle.duplex;
+    this.adminToken = options.adminToken;
     const resolvePath = createKhoraResolvePath(options.dataDir);
     for (const installer of options.plugins ?? []) {
       this.pluginHandles.push(installer({ client: this, resolvePath }));
@@ -144,6 +156,26 @@ export class KhoraClient {
 
   health(): Promise<{ ok: true }> {
     return health(this.transport);
+  }
+
+  private requireAdminToken(): string {
+    if (!this.adminToken) throw new Error("KhoraClient: adminToken is required");
+    return this.adminToken;
+  }
+
+  deliveryReceiptSummary(postId: string): Promise<DeliveryReceiptSummary> {
+    return deliveryReceiptSummary(this.transport, this.requireAdminToken(), postId);
+  }
+
+  deliveryReceiptContains(postId: string, did: string): Promise<DeliveryReceiptContains> {
+    return deliveryReceiptContains(this.transport, this.requireAdminToken(), postId, did);
+  }
+
+  deliveryReceiptTargets(
+    postId: string,
+    opts?: { limit?: number; cursor?: string },
+  ): Promise<DeliveryReceiptTargetsPage> {
+    return deliveryReceiptTargets(this.transport, this.requireAdminToken(), postId, opts);
   }
 
   getAgentStatus(): Promise<KhoraPost | null> {

@@ -2,6 +2,7 @@ import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts
 import type { NotificationBufferPort } from "../inbox/notification-buffer";
 import { createInboxWsHub } from "../inbox/ws-hub";
 import { createKhoraRelayOnEvent } from "../posts/on-event";
+import { createDeliveryReceiptReader, NoopDeliveryReceiptStore } from "../receipts";
 import { startPrincipalTeardownWorker } from "../registration/teardown-worker";
 import { asHostAuthPreflight } from "./auth-preflight";
 import type { KhoraHostContext } from "./context";
@@ -63,6 +64,12 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     principalTeardownWorker,
     subscriptions: deps.subscriptions,
     publicPostFeed: deps.publicPostFeed,
+    deliveryReceipts: createDeliveryReceiptReader({
+      tenantKey: deps.tenantKey,
+      queue: deps.persistence.fanOutQueue,
+      ordinals: deps.persistence.principalOrdinals,
+      store: deps.deliveryReceiptStore ?? new NoopDeliveryReceiptStore(),
+    }),
     ...(deps.search !== undefined ? { search: deps.search } : {}),
     ...deps.registration,
   };

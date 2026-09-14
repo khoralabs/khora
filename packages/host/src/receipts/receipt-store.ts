@@ -32,6 +32,7 @@ export interface DeliveryReceiptStore {
     opts?: { sorted?: boolean },
   ): Promise<ReceiptWriteResult>;
   getManifest(jobId: string): Promise<DeliveryReceiptManifest | undefined>;
+  getFragment(descriptor: ReceiptFragmentDescriptor): Promise<number[] | undefined>;
 }
 
 const segment = (value: string) => encodeURIComponent(value);
@@ -50,6 +51,9 @@ export class NoopDeliveryReceiptStore implements DeliveryReceiptStore {
     return { available: false };
   }
   async getManifest(_jobId: string): Promise<undefined> {
+    return undefined;
+  }
+  async getFragment(_descriptor: ReceiptFragmentDescriptor): Promise<undefined> {
     return undefined;
   }
 }
@@ -129,6 +133,21 @@ export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryR
         return bytes
           ? (JSON.parse(new TextDecoder().decode(bytes)) as DeliveryReceiptManifest)
           : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    async getFragment(descriptor) {
+      try {
+        const bytes = await objects.get(descriptor.key);
+        if (
+          bytes === undefined ||
+          bytes.byteLength !== descriptor.byteLength ||
+          createHash("sha256").update(bytes).digest("hex") !== descriptor.sha256
+        ) {
+          return undefined;
+        }
+        return ReceiptBitmapCodec.decode(bytes);
       } catch {
         return undefined;
       }

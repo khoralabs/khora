@@ -11,6 +11,7 @@ import type {
   KhoraHostHealthPort,
   KhoraHostSpecPort,
 } from "../ports";
+import type { DeliveryReceiptStore } from "../receipts";
 import type { KhoraRegistrationApi } from "../registration/api";
 import type { PrincipalLifecycle } from "../registration/lifecycle";
 
@@ -31,5 +32,6 @@ export type KhoraHostDeps = {
   hostSpec: KhoraHostSpecPort;
   registration: KhoraRegistrationApi;
   outboxPayloadCodec: OutboxPayloadCodec;
+  deliveryReceiptStore?: DeliveryReceiptStore;
   startPrincipalTeardownWorker?: boolean;
 };

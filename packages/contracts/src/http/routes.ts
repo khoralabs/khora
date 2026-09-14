@@ -22,6 +22,7 @@ export const KHORA_HTTP_PATH = {
   opsHostConfig: "/v1/ops/host/config",
   opsPosts: "/v1/ops/posts",
   opsPostsNewerCount: "/v1/ops/posts/newer-count",
+  opsDeliveryReceiptsPrefix: "/v1/ops/delivery-receipts/",
   opsAgentsPrefix: "/v1/ops/agents/",
   hostRegistry: "/v1/host/registry",
   hostRegistryConfig: "/v1/host/registry/config",
@@ -44,6 +45,10 @@ export function khoraProfileByDidPath(did: string): string {
 
 export function khoraPostByIdPath(id: string): string {
   return `${KHORA_HTTP_PATH.posts}/${encodeURIComponent(id)}`;
+}
+
+export function khoraDeliveryReceiptPath(postId: string): string {
+  return `${KHORA_HTTP_PATH.opsDeliveryReceiptsPrefix}${encodeURIComponent(postId)}`;
 }
 
 export function khoraRelationshipByIdPath(channelId: string): string {
