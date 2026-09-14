@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
-import { fragmentReceiptOrdinals, ReceiptBitmapCodec } from "./bitmap";
+import {
+  fragmentReceiptOrdinals,
+  fragmentSortedReceiptOrdinals,
+  ReceiptBitmapCodec,
+} from "./bitmap";
 import type { ObjectStorePort } from "./object-store";
 
 export type ReceiptKind = "target" | "delivered" | "failed";
@@ -25,6 +29,7 @@ export interface DeliveryReceiptStore {
     jobId: string,
     receipts: Record<ReceiptKind, Iterable<number>>,
     nowMs?: number,
+    opts?: { sorted?: boolean },
   ): Promise<ReceiptWriteResult>;
   getManifest(jobId: string): Promise<DeliveryReceiptManifest | undefined>;
 }
@@ -40,6 +45,7 @@ export class NoopDeliveryReceiptStore implements DeliveryReceiptStore {
     _jobId: string,
     _receipts: Record<ReceiptKind, Iterable<number>>,
     _nowMs?: number,
+    _opts?: { sorted?: boolean },
   ): Promise<ReceiptWriteResult> {
     return { available: false };
   }
@@ -82,7 +88,7 @@ async function putIdempotent(
 export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryReceiptStore {
   if (!objects) return new NoopDeliveryReceiptStore();
   return {
-    async write(jobId, receipts, nowMs = Date.now()) {
+    async write(jobId, receipts, nowMs = Date.now(), opts = {}) {
       try {
         const manifest: DeliveryReceiptManifest = {
           version: 1,
@@ -91,7 +97,10 @@ export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryR
           receipts: { target: [], delivered: [], failed: [] },
         };
         for (const kind of ["target", "delivered", "failed"] as const) {
-          for (const fragment of fragmentReceiptOrdinals(receipts[kind])) {
+          const fragments = opts.sorted
+            ? fragmentSortedReceiptOrdinals(receipts[kind])
+            : fragmentReceiptOrdinals(receipts[kind]);
+          for (const fragment of fragments) {
             const bytes = ReceiptBitmapCodec.encode(fragment.ordinals);
             const descriptor: ReceiptFragmentDescriptor = {
               high16: fragment.high16,

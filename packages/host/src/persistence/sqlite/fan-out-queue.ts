@@ -27,6 +27,20 @@ type JobRow = {
   updated_at_ms: number;
 };
 
+type ChunkRow = {
+  job_id: string;
+  chunk_index: number;
+  workload_gzip: Uint8Array;
+  status: FanOutWorkloadChunk["status"];
+  attempt_count: number;
+  available_at_ms: number;
+  lease_expires_at_ms: number | null;
+  delivered_ordinals_json: string;
+  failed_ordinals_json: string;
+  last_error: string | null;
+  created_at_ms: number;
+};
+
 function mapJob(row: JobRow): FanOutJob {
   return {
     id: row.id,
@@ -49,6 +63,22 @@ function mapJob(row: JobRow): FanOutJob {
     lastError: row.last_error,
     createdAtMs: row.created_at_ms,
     updatedAtMs: row.updated_at_ms,
+  };
+}
+
+function mapChunk(row: ChunkRow): FanOutWorkloadChunk {
+  return {
+    jobId: row.job_id,
+    chunkIndex: row.chunk_index,
+    records: FanOutWorkloadCodec.decode(row.workload_gzip),
+    status: row.status,
+    attemptCount: row.attempt_count,
+    availableAtMs: row.available_at_ms,
+    leaseExpiresAtMs: row.lease_expires_at_ms,
+    deliveredOrdinals: JSON.parse(row.delivered_ordinals_json),
+    failedOrdinals: JSON.parse(row.failed_ordinals_json),
+    lastError: row.last_error,
+    createdAtMs: row.created_at_ms,
   };
 }
 
@@ -85,6 +115,21 @@ export function ensureFanOutQueueSchema(db: Database): void {
       })();
     }
   }
+  const additions: Record<string, string> = {
+    attempt_count: "INTEGER NOT NULL DEFAULT 0",
+    available_at_ms: "INTEGER NOT NULL DEFAULT 0",
+    lease_expires_at_ms: "INTEGER",
+    delivered_ordinals_json: "TEXT NOT NULL DEFAULT '[]'",
+    failed_ordinals_json: "TEXT NOT NULL DEFAULT '[]'",
+    last_error: "TEXT",
+  };
+  for (const [name, definition] of Object.entries(additions)) {
+    if (!columns.includes(name)) {
+      db.run(`ALTER TABLE fan_out_workload_chunks ADD COLUMN ${name} ${definition}`);
+    }
+  }
+  db.run(`CREATE INDEX IF NOT EXISTS idx_fan_out_chunks_delivery
+    ON fan_out_workload_chunks (status, available_at_ms, created_at_ms)`);
 }
 
 export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
@@ -151,34 +196,27 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         VALUES (?, ?, ?, 'pending', ?)`).run(jobId, next, workload, nowMs);
       return next;
     },
+    getWorkloadChunk(jobId, chunkIndex) {
+      const row = db
+        .query<ChunkRow, [string, number]>(
+          "SELECT * FROM fan_out_workload_chunks WHERE job_id=? AND chunk_index=?",
+        )
+        .get(jobId, chunkIndex);
+      return row === null ? undefined : mapChunk(row);
+    },
     listWorkloadChunks(jobId) {
       return db
-        .query<
-          {
-            job_id: string;
-            chunk_index: number;
-            workload_gzip: Uint8Array;
-            status: FanOutWorkloadChunk["status"];
-            created_at_ms: number;
-          },
-          [string]
-        >(`SELECT * FROM fan_out_workload_chunks
+        .query<ChunkRow, [string]>(`SELECT * FROM fan_out_workload_chunks
         WHERE job_id=? ORDER BY chunk_index`)
         .all(jobId)
-        .map((row) => ({
-          jobId: row.job_id,
-          chunkIndex: row.chunk_index,
-          records: FanOutWorkloadCodec.decode(row.workload_gzip),
-          status: row.status,
-          createdAtMs: row.created_at_ms,
-        }));
+        .map(mapChunk);
     },
     completePlanning(jobId, plannedTargetCount, nowMs) {
       const result = db
-        .query(`UPDATE fan_out_jobs SET status='routing_pending',
+        .query(`UPDATE fan_out_jobs SET status=CASE WHEN ?=0 THEN 'completed' ELSE 'routing_pending' END,
         planned_target_count=?, lease_expires_at_ms=NULL, last_error=NULL, updated_at_ms=?
         WHERE id=? AND status='planning'`)
-        .run(plannedTargetCount, nowMs, jobId);
+        .run(plannedTargetCount, plannedTargetCount, nowMs, jobId);
       if (result.changes !== 1) throw new Error("fan-out job is not being planned");
     },
     failPlanning(jobId, nowMs, error, retryAtMs) {
@@ -191,6 +229,83 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         nowMs,
         jobId,
       );
+    },
+    tryClaimDelivery(nowMs, leaseMs) {
+      return db.transaction(() => {
+        const row = db
+          .query<
+            { job_id: string; chunk_index: number },
+            [number, number]
+          >(`SELECT c.job_id, c.chunk_index FROM fan_out_workload_chunks c
+          JOIN fan_out_jobs j ON j.id = c.job_id
+          WHERE j.status='routing_pending' AND c.available_at_ms <= ? AND (
+            c.status='pending' OR (c.status='delivering' AND c.lease_expires_at_ms <= ?)
+          ) ORDER BY c.created_at_ms, c.job_id, c.chunk_index LIMIT 1`)
+          .get(nowMs, nowMs);
+        if (row === null) return undefined;
+        db.query(`UPDATE fan_out_workload_chunks SET status='delivering',
+          attempt_count=attempt_count+1, lease_expires_at_ms=?, last_error=NULL
+          WHERE job_id=? AND chunk_index=?`).run(nowMs + leaseMs, row.job_id, row.chunk_index);
+        return this.getWorkloadChunk(row.job_id, row.chunk_index);
+      })();
+    },
+    completeDelivery(jobId, chunkIndex, deliveredOrdinals, failedOrdinals, nowMs) {
+      db.transaction(() => {
+        const current = db
+          .query<
+            { status: FanOutWorkloadChunk["status"]; delivered_ordinals_json: string },
+            [string, number]
+          >(`SELECT status, delivered_ordinals_json FROM fan_out_workload_chunks
+             WHERE job_id=? AND chunk_index=?`)
+          .get(jobId, chunkIndex);
+        if (current?.status !== "delivering") {
+          throw new Error("fan-out chunk is not being delivered");
+        }
+        const delivered = [
+          ...new Set([
+            ...(JSON.parse(current.delivered_ordinals_json) as number[]),
+            ...deliveredOrdinals,
+          ]),
+        ];
+        db.query(`UPDATE fan_out_workload_chunks SET status='completed',
+          lease_expires_at_ms=NULL, delivered_ordinals_json=?, failed_ordinals_json=?,
+          last_error=NULL WHERE job_id=? AND chunk_index=? AND status='delivering'`).run(
+          JSON.stringify(delivered),
+          JSON.stringify([...new Set(failedOrdinals)]),
+          jobId,
+          chunkIndex,
+        );
+        const summary = db
+          .query<{ pending: number; routed: number }, [string]>(`SELECT
+            SUM(CASE WHEN status != 'completed' THEN 1 ELSE 0 END) AS pending,
+            SUM(json_array_length(delivered_ordinals_json)) AS routed
+            FROM fan_out_workload_chunks WHERE job_id=?`)
+          .get(jobId);
+        db.query(`UPDATE fan_out_jobs SET status=?, routed_target_count=?,
+          updated_at_ms=?, lease_expires_at_ms=NULL WHERE id=? AND status='routing_pending'`).run(
+          (summary?.pending ?? 0) === 0 ? "completed" : "routing_pending",
+          summary?.routed ?? 0,
+          nowMs,
+          jobId,
+        );
+      })();
+    },
+    failDelivery(jobId, chunkIndex, nowMs, error, retryAtMs) {
+      db.transaction(() => {
+        db.query(`UPDATE fan_out_workload_chunks SET status=?, available_at_ms=?,
+          lease_expires_at_ms=NULL, last_error=? WHERE job_id=? AND chunk_index=?
+          AND status='delivering'`).run(
+          retryAtMs === undefined ? "failed" : "pending",
+          retryAtMs ?? nowMs,
+          error,
+          jobId,
+          chunkIndex,
+        );
+        if (retryAtMs === undefined) {
+          db.query(`UPDATE fan_out_jobs SET status='failed', last_error=?,
+            updated_at_ms=? WHERE id=? AND status='routing_pending'`).run(error, nowMs, jobId);
+        }
+      })();
     },
   };
 }

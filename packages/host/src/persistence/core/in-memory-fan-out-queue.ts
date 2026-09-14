@@ -64,10 +64,30 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
         chunkIndex,
         records: FanOutWorkloadCodec.decode(stored),
         status: "pending",
+        attemptCount: 0,
+        availableAtMs: nowMs,
+        leaseExpiresAtMs: null,
+        deliveredOrdinals: [],
+        failedOrdinals: [],
+        lastError: null,
         createdAtMs: nowMs,
       });
       chunks.set(jobId, rows);
       return chunkIndex;
+    },
+    getWorkloadChunk(jobId, chunkIndex) {
+      const row = chunks.get(jobId)?.[chunkIndex];
+      return row === undefined
+        ? undefined
+        : {
+            ...row,
+            records: row.records.map((record) => ({
+              ...record,
+              subscriptionMatches: [...record.subscriptionMatches],
+            })),
+            deliveredOrdinals: [...row.deliveredOrdinals],
+            failedOrdinals: [...row.failedOrdinals],
+          };
     },
     listWorkloadChunks(jobId) {
       return (chunks.get(jobId) ?? []).map((row) => ({
@@ -76,12 +96,14 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
           ...record,
           subscriptionMatches: [...record.subscriptionMatches],
         })),
+        deliveredOrdinals: [...row.deliveredOrdinals],
+        failedOrdinals: [...row.failedOrdinals],
       }));
     },
     completePlanning(jobId, plannedTargetCount, nowMs) {
       const job = jobs.get(jobId);
       if (job?.status !== "planning") throw new Error("fan-out job is not being planned");
-      job.status = "routing_pending";
+      job.status = plannedTargetCount === 0 ? "completed" : "routing_pending";
       job.plannedTargetCount = plannedTargetCount;
       job.leaseExpiresAtMs = null;
       job.lastError = null;
@@ -94,6 +116,57 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
       job.availableAtMs = retryAtMs ?? nowMs;
       job.leaseExpiresAtMs = null;
       job.lastError = error;
+      job.updatedAtMs = nowMs;
+    },
+    tryClaimDelivery(nowMs, leaseMs) {
+      const row = [...chunks.values()]
+        .flat()
+        .filter(
+          (chunk) =>
+            jobs.get(chunk.jobId)?.status === "routing_pending" &&
+            chunk.availableAtMs <= nowMs &&
+            (chunk.status === "pending" ||
+              (chunk.status === "delivering" && (chunk.leaseExpiresAtMs ?? 0) <= nowMs)),
+        )
+        .sort((a, b) => a.createdAtMs - b.createdAtMs || a.chunkIndex - b.chunkIndex)[0];
+      if (row === undefined) return undefined;
+      row.status = "delivering";
+      row.attemptCount++;
+      row.leaseExpiresAtMs = nowMs + leaseMs;
+      return { ...row, records: [...row.records] };
+    },
+    completeDelivery(jobId, chunkIndex, deliveredOrdinals, failedOrdinals, nowMs) {
+      const row = chunks.get(jobId)?.[chunkIndex];
+      const job = jobs.get(jobId);
+      if (row?.status !== "delivering" || job?.status !== "routing_pending") {
+        throw new Error("fan-out chunk is not being delivered");
+      }
+      row.status = "completed";
+      row.leaseExpiresAtMs = null;
+      row.deliveredOrdinals = [...new Set([...row.deliveredOrdinals, ...deliveredOrdinals])];
+      row.failedOrdinals = [...new Set(failedOrdinals)];
+      row.lastError = null;
+      job.routedTargetCount = (chunks.get(jobId) ?? []).reduce(
+        (count, chunk) => count + chunk.deliveredOrdinals.length,
+        0,
+      );
+      if ((chunks.get(jobId) ?? []).every((chunk) => chunk.status === "completed")) {
+        job.status = "completed";
+      }
+      job.updatedAtMs = nowMs;
+    },
+    failDelivery(jobId, chunkIndex, nowMs, error, retryAtMs) {
+      const row = chunks.get(jobId)?.[chunkIndex];
+      const job = jobs.get(jobId);
+      if (row?.status !== "delivering" || job?.status !== "routing_pending") return;
+      row.status = retryAtMs === undefined ? "failed" : "pending";
+      row.availableAtMs = retryAtMs ?? nowMs;
+      row.leaseExpiresAtMs = null;
+      row.lastError = error;
+      if (retryAtMs === undefined) {
+        job.status = "failed";
+        job.lastError = error;
+      }
       job.updatedAtMs = nowMs;
     },
   };

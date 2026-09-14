@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS fan_out_workload_chunks (
   chunk_index INTEGER NOT NULL,
   workload_gzip BLOB NOT NULL,
   status TEXT NOT NULL,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  available_at_ms INTEGER NOT NULL DEFAULT 0,
+  lease_expires_at_ms INTEGER,
+  delivered_ordinals_json TEXT NOT NULL DEFAULT '[]',
+  failed_ordinals_json TEXT NOT NULL DEFAULT '[]',
+  last_error TEXT,
   created_at_ms INTEGER NOT NULL,
   PRIMARY KEY (job_id, chunk_index)
 );

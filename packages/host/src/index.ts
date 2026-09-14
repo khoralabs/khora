@@ -49,6 +49,7 @@ export {
   topicSlugsToLabelKinds,
   topicSlugToLabelKind,
 } from "./discovery/subscriptions";
+export * from "./fanout";
 export {
   createKhoraHost,
   HOST_AGGREGATE_DOMAIN,

@@ -1,5 +1,6 @@
 export {
   fragmentReceiptOrdinals,
+  fragmentSortedReceiptOrdinals,
   ReceiptBitmapCodec,
   type ReceiptBitmapFragment,
   restoreReceiptOrdinals,

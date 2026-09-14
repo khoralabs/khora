@@ -137,7 +137,13 @@ export type FanOutWorkloadChunk = {
   jobId: string;
   chunkIndex: number;
   records: readonly FanOutWorkloadRecord[];
-  status: "pending" | "completed";
+  status: "pending" | "delivering" | "completed" | "failed";
+  attemptCount: number;
+  availableAtMs: number;
+  leaseExpiresAtMs: number | null;
+  deliveredOrdinals: readonly number[];
+  failedOrdinals: readonly number[];
+  lastError: string | null;
   createdAtMs: number;
 };
 
@@ -151,9 +157,25 @@ export type FanOutQueuePort = {
     records: readonly FanOutWorkloadRecord[],
     nowMs: number,
   ): number;
+  getWorkloadChunk(jobId: string, chunkIndex: number): FanOutWorkloadChunk | undefined;
   listWorkloadChunks(jobId: string): FanOutWorkloadChunk[];
   completePlanning(jobId: string, plannedTargetCount: number, nowMs: number): void;
   failPlanning(jobId: string, nowMs: number, error: string, retryAtMs?: number): void;
+  tryClaimDelivery(nowMs: number, leaseMs: number): FanOutWorkloadChunk | undefined;
+  completeDelivery(
+    jobId: string,
+    chunkIndex: number,
+    deliveredOrdinals: readonly number[],
+    failedOrdinals: readonly number[],
+    nowMs: number,
+  ): void;
+  failDelivery(
+    jobId: string,
+    chunkIndex: number,
+    nowMs: number,
+    error: string,
+    retryAtMs?: number,
+  ): void;
 };
 
 /**
