@@ -3,6 +3,7 @@ import { NAMESPACE_ENTITY_PROFILE } from "../core/id-conventions";
 import type { KhoraHostPersistence } from "../core/port";
 import { createAgentAccountStatusPort } from "./agent-account-status";
 import { createEntityAdapter } from "./entity-adapter";
+import { createSqliteFanOutQueue } from "./fan-out-queue";
 import { createPendingEmbeddingQueue } from "./pending-embeddings-queue";
 import { backfillPrincipalOrdinals, createPrincipalOrdinalPort } from "./principal-ordinals";
 import { ProjectionStore } from "./projection-store";
@@ -41,6 +42,7 @@ export function createKhoraHostSqlitePersistence(
   const teardownQueue = createPrincipalTeardownQueue(hostDb);
   const pendingEmbeddings = createPendingEmbeddingQueue(hostDb);
   const principalOrdinals = createPrincipalOrdinalPort(hostDb);
+  const fanOutQueue = createSqliteFanOutQueue(hostDb);
   backfillPrincipalOrdinals(hostDb, tenantKey, principalOrdinals);
 
   const persistence: KhoraHostPersistence = {
@@ -52,6 +54,7 @@ export function createKhoraHostSqlitePersistence(
     teardownQueue,
     pendingEmbeddings,
     principalOrdinals,
+    fanOutQueue,
     registerAgent(input) {
       return registerAgentOnPersistence(persistence, hostDb, input);
     },

@@ -15,6 +15,7 @@ export { createAgentAccountStatusPort } from "./agent-account-status";
 export { backfillPercolatorOwnerOrdinals } from "./backfill-percolator-owner-ordinals";
 export { countRegisteredPrincipals } from "./count-registered-principals";
 export { createEntityAdapter, parseEntityRow } from "./entity-adapter";
+export { createSqliteFanOutQueue, ensureFanOutQueueSchema } from "./fan-out-queue";
 export { createKhoraHostHealthPort } from "./health-port";
 export {
   type CreateSqliteKhoraHostFoundationOpts,

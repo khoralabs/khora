@@ -99,6 +99,58 @@ export type PrincipalOrdinalPort = {
   getManyByDid(dids: readonly string[]): Map<string, number>;
 };
 
+export type FanOutJobStatus =
+  | "planning_pending"
+  | "planning"
+  | "routing_pending"
+  | "completed"
+  | "failed";
+
+export type FanOutPlanningJobInput = {
+  tenantKey: string;
+  postId: string;
+  sourceCellId: string;
+  sourceRecordKey: string;
+  sourceContentHash: string;
+  cellPoolCount: number;
+  authorPrincipalId: string;
+  postKind: string;
+  postMetadata: unknown;
+  visibility: string;
+};
+
+export type FanOutJob = FanOutPlanningJobInput & {
+  id: string;
+  status: FanOutJobStatus;
+  plannedTargetCount: number;
+  routedTargetCount: number;
+  attemptCount: number;
+  availableAtMs: number;
+  leaseExpiresAtMs: number | null;
+  lastError: string | null;
+  createdAtMs: number;
+  updatedAtMs: number;
+};
+
+export type FanOutWorkloadChunk = {
+  jobId: string;
+  chunkIndex: number;
+  recipientOrdinals: readonly number[];
+  status: "pending" | "completed";
+  createdAtMs: number;
+};
+
+/** Durable queue boundary shared by fan-out planning and later delivery workers. */
+export type FanOutQueuePort = {
+  enqueuePlanning(input: FanOutPlanningJobInput, nowMs: number): string;
+  getJob(id: string): FanOutJob | undefined;
+  tryClaimPlanning(nowMs: number, leaseMs: number): FanOutJob | undefined;
+  appendWorkloadChunk(jobId: string, recipientOrdinals: readonly number[], nowMs: number): number;
+  listWorkloadChunks(jobId: string): FanOutWorkloadChunk[];
+  completePlanning(jobId: string, plannedTargetCount: number, nowMs: number): void;
+  failPlanning(jobId: string, nowMs: number, error: string, retryAtMs?: number): void;
+};
+
 /**
  * Host persistence facade: profile entities, principal registrations,
  * social graph, and account status.
@@ -206,6 +258,7 @@ export type PendingEmbeddingQueuePort = {
 export type KhoraHostPersistence = HostPersistence & {
   usernameIndex: UsernameIndexPort;
   principalOrdinals: PrincipalOrdinalPort;
+  fanOutQueue: FanOutQueuePort;
   teardownQueue: PrincipalTeardownQueuePort;
   pendingEmbeddings: PendingEmbeddingQueuePort;
   /**

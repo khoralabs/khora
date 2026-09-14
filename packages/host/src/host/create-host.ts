@@ -38,7 +38,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
       publicationClient: deps.publicationClient,
       search: deps.search,
       subscriptions: deps.subscriptions,
-      social: deps.persistence.social,
+      fanOutQueue: deps.persistence.fanOutQueue,
     }),
   });
   const runTeardownWorker = deps.startPrincipalTeardownWorker ?? true;

@@ -348,7 +348,6 @@ describe("ColonnadePublicationClient", () => {
       },
     });
     expect(res.catalog_pointer_id.length).toBeGreaterThan(0);
-    expect(res.generated_inbox_refs.length).toBe(1);
 
     const resolved = await catalog.resolveCatalogPointer({
       catalog_pointer_id: res.catalog_pointer_id,
@@ -362,8 +361,7 @@ describe("ColonnadePublicationClient", () => {
       limit: 5,
       cursor: "",
     });
-    expect(listed.entries.length).toBe(1);
-    expect(listed.entries[0]?.staging.kind).toBe("pointer");
+    expect(listed.entries.length).toBe(0);
   });
 
   test("resolveCell-only constructor uses noop catalog when catalog_publication is omitted", async () => {

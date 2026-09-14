@@ -1,4 +1,5 @@
 import { normalizeUsername, type PrincipalId } from "@khoralabs/khora-contracts";
+import { createInMemoryFanOutQueue } from "./in-memory-fan-out-queue";
 import { createInMemoryPendingEmbeddingQueue } from "./in-memory-pending-embeddings";
 import type {
   AgentAccountStatus,
@@ -259,6 +260,8 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
         );
       },
     },
+
+    fanOutQueue: createInMemoryFanOutQueue(),
 
     teardownQueue: {
       enqueue(principalId: PrincipalId, profileId: string, nowMs: number): void {

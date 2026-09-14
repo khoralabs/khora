@@ -5,36 +5,18 @@ import type { PostOperationInput, PostOperationOutput } from "./colonnade-types"
 import { randomId } from "./hash";
 import type { InboxDelivery } from "./inbox-delivery";
 
-function isResolveCell(
-  value: CatalogPersistence | ResolveCell | InboxDelivery,
-): value is ResolveCell {
-  return typeof value === "function";
-}
-
-function isInboxDelivery(value: unknown): value is InboxDelivery {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "deliver" in value &&
-    typeof (value as InboxDelivery).deliver === "function"
-  );
-}
-
 /**
- * Implements **`PostOperation`**: author outbox commit → optional catalog → {@link InboxDelivery}.
- *
- * Fan-out does not open cell DBs here. Delivery of inbox pointers is delegated to
- * {@link InboxDelivery} so local per-DB opens and future multiplexed cell-node /
- * cell-pool connections share the same publication path.
+ * Commits the author outbox record and optional catalog projection.
+ * Fan-out planning and delivery are deliberately host-owned asynchronous work.
  */
 export class ColonnadePublicationClient {
   private readonly catalog: CatalogPersistence;
   private readonly resolveAuthor: ResolveCell;
-  private readonly inboxDelivery: InboxDelivery;
-
-  /** Author cell accessor + abstract inbox delivery (noop catalog). */
+  constructor(resolveAuthor: ResolveCell);
+  /** @deprecated Inbox delivery is ignored; fan-out is host-owned. */
   constructor(resolveAuthor: ResolveCell, inboxDelivery: InboxDelivery);
-  /** Catalog + author cell accessor + abstract inbox delivery. */
+  constructor(catalog: CatalogPersistence, resolveAuthor: ResolveCell);
+  /** @deprecated Inbox delivery is ignored; fan-out is host-owned. */
   constructor(
     catalog: CatalogPersistence,
     resolveAuthor: ResolveCell,
@@ -42,24 +24,18 @@ export class ColonnadePublicationClient {
   );
   constructor(
     a: CatalogPersistence | ResolveCell,
-    b: ResolveCell | InboxDelivery,
-    c?: InboxDelivery,
+    b?: ResolveCell | InboxDelivery,
+    _c?: InboxDelivery,
   ) {
-    if (c !== undefined && isInboxDelivery(c) && isResolveCell(b)) {
-      this.catalog = a as CatalogPersistence;
-      this.resolveAuthor = b;
-      this.inboxDelivery = c;
-      return;
-    }
-    if (isInboxDelivery(b) && isResolveCell(a)) {
+    if (typeof a === "function") {
       this.catalog = defaultNoopCatalogPersistence();
       this.resolveAuthor = a;
-      this.inboxDelivery = b;
-      return;
+    } else if (typeof b === "function") {
+      this.catalog = a;
+      this.resolveAuthor = b;
+    } else {
+      throw new Error("ColonnadePublicationClient: missing author cell resolver");
     }
-    throw new Error(
-      "ColonnadePublicationClient: pass (ResolveCell, InboxDelivery) or (Catalog, ResolveCell, InboxDelivery)",
-    );
   }
 
   async postOperation(input: PostOperationInput): Promise<PostOperationOutput> {
@@ -111,24 +87,11 @@ export class ColonnadePublicationClient {
       }
     }
 
-    const pointer = {
-      source_cell_id: input.author_cell_id,
-      source_record_key: appendOut.record_key,
-      content_hash: appendOut.content_hash,
-      cell_pool_count: input.cell_pool_count,
-    };
-
-    const delivery = await this.inboxDelivery.deliver({
-      pointer,
-      targets: input.routing.fan_out_targets,
-      tenant_key: input.tenant_key,
-    });
-
     return {
       outbox_record_key: appendOut.record_key,
       content_hash: appendOut.content_hash,
       catalog_pointer_id: catalogPointerId,
-      generated_inbox_refs: delivery.generated_inbox_refs,
+      fan_out_job_id: input.fan_out_job_id ?? "",
     };
   }
 }

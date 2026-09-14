@@ -62,6 +62,38 @@ export function runHostPersistenceContractTests(
       );
     });
 
+    test("fan-out planning jobs are deterministic, leased, chunked, and retryable", async () => {
+      const { persistence: p } = await create();
+      const input = {
+        tenantKey: "tenant",
+        postId: "post-1",
+        sourceCellId: "cell-a",
+        sourceRecordKey: "record-a",
+        sourceContentHash: "a".repeat(64),
+        cellPoolCount: 4,
+        authorPrincipalId: "did:test:author",
+        postKind: "post",
+        postMetadata: { topics: ["x"] },
+        visibility: "public",
+      };
+      const id = p.fanOutQueue.enqueuePlanning(input, 100);
+      expect(p.fanOutQueue.enqueuePlanning(input, 101)).toBe(id);
+      const claimed = p.fanOutQueue.tryClaimPlanning(100, 50);
+      expect(claimed?.id).toBe(id);
+      expect(claimed?.attemptCount).toBe(1);
+      expect(p.fanOutQueue.tryClaimPlanning(149, 50)).toBeUndefined();
+      expect(p.fanOutQueue.tryClaimPlanning(150, 50)?.attemptCount).toBe(2);
+      expect(p.fanOutQueue.appendWorkloadChunk(id, [2, 7], 151)).toBe(0);
+      expect(p.fanOutQueue.listWorkloadChunks(id)[0]?.recipientOrdinals).toEqual([2, 7]);
+      p.fanOutQueue.failPlanning(id, 152, "retry", 200);
+      expect(p.fanOutQueue.tryClaimPlanning(199, 50)).toBeUndefined();
+      expect(p.fanOutQueue.tryClaimPlanning(200, 50)?.attemptCount).toBe(3);
+      expect(p.fanOutQueue.listWorkloadChunks(id)).toEqual([]);
+      p.fanOutQueue.completePlanning(id, 2, 201);
+      expect(p.fanOutQueue.getJob(id)?.status).toBe("routing_pending");
+      expect(p.fanOutQueue.getJob(id)?.plannedTargetCount).toBe(2);
+    });
+
     test("registerAgent rejects username taken by another principal", async () => {
       const { persistence: p } = await create();
       p.registerAgent({

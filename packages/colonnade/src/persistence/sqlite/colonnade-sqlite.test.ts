@@ -71,7 +71,7 @@ describe("SQLite Colonnade cluster", () => {
           fan_out_targets: [{ recipient_cell_id: bobCell, recipient_principal_id: "bob" }],
         },
       });
-      expect(res.generated_inbox_refs.length).toBe(1);
+      expect(res.outbox_record_key.length).toBeGreaterThan(0);
 
       const bobStore = cluster.resolveCell(bobCell);
       const listed = await bobStore.listPendingInboxEntries({
@@ -81,40 +81,7 @@ describe("SQLite Colonnade cluster", () => {
         limit: 10,
         cursor: "",
       });
-      expect(listed.entries.length).toBe(1);
-      expect(listed.entries[0]?.staging.kind).toBe("pointer");
-
-      const entry0 = listed.entries[0];
-      if (entry0 === undefined) throw new Error("expected inbox entry");
-      const aliceStore = cluster.resolveCell(aliceCell);
-      const ptr = entry0.staging;
-      if (ptr.kind !== "pointer") throw new Error("expected pointer");
-      const fetched = await aliceStore.fetchOutboxPayload({
-        cell_id: aliceCell,
-        locator: {
-          cell_id: ptr.pointer.pointer.source_cell_id,
-          record_key: ptr.pointer.pointer.source_record_key,
-          cell_pool_count: ptr.pointer.pointer.cell_pool_count,
-        },
-        payload_format: "stored",
-      });
-      expect(fetched.bytes_available).toBe(true);
-
-      const drain = await bobStore.verifyAndDrainInboxBatch({
-        cell_id: bobCell,
-        tenant_key: "tenant",
-        principal_id: "bob",
-        inbox_entry_ids: [entry0.inbox_entry_id],
-        resolved_payloads: [
-          {
-            inbox_entry_id: entry0.inbox_entry_id,
-            pointer: ptr.pointer.pointer,
-            verified_bytes: fetched.payload_bytes,
-          },
-        ],
-      });
-      expect(drain.failed_entry_ids.length).toBe(0);
-      expect(drain.drained_entry_ids.length).toBe(1);
+      expect(listed.entries.length).toBe(0);
     } finally {
       cluster.close();
       catalogDb.close();
@@ -237,7 +204,7 @@ describe("SQLite Colonnade cluster", () => {
               fan_out_targets: [{ recipient_cell_id: bobCell, recipient_principal_id: "bob" }],
             },
           });
-          expect(res.generated_inbox_refs.length).toBe(1);
+          expect(res.outbox_record_key.length).toBeGreaterThan(0);
 
           const bobStore = cluster.resolveCell(bobCell);
           const listed = await bobStore.listPendingInboxEntries({
@@ -247,8 +214,7 @@ describe("SQLite Colonnade cluster", () => {
             limit: 10,
             cursor: "",
           });
-          expect(listed.entries.length).toBe(1);
-          expect(listed.entries[0]?.staging.kind).toBe("pointer");
+          expect(listed.entries.length).toBe(0);
         } finally {
           cluster.close();
           catalogDb.close();

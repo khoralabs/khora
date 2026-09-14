@@ -141,11 +141,7 @@ export async function createSqliteKhoraHostFoundation(
     },
   };
   const cellPoolCount = cluster.cellPoolCount;
-  const publicationClient = new ColonnadePublicationClient(
-    cluster.catalog,
-    cluster.resolveCell,
-    cluster.inboxDelivery,
-  );
+  const publicationClient = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
   const subscriptions = bootstrapHostSubscriptions({
     persistence: createPercolatorSqlitePersistence(percolatorDb),

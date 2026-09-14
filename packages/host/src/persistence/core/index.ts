@@ -2,6 +2,7 @@ export {
   createHostPersistenceClient,
   type HostPersistenceClient,
 } from "./client";
+export { fanOutJobId } from "./fan-out-job-id";
 export {
   DEFAULT_TENANT_KEY,
   NAMESPACE_ENTITY_PROFILE,
@@ -15,12 +16,21 @@ export {
   USERNAME_INDEX_TENANT_KEY,
 } from "./id-conventions";
 export { createInMemoryKhoraHostPersistence } from "./in-memory";
+export {
+  createInMemoryFanOutQueue,
+  MAX_FAN_OUT_CHUNK_ORDINALS,
+} from "./in-memory-fan-out-queue";
 export { createInMemoryKhoraInvitesRepo } from "./in-memory-invites";
 export { createInMemoryPendingEmbeddingQueue } from "./in-memory-pending-embeddings";
 export type {
   AgentAccountStatus,
   AgentAccountStatusPort,
   ClaimedTeardownJob,
+  FanOutJob,
+  FanOutJobStatus,
+  FanOutPlanningJobInput,
+  FanOutQueuePort,
+  FanOutWorkloadChunk,
   HostEntityPersistence,
   HostEntityRow,
   HostEntityUpsert,
