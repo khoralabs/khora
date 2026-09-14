@@ -83,8 +83,12 @@ export function runHostPersistenceContractTests(
       expect(claimed?.attemptCount).toBe(1);
       expect(p.fanOutQueue.tryClaimPlanning(149, 50)).toBeUndefined();
       expect(p.fanOutQueue.tryClaimPlanning(150, 50)?.attemptCount).toBe(2);
-      expect(p.fanOutQueue.appendWorkloadChunk(id, [2, 7], 151)).toBe(0);
-      expect(p.fanOutQueue.listWorkloadChunks(id)[0]?.recipientOrdinals).toEqual([2, 7]);
+      const records = [
+        { ordinal: 2, subscriptionMatches: ["author"] },
+        { ordinal: 7, subscriptionMatches: ["topic:x"] },
+      ];
+      expect(p.fanOutQueue.appendWorkloadChunk(id, records, 151)).toBe(0);
+      expect(p.fanOutQueue.listWorkloadChunks(id)[0]?.records).toEqual(records);
       p.fanOutQueue.failPlanning(id, 152, "retry", 200);
       expect(p.fanOutQueue.tryClaimPlanning(199, 50)).toBeUndefined();
       expect(p.fanOutQueue.tryClaimPlanning(200, 50)?.attemptCount).toBe(3);

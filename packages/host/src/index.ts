@@ -118,6 +118,7 @@ export {
   listAuthorOutboxRecords,
   resolvePostById,
 } from "./posts";
+export * from "./receipts";
 export {
   createKhoraRegistrationApi,
   createPrincipalLifecycle,

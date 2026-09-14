@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
+import { FanOutWorkloadCodec } from "../../receipts/workload-codec";
 import { fanOutJobId } from "../core/fan-out-job-id";
-import { MAX_FAN_OUT_CHUNK_ORDINALS } from "../core/in-memory-fan-out-queue";
 import type { FanOutJob, FanOutQueuePort, FanOutWorkloadChunk } from "../core/port";
 import { FAN_OUT_QUEUE_DDL } from "../core/schema/fan-out-queue-ddl";
 
@@ -54,6 +54,37 @@ function mapJob(row: JobRow): FanOutJob {
 
 export function ensureFanOutQueueSchema(db: Database): void {
   db.run(FAN_OUT_QUEUE_DDL);
+  const columns = db
+    .query<{ name: string }, []>("PRAGMA table_info(fan_out_workload_chunks)")
+    .all()
+    .map(({ name }) => name);
+  if (!columns.includes("workload_gzip")) {
+    db.run("ALTER TABLE fan_out_workload_chunks ADD COLUMN workload_gzip BLOB");
+    if (columns.includes("recipient_ordinals_json")) {
+      const rows = db
+        .query<{ job_id: string; chunk_index: number; recipient_ordinals_json: string }, []>(
+          `SELECT job_id, chunk_index, recipient_ordinals_json
+           FROM fan_out_workload_chunks`,
+        )
+        .all();
+      const update = db.prepare(
+        `UPDATE fan_out_workload_chunks SET workload_gzip = ?
+         WHERE job_id = ? AND chunk_index = ?`,
+      );
+      db.transaction(() => {
+        for (const row of rows) {
+          const ordinals = JSON.parse(row.recipient_ordinals_json) as number[];
+          update.run(
+            FanOutWorkloadCodec.encode(
+              ordinals.map((ordinal) => ({ ordinal, subscriptionMatches: [] })),
+            ),
+            row.job_id,
+            row.chunk_index,
+          );
+        }
+      })();
+    }
+  }
 }
 
 export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
@@ -105,12 +136,8 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         return claimed === null ? undefined : mapJob(claimed);
       })();
     },
-    appendWorkloadChunk(jobId, recipientOrdinals, nowMs) {
-      if (recipientOrdinals.length === 0 || recipientOrdinals.length > MAX_FAN_OUT_CHUNK_ORDINALS) {
-        throw new Error(
-          `fan-out workload chunk must contain 1-${MAX_FAN_OUT_CHUNK_ORDINALS} ordinals`,
-        );
-      }
+    appendWorkloadChunk(jobId, records, nowMs) {
+      const workload = FanOutWorkloadCodec.encode(records);
       const job = this.getJob(jobId);
       if (job?.status !== "planning") throw new Error("fan-out job is not being planned");
       const next =
@@ -120,8 +147,8 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
           )
           .get(jobId)?.next ?? 0;
       db.query(`INSERT INTO fan_out_workload_chunks
-        (job_id, chunk_index, recipient_ordinals_json, status, created_at_ms)
-        VALUES (?, ?, ?, 'pending', ?)`).run(jobId, next, JSON.stringify(recipientOrdinals), nowMs);
+        (job_id, chunk_index, workload_gzip, status, created_at_ms)
+        VALUES (?, ?, ?, 'pending', ?)`).run(jobId, next, workload, nowMs);
       return next;
     },
     listWorkloadChunks(jobId) {
@@ -130,7 +157,7 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
           {
             job_id: string;
             chunk_index: number;
-            recipient_ordinals_json: string;
+            workload_gzip: Uint8Array;
             status: FanOutWorkloadChunk["status"];
             created_at_ms: number;
           },
@@ -141,7 +168,7 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         .map((row) => ({
           jobId: row.job_id,
           chunkIndex: row.chunk_index,
-          recipientOrdinals: JSON.parse(row.recipient_ordinals_json) as number[],
+          records: FanOutWorkloadCodec.decode(row.workload_gzip),
           status: row.status,
           createdAtMs: row.created_at_ms,
         }));

@@ -1,3 +1,4 @@
+import { FanOutWorkloadCodec, MAX_FAN_OUT_WORKLOAD_RECORDS } from "../../receipts/workload-codec";
 import { fanOutJobId } from "./fan-out-job-id";
 import type {
   FanOutJob,
@@ -6,7 +7,7 @@ import type {
   FanOutWorkloadChunk,
 } from "./port";
 
-export const MAX_FAN_OUT_CHUNK_ORDINALS = 1_000;
+export const MAX_FAN_OUT_CHUNK_ORDINALS = MAX_FAN_OUT_WORKLOAD_RECORDS;
 
 export function createInMemoryFanOutQueue(): FanOutQueuePort {
   const jobs = new Map<string, FanOutJob>();
@@ -52,12 +53,8 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
       job.updatedAtMs = nowMs;
       return { ...job };
     },
-    appendWorkloadChunk(jobId, recipientOrdinals, nowMs) {
-      if (recipientOrdinals.length === 0 || recipientOrdinals.length > MAX_FAN_OUT_CHUNK_ORDINALS) {
-        throw new Error(
-          `fan-out workload chunk must contain 1-${MAX_FAN_OUT_CHUNK_ORDINALS} ordinals`,
-        );
-      }
+    appendWorkloadChunk(jobId, records, nowMs) {
+      const stored = FanOutWorkloadCodec.encode(records);
       const job = jobs.get(jobId);
       if (job?.status !== "planning") throw new Error("fan-out job is not being planned");
       const rows = chunks.get(jobId) ?? [];
@@ -65,7 +62,7 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
       rows.push({
         jobId,
         chunkIndex,
-        recipientOrdinals: [...recipientOrdinals],
+        records: FanOutWorkloadCodec.decode(stored),
         status: "pending",
         createdAtMs: nowMs,
       });
@@ -75,7 +72,10 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
     listWorkloadChunks(jobId) {
       return (chunks.get(jobId) ?? []).map((row) => ({
         ...row,
-        recipientOrdinals: [...row.recipientOrdinals],
+        records: row.records.map((record) => ({
+          ...record,
+          subscriptionMatches: [...record.subscriptionMatches],
+        })),
       }));
     },
     completePlanning(jobId, plannedTargetCount, nowMs) {

@@ -1,4 +1,5 @@
 import type { PrincipalId } from "@khoralabs/khora-contracts";
+import type { FanOutWorkloadRecord } from "../../receipts/workload-codec";
 
 /** Insert/update payload for host entity storage (`body_json` is canonical JSON). */
 export type HostEntityUpsert = {
@@ -135,7 +136,7 @@ export type FanOutJob = FanOutPlanningJobInput & {
 export type FanOutWorkloadChunk = {
   jobId: string;
   chunkIndex: number;
-  recipientOrdinals: readonly number[];
+  records: readonly FanOutWorkloadRecord[];
   status: "pending" | "completed";
   createdAtMs: number;
 };
@@ -145,7 +146,11 @@ export type FanOutQueuePort = {
   enqueuePlanning(input: FanOutPlanningJobInput, nowMs: number): string;
   getJob(id: string): FanOutJob | undefined;
   tryClaimPlanning(nowMs: number, leaseMs: number): FanOutJob | undefined;
-  appendWorkloadChunk(jobId: string, recipientOrdinals: readonly number[], nowMs: number): number;
+  appendWorkloadChunk(
+    jobId: string,
+    records: readonly FanOutWorkloadRecord[],
+    nowMs: number,
+  ): number;
   listWorkloadChunks(jobId: string): FanOutWorkloadChunk[];
   completePlanning(jobId: string, plannedTargetCount: number, nowMs: number): void;
   failPlanning(jobId: string, nowMs: number, error: string, retryAtMs?: number): void;

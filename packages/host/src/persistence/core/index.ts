@@ -1,3 +1,4 @@
+export type { FanOutWorkloadRecord } from "../../receipts/workload-codec";
 export {
   createHostPersistenceClient,
   type HostPersistenceClient,

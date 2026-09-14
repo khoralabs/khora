@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_fan_out_jobs_planning
 CREATE TABLE IF NOT EXISTS fan_out_workload_chunks (
   job_id TEXT NOT NULL REFERENCES fan_out_jobs(id) ON DELETE CASCADE,
   chunk_index INTEGER NOT NULL,
-  recipient_ordinals_json TEXT NOT NULL,
+  workload_gzip BLOB NOT NULL,
   status TEXT NOT NULL,
   created_at_ms INTEGER NOT NULL,
   PRIMARY KEY (job_id, chunk_index)
