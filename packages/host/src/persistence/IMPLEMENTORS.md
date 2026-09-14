@@ -1,6 +1,6 @@
 # Host persistence implementor’s guide
 
-Contract for host projection / registration / social / teardown / pending-embeddings /
+Contract for host projection / registration / principal-ordinal / social / teardown / pending-embeddings /
 invites storage.
 Types: `@khoralabs/khora-host/persistence`.
 
@@ -22,6 +22,9 @@ Backends apply schema via `ensure*` helpers over shared DDL in `./core/schema`. 
 | ---- | ---- |
 | `teardownQueue` | Async principal teardown jobs |
 | `pendingEmbeddings` | Failed embedding retry queue (host meta DB; not memories) |
+
+`principalOrdinals` assigns stable uint32 identifiers during registration. Implementations must preserve
+ordinals after teardown and support batch DID/ordinal resolution.
 
 Discovery/search workers depend on `PendingEmbeddingQueuePort` only — not on Bun SQLite or memories `handle.sync`.
 

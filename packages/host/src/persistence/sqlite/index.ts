@@ -12,6 +12,7 @@ export {
 } from "../core/id-conventions";
 export { createKhoraAdminStatsPort } from "./admin-stats-port";
 export { createAgentAccountStatusPort } from "./agent-account-status";
+export { backfillPercolatorOwnerOrdinals } from "./backfill-percolator-owner-ordinals";
 export { countRegisteredPrincipals } from "./count-registered-principals";
 export { createEntityAdapter, parseEntityRow } from "./entity-adapter";
 export { createKhoraHostHealthPort } from "./health-port";

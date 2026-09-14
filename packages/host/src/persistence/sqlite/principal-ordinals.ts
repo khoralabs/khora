@@ -1,16 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { NAMESPACE_REG_BY_PRINCIPAL } from "../core/id-conventions";
 import type { PrincipalOrdinalPort } from "../core/port";
+import { PRINCIPAL_ORDINALS_DDL } from "../core/schema";
 
 const MAX_ORDINAL = 0xffffffff;
 
 export function ensurePrincipalOrdinalsSchema(db: Database): void {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS principal_ordinals (
-      ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
-      did TEXT UNIQUE NOT NULL
-    )
-  `);
+  db.run(PRINCIPAL_ORDINALS_DDL);
 }
 
 export function createPrincipalOrdinalPort(db: Database): PrincipalOrdinalPort {
