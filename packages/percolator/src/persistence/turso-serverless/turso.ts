@@ -151,5 +151,23 @@ export async function createPercolatorTursoPersistence(
       );
       return rows.map(rowToSemanticQuery);
     },
+
+    async scanActiveQueries(opts): Promise<StandingQuery[]> {
+      const filter = opts.mode === "filter-only";
+      const columns = filter ? FILTER_COLS : SEMANTIC_COLS;
+      const table = filter ? "percolator_filter_queries" : "percolator_semantic_queries";
+      const afterOrdinal = opts.afterOwnerOrdinal ?? null;
+      const rows = await queryAll<QueryRow | SemanticQueryRow>(
+        db.read,
+        `SELECT ${columns} FROM ${table}
+         WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+           AND (? IS NULL OR owner_ordinal > ? OR (owner_ordinal = ? AND id > ?))
+         ORDER BY owner_ordinal, id LIMIT ?`,
+        [opts.now, afterOrdinal, afterOrdinal, afterOrdinal, opts.afterId ?? "", opts.limit],
+      );
+      return filter
+        ? (rows as QueryRow[]).map(rowToFilterQuery)
+        : (rows as SemanticQueryRow[]).map(rowToSemanticQuery);
+    },
   };
 }

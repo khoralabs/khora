@@ -78,6 +78,24 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
      WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
      ORDER BY created_at_ms ASC`,
   );
+  const scanFilterStmt = db.query<
+    QueryRow,
+    [number, number | null, number | null, number | null, string, number]
+  >(
+    `SELECT ${FILTER_COLS} FROM percolator_filter_queries
+     WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+       AND (? IS NULL OR owner_ordinal > ? OR (owner_ordinal = ? AND id > ?))
+     ORDER BY owner_ordinal, id LIMIT ?`,
+  );
+  const scanSemanticStmt = db.query<
+    SemanticQueryRow,
+    [number, number | null, number | null, number | null, string, number]
+  >(
+    `SELECT ${SEMANTIC_COLS} FROM percolator_semantic_queries
+     WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+       AND (? IS NULL OR owner_ordinal > ? OR (owner_ordinal = ? AND id > ?))
+     ORDER BY owner_ordinal, id LIMIT ?`,
+  );
 
   return {
     async upsertQuery(query: StandingQuery): Promise<void> {
@@ -142,6 +160,21 @@ export function createPercolatorSqlitePersistence(db: Database): PercolatorPersi
 
     async listActiveSemanticQueries(now: number): Promise<StandingQuery[]> {
       return listActiveSemanticStmt.all(now).map(rowToSemanticQuery);
+    },
+
+    async scanActiveQueries(opts): Promise<StandingQuery[]> {
+      const afterOrdinal = opts.afterOwnerOrdinal ?? null;
+      const args = [
+        opts.now,
+        afterOrdinal,
+        afterOrdinal,
+        afterOrdinal,
+        opts.afterId ?? "",
+        opts.limit,
+      ] as const;
+      return opts.mode === "filter-only"
+        ? scanFilterStmt.all(...args).map(rowToFilterQuery)
+        : scanSemanticStmt.all(...args).map(rowToSemanticQuery);
     },
   };
 }

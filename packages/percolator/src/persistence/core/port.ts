@@ -8,4 +8,11 @@ export type PercolatorPersistence = {
   listQueriesByOwner(ownerId: string): Promise<StandingQuery[]>;
   listActiveFilterQueries(now: number): Promise<StandingQuery[]>;
   listActiveSemanticQueries(now: number): Promise<StandingQuery[]>;
+  scanActiveQueries(opts: {
+    mode: "filter-only" | "semantic";
+    now: number;
+    afterOwnerOrdinal?: number;
+    afterId?: string;
+    limit: number;
+  }): Promise<StandingQuery[]>;
 };

@@ -203,4 +203,42 @@ describe("createPercolator", () => {
     });
     expect(matches).toHaveLength(0);
   });
+
+  test("streams one ordinal-sorted aggregate per owner across modes and pages", async () => {
+    const percolator = createPercolator({ persistence: createInMemoryPercolatorPersistence() });
+    await percolator.registerQuery({
+      id: "semantic",
+      ownerId: "owner-b",
+      ownerOrdinal: 2,
+      search: { content: { text: "hello", vector: [1] } },
+      minScore: 0,
+    });
+    for (const id of ["filter-b", "filter-a"]) {
+      await percolator.registerQuery({
+        id,
+        ownerId: id === "filter-a" ? "owner-a" : "owner-b",
+        ownerOrdinal: id === "filter-a" ? 1 : 2,
+        search: { content: {} },
+      });
+    }
+    const owners = [];
+    for await (const owner of percolator.evaluateCandidateStream(
+      {
+        candidateId: "candidate",
+        authorId: "author",
+        namespace: "global",
+        labelKinds: ["post"],
+        content: { vector: [1] },
+        createdAtMs: 1,
+      },
+      { pageSize: 1, now: 1 },
+    )) {
+      owners.push(owner);
+    }
+    expect(owners.map((owner) => owner.ownerOrdinal)).toEqual([1, 2]);
+    expect(owners[1]?.matches.map((match) => match.queryId).sort()).toEqual([
+      "filter-b",
+      "semantic",
+    ]);
+  });
 });

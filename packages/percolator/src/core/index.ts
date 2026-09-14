@@ -10,6 +10,7 @@ export { tokenizeForOverlap } from "./tokenizer";
 export type {
   PercolatorCandidate,
   PercolatorMatch,
+  PercolatorOwnerMatch,
   StandingQuery,
   StandingQueryCreate,
 } from "./types";

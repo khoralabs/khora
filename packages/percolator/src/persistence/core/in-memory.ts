@@ -50,5 +50,21 @@ export function createInMemoryPercolatorPersistence(): PercolatorPersistence {
         )
         .map((q) => ({ ...q }));
     },
+
+    async scanActiveQueries(opts): Promise<StandingQuery[]> {
+      return [...queries.values()]
+        .filter(
+          (q) =>
+            q.active &&
+            (q.expiresAtMs === undefined || q.expiresAtMs > opts.now) &&
+            isFilterOnlyMode(q.search) === (opts.mode === "filter-only") &&
+            (opts.afterOwnerOrdinal === undefined ||
+              q.ownerOrdinal > opts.afterOwnerOrdinal ||
+              (q.ownerOrdinal === opts.afterOwnerOrdinal && q.id > (opts.afterId ?? ""))),
+        )
+        .sort((a, b) => a.ownerOrdinal - b.ownerOrdinal || a.id.localeCompare(b.id))
+        .slice(0, opts.limit)
+        .map((q) => ({ ...q }));
+    },
   };
 }

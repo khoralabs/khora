@@ -33,3 +33,9 @@ export type PercolatorMatch = {
   score: number;
   matchMode: "filter-only" | "semantic";
 };
+
+export type PercolatorOwnerMatch = {
+  ownerId: string;
+  ownerOrdinal: number;
+  matches: PercolatorMatch[];
+};

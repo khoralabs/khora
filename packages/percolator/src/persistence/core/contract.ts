@@ -101,6 +101,23 @@ export function runPercolatorPersistenceContractTests(
       expect(semantics.map((q) => q.id)).toEqual(["s1"]);
     });
 
+    test("scanActiveQueries pages in owner ordinal and id order", async () => {
+      const p = await create();
+      await p.upsertQuery(filterQuery("b", "owner-b", 1, { ownerOrdinal: 2 }));
+      await p.upsertQuery(filterQuery("a2", "owner-a", 1, { ownerOrdinal: 1 }));
+      await p.upsertQuery(filterQuery("a1", "owner-a", 1, { ownerOrdinal: 1 }));
+      const first = await p.scanActiveQueries({ mode: "filter-only", now: 1, limit: 2 });
+      expect(first.map((q) => q.id)).toEqual(["a1", "a2"]);
+      const second = await p.scanActiveQueries({
+        mode: "filter-only",
+        now: 1,
+        afterOwnerOrdinal: 1,
+        afterId: "a2",
+        limit: 2,
+      });
+      expect(second.map((q) => q.id)).toEqual(["b"]);
+    });
+
     test("deactivate excludes from active lists but get still returns row", async () => {
       const p = await create();
       const now = 4_000;
