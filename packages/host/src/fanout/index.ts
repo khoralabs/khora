@@ -1,5 +1,12 @@
 export { createFanOutMaintenanceTick } from "./maintenance-tick";
 export {
+  assertFanOutPlanningInput,
+  fanOutPolicyFromColumns,
+  fanOutPolicyLimit,
+  fanOutPolicyMode,
+  selectFanOutDeliveryMode,
+} from "./policy";
+export {
   type FanOutReconcileDeps,
   type FanOutReconcileResult,
   runFanOutMissingJobReconciliation,

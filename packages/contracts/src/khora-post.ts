@@ -10,7 +10,14 @@ export const zKhoraPostVisibility = z.enum(["public", "network", "private"]);
 
 export type KhoraPostVisibility = z.infer<typeof zKhoraPostVisibility>;
 
-export const zKhoraFanOutPolicy = z.enum(["push", "catalog-pull"]);
+export const zKhoraFanOutPolicy = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("push") }),
+  z.object({
+    mode: z.literal("hybrid"),
+    publicPushTargetLimit: z.number().int().positive(),
+  }),
+  z.object({ mode: z.literal("catalog-pull") }),
+]);
 
 export type KhoraFanOutPolicy = z.infer<typeof zKhoraFanOutPolicy>;
 
@@ -80,10 +87,13 @@ function refinePostKindRules(
       });
     }
   }
-  if (val.fanOutPolicy === "catalog-pull" && val.visibility !== "public") {
+  if (
+    (val.fanOutPolicy?.mode === "catalog-pull" || val.fanOutPolicy?.mode === "hybrid") &&
+    val.visibility !== "public"
+  ) {
     ctx.addIssue({
       code: "custom",
-      message: "catalog-pull fan-out requires public catalog visibility",
+      message: "catalog-pull and hybrid fan-out require public catalog visibility",
       path: ["fanOutPolicy"],
     });
   }

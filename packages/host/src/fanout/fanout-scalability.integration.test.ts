@@ -166,7 +166,7 @@ test("write storm fans out durably with bounded pages, chunks, batches, and conc
           postKind: "post",
           postMetadata: { storm: true },
           visibility: "public",
-          fanOutPolicy: "push",
+          fanOutPolicy: { mode: "push" },
         },
         0,
       ),
@@ -278,7 +278,7 @@ test("write storm fans out durably with bounded pages, chunks, batches, and conc
       postKind: "post",
       postMetadata: {},
       visibility: "public",
-      fanOutPolicy: "push",
+      fanOutPolicy: { mode: "push" },
     },
     30,
   );
@@ -319,7 +319,7 @@ test("write storm fans out durably with bounded pages, chunks, batches, and conc
       postKind: "post",
       postMetadata: {},
       visibility: "public",
-      fanOutPolicy: "catalog-pull",
+      fanOutPolicy: { mode: "catalog-pull" },
     },
     40,
   );
@@ -327,9 +327,10 @@ test("write storm fans out durably with bounded pages, chunks, batches, and conc
   await drain(planner, 1);
   expect(host.fanOutQueue.getJob(catalogJobId)).toMatchObject({
     status: "completed",
-    plannedTargetCount: 0,
+    deliveryMode: "pull",
     routedTargetCount: 0,
   });
+  expect(host.fanOutQueue.getJob(catalogJobId)?.plannedTargetCount).toBeGreaterThan(0);
   expect(await inboxCount(cells, dids)).toBe(beforeCatalogPull);
   hostDb.close();
 });

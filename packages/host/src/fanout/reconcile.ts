@@ -61,7 +61,7 @@ export async function runFanOutMissingJobReconciliation(
           postKind: post.kind,
           postMetadata: post,
           visibility: post.visibility ?? "public",
-          fanOutPolicy: post.fanOutPolicy ?? "push",
+          fanOutPolicy: post.fanOutPolicy ?? { mode: "push" },
         },
         now,
       );

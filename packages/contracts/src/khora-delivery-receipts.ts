@@ -18,7 +18,7 @@ export const zDeliveryReceiptContains = z.discriminatedUnion("available", [
   z.object({
     available: z.literal(true),
     targeted: z.boolean(),
-    status: z.enum(["delivered", "failed", "pending", "not-targeted"]),
+    status: z.enum(["delivered", "failed", "pending", "not-targeted", "not-pushed"]),
   }),
 ]);
 export type DeliveryReceiptContains = z.infer<typeof zDeliveryReceiptContains>;

@@ -182,7 +182,7 @@ export function createKhoraRelayOnEvent(deps: {
           postKind: post.kind,
           postMetadata: post,
           visibility: post.visibility ?? "public",
-          fanOutPolicy: post.fanOutPolicy ?? "push",
+          fanOutPolicy: post.fanOutPolicy ?? { mode: "push" },
         },
         Date.now(),
       );

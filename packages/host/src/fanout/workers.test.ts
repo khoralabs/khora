@@ -22,7 +22,7 @@ const input: FanOutPlanningJobInput = {
   postKind: "post",
   postMetadata: {},
   visibility: "public",
-  fanOutPolicy: "push",
+  fanOutPolicy: { mode: "push" },
 };
 
 function percolator(ordinals: number[]): Percolator {
@@ -130,42 +130,81 @@ test("zero-target planning writes an empty receipt manifest", async () => {
   expect(queue.getJob(id)?.status).toBe("completed");
 });
 
-test("catalog-pull completes durably without planning targets or pushing inboxes", async () => {
+test("catalog-pull plans targets then skips inbox push", async () => {
   const queue = createInMemoryFanOutQueue();
-  const id = queue.enqueuePlanning({ ...input, fanOutPolicy: "catalog-pull" }, 0);
-  expect(queue.tryClaimPlanning(0, 10)).toBeDefined(); // simulate a restart with a stale lease
-  let evaluated = false;
+  const id = queue.enqueuePlanning({ ...input, fanOutPolicy: { mode: "catalog-pull" } }, 0);
+  expect(queue.tryClaimPlanning(0, 10)).toBeDefined();
   const deps = {
     queue,
-    percolator: {
-      async *evaluateCandidateStream() {
-        evaluated = true;
-        yield* [];
-      },
-    } as unknown as Percolator,
-    candidateForJob: () => {
-      throw new Error("catalog-pull must not build a candidate");
-    },
+    percolator: percolator([1, 2]),
+    candidateForJob: () => ({
+      candidateId: "post",
+      authorId: "author",
+      namespace: "posts",
+      labelKinds: [],
+      content: {},
+      createdAtMs: 0,
+    }),
   };
   expect(await runNextFanOutPlanningJob({ ...deps, now: () => 9 })).toBe(false);
   expect(await runNextFanOutPlanningJob({ ...deps, now: () => 10 })).toBe(true);
-  expect(evaluated).toBe(false);
   expect(queue.getJob(id)).toMatchObject({
-    fanOutPolicy: "catalog-pull",
+    fanOutPolicy: { mode: "catalog-pull" },
+    deliveryMode: "pull",
     status: "completed",
     attemptCount: 2,
-    plannedTargetCount: 0,
+    plannedTargetCount: 2,
     routedTargetCount: 0,
   });
-  expect(queue.listWorkloadChunks(id)).toEqual([]);
+  expect(
+    queue.listWorkloadChunks(id).flatMap((chunk) => chunk.records.map((r) => r.ordinal)),
+  ).toEqual([1, 2]);
   expect(queue.tryClaimDelivery(1, 10)).toBeUndefined();
+});
+
+test("hybrid overflow pulls after planning while remaining under the limit pushes", async () => {
+  const queue = createInMemoryFanOutQueue();
+  const overflow = queue.enqueuePlanning(
+    { ...input, postId: "overflow", fanOutPolicy: { mode: "hybrid", publicPushTargetLimit: 1 } },
+    0,
+  );
+  const under = queue.enqueuePlanning(
+    { ...input, postId: "under", fanOutPolicy: { mode: "hybrid", publicPushTargetLimit: 10 } },
+    0,
+  );
+  const deps = {
+    percolator: percolator([1, 2]),
+    candidateForJob: () => ({
+      candidateId: "post",
+      authorId: "author",
+      namespace: "posts",
+      labelKinds: [],
+      content: {},
+      createdAtMs: 0,
+    }),
+  };
+  await runNextFanOutPlanningJob({ ...deps, queue, now: () => 0 });
+  await runNextFanOutPlanningJob({ ...deps, queue, now: () => 0 });
+  expect(queue.getJob(overflow)).toMatchObject({
+    deliveryMode: "pull",
+    plannedTargetCount: 2,
+    status: "completed",
+  });
+  expect(queue.getJob(under)).toMatchObject({
+    deliveryMode: "push",
+    plannedTargetCount: 2,
+    status: "routing_pending",
+  });
 });
 
 test("catalog-pull rejects non-public jobs", () => {
   const queue = createInMemoryFanOutQueue();
   expect(() =>
-    queue.enqueuePlanning({ ...input, visibility: "private", fanOutPolicy: "catalog-pull" }, 0),
-  ).toThrow(/requires public catalog visibility/);
+    queue.enqueuePlanning(
+      { ...input, visibility: "private", fanOutPolicy: { mode: "catalog-pull" } },
+      0,
+    ),
+  ).toThrow(/require public catalog visibility/);
 });
 
 test("in-memory delivery claim skips pending chunks owned by failed jobs", async () => {

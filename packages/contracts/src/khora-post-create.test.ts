@@ -11,22 +11,30 @@ describe("zKhoraPostCreate", () => {
     expect(v.fanOutPolicy).toBeUndefined();
   });
 
-  test("catalog-pull is explicit and public-only", () => {
+  test("catalog-pull and hybrid objects are public-only", () => {
     expect(
       zKhoraPostCreate.parse({
         body: "large broadcast",
-        fanOutPolicy: "catalog-pull",
+        fanOutPolicy: { mode: "catalog-pull" },
         authorSignature: SIG,
       }).fanOutPolicy,
-    ).toBe("catalog-pull");
+    ).toEqual({ mode: "catalog-pull" });
     expect(() =>
       zKhoraPostCreate.parse({
         body: "private",
         visibility: "private",
-        fanOutPolicy: "catalog-pull",
+        fanOutPolicy: { mode: "catalog-pull" },
         authorSignature: SIG,
       }),
-    ).toThrow(/requires public catalog visibility/);
+    ).toThrow(/require public catalog visibility/);
+    expect(() =>
+      zKhoraPostCreate.parse({
+        body: "network",
+        visibility: "network",
+        fanOutPolicy: { mode: "hybrid", publicPushTargetLimit: 10 },
+        authorSignature: SIG,
+      }),
+    ).toThrow(/require public catalog visibility/);
   });
 
   test("status shape without author allowed at create schema", () => {

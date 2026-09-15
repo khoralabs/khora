@@ -58,9 +58,9 @@ test("persists catalog-pull policy across queue restart", () => {
       postKind: "post",
       postMetadata: {},
       visibility: "public",
-      fanOutPolicy: "catalog-pull",
+      fanOutPolicy: { mode: "catalog-pull" },
     },
     0,
   );
-  expect(createSqliteFanOutQueue(db).getJob(id)?.fanOutPolicy).toBe("catalog-pull");
+  expect(createSqliteFanOutQueue(db).getJob(id)?.fanOutPolicy).toEqual({ mode: "catalog-pull" });
 });

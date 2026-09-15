@@ -8,6 +8,7 @@ import type {
 } from "../persistence/core/port";
 import type { DeliveryReceiptStore } from "../receipts/receipt-store";
 import { MAX_FAN_OUT_WORKLOAD_RECORDS } from "../receipts/workload-codec";
+import { selectFanOutDeliveryMode } from "./policy";
 
 export type FanOutWorkerEvent =
   | {
@@ -20,6 +21,7 @@ export type FanOutWorkerEvent =
       durationMs: number;
       targets?: number;
       chunks?: number;
+      deliveryMode?: "push" | "pull";
       retry?: boolean;
       error?: string;
     }
@@ -72,17 +74,6 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
   const started = performance.now();
   let chunks = 0;
   try {
-    if (job.fanOutPolicy === "catalog-pull") {
-      deps.queue.completePlanning(job.id, 0, deps.now?.() ?? Date.now());
-      await writeEmptyReceipts(deps.receipts, job, deps.observe);
-      observe(deps.observe, {
-        ...planningEvent(job, now, started),
-        outcome: "success",
-        targets: 0,
-        chunks: 0,
-      });
-      return true;
-    }
     const chunkSize = boundedChunkSize(deps.chunkSize);
     const candidate = await deps.candidateForJob(job);
     let chunk: Array<{ ordinal: number; subscriptionMatches: readonly unknown[] }> = [];
@@ -124,15 +115,22 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
       deps.queue.appendWorkloadChunk(job.id, chunk, now);
       chunks++;
     }
-    deps.queue.completePlanning(job.id, count, deps.now?.() ?? Date.now());
-    if (count === 0 && deps.receipts !== undefined) {
+    const deliveryMode = selectFanOutDeliveryMode(job, count);
+    if (count === 0) {
       await writeEmptyReceipts(deps.receipts, job, deps.observe);
+    } else if (deliveryMode === "pull") {
+      await writeReceipts(
+        { queue: deps.queue, receipts: deps.receipts, observe: deps.observe },
+        job,
+      );
     }
+    deps.queue.completePlanning(job.id, count, deps.now?.() ?? Date.now(), deliveryMode);
     observe(deps.observe, {
       ...planningEvent(job, now, started),
       outcome: "success",
       targets: count,
       chunks,
+      deliveryMode,
     });
   } catch (error) {
     const terminal = job.attemptCount >= (deps.maxAttempts ?? 5);
@@ -344,7 +342,10 @@ export function startFanOutWorkers(opts: {
   };
 }
 
-async function writeReceipts(deps: FanOutDeliveryDeps, job: FanOutJob): Promise<void> {
+async function writeReceipts(
+  deps: Pick<FanOutDeliveryDeps, "queue" | "receipts" | "observe">,
+  job: FanOutJob,
+): Promise<void> {
   const receipts = deps.receipts;
   if (receipts === undefined) return;
   const started = performance.now();

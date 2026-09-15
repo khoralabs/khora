@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS fan_out_jobs (
   post_metadata_json TEXT NOT NULL,
   visibility TEXT NOT NULL,
   fan_out_policy TEXT NOT NULL DEFAULT 'push',
+  public_push_target_limit INTEGER,
+  delivery_mode TEXT NOT NULL DEFAULT 'push',
   status TEXT NOT NULL,
   planned_target_count INTEGER NOT NULL DEFAULT 0,
   routed_target_count INTEGER NOT NULL DEFAULT 0,

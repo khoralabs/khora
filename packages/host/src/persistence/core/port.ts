@@ -1,4 +1,4 @@
-import type { PrincipalId } from "@khoralabs/khora-contracts";
+import type { KhoraFanOutPolicy, PrincipalId } from "@khoralabs/khora-contracts";
 import type { FanOutWorkloadRecord } from "../../receipts/workload-codec";
 
 /** Insert/update payload for host entity storage (`body_json` is canonical JSON). */
@@ -107,7 +107,8 @@ export type FanOutJobStatus =
   | "completed"
   | "failed";
 
-export type FanOutPolicy = "push" | "catalog-pull";
+export type FanOutPolicy = KhoraFanOutPolicy;
+export type FanOutDeliveryMode = "push" | "pull";
 
 export type FanOutPlanningJobInput = {
   tenantKey: string;
@@ -126,6 +127,7 @@ export type FanOutPlanningJobInput = {
 export type FanOutJob = FanOutPlanningJobInput & {
   id: string;
   status: FanOutJobStatus;
+  deliveryMode: FanOutDeliveryMode;
   plannedTargetCount: number;
   routedTargetCount: number;
   attemptCount: number;
@@ -162,7 +164,12 @@ export type FanOutQueuePort = {
   ): number;
   getWorkloadChunk(jobId: string, chunkIndex: number): FanOutWorkloadChunk | undefined;
   listWorkloadChunks(jobId: string): FanOutWorkloadChunk[];
-  completePlanning(jobId: string, plannedTargetCount: number, nowMs: number): void;
+  completePlanning(
+    jobId: string,
+    plannedTargetCount: number,
+    nowMs: number,
+    deliveryMode?: FanOutDeliveryMode,
+  ): void;
   failPlanning(jobId: string, nowMs: number, error: string, retryAtMs?: number): void;
   tryClaimDelivery(nowMs: number, leaseMs: number): FanOutWorkloadChunk | undefined;
   completeDelivery(

@@ -1,3 +1,4 @@
+import { assertFanOutPlanningInput } from "../../fanout/policy";
 import { FanOutWorkloadCodec, MAX_FAN_OUT_WORKLOAD_RECORDS } from "../../receipts/workload-codec";
 import { fanOutJobId } from "./fan-out-job-id";
 import type {
@@ -15,15 +16,14 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
   let reconcileAfter: string | undefined;
   return {
     enqueuePlanning(input: FanOutPlanningJobInput, nowMs: number): string {
-      if (input.fanOutPolicy === "catalog-pull" && input.visibility !== "public") {
-        throw new Error("catalog-pull fan-out requires public catalog visibility");
-      }
+      assertFanOutPlanningInput(input);
       const id = fanOutJobId(input.tenantKey, input.postId);
       if (!jobs.has(id)) {
         jobs.set(id, {
           ...input,
           id,
           status: "planning_pending",
+          deliveryMode: "push",
           plannedTargetCount: 0,
           routedTargetCount: 0,
           attemptCount: 0,
@@ -104,14 +104,22 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
         failedOrdinals: [...row.failedOrdinals],
       }));
     },
-    completePlanning(jobId, plannedTargetCount, nowMs) {
+    completePlanning(jobId, plannedTargetCount, nowMs, deliveryMode = "push") {
       const job = jobs.get(jobId);
       if (job?.status !== "planning") throw new Error("fan-out job is not being planned");
-      job.status = plannedTargetCount === 0 ? "completed" : "routing_pending";
+      job.deliveryMode = deliveryMode;
+      job.status =
+        plannedTargetCount === 0 || deliveryMode === "pull" ? "completed" : "routing_pending";
       job.plannedTargetCount = plannedTargetCount;
       job.leaseExpiresAtMs = null;
       job.lastError = null;
       job.updatedAtMs = nowMs;
+      if (deliveryMode === "pull") {
+        for (const chunk of chunks.get(jobId) ?? []) {
+          chunk.status = "completed";
+          chunk.leaseExpiresAtMs = null;
+        }
+      }
     },
     failPlanning(jobId, nowMs, error, retryAtMs) {
       const job = jobs.get(jobId);

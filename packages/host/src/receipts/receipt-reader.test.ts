@@ -15,7 +15,7 @@ const input = {
   postKind: "post",
   postMetadata: {},
   visibility: "public",
-  fanOutPolicy: "push" as const,
+  fanOutPolicy: { mode: "push" } as const,
 };
 
 function objectStore() {
@@ -81,6 +81,35 @@ describe("delivery receipt reader", () => {
         }),
       }),
     ).rejects.toThrow(/stale receipt cursor/);
+  });
+
+  test("pull delivery reports targeted principals as not-pushed", async () => {
+    const persistence = createInMemoryKhoraHostPersistence();
+    const alice = persistence.principalOrdinals.getOrCreate("did:alice");
+    const id = persistence.fanOutQueue.enqueuePlanning(
+      { ...input, fanOutPolicy: { mode: "catalog-pull" } },
+      0,
+    );
+    expect(persistence.fanOutQueue.tryClaimPlanning(0, 10)).toBeDefined();
+    persistence.fanOutQueue.appendWorkloadChunk(
+      id,
+      [{ ordinal: alice, subscriptionMatches: [] }],
+      0,
+    );
+    const store = createDeliveryReceiptStore(objectStore());
+    await store.write(id, { target: [alice], delivered: [], failed: [] });
+    persistence.fanOutQueue.completePlanning(id, 1, 0, "pull");
+    const reader = createDeliveryReceiptReader({
+      tenantKey: "tenant",
+      queue: persistence.fanOutQueue,
+      ordinals: persistence.principalOrdinals,
+      store,
+    });
+    expect(await reader.contains("post", "did:alice")).toEqual({
+      available: true,
+      targeted: true,
+      status: "not-pushed",
+    });
   });
 
   test("keeps queue summary but reports object-backed reads unavailable", async () => {

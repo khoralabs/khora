@@ -29,7 +29,7 @@ const input: FanOutPlanningJobInput = {
   postKind: "post",
   postMetadata: {},
   visibility: "public",
-  fanOutPolicy: "push",
+  fanOutPolicy: { mode: "push" },
 };
 const jobId = queue.enqueuePlanning(input, 0);
 const percolator = {

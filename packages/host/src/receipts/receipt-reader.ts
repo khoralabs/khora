@@ -137,7 +137,13 @@ export function createDeliveryReceiptReader(deps: {
       return {
         available: true,
         targeted: true,
-        status: delivered ? "delivered" : failed ? "failed" : "pending",
+        status: delivered
+          ? "delivered"
+          : failed
+            ? "failed"
+            : job.deliveryMode === "pull"
+              ? "not-pushed"
+              : "pending",
       };
     },
     async targets(postId, params = {}) {
