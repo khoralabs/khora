@@ -56,7 +56,10 @@ export type FanOutPlannerDeps = {
   chunkSize?: number;
   pageSize?: number;
   leaseMs?: number;
+  /** Base delay for the first retry; aliases backoffBaseMs. */
   retryDelayMs?: number;
+  backoffBaseMs?: number;
+  backoffMaxMs?: number;
   maxAttempts?: number;
   now?: () => number;
   observe?: FanOutObserver;
@@ -138,7 +141,7 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
       job.id,
       deps.now?.() ?? Date.now(),
       message,
-      terminal ? undefined : now + (deps.retryDelayMs ?? 1_000),
+      terminal ? undefined : retryAtMs(now, job.attemptCount, deps),
     );
     observe(deps.observe, {
       ...planningEvent(job, now, started),
@@ -182,7 +185,10 @@ export type FanOutDeliveryDeps = {
   cellIdForPrincipal(did: string): string;
   receipts?: DeliveryReceiptStore;
   leaseMs?: number;
+  /** Base delay for the first retry; aliases backoffBaseMs. */
   retryDelayMs?: number;
+  backoffBaseMs?: number;
+  backoffMaxMs?: number;
   maxAttempts?: number;
   now?: () => number;
   observe?: FanOutObserver;
@@ -238,7 +244,7 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
         chunk.chunkIndex,
         deps.now?.() ?? Date.now(),
         "retryable fan-out delivery failure",
-        terminal ? undefined : now + (deps.retryDelayMs ?? 1_000),
+        terminal ? undefined : retryAtMs(now, chunk.attemptCount, deps),
       );
       observe(deps.observe, {
         ...deliveryEvent(chunk, now, started),
@@ -287,7 +293,7 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
       chunk.chunkIndex,
       deps.now?.() ?? Date.now(),
       message,
-      terminal ? undefined : now + (deps.retryDelayMs ?? 1_000),
+      terminal ? undefined : retryAtMs(now, chunk.attemptCount, deps),
     );
     observe(deps.observe, {
       ...deliveryEvent(chunk, now, started),
@@ -408,6 +414,24 @@ function* receiptOrdinals(
     if (chunk === undefined) return;
     yield* select(chunk);
   }
+}
+
+function retryAtMs(
+  now: number,
+  attemptCount: number,
+  deps: { backoffBaseMs?: number; backoffMaxMs?: number; retryDelayMs?: number },
+): number {
+  const base = deps.backoffBaseMs ?? deps.retryDelayMs ?? 1_000;
+  if (!Number.isInteger(base) || base < 0) {
+    throw new RangeError("backoffBaseMs must be a non-negative integer");
+  }
+  const max = deps.backoffMaxMs ?? 60_000;
+  if (!Number.isInteger(max) || max < 1)
+    throw new RangeError("backoffMaxMs must be a positive integer");
+  if (base === 0) return now;
+  const shift = Math.max(0, attemptCount - 1);
+  const delay = shift >= 31 ? max : Math.min(base * 2 ** shift, max);
+  return now + delay;
 }
 
 function boundedChunkSize(value = MAX_FAN_OUT_WORKLOAD_RECORDS): number {

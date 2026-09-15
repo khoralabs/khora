@@ -204,6 +204,38 @@ test("in-memory delivery claim skips pending chunks owned by failed jobs", async
   expect(queue.tryClaimDelivery(1, 10)?.jobId).toBe(second);
 });
 
+test("planning retries use capped exponential backoff from attempt counts", async () => {
+  const queue = createInMemoryFanOutQueue();
+  const id = queue.enqueuePlanning(input, 0);
+  const boom = {
+    async *evaluateCandidateStream() {
+      yield { ownerId: "did:1", ownerOrdinal: 1, matches: [] };
+      throw new Error("boom");
+    },
+  } as unknown as Percolator;
+  const deps = {
+    queue,
+    percolator: boom,
+    candidateForJob: () => ({
+      candidateId: "post",
+      authorId: "author",
+      namespace: "posts",
+      labelKinds: [],
+      content: {},
+      createdAtMs: 0,
+    }),
+    backoffBaseMs: 1_000,
+    backoffMaxMs: 4_000,
+    maxAttempts: 5,
+  };
+  await runNextFanOutPlanningJob({ ...deps, now: () => 0 });
+  expect(queue.getJob(id)?.availableAtMs).toBe(1_000);
+  await runNextFanOutPlanningJob({ ...deps, now: () => 1_000 });
+  expect(queue.getJob(id)?.availableAtMs).toBe(3_000);
+  await runNextFanOutPlanningJob({ ...deps, now: () => 3_000 });
+  expect(queue.getJob(id)?.availableAtMs).toBe(7_000);
+});
+
 test("delivery recovers stale leases, retries partial failures, and eventually completes", async () => {
   const queue = createInMemoryFanOutQueue();
   const id = queue.enqueuePlanning(input, 0);
@@ -253,8 +285,8 @@ test("delivery recovers stale leases, retries partial failures, and eventually c
   };
   expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 9 })).toBe(false);
   expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 10 })).toBe(true);
-  expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 14 })).toBe(false);
-  expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 15 })).toBe(true);
+  expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 19 })).toBe(false);
+  expect(await runNextFanOutDeliveryChunk({ ...deps, now: () => 20 })).toBe(true);
   expect(queue.getJob(id)).toMatchObject({ status: "completed", routedTargetCount: 2 });
 });
 
