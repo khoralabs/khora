@@ -27,6 +27,7 @@ export {
   type DeliveryReceiptManifest,
   type DeliveryReceiptStore,
   NoopDeliveryReceiptStore,
+  type ReceiptFragmentCacheOptions,
   type ReceiptFragmentDescriptor,
   type ReceiptKind,
   type ReceiptWriteResult,

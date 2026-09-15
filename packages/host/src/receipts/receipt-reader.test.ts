@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createInMemoryKhoraHostPersistence } from "../persistence/core/in-memory";
-import { createDeliveryReceiptReader } from "./receipt-reader";
+import { encodeReceiptListCursor } from "./receipt-cursor";
+import { createDeliveryReceiptReader, DeliveryReceiptBadRequest } from "./receipt-reader";
 import { createDeliveryReceiptStore, NoopDeliveryReceiptStore } from "./receipt-store";
 
 const input = {
@@ -60,6 +61,7 @@ describe("delivery receipt reader", () => {
     const first = await reader.targets("post", { limit: 1 });
     expect(first).toMatchObject({ available: true, hasMore: true });
     if (!first?.available) throw new Error("expected targets");
+    expect(first.nextCursor).not.toBe(String(alice));
     expect(
       await reader.targets("post", { limit: 1, cursor: first.nextCursor ?? undefined }),
     ).toMatchObject({
@@ -67,6 +69,18 @@ describe("delivery receipt reader", () => {
       items: [{ ordinal: bob, did: "did:bob" }],
       hasMore: false,
     });
+    await expect(reader.targets("post", { cursor: "7" })).rejects.toThrow(
+      DeliveryReceiptBadRequest,
+    );
+    await expect(
+      reader.targets("post", {
+        cursor: encodeReceiptListCursor({
+          manifestDigest: "a".repeat(64),
+          fragmentIndex: 0,
+          lastOrdinal: alice,
+        }),
+      }),
+    ).rejects.toThrow(/stale receipt cursor/);
   });
 
   test("keeps queue summary but reports object-backed reads unavailable", async () => {

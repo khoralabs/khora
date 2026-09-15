@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -83,6 +84,13 @@ describe("receipt object storage", () => {
     expect(result.manifest.receipts.target.map(({ cardinality }) => cardinality)).toEqual([1, 1]);
     expect(result.manifest.receipts.target.every(({ sha256 }) => sha256.length === 64)).toBe(true);
     expect(await store.getManifest("job/1")).toEqual(result.manifest);
+    const digest = await store.digestManifest("job/1");
+    expect(digest).toHaveLength(64);
+    expect(digest).toBe(
+      createHash("sha256")
+        .update(writes.at(-1)?.bytes ?? new Uint8Array())
+        .digest("hex"),
+    );
   });
 
   test("write failures fail open and report unavailable", async () => {
@@ -108,5 +116,38 @@ describe("receipt object storage", () => {
       available: false,
       error: "offline",
     });
+  });
+
+  test("fragment cache verifies digest before reuse", async () => {
+    const objects = new Map<string, Uint8Array>();
+    let reads = 0;
+    const store = createDeliveryReceiptStore({
+      async putImmutable(key, bytes) {
+        objects.set(key, bytes);
+      },
+      async get(key) {
+        reads++;
+        return objects.get(key);
+      },
+      async head() {
+        return undefined;
+      },
+      async listPrefix() {
+        return [];
+      },
+      async listChildPrefixes() {
+        return [];
+      },
+      async deletePrefix() {},
+    });
+    const written = await store.write("job", { target: [1], delivered: [], failed: [] });
+    if (!written.available) throw new Error("expected write");
+    const descriptor = written.manifest.receipts.target[0];
+    if (descriptor === undefined) throw new Error("expected fragment");
+    reads = 0;
+    expect(await store.getFragment(descriptor)).toEqual([1]);
+    expect(await store.getFragment(descriptor)).toEqual([1]);
+    expect(reads).toBe(1);
+    expect(await store.getFragment({ ...descriptor, sha256: "b".repeat(64) })).toBeUndefined();
   });
 });

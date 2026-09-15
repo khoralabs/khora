@@ -32,6 +32,10 @@ export interface DeliveryReceiptStore {
     opts?: { sorted?: boolean },
   ): Promise<ReceiptWriteResult>;
   getManifest(jobId: string): Promise<DeliveryReceiptManifest | undefined>;
+  digestManifest(jobId: string): Promise<string | undefined>;
+  getManifestRecord(
+    jobId: string,
+  ): Promise<{ manifest: DeliveryReceiptManifest; digest: string } | undefined>;
   getFragment(descriptor: ReceiptFragmentDescriptor): Promise<number[] | undefined>;
 }
 
@@ -51,6 +55,12 @@ export class NoopDeliveryReceiptStore implements DeliveryReceiptStore {
     return { available: false };
   }
   async getManifest(_jobId: string): Promise<undefined> {
+    return undefined;
+  }
+  async digestManifest(_jobId: string): Promise<undefined> {
+    return undefined;
+  }
+  async getManifestRecord(_jobId: string): Promise<undefined> {
     return undefined;
   }
   async getFragment(_descriptor: ReceiptFragmentDescriptor): Promise<undefined> {
@@ -88,9 +98,55 @@ async function putIdempotent(
   }
 }
 
+export type ReceiptFragmentCacheOptions = {
+  maxEntries?: number;
+  maxDecodedBytes?: number;
+};
+
+function createFragmentLru(opts: ReceiptFragmentCacheOptions = {}) {
+  const maxEntries = Math.max(0, opts.maxEntries ?? 256);
+  const maxDecodedBytes = Math.max(0, opts.maxDecodedBytes ?? 8_388_608);
+  const entries = new Map<string, { values: number[]; decodedBytes: number }>();
+  let decodedBytes = 0;
+  const evict = () => {
+    while (entries.size > maxEntries || decodedBytes > maxDecodedBytes) {
+      const oldest = entries.keys().next().value;
+      if (oldest === undefined) break;
+      const removed = entries.get(oldest);
+      entries.delete(oldest);
+      decodedBytes -= removed?.decodedBytes ?? 0;
+    }
+  };
+  return {
+    get(key: string) {
+      const entry = entries.get(key);
+      if (entry === undefined) return undefined;
+      entries.delete(key);
+      entries.set(key, entry);
+      return entry.values;
+    },
+    set(key: string, values: number[]) {
+      if (maxEntries === 0 || maxDecodedBytes === 0) return;
+      const size = values.length * 4;
+      const prior = entries.get(key);
+      if (prior !== undefined) {
+        entries.delete(key);
+        decodedBytes -= prior.decodedBytes;
+      }
+      entries.set(key, { values, decodedBytes: size });
+      decodedBytes += size;
+      evict();
+    },
+  };
+}
+
 /** Writes immutable fragments first and the manifest last. Errors are reported, never thrown. */
-export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryReceiptStore {
+export function createDeliveryReceiptStore(
+  objects?: ObjectStorePort,
+  cache: ReceiptFragmentCacheOptions = {},
+): DeliveryReceiptStore {
   if (!objects) return new NoopDeliveryReceiptStore();
+  const fragments = createFragmentLru(cache);
   return {
     async write(jobId, receipts, nowMs = Date.now(), opts = {}) {
       try {
@@ -101,10 +157,10 @@ export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryR
           receipts: { target: [], delivered: [], failed: [] },
         };
         for (const kind of ["target", "delivered", "failed"] as const) {
-          const fragments = opts.sorted
+          const parts = opts.sorted
             ? fragmentSortedReceiptOrdinals(receipts[kind])
             : fragmentReceiptOrdinals(receipts[kind]);
-          for (const fragment of fragments) {
+          for (const fragment of parts) {
             const bytes = ReceiptBitmapCodec.encode(fragment.ordinals);
             const descriptor: ReceiptFragmentDescriptor = {
               high16: fragment.high16,
@@ -127,17 +183,28 @@ export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryR
         return { available: false, error: error instanceof Error ? error.message : String(error) };
       }
     },
-    async getManifest(jobId) {
+    async getManifestRecord(jobId) {
       try {
         const bytes = await objects.get(receiptManifestPath(jobId));
-        return bytes
-          ? (JSON.parse(new TextDecoder().decode(bytes)) as DeliveryReceiptManifest)
-          : undefined;
+        if (!bytes) return undefined;
+        return {
+          manifest: JSON.parse(new TextDecoder().decode(bytes)) as DeliveryReceiptManifest,
+          digest: createHash("sha256").update(bytes).digest("hex"),
+        };
       } catch {
         return undefined;
       }
     },
+    async getManifest(jobId) {
+      return (await this.getManifestRecord(jobId))?.manifest;
+    },
+    async digestManifest(jobId) {
+      return (await this.getManifestRecord(jobId))?.digest;
+    },
     async getFragment(descriptor) {
+      const cacheKey = `${descriptor.key}:${descriptor.sha256}`;
+      const cached = fragments.get(cacheKey);
+      if (cached !== undefined) return cached;
       try {
         const bytes = await objects.get(descriptor.key);
         if (
@@ -147,7 +214,9 @@ export function createDeliveryReceiptStore(objects?: ObjectStorePort): DeliveryR
         ) {
           return undefined;
         }
-        return ReceiptBitmapCodec.decode(bytes);
+        const values = ReceiptBitmapCodec.decode(bytes);
+        fragments.set(cacheKey, values);
+        return values;
       } catch {
         return undefined;
       }

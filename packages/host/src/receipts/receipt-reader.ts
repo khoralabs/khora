@@ -5,6 +5,7 @@ import type {
 } from "@khoralabs/khora-contracts";
 import { fanOutJobId } from "../persistence/core/fan-out-job-id";
 import type { FanOutQueuePort, PrincipalOrdinalPort } from "../persistence/core/port";
+import { decodeReceiptListCursor, encodeReceiptListCursor } from "./receipt-cursor";
 import type {
   DeliveryReceiptManifest,
   DeliveryReceiptStore,
@@ -77,8 +78,13 @@ export function createDeliveryReceiptReader(deps: {
     const job = deps.queue.getJob(fanOutJobId(deps.tenantKey, postOrJobId));
     return job?.tenantKey === deps.tenantKey && job.postId === postOrJobId ? job : undefined;
   };
-  const manifest = async (jobId: string) =>
-    validManifest(await deps.store.getManifest(jobId), jobId);
+  const manifest = async (jobId: string) => {
+    const record = await deps.store.getManifestRecord(jobId);
+    const value = validManifest(record?.manifest, jobId);
+    return value === undefined || record === undefined
+      ? undefined
+      : { manifest: value, digest: record.digest };
+  };
   const queueFailedCount = (jobId: string) => {
     let total = 0;
     for (let index = 0; ; index++) {
@@ -110,9 +116,9 @@ export function createDeliveryReceiptReader(deps: {
         status: job.status,
         plannedTargetCount: job.plannedTargetCount,
         routedTargetCount: job.routedTargetCount,
-        targetCount: receipt ? count(receipt, "target") : job.plannedTargetCount,
-        deliveredCount: receipt ? count(receipt, "delivered") : job.routedTargetCount,
-        failedCount: receipt ? count(receipt, "failed") : queueFailedCount(job.id),
+        targetCount: receipt ? count(receipt.manifest, "target") : job.plannedTargetCount,
+        deliveredCount: receipt ? count(receipt.manifest, "delivered") : job.routedTargetCount,
+        failedCount: receipt ? count(receipt.manifest, "failed") : queueFailedCount(job.id),
         receiptsAvailable: receipt !== undefined,
       };
     },
@@ -122,11 +128,11 @@ export function createDeliveryReceiptReader(deps: {
       const receipt = await manifest(job.id);
       const ordinal = deps.ordinals.getByDid(did);
       if (!receipt || ordinal === undefined) return { available: false };
-      const targeted = await includes(receipt, "target", ordinal);
+      const targeted = await includes(receipt.manifest, "target", ordinal);
       if (targeted === undefined) return { available: false };
       if (!targeted) return { available: true, targeted: false, status: "not-targeted" };
-      const delivered = await includes(receipt, "delivered", ordinal);
-      const failed = await includes(receipt, "failed", ordinal);
+      const delivered = await includes(receipt.manifest, "delivered", ordinal);
+      const failed = await includes(receipt.manifest, "failed", ordinal);
       if (delivered === undefined || failed === undefined) return { available: false };
       return {
         available: true,
@@ -141,41 +147,59 @@ export function createDeliveryReceiptReader(deps: {
       if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
         throw new DeliveryReceiptBadRequest("limit must be an integer between 1 and 200");
       }
-      const after = params.cursor === undefined ? -1 : Number.parseInt(params.cursor, 10);
-      if (
-        !Number.isInteger(after) ||
-        after < -1 ||
-        after > 0xffff_ffff ||
-        (params.cursor !== undefined && String(after) !== params.cursor)
-      ) {
-        throw new DeliveryReceiptBadRequest("invalid cursor");
+      const loaded = await manifest(job.id);
+      if (!loaded) return { available: false };
+      const { manifest: receipt, digest } = loaded;
+      let afterOrdinal = -1;
+      let fragmentStart = 0;
+      if (params.cursor !== undefined) {
+        const cursor = decodeReceiptListCursor(params.cursor);
+        if (cursor === undefined) {
+          throw new DeliveryReceiptBadRequest("invalid cursor");
+        }
+        if (cursor.manifestDigest !== digest) {
+          throw new DeliveryReceiptBadRequest("stale receipt cursor");
+        }
+        if (cursor.fragmentIndex >= receipt.receipts.target.length) {
+          throw new DeliveryReceiptBadRequest("invalid cursor");
+        }
+        afterOrdinal = cursor.lastOrdinal;
+        fragmentStart = cursor.fragmentIndex;
       }
-      const receipt = await manifest(job.id);
-      if (!receipt) return { available: false };
-      const page: number[] = [];
-      for (const descriptor of receipt.receipts.target) {
-        if (descriptor.high16 < after >>> 16 && after >= 0) continue;
+      const page: Array<{ ordinal: number; fragmentIndex: number }> = [];
+      for (let index = fragmentStart; index < receipt.receipts.target.length; index++) {
+        const descriptor = receipt.receipts.target[index];
+        if (descriptor === undefined) break;
+        if (descriptor.high16 < afterOrdinal >>> 16 && afterOrdinal >= 0) continue;
         const lows = await deps.store.getFragment(descriptor);
         if (!lows) return { available: false };
         for (const low of lows) {
           const ordinal = descriptor.high16 * 0x1_0000 + low;
-          if (ordinal > after) page.push(ordinal);
+          if (ordinal > afterOrdinal) page.push({ ordinal, fragmentIndex: index });
           if (page.length === limit + 1) break;
         }
         if (page.length === limit + 1) break;
       }
       const hasMore = page.length > limit;
       const shown = page.slice(0, limit);
-      const dids = deps.ordinals.resolveMany(shown);
-      const items = shown.flatMap((ordinal) => {
+      const dids = deps.ordinals.resolveMany(shown.map(({ ordinal }) => ordinal));
+      const items = shown.flatMap(({ ordinal }) => {
         const did = dids.get(ordinal);
         return did === undefined ? [] : [{ ordinal, did }];
       });
+      const last = shown.at(-1);
       return {
         available: true,
         items,
         hasMore,
-        nextCursor: hasMore ? String(shown.at(-1)) : null,
+        nextCursor:
+          hasMore && last !== undefined
+            ? encodeReceiptListCursor({
+                manifestDigest: digest,
+                fragmentIndex: last.fragmentIndex,
+                lastOrdinal: last.ordinal,
+              })
+            : null,
       };
     },
   };

@@ -333,6 +333,12 @@ test("worker observations report bounds, retries, lease recovery, and receipt av
       async getManifest() {
         return undefined;
       },
+      async digestManifest() {
+        return undefined;
+      },
+      async getManifestRecord() {
+        return undefined;
+      },
       async getFragment() {
         return undefined;
       },
@@ -358,6 +364,12 @@ test("worker observations report bounds, retries, lease recovery, and receipt av
         return { available: false, error: "object store unavailable" };
       },
       async getManifest() {
+        return undefined;
+      },
+      async digestManifest() {
+        return undefined;
+      },
+      async getManifestRecord() {
         return undefined;
       },
       async getFragment() {
