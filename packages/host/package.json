@@ -120,6 +120,8 @@
   "devDependencies": {
     "@khoralabs/khora-client": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/s3rver": "^3.7.4",
+    "s3rver": "^3.7.1",
     "typescript": "catalog:"
   },
   "publishConfig": {
