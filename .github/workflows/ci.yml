@@ -83,6 +83,10 @@ jobs:
             scripts/release/homebrew-formula.test.ts \
             scripts/release/server/stage.test.ts
 
+      - name: fan-out CI scale matrix
+        timeout-minutes: 20
+        run: bun run --cwd apps/server test:fanout-matrix
+
       - name: build khora-server linux-x64 smoke
         run: bun run apps/server/scripts/build.ts bun-linux-x64
 

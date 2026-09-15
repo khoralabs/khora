@@ -94,6 +94,8 @@
   "scripts": {
     "build": "bun run scripts/build.ts",
     "bench:fanout": "bun run src/fanout/fanout.bench.ts",
+    "test:scale": "KHORA_SCALE_TEST=1 bun test src/fanout/fanout-scalability.integration.test.ts",
+    "test:fanout-matrix": "KHORA_FANOUT_CI_MATRIX=1 bun test src/fanout/fanout-scalability.integration.test.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
