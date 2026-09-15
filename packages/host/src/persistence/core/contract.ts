@@ -78,6 +78,12 @@ export function runHostPersistenceContractTests(
         fanOutPolicy: { mode: "push" } as const,
       };
       const id = p.fanOutQueue.enqueuePlanning(input, 100);
+      expect(p.fanOutQueue.stats()).toEqual({
+        pendingPlanning: 1,
+        pendingDelivery: 0,
+        openPlanningLeases: 0,
+        openDeliveryLeases: 0,
+      });
       expect(p.fanOutQueue.enqueuePlanning(input, 101)).toBe(id);
       const claimed = p.fanOutQueue.tryClaimPlanning(100, 50);
       expect(claimed?.id).toBe(id);
@@ -89,6 +95,12 @@ export function runHostPersistenceContractTests(
         { ordinal: 7, subscriptionMatches: ["topic:x"] },
       ];
       expect(p.fanOutQueue.appendWorkloadChunk(id, records, 151)).toBe(0);
+      expect(p.fanOutQueue.stats()).toEqual({
+        pendingPlanning: 0,
+        pendingDelivery: 1,
+        openPlanningLeases: 1,
+        openDeliveryLeases: 0,
+      });
       expect(p.fanOutQueue.listWorkloadChunks(id)[0]?.records).toEqual(records);
       p.fanOutQueue.failPlanning(id, 152, "retry", 200);
       expect(p.fanOutQueue.tryClaimPlanning(199, 50)).toBeUndefined();

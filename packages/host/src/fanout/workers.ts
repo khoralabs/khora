@@ -17,8 +17,10 @@ export type FanOutWorkerEvent =
       jobId: string;
       attempt: number;
       queueLagMs: number;
+      queueDepth: number;
       leaseRecovered: boolean;
       durationMs: number;
+      policyMode: FanOutJob["fanOutPolicy"]["mode"];
       targets?: number;
       chunks?: number;
       deliveryMode?: "push" | "pull";
@@ -32,6 +34,7 @@ export type FanOutWorkerEvent =
       chunkIndex: number;
       attempt: number;
       queueLagMs: number;
+      queueDepth: number;
       leaseRecovered: boolean;
       durationMs: number;
       targets: number;
@@ -45,6 +48,9 @@ export type FanOutWorkerEvent =
       jobId: string;
       available: boolean;
       durationMs: number;
+      fragmentBytes?: number;
+      fragmentCount?: number;
+      targetCardinality?: number;
       error?: string;
     };
 
@@ -126,7 +132,7 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
     }
     deps.queue.completePlanning(job.id, count, deps.now?.() ?? Date.now(), deliveryMode);
     observe(deps.observe, {
-      ...planningEvent(job, now, started),
+      ...planningEvent(job, deps.queue, now, started),
       outcome: "success",
       targets: count,
       chunks,
@@ -142,7 +148,7 @@ export async function runNextFanOutPlanningJob(deps: FanOutPlannerDeps): Promise
       terminal ? undefined : retryAtMs(now, job.attemptCount, deps),
     );
     observe(deps.observe, {
-      ...planningEvent(job, now, started),
+      ...planningEvent(job, deps.queue, now, started),
       outcome: "failure",
       chunks,
       retry: !terminal,
@@ -167,13 +173,7 @@ async function writeEmptyReceipts(
       sorted: true,
     },
   );
-  observe(observer, {
-    type: "receipt",
-    jobId: job.id,
-    available: result.available,
-    durationMs: performance.now() - started,
-    ...(!result.available && result.error !== undefined ? { error: result.error } : {}),
-  });
+  observe(observer, receiptEvent(job.id, started, result));
 }
 
 export type FanOutDeliveryDeps = {
@@ -245,7 +245,7 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
         terminal ? undefined : retryAtMs(now, chunk.attemptCount, deps),
       );
       observe(deps.observe, {
-        ...deliveryEvent(chunk, now, started),
+        ...deliveryEvent(chunk, deps.queue, now, started),
         outcome: "failure",
         retry: !terminal,
         error: "retryable fan-out delivery failure",
@@ -278,7 +278,7 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
       }),
     );
     observe(deps.observe, {
-      ...deliveryEvent(chunk, now, started),
+      ...deliveryEvent(chunk, deps.queue, now, started),
       outcome: "success",
       delivered: delivered.length,
       failed: failed.length,
@@ -294,7 +294,7 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
       terminal ? undefined : retryAtMs(now, chunk.attemptCount, deps),
     );
     observe(deps.observe, {
-      ...deliveryEvent(chunk, now, started),
+      ...deliveryEvent(chunk, deps.queue, now, started),
       outcome: "failure",
       retry: !terminal,
       error: message,
@@ -361,33 +361,57 @@ async function writeReceipts(
     job.createdAtMs,
     { sorted: true },
   );
-  observe(deps.observe, {
-    type: "receipt",
-    jobId: job.id,
-    available: result.available,
-    durationMs: performance.now() - started,
-    ...(!result.available && result.error !== undefined ? { error: result.error } : {}),
-  });
+  observe(deps.observe, receiptEvent(job.id, started, result));
 }
 
-function planningEvent(job: FanOutJob, now: number, started: number) {
+function receiptEvent(
+  jobId: string,
+  started: number,
+  result: Awaited<ReturnType<DeliveryReceiptStore["write"]>>,
+): FanOutWorkerEvent {
+  const fragments = result.available ? Object.values(result.manifest.receipts).flat() : [];
+  return {
+    type: "receipt",
+    jobId,
+    available: result.available,
+    durationMs: performance.now() - started,
+    fragmentBytes: fragments.reduce((sum, fragment) => sum + fragment.byteLength, 0),
+    fragmentCount: fragments.length,
+    targetCardinality: result.available
+      ? result.manifest.receipts.target.reduce((sum, fragment) => sum + fragment.cardinality, 0)
+      : 0,
+    ...(!result.available && result.error !== undefined ? { error: result.error } : {}),
+  };
+}
+
+function planningEvent(job: FanOutJob, queue: FanOutQueuePort, now: number, started: number) {
+  const stats = queue.stats();
   return {
     type: "planning" as const,
     jobId: job.id,
     attempt: job.attemptCount,
     queueLagMs: Math.max(0, now - job.availableAtMs),
+    queueDepth: stats.pendingPlanning + stats.openPlanningLeases,
     leaseRecovered: job.attemptCount > 1 && job.lastError === null,
     durationMs: performance.now() - started,
+    policyMode: job.fanOutPolicy.mode,
   };
 }
 
-function deliveryEvent(chunk: FanOutWorkloadChunk, now: number, started: number) {
+function deliveryEvent(
+  chunk: FanOutWorkloadChunk,
+  queue: FanOutQueuePort,
+  now: number,
+  started: number,
+) {
+  const stats = queue.stats();
   return {
     type: "delivery" as const,
     jobId: chunk.jobId,
     chunkIndex: chunk.chunkIndex,
     attempt: chunk.attemptCount,
     queueLagMs: Math.max(0, now - chunk.availableAtMs),
+    queueDepth: stats.pendingDelivery + stats.openDeliveryLeases,
     leaseRecovered: chunk.attemptCount > 1 && chunk.lastError === null,
     durationMs: performance.now() - started,
     targets: chunk.records.length,

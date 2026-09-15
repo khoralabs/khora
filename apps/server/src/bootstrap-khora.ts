@@ -10,11 +10,14 @@ import {
   createLocalFilesystemObjectStore,
   createS3ObjectStore,
   DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
+  type FanOutMetricRecorder,
   type FanOutWorkerEvent,
   type KhoraHostContext,
   parseInviteSeedTokens,
   popInboxDrainItemsForDid,
   readInvitePepper,
+  recordFanOutRouteBatch,
+  recordFanOutWorkerEvent,
   runFanOutMissingJobReconciliation,
   runOrphanReceiptGc,
   startEmbeddingRetryWorker,
@@ -33,6 +36,7 @@ import {
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { logger } from "./logger";
 import { migrateLegacyPendingEmbeddingsFromMemoriesDb } from "./migrate-legacy-pending-embeddings";
+import { meter } from "./otel";
 import {
   assertKhoraMemoriesDbPathUnset,
   type KhoraMemoriesBootstrapConfig,
@@ -204,7 +208,9 @@ export async function bootstrapKhoraHost(
     delivery: {
       queue: foundation.persistence.fanOutQueue,
       principalOrdinals: foundation.persistence.principalOrdinals,
-      inboxDelivery: createResolveCellInboxDelivery(foundation.cluster.resolveCell),
+      inboxDelivery: createResolveCellInboxDelivery(foundation.cluster.resolveCell, {
+        observeBatch: (event) => recordFanOutRouteBatch(fanOutMetrics, event),
+      }),
       cellIdForPrincipal: foundation.cluster.assignPrincipalToCell,
       observe: observeFanOut,
       ...(deliveryReceiptStore !== undefined ? { receipts: deliveryReceiptStore } : {}),
@@ -301,10 +307,43 @@ function receiptGcRetentionMs(): number {
   return Number.isFinite(raw) && raw >= 0 ? raw : 3_600_000;
 }
 
+const fanOutMetrics = otelFanOutRecorder();
+
 function observeFanOut(event: FanOutWorkerEvent): void {
+  recordFanOutWorkerEvent(fanOutMetrics, event);
   if (event.type === "receipt" && !event.available) {
     logger.warn({ fanOut: event }, "fan-out receipt unavailable");
   } else {
     logger.debug({ fanOut: event }, "fan-out worker");
   }
+}
+
+function otelFanOutRecorder(): FanOutMetricRecorder {
+  const counters = new Map<string, ReturnType<typeof meter.createCounter>>();
+  const histograms = new Map<string, ReturnType<typeof meter.createHistogram>>();
+  const counter = (name: string) => {
+    const existing = counters.get(name);
+    if (existing !== undefined) return existing;
+    const created = meter.createCounter(name);
+    counters.set(name, created);
+    return created;
+  };
+  const histogram = (name: string) => {
+    const existing = histograms.get(name);
+    if (existing !== undefined) return existing;
+    const created = meter.createHistogram(name);
+    histograms.set(name, created);
+    return created;
+  };
+  return {
+    count(name, value, attrs) {
+      counter(name).add(value, attrs);
+    },
+    duration(name, ms, attrs) {
+      histogram(name).record(ms, attrs);
+    },
+    gauge(name, value, attrs) {
+      histogram(name).record(value, attrs);
+    },
+  };
 }

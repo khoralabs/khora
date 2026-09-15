@@ -187,5 +187,22 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
     setReconcileAfterPrincipalId(afterPrincipalId) {
       reconcileAfter = afterPrincipalId;
     },
+    stats() {
+      let pendingPlanning = 0;
+      let openPlanningLeases = 0;
+      for (const job of jobs.values()) {
+        if (job.status === "planning_pending") pendingPlanning++;
+        if (job.status === "planning") openPlanningLeases++;
+      }
+      let pendingDelivery = 0;
+      let openDeliveryLeases = 0;
+      for (const rows of chunks.values()) {
+        for (const chunk of rows) {
+          if (chunk.status === "pending") pendingDelivery++;
+          if (chunk.status === "delivering") openDeliveryLeases++;
+        }
+      }
+      return { pendingPlanning, pendingDelivery, openPlanningLeases, openDeliveryLeases };
+    },
   };
 }

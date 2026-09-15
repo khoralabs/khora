@@ -11,6 +11,7 @@ export type TursoCredentials = {
 export type Connection = {
   execute(sql: string, args?: unknown[]): Promise<{ rows?: readonly SqlRow[] }>;
   exec(sql: string): Promise<void>;
+  transaction?<T>(fn: () => Promise<T>): () => Promise<T>;
   close?(): Promise<void>;
 };
 

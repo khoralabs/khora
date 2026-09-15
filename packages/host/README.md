@@ -291,7 +291,7 @@ HTTP create post
 
 Tune `pageSize`, `chunkSize`, worker `leaseMs`/`retryDelayMs`/`maxAttempts`, and `RoutedInboxDelivery`'s `maxBatchSize` (capped at 512), `concurrency` (default 8), and `maxTargets` (default 10,000). Workload chunks are also capped by the receipt codec. Receipt object storage is optional: delivery still completes without it, while receipt reads report `receiptsAvailable: false`; alert on unavailable receipt events when object storage is configured.
 
-Run the repeatable structural benchmark with `bun run --cwd packages/host bench:fanout`. Optional arguments include `--targets=`, `--page-size=`, `--chunk-size=`, `--batch-size=`, and `--concurrency=`. Its JSON reports throughput and observed bounds; it verifies bounds and completion without machine-dependent timing thresholds.
+Run the repeatable structural benchmark with `bun run --cwd packages/host bench:fanout` (`ci` profile, 20,000 targets). Named profiles: `bench:fanout:ci`, `bench:fanout:stress` (100,000), and `bench:fanout:million` (opt-in). Optional arguments include `--targets=`, `--page-size=`, `--chunk-size=`, `--batch-size=`, and `--concurrency=`. JSON reports throughput, peak RSS, receipt sizes, and observed page/chunk/batch/concurrency/partition high-water values without machine-dependent timing thresholds.
 
 **Key files:**
 | Role | Path |

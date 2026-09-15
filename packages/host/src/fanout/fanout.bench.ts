@@ -2,21 +2,38 @@ import { type CellNodeClient, type CellRoute, RoutedInboxDelivery } from "@khora
 import type { Percolator } from "@khoralabs/percolator";
 import { createInMemoryFanOutQueue } from "../persistence/core/in-memory-fan-out-queue";
 import type { FanOutPlanningJobInput, PrincipalOrdinalPort } from "../persistence/core/port";
+import type { ObjectStorePort } from "../receipts/object-store";
+import { createDeliveryReceiptStore } from "../receipts/receipt-store";
+import {
+  createMemoryFanOutMetrics,
+  recordFanOutRouteBatch,
+  recordFanOutWorkerEvent,
+} from "./metrics";
 import {
   type FanOutWorkerEvent,
   runNextFanOutDeliveryChunk,
   runNextFanOutPlanningJob,
 } from "./workers";
 
-const targets = positiveArg("targets", 20_000);
+const profiles = {
+  ci: { targets: 20_000 },
+  stress: { targets: 100_000 },
+  million: { targets: 1_000_000 },
+} as const;
+
+const profileName = profileArg();
+const targets = positiveArg("targets", profiles[profileName].targets);
 const pageSize = positiveArg("page-size", 512);
 const chunkSize = positiveArg("chunk-size", 1_000);
 const batchSize = positiveArg("batch-size", 128);
 const concurrency = positiveArg("concurrency", 8);
 const pages: number[] = [];
 const batches: number[] = [];
+const partitionIds = new Set<string>();
 let maxActiveBatches = 0;
+let maxOpenPartitions = 0;
 const events: FanOutWorkerEvent[] = [];
+const { recorder, values } = createMemoryFanOutMetrics();
 const queue = createInMemoryFanOutQueue();
 const input: FanOutPlanningJobInput = {
   tenantKey: "benchmark",
@@ -44,6 +61,7 @@ const percolator = {
   },
 } as unknown as Percolator;
 
+const rssStart = process.memoryUsage().rss;
 const planningStarted = performance.now();
 await runNextFanOutPlanningJob({
   queue,
@@ -59,7 +77,10 @@ await runNextFanOutPlanningJob({
   pageSize,
   chunkSize,
   now: () => 0,
-  observe: (event) => events.push(event),
+  observe: (event) => {
+    events.push(event);
+    recordFanOutWorkerEvent(recorder, event);
+  },
 });
 const planningMs = performance.now() - planningStarted;
 
@@ -82,7 +103,11 @@ const routed = new RoutedInboxDelivery({
   placement: {
     async resolveMany(cellIds) {
       return new Map(
-        cellIds.map((cellId, index) => [cellId, { ...route, partitionId: `p${index % 7}` }]),
+        cellIds.map((cellId, index) => {
+          const partitionId = `p${index % 7}`;
+          partitionIds.add(partitionId);
+          return [cellId, { ...route, partitionId }];
+        }),
       );
     },
   },
@@ -93,6 +118,8 @@ const routed = new RoutedInboxDelivery({
   observeBatch(event) {
     batches.push(event.targets);
     maxActiveBatches = Math.max(maxActiveBatches, event.active);
+    maxOpenPartitions = Math.max(maxOpenPartitions, event.partitions ?? 0);
+    recordFanOutRouteBatch(recorder, event);
   },
 });
 const ordinals: PrincipalOrdinalPort = {
@@ -101,6 +128,7 @@ const ordinals: PrincipalOrdinalPort = {
   getManyByDid: () => new Map(),
   resolveMany: (values) => new Map(values.map((ordinal) => [ordinal, `did:${ordinal}`])),
 };
+const receipts = createDeliveryReceiptStore(memoryObjectStore());
 const deliveryStarted = performance.now();
 while (
   await runNextFanOutDeliveryChunk({
@@ -108,12 +136,18 @@ while (
     principalOrdinals: ordinals,
     inboxDelivery: routed,
     cellIdForPrincipal: (did) => `cell:${Number(did.slice(4)) % 113}`,
+    receipts,
     now: () => 0,
-    observe: (event) => events.push(event),
+    observe: (event) => {
+      events.push(event);
+      recordFanOutWorkerEvent(recorder, event);
+    },
   })
 ) {}
 const deliveryMs = performance.now() - deliveryStarted;
 const chunks = queue.listWorkloadChunks(jobId);
+const peakRss = Math.max(rssStart, process.memoryUsage().rss);
+const receipt = events.find((event) => event.type === "receipt");
 
 assertBound("page", pages, pageSize);
 assertBound(
@@ -127,7 +161,9 @@ if (queue.getJob(jobId)?.status !== "completed") throw new Error("benchmark job 
 
 console.log(
   JSON.stringify({
+    profile: profileName,
     targets,
+    peakRssBytes: peakRss,
     planning: {
       ms: planningMs,
       targetsPerSecond: rate(targets, planningMs),
@@ -142,10 +178,32 @@ console.log(
       batches: batches.length,
       maxBatch: Math.max(...batches),
       maxActiveBatches,
+      maxOpenPartitions,
+      partitions: partitionIds.size,
     },
+    receipts: {
+      available: receipt?.type === "receipt" ? receipt.available : false,
+      fragmentBytes: receipt?.type === "receipt" ? (receipt.fragmentBytes ?? 0) : 0,
+      fragmentCount: receipt?.type === "receipt" ? (receipt.fragmentCount ?? 0) : 0,
+      targetCardinality: receipt?.type === "receipt" ? (receipt.targetCardinality ?? 0) : 0,
+    },
+    bounds: {
+      pageSize,
+      chunkSize,
+      batchSize,
+      concurrency,
+    },
+    metrics: Object.fromEntries(values),
     observations: events.length,
   }),
 );
+
+function profileArg(): keyof typeof profiles {
+  const prefix = "--profile=";
+  const raw = process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length) ?? "ci";
+  if (raw === "ci" || raw === "stress" || raw === "million") return raw;
+  throw new RangeError("profile must be ci, stress, or million");
+}
 
 function positiveArg(name: string, fallback: number): number {
   const prefix = `--${name}=`;
@@ -162,4 +220,43 @@ function assertBound(name: string, values: readonly number[], limit: number): vo
 
 function rate(count: number, ms: number): number {
   return Math.round((count * 1_000) / ms);
+}
+
+function memoryObjectStore(): ObjectStorePort {
+  const objects = new Map<string, Uint8Array>();
+  return {
+    async putImmutable(key, bytes) {
+      if (objects.has(key)) throw new Error(`object already exists: ${key}`);
+      objects.set(key, bytes);
+    },
+    async get(key) {
+      return objects.get(key);
+    },
+    async head(key) {
+      const bytes = objects.get(key);
+      return bytes === undefined ? undefined : { byteLength: bytes.byteLength };
+    },
+    async listPrefix(prefix) {
+      return [...objects.keys()].filter((key) => key.startsWith(prefix));
+    },
+    async listChildPrefixes(parent, opts) {
+      const root = parent.replace(/\/$/, "");
+      const prefixes = [
+        ...new Set(
+          [...objects.keys()]
+            .filter((key) => key.startsWith(`${root}/`))
+            .map((key) => key.slice(0, key.indexOf("/", root.length + 1))),
+        ),
+      ].sort();
+      const limit = opts?.limit ?? 64;
+      return prefixes
+        .filter((prefix) => opts?.after === undefined || prefix > opts.after)
+        .slice(0, limit);
+    },
+    async deletePrefix(prefix) {
+      for (const key of [...objects.keys()]) {
+        if (key.startsWith(prefix)) objects.delete(key);
+      }
+    },
+  };
 }

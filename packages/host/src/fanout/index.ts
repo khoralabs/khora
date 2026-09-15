@@ -1,5 +1,12 @@
 export { createFanOutMaintenanceTick } from "./maintenance-tick";
 export {
+  createMemoryFanOutMetrics,
+  type FanOutMetricRecorder,
+  type FanOutRouteBatchEvent,
+  recordFanOutRouteBatch,
+  recordFanOutWorkerEvent,
+} from "./metrics";
+export {
   assertFanOutPlanningInput,
   fanOutPolicyFromColumns,
   fanOutPolicyLimit,

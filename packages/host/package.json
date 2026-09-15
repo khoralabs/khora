@@ -93,7 +93,10 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
-    "bench:fanout": "bun run src/fanout/fanout.bench.ts",
+    "bench:fanout": "bun run src/fanout/fanout.bench.ts --profile=ci",
+    "bench:fanout:ci": "bun run src/fanout/fanout.bench.ts --profile=ci",
+    "bench:fanout:stress": "bun run src/fanout/fanout.bench.ts --profile=stress",
+    "bench:fanout:million": "bun run src/fanout/fanout.bench.ts --profile=million",
     "test:scale": "KHORA_SCALE_TEST=1 bun test src/fanout/fanout-scalability.integration.test.ts",
     "test:fanout-matrix": "KHORA_FANOUT_CI_MATRIX=1 bun test src/fanout/fanout-scalability.integration.test.ts",
     "typecheck": "tsc --noEmit",

@@ -188,6 +188,14 @@ export type FanOutQueuePort = {
   ): void;
   getReconcileAfterPrincipalId(): string | undefined;
   setReconcileAfterPrincipalId(afterPrincipalId: string | undefined): void;
+  stats(): FanOutQueueStats;
+};
+
+export type FanOutQueueStats = {
+  pendingPlanning: number;
+  pendingDelivery: number;
+  openPlanningLeases: number;
+  openDeliveryLeases: number;
 };
 
 /**

@@ -12,6 +12,7 @@ export {
   resolveTursoUrl,
   type TursoUrlTemplateOptions,
 } from "./resolve-url";
+export { tursoClientsFromBunSqlite } from "./testing/bun-sqlite-adapter";
 export {
   TursoCatalogPersistence,
   type TursoCatalogPersistenceOptions,

@@ -87,7 +87,10 @@ export {
   strategyCacheKey,
   UnknownBackendStrategyError,
 } from "./placement";
-export { createResolveCellInboxDelivery } from "./resolve-cell-inbox-delivery";
+export {
+  createResolveCellInboxDelivery,
+  type ResolveCellInboxDeliveryOptions,
+} from "./resolve-cell-inbox-delivery";
 export type {
   OutboxContentRef,
   OutboxLocators,

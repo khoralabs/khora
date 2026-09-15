@@ -157,6 +157,7 @@ export type RoutedInboxDeliveryOptions = {
     active: number;
     durationMs: number;
     outcome: "success" | "failure";
+    partitions: number;
   }) => void;
 };
 
@@ -246,6 +247,7 @@ export class RoutedInboxDelivery implements InboxDelivery {
               active,
               durationMs: performance.now() - started,
               outcome,
+              partitions: groups.size,
             });
             active--;
           }

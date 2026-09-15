@@ -159,6 +159,18 @@ export function ensureFanOutQueueSchema(db: Database): void {
 export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
   ensureFanOutQueueSchema(db);
   const select = "SELECT * FROM fan_out_jobs WHERE id = ?";
+  const jobStats = db.query<{ pending: number; leases: number }, []>(
+    `SELECT
+      COALESCE(SUM(CASE WHEN status = 'planning_pending' THEN 1 ELSE 0 END), 0) AS pending,
+      COALESCE(SUM(CASE WHEN status = 'planning' THEN 1 ELSE 0 END), 0) AS leases
+     FROM fan_out_jobs`,
+  );
+  const chunkStats = db.query<{ pending: number; leases: number }, []>(
+    `SELECT
+      COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) AS pending,
+      COALESCE(SUM(CASE WHEN status = 'delivering' THEN 1 ELSE 0 END), 0) AS leases
+     FROM fan_out_workload_chunks`,
+  );
   return {
     enqueuePlanning(input, nowMs) {
       assertFanOutPlanningInput(input);
@@ -356,6 +368,16 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         `INSERT INTO fan_out_reconcile_cursor(singleton, after_principal_id) VALUES (1, ?)
          ON CONFLICT(singleton) DO UPDATE SET after_principal_id = excluded.after_principal_id`,
       ).run(afterPrincipalId ?? null);
+    },
+    stats() {
+      const jobs = jobStats.get();
+      const chunks = chunkStats.get();
+      return {
+        pendingPlanning: jobs?.pending ?? 0,
+        pendingDelivery: chunks?.pending ?? 0,
+        openPlanningLeases: jobs?.leases ?? 0,
+        openDeliveryLeases: chunks?.leases ?? 0,
+      };
     },
   };
 }
