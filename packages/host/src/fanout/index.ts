@@ -1,4 +1,9 @@
 export {
+  type FanOutReconcileDeps,
+  type FanOutReconcileResult,
+  runFanOutMissingJobReconciliation,
+} from "./reconcile";
+export {
   type FanOutDeliveryDeps,
   type FanOutObserver,
   type FanOutPlannerDeps,

@@ -97,6 +97,10 @@ export function runHostPersistenceContractTests(
       p.fanOutQueue.completePlanning(id, 2, 201);
       expect(p.fanOutQueue.getJob(id)?.status).toBe("routing_pending");
       expect(p.fanOutQueue.getJob(id)?.plannedTargetCount).toBe(2);
+      p.fanOutQueue.setReconcileAfterPrincipalId("did:cursor");
+      expect(p.fanOutQueue.getReconcileAfterPrincipalId()).toBe("did:cursor");
+      p.fanOutQueue.setReconcileAfterPrincipalId(undefined);
+      expect(p.fanOutQueue.getReconcileAfterPrincipalId()).toBeUndefined();
     });
 
     test("registerAgent rejects username taken by another principal", async () => {
@@ -113,6 +117,37 @@ export function runHostPersistenceContractTests(
           profileUpsert: { id: "p-b", bodyJson: "{}" },
         }),
       ).toThrow(/unavailable/);
+    });
+
+    test("usernameIndex listPrincipals pages principals in order", async () => {
+      const { persistence: p } = await create();
+      p.registerAgent({
+        principalId: "did:test:alice" as PrincipalId,
+        username: "alice",
+        profileUpsert: { id: "p-alice", bodyJson: "{}" },
+      });
+      p.registerAgent({
+        principalId: "did:test:bob" as PrincipalId,
+        username: "bob",
+        profileUpsert: { id: "p-bob", bodyJson: "{}" },
+      });
+      p.registerAgent({
+        principalId: "did:test:cara" as PrincipalId,
+        username: "cara",
+        profileUpsert: { id: "p-cara", bodyJson: "{}" },
+      });
+      expect(p.usernameIndex.listPrincipals({ limit: 100 })).toEqual([
+        "did:test:alice",
+        "did:test:bob",
+        "did:test:cara",
+      ]);
+      expect(p.usernameIndex.listPrincipals({ limit: 1 })).toEqual(["did:test:alice"]);
+      expect(
+        p.usernameIndex.listPrincipals({ afterPrincipalId: "did:test:alice", limit: 1 }),
+      ).toEqual(["did:test:bob"]);
+      expect(
+        p.usernameIndex.listPrincipals({ afterPrincipalId: "did:test:cara", limit: 10 }),
+      ).toEqual([]);
     });
 
     test("usernameIndex rollback restores prior handle", async () => {

@@ -12,6 +12,7 @@ export const MAX_FAN_OUT_CHUNK_ORDINALS = MAX_FAN_OUT_WORKLOAD_RECORDS;
 export function createInMemoryFanOutQueue(): FanOutQueuePort {
   const jobs = new Map<string, FanOutJob>();
   const chunks = new Map<string, FanOutWorkloadChunk[]>();
+  let reconcileAfter: string | undefined;
   return {
     enqueuePlanning(input: FanOutPlanningJobInput, nowMs: number): string {
       if (input.fanOutPolicy === "catalog-pull" && input.visibility !== "public") {
@@ -171,6 +172,12 @@ export function createInMemoryFanOutQueue(): FanOutQueuePort {
         job.lastError = error;
       }
       job.updatedAtMs = nowMs;
+    },
+    getReconcileAfterPrincipalId() {
+      return reconcileAfter;
+    },
+    setReconcileAfterPrincipalId(afterPrincipalId) {
+      reconcileAfter = afterPrincipalId;
     },
   };
 }

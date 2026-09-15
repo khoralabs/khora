@@ -39,4 +39,8 @@ CREATE TABLE IF NOT EXISTS fan_out_workload_chunks (
   created_at_ms INTEGER NOT NULL,
   PRIMARY KEY (job_id, chunk_index)
 );
+CREATE TABLE IF NOT EXISTS fan_out_reconcile_cursor (
+  singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+  after_principal_id TEXT
+);
 `.trim();

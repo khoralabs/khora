@@ -320,5 +320,19 @@ export function createSqliteFanOutQueue(db: Database): FanOutQueuePort {
         }
       })();
     },
+    getReconcileAfterPrincipalId() {
+      const row = db
+        .query<{ after_principal_id: string | null }, []>(
+          "SELECT after_principal_id FROM fan_out_reconcile_cursor WHERE singleton = 1",
+        )
+        .get();
+      return row?.after_principal_id ?? undefined;
+    },
+    setReconcileAfterPrincipalId(afterPrincipalId) {
+      db.query(
+        `INSERT INTO fan_out_reconcile_cursor(singleton, after_principal_id) VALUES (1, ?)
+         ON CONFLICT(singleton) DO UPDATE SET after_principal_id = excluded.after_principal_id`,
+      ).run(afterPrincipalId ?? null);
+    },
   };
 }

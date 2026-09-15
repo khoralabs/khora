@@ -179,6 +179,8 @@ export type FanOutQueuePort = {
     error: string,
     retryAtMs?: number,
   ): void;
+  getReconcileAfterPrincipalId(): string | undefined;
+  setReconcileAfterPrincipalId(afterPrincipalId: string | undefined): void;
 };
 
 /**
@@ -212,6 +214,8 @@ export type UsernameIndexPort = {
    * and restore the prior username entry if one existed.
    */
   rollbackForPrincipal(principalId: PrincipalId, priorNormalizedUsername: string | undefined): void;
+  /** Lexicographic page of registered principal ids. */
+  listPrincipals(opts: { afterPrincipalId?: string; limit: number }): string[];
 };
 
 export type ClaimedTeardownJob = { principalId: PrincipalId; profileId: string };

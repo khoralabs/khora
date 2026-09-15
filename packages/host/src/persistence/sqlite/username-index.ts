@@ -111,5 +111,14 @@ export function createUsernameIndex(store: ProjectionStore): UsernameIndexPort {
         store.deleteRow(USERNAME_INDEX_TENANT_KEY, NAMESPACE_PRINCIPAL_TO_USERNAME, principalId);
       }
     },
+
+    listPrincipals(opts) {
+      return store.listKeysAfter(
+        USERNAME_INDEX_TENANT_KEY,
+        NAMESPACE_PRINCIPAL_TO_USERNAME,
+        opts.afterPrincipalId,
+        opts.limit,
+      );
+    },
   };
 }

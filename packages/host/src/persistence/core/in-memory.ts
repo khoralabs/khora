@@ -213,6 +213,12 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
           usernameToPrincipal.delete(username);
         }
       },
+      listPrincipals(opts) {
+        const ids = [...principalToUsername.keys()].sort();
+        const after = opts.afterPrincipalId;
+        const filtered = after === undefined ? ids : ids.filter((id) => id > after);
+        return filtered.slice(0, opts.limit);
+      },
       rollbackForPrincipal(
         principalId: PrincipalId,
         priorNormalizedUsername: string | undefined,
