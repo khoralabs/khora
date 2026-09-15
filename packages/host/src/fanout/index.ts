@@ -1,3 +1,4 @@
+export { createFanOutMaintenanceTick } from "./maintenance-tick";
 export {
   type FanOutReconcileDeps,
   type FanOutReconcileResult,

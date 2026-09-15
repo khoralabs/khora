@@ -27,6 +27,7 @@ function objectStore() {
       return bytes ? { byteLength: bytes.byteLength } : undefined;
     },
     listPrefix: async (prefix: string) => [...objects.keys()].filter((k) => k.startsWith(prefix)),
+    listChildPrefixes: async () => [],
     deletePrefix: async () => {},
   };
 }

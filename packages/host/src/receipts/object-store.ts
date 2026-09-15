@@ -12,13 +12,14 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 
-export type ObjectMetadata = { byteLength: number; etag?: string };
+export type ObjectMetadata = { byteLength: number; etag?: string; mtimeMs?: number };
 
 export interface ObjectStorePort {
   putImmutable(key: string, bytes: Uint8Array): Promise<void>;
   get(key: string): Promise<Uint8Array | undefined>;
   head(key: string): Promise<ObjectMetadata | undefined>;
   listPrefix(prefix: string): Promise<string[]>;
+  listChildPrefixes(parent: string, opts?: { after?: string; limit?: number }): Promise<string[]>;
   deletePrefix(prefix: string): Promise<void>;
 }
 
@@ -27,6 +28,17 @@ function safeKey(key: string): string {
     throw new Error("invalid object key");
   }
   return key;
+}
+
+function normalizeParentPrefix(parent: string): string {
+  return safeKey(parent.replace(/\/$/, ""));
+}
+
+function pagePrefixes(prefixes: string[], opts?: { after?: string; limit?: number }): string[] {
+  const limit = Math.max(1, opts?.limit ?? 64);
+  return prefixes
+    .filter((prefix) => opts?.after === undefined || prefix > opts.after)
+    .slice(0, limit);
 }
 
 /** Creates a local store only when an explicit root directory is provided. */
@@ -61,7 +73,8 @@ export function createLocalFilesystemObjectStore(rootDirectory: string): ObjectS
     },
     async head(key) {
       try {
-        return { byteLength: (await stat(objectPath(key))).size };
+        const info = await stat(objectPath(key));
+        return { byteLength: info.size, mtimeMs: info.mtimeMs };
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
         throw error;
@@ -88,6 +101,21 @@ export function createLocalFilesystemObjectStore(rootDirectory: string): ObjectS
       }
       await walk(root);
       return keys.sort();
+    },
+    async listChildPrefixes(parent, opts) {
+      const directory = objectPath(normalizeParentPrefix(parent));
+      let names: string[];
+      try {
+        names = (await readdir(directory, { withFileTypes: true }))
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name)
+          .sort();
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+        throw error;
+      }
+      const prefixes = names.map((name) => `${normalizeParentPrefix(parent)}/${name}`);
+      return pagePrefixes(prefixes, opts);
     },
     async deletePrefix(prefix) {
       await Promise.all((await this.listPrefix(prefix)).map((key) => rm(objectPath(key))));
@@ -136,7 +164,11 @@ export function createS3ObjectStore(config: S3ObjectStoreConfig): ObjectStorePor
         const result = await client.send(
           new HeadObjectCommand({ Bucket: config.bucket, Key: remoteKey(key) }),
         );
-        return { byteLength: result.ContentLength ?? 0, etag: result.ETag };
+        return {
+          byteLength: result.ContentLength ?? 0,
+          etag: result.ETag,
+          ...(result.LastModified !== undefined ? { mtimeMs: result.LastModified.getTime() } : {}),
+        };
       } catch (error) {
         if (
           (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
@@ -160,6 +192,35 @@ export function createS3ObjectStore(config: S3ObjectStoreConfig): ObjectStorePor
         token = result.NextContinuationToken;
       } while (token);
       return keys.sort();
+    },
+    async listChildPrefixes(parent, opts) {
+      const limit = Math.max(1, opts?.limit ?? 64);
+      const prefixes: string[] = [];
+      const prefix = remotePrefix(`${normalizeParentPrefix(parent)}/`);
+      let token: string | undefined;
+      let started = false;
+      do {
+        const result = await client.send(
+          new ListObjectsV2Command({
+            Bucket: config.bucket,
+            Prefix: prefix,
+            Delimiter: "/",
+            MaxKeys: limit,
+            ContinuationToken: token,
+            ...(!started && opts?.after !== undefined ? { StartAfter: remoteKey(opts.after) } : {}),
+          }),
+        );
+        started = true;
+        for (const common of result.CommonPrefixes ?? []) {
+          if (common.Prefix === undefined) continue;
+          const local = localKey(common.Prefix.replace(/\/$/, ""));
+          if (opts?.after !== undefined && local <= opts.after) continue;
+          prefixes.push(local);
+          if (prefixes.length >= limit) return prefixes;
+        }
+        token = result.IsTruncated === true ? result.NextContinuationToken : undefined;
+      } while (token);
+      return prefixes;
     },
     async deletePrefix(prefix) {
       const keys = await this.listPrefix(prefix);

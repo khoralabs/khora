@@ -305,12 +305,13 @@ export async function runNextFanOutDeliveryChunk(deps: FanOutDeliveryDeps): Prom
   return true;
 }
 
-export type FanOutWorkersHandle = { stop(): void; reconcile(): Promise<void> };
+export type FanOutWorkersHandle = { stop(): Promise<void>; reconcile(): Promise<void> };
 
 export function startFanOutWorkers(opts: {
   planner: FanOutPlannerDeps;
   delivery: FanOutDeliveryDeps;
   intervalMs?: number;
+  onTick?: () => Promise<void>;
 }): FanOutWorkersHandle {
   let stopped = false;
   let running = false;
@@ -320,6 +321,11 @@ export function startFanOutWorkers(opts: {
     try {
       await runNextFanOutPlanningJob(opts.planner);
       await runNextFanOutDeliveryChunk(opts.delivery);
+      try {
+        await opts.onTick?.();
+      } catch {
+        /* maintenance ticks fail open */
+      }
     } finally {
       running = false;
     }
@@ -327,9 +333,12 @@ export function startFanOutWorkers(opts: {
   const id = setInterval(() => void reconcile(), opts.intervalMs ?? 500);
   void reconcile();
   return {
-    stop: () => {
+    stop: async () => {
       stopped = true;
       clearInterval(id);
+      while (running) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
     },
     reconcile,
   };

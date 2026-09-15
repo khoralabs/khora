@@ -8,6 +8,7 @@ import {
   type FanOutWorkerEvent,
   runNextFanOutDeliveryChunk,
   runNextFanOutPlanningJob,
+  startFanOutWorkers,
 } from "./workers";
 
 const input: FanOutPlanningJobInput = {
@@ -101,6 +102,7 @@ test("zero-target planning writes an empty receipt manifest", async () => {
       return bytes === undefined ? undefined : { byteLength: bytes.byteLength };
     },
     listPrefix: async (prefix) => [...objects.keys()].filter((key) => key.startsWith(prefix)),
+    listChildPrefixes: async () => [],
     deletePrefix: async (prefix) => {
       for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key);
     },
@@ -384,4 +386,47 @@ test("worker observations report bounds, retries, lease recovery, and receipt av
     }),
     expect.objectContaining({ type: "delivery", outcome: "success", targets: 1, delivered: 1 }),
   ]);
+});
+
+test("worker stop waits for an in-flight tick to finish", async () => {
+  let release: (() => void) | undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let started = false;
+  const handle = startFanOutWorkers({
+    planner: {
+      queue: createInMemoryFanOutQueue(),
+      percolator: percolator([]),
+      candidateForJob: () => {
+        throw new Error("unused");
+      },
+    },
+    delivery: {
+      queue: createInMemoryFanOutQueue(),
+      principalOrdinals: ordinals(),
+      inboxDelivery: {
+        async deliver() {
+          return { target_count: 0, delivered_count: 0, success_bitmap: new Uint8Array() };
+        },
+      },
+      cellIdForPrincipal: (did) => `cell:${did}`,
+    },
+    intervalMs: 60_000,
+    onTick: async () => {
+      started = true;
+      await gate;
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(started).toBe(true);
+  let stopped = false;
+  const stopping = handle.stop().then(() => {
+    stopped = true;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(stopped).toBe(false);
+  release?.();
+  await stopping;
+  expect(stopped).toBe(true);
 });

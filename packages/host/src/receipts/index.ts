@@ -13,6 +13,11 @@ export {
   type S3ObjectStoreConfig,
 } from "./object-store";
 export {
+  type ReceiptGcDeps,
+  type ReceiptGcResult,
+  runOrphanReceiptGc,
+} from "./receipt-gc";
+export {
   createDeliveryReceiptReader,
   DeliveryReceiptBadRequest,
   type DeliveryReceiptReader,

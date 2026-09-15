@@ -144,6 +144,7 @@ test("write storm fans out durably with bounded pages, chunks, batches, and conc
       return bytes ? { byteLength: bytes.byteLength } : undefined;
     },
     listPrefix: async (prefix) => [...objects.keys()].filter((key) => key.startsWith(prefix)),
+    listChildPrefixes: async () => [],
     deletePrefix: async (prefix) => {
       for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key);
     },

@@ -1,16 +1,22 @@
-import { createResolveCellInboxDelivery } from "@khoralabs/colonnade";
+import { createResolveCellInboxDelivery, principalHomeCellId } from "@khoralabs/colonnade";
 import type { KhoraPost } from "@khoralabs/khora-contracts";
 import {
   bootstrapHostSearch,
   buildPercolatorCandidateFromPost,
   createCatalogPublicPostFeedReader,
+  createDeliveryReceiptStore,
+  createFanOutMaintenanceTick,
   createKhoraHost,
+  createLocalFilesystemObjectStore,
+  createS3ObjectStore,
   DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
   type FanOutWorkerEvent,
   type KhoraHostContext,
   parseInviteSeedTokens,
   popInboxDrainItemsForDid,
   readInvitePepper,
+  runFanOutMissingJobReconciliation,
+  runOrphanReceiptGc,
   startEmbeddingRetryWorker,
   startFanOutWorkers,
   validateInviteEnvConfig,
@@ -151,6 +157,9 @@ export async function bootstrapKhoraHost(
     tenantKey: foundation.tenantKey,
     postResolver: foundation.postResolver,
   });
+  const receiptObjects = configuredReceiptObjectStore();
+  const deliveryReceiptStore =
+    receiptObjects === undefined ? undefined : createDeliveryReceiptStore(receiptObjects);
   const ctx = createKhoraHost({
     persistence: foundation.persistence,
     tenantKey: foundation.tenantKey,
@@ -168,10 +177,12 @@ export async function bootstrapKhoraHost(
     publicPostFeed,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { search: memories } : {}),
+    ...(deliveryReceiptStore !== undefined ? { deliveryReceiptStore } : {}),
     ...(opts.startPrincipalTeardownWorker !== undefined
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
   });
+  let gcAfterPrefix: string | undefined;
   const fanOutWorkers = startFanOutWorkers({
     planner: {
       queue: foundation.persistence.fanOutQueue,
@@ -188,6 +199,7 @@ export async function bootstrapKhoraHost(
         });
       },
       observe: observeFanOut,
+      ...(deliveryReceiptStore !== undefined ? { receipts: deliveryReceiptStore } : {}),
     },
     delivery: {
       queue: foundation.persistence.fanOutQueue,
@@ -195,6 +207,7 @@ export async function bootstrapKhoraHost(
       inboxDelivery: createResolveCellInboxDelivery(foundation.cluster.resolveCell),
       cellIdForPrincipal: foundation.cluster.assignPrincipalToCell,
       observe: observeFanOut,
+      ...(deliveryReceiptStore !== undefined ? { receipts: deliveryReceiptStore } : {}),
       async onDelivered(dids) {
         await Promise.all(
           dids.map(async (did) => {
@@ -205,13 +218,87 @@ export async function bootstrapKhoraHost(
         );
       },
     },
+    onTick: createFanOutMaintenanceTick({
+      reconcileEveryMs: envIntervalMs("KHORA_FANOUT_RECONCILE_INTERVAL_MS", 60_000),
+      gcEveryMs: envIntervalMs("KHORA_RECEIPT_GC_INTERVAL_MS", 3_600_000),
+      reconcile: async () => {
+        await runFanOutMissingJobReconciliation({
+          tenantKey: foundation.tenantKey,
+          queue: foundation.persistence.fanOutQueue,
+          listPrincipals: (listOpts) =>
+            foundation.persistence.usernameIndex.listPrincipals(listOpts),
+          listOutbox: (principalId) =>
+            foundation.postResolver.listAuthorOutboxRecords({
+              authorPrincipalId: principalId,
+              authorCellId: principalHomeCellId(principalId),
+              tenantKey: foundation.tenantKey,
+              limit: 256,
+            }),
+          resolvePost: (postId) => foundation.postResolver.resolvePostById(postId),
+        });
+      },
+      ...(receiptObjects === undefined
+        ? {}
+        : {
+            gc: async () => {
+              const gc = await runOrphanReceiptGc({
+                objects: receiptObjects,
+                isReferenced: (jobId) =>
+                  foundation.persistence.fanOutQueue.getJob(jobId) !== undefined,
+                nowMs: Date.now(),
+                retentionMs: receiptGcRetentionMs(),
+                ...(gcAfterPrefix !== undefined ? { afterPrefix: gcAfterPrefix } : {}),
+              });
+              gcAfterPrefix = gc.nextAfterPrefix;
+            },
+          }),
+    }),
   });
+  ctx.drainWorkers = () => fanOutWorkers.stop();
   const closeCluster = foundation.cluster.close.bind(foundation.cluster);
   foundation.cluster.close = () => {
-    fanOutWorkers.stop();
+    void fanOutWorkers.stop();
     closeCluster();
   };
   return { ctx };
+}
+
+function configuredReceiptObjectStore() {
+  const bucket = process.env.KHORA_RECEIPT_S3_BUCKET?.trim();
+  if (bucket !== undefined && bucket.length > 0) {
+    const endpoint = process.env.KHORA_RECEIPT_S3_ENDPOINT?.trim();
+    const region = process.env.KHORA_RECEIPT_S3_REGION?.trim() || process.env.AWS_REGION?.trim();
+    const prefix = process.env.KHORA_RECEIPT_S3_PREFIX?.trim();
+    return createS3ObjectStore({
+      bucket,
+      ...(prefix !== undefined && prefix.length > 0 ? { prefix } : {}),
+      ...(endpoint !== undefined && endpoint.length > 0
+        ? {
+            clientConfig: {
+              endpoint,
+              forcePathStyle: true,
+              ...(region !== undefined && region.length > 0 ? { region } : { region: "us-east-1" }),
+            },
+          }
+        : region !== undefined && region.length > 0
+          ? { clientConfig: { region } }
+          : {}),
+    });
+  }
+  const directory = process.env.KHORA_RECEIPT_DIR?.trim();
+  return directory !== undefined && directory.length > 0
+    ? createLocalFilesystemObjectStore(directory)
+    : undefined;
+}
+
+function envIntervalMs(name: string, fallback: number): number {
+  const raw = Number(process.env[name]);
+  return Number.isFinite(raw) && raw >= 0 ? raw : fallback;
+}
+
+function receiptGcRetentionMs(): number {
+  const raw = Number(process.env.KHORA_RECEIPT_GC_RETENTION_MS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 3_600_000;
 }
 
 function observeFanOut(event: FanOutWorkerEvent): void {

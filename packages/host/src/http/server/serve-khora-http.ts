@@ -107,32 +107,39 @@ export async function serveKhoraHttp(opts: ServeKhoraHttpOpts): Promise<void> {
         process.exit(1);
       }, shutdownTimeoutMs).unref();
 
-      try {
-        ctx.principalTeardownWorker.stop();
-      } catch {
-        /* ignore */
-      }
-      try {
-        ctx.cluster.close();
-      } catch {
-        /* ignore */
-      }
-      try {
-        ctx.search?.close();
-      } catch {
-        /* ignore */
-      }
-      try {
-        server.stop(false);
-      } catch {
-        /* already stopped */
-      }
-      try {
-        duplexIngress?.stop(true);
-      } catch {
-        /* ignore */
-      }
-      process.exit(0);
+      void (async () => {
+        try {
+          ctx.principalTeardownWorker.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          await ctx.drainWorkers?.();
+        } catch {
+          /* ignore */
+        }
+        try {
+          ctx.cluster.close();
+        } catch {
+          /* ignore */
+        }
+        try {
+          ctx.search?.close();
+        } catch {
+          /* ignore */
+        }
+        try {
+          server.stop(false);
+        } catch {
+          /* already stopped */
+        }
+        try {
+          duplexIngress?.stop(true);
+        } catch {
+          /* ignore */
+        }
+        process.exit(0);
+      })();
     }
 
     process.once("SIGTERM", () => shutdown("SIGTERM"));

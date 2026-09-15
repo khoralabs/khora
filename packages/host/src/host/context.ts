@@ -46,4 +46,5 @@ export type KhoraHostContext = {
   hostSpec: KhoraHostSpecPort;
   outboxPayloadCodec: OutboxPayloadCodec;
   deliveryReceipts: DeliveryReceiptReader;
+  drainWorkers?: () => Promise<void>;
 } & KhoraRegistrationApi;

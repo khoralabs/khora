@@ -37,7 +37,7 @@ describe("receipt object storage", () => {
     const store = createLocalFilesystemObjectStore(directory);
     await store.putImmutable("a/b", new Uint8Array([1, 2]));
     expect(await store.get("a/b")).toEqual(new Uint8Array([1, 2]));
-    expect(await store.head("a/b")).toEqual({ byteLength: 2 });
+    expect(await store.head("a/b")).toMatchObject({ byteLength: 2 });
     expect(await store.listPrefix("a/")).toEqual(["a/b"]);
     await expect(store.putImmutable("a/b", new Uint8Array([3]))).rejects.toThrow(/already exists/);
   });
@@ -64,6 +64,9 @@ describe("receipt object storage", () => {
         return undefined;
       },
       async listPrefix() {
+        return [];
+      },
+      async listChildPrefixes() {
         return [];
       },
       async deletePrefix() {},
@@ -94,6 +97,9 @@ describe("receipt object storage", () => {
         return undefined;
       },
       async listPrefix() {
+        return [];
+      },
+      async listChildPrefixes() {
         return [];
       },
       async deletePrefix() {},
