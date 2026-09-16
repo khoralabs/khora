@@ -1,11 +1,27 @@
+import { createResolveCellInboxDelivery, principalHomeCellId } from "@khoralabs/colonnade";
+import type { KhoraPost } from "@khoralabs/khora-contracts";
 import {
   bootstrapHostSearch,
+  buildPercolatorCandidateFromPost,
   createCatalogPublicPostFeedReader,
+  createDeliveryReceiptStore,
+  createFanOutMaintenanceTick,
   createKhoraHost,
+  createLocalFilesystemObjectStore,
+  createS3ObjectStore,
+  DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
+  type FanOutMetricRecorder,
+  type FanOutWorkerEvent,
   type KhoraHostContext,
   parseInviteSeedTokens,
+  popInboxDrainItemsForDid,
   readInvitePepper,
+  recordFanOutRouteBatch,
+  recordFanOutWorkerEvent,
+  runFanOutMissingJobReconciliation,
+  runOrphanReceiptGc,
   startEmbeddingRetryWorker,
+  startFanOutWorkers,
   validateInviteEnvConfig,
 } from "@khoralabs/khora-host";
 import type { KhoraEncryptionContext } from "@khoralabs/khora-host/bootstrap";
@@ -20,6 +36,7 @@ import {
 import { createLocalSqliteServiceStack } from "@khoralabs/memories-service/storage/sqlite";
 import { logger } from "./logger";
 import { migrateLegacyPendingEmbeddingsFromMemoriesDb } from "./migrate-legacy-pending-embeddings";
+import { meter } from "./otel";
 import {
   assertKhoraMemoriesDbPathUnset,
   type KhoraMemoriesBootstrapConfig,
@@ -144,7 +161,9 @@ export async function bootstrapKhoraHost(
     tenantKey: foundation.tenantKey,
     postResolver: foundation.postResolver,
   });
-
+  const receiptObjects = configuredReceiptObjectStore();
+  const deliveryReceiptStore =
+    receiptObjects === undefined ? undefined : createDeliveryReceiptStore(receiptObjects);
   const ctx = createKhoraHost({
     persistence: foundation.persistence,
     tenantKey: foundation.tenantKey,
@@ -162,9 +181,169 @@ export async function bootstrapKhoraHost(
     publicPostFeed,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { search: memories } : {}),
+    ...(deliveryReceiptStore !== undefined ? { deliveryReceiptStore } : {}),
     ...(opts.startPrincipalTeardownWorker !== undefined
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
   });
+  let gcAfterPrefix: string | undefined;
+  const fanOutWorkers = startFanOutWorkers({
+    planner: {
+      queue: foundation.persistence.fanOutQueue,
+      percolator: foundation.subscriptions.percolator,
+      candidateForJob(job) {
+        const post = job.postMetadata as KhoraPost;
+        return buildPercolatorCandidateFromPost({
+          post,
+          authorPrincipalId: job.authorPrincipalId,
+          authorProfileId: post.authorProfileId ?? job.authorPrincipalId,
+          namespaceRoot: opts.memories?.namespaceRoot ?? DEFAULT_HOST_SEARCH_NAMESPACE_ROOT,
+          lexicalText: JSON.stringify(post),
+          now: job.createdAtMs,
+        });
+      },
+      observe: observeFanOut,
+      ...(deliveryReceiptStore !== undefined ? { receipts: deliveryReceiptStore } : {}),
+    },
+    delivery: {
+      queue: foundation.persistence.fanOutQueue,
+      principalOrdinals: foundation.persistence.principalOrdinals,
+      inboxDelivery: createResolveCellInboxDelivery(foundation.cluster.resolveCell, {
+        observeBatch: (event) => recordFanOutRouteBatch(fanOutMetrics, event),
+      }),
+      cellIdForPrincipal: foundation.cluster.assignPrincipalToCell,
+      observe: observeFanOut,
+      ...(deliveryReceiptStore !== undefined ? { receipts: deliveryReceiptStore } : {}),
+      async onDelivered(dids) {
+        await Promise.all(
+          dids.map(async (did) => {
+            if ((ctx.host.inboxHub?.listenerCount(did) ?? 0) === 0) return;
+            const items = await popInboxDrainItemsForDid(ctx, did);
+            ctx.host.inboxHub?.broadcast(did, { type: "drain", items });
+          }),
+        );
+      },
+    },
+    onTick: createFanOutMaintenanceTick({
+      reconcileEveryMs: envIntervalMs("KHORA_FANOUT_RECONCILE_INTERVAL_MS", 60_000),
+      gcEveryMs: envIntervalMs("KHORA_RECEIPT_GC_INTERVAL_MS", 3_600_000),
+      reconcile: async () => {
+        await runFanOutMissingJobReconciliation({
+          tenantKey: foundation.tenantKey,
+          queue: foundation.persistence.fanOutQueue,
+          listPrincipals: (listOpts) =>
+            foundation.persistence.usernameIndex.listPrincipals(listOpts),
+          listOutbox: (principalId) =>
+            foundation.postResolver.listAuthorOutboxRecords({
+              authorPrincipalId: principalId,
+              authorCellId: principalHomeCellId(principalId),
+              tenantKey: foundation.tenantKey,
+              limit: 256,
+            }),
+          resolvePost: (postId) => foundation.postResolver.resolvePostById(postId),
+        });
+      },
+      ...(receiptObjects === undefined
+        ? {}
+        : {
+            gc: async () => {
+              const gc = await runOrphanReceiptGc({
+                objects: receiptObjects,
+                isReferenced: (jobId) =>
+                  foundation.persistence.fanOutQueue.getJob(jobId) !== undefined,
+                nowMs: Date.now(),
+                retentionMs: receiptGcRetentionMs(),
+                ...(gcAfterPrefix !== undefined ? { afterPrefix: gcAfterPrefix } : {}),
+              });
+              gcAfterPrefix = gc.nextAfterPrefix;
+            },
+          }),
+    }),
+  });
+  ctx.drainWorkers = () => fanOutWorkers.stop();
+  const closeCluster = foundation.cluster.close.bind(foundation.cluster);
+  foundation.cluster.close = () => {
+    void fanOutWorkers.stop();
+    closeCluster();
+  };
   return { ctx };
+}
+
+function configuredReceiptObjectStore() {
+  const bucket = process.env.KHORA_RECEIPT_S3_BUCKET?.trim();
+  if (bucket !== undefined && bucket.length > 0) {
+    const endpoint = process.env.KHORA_RECEIPT_S3_ENDPOINT?.trim();
+    const region = process.env.KHORA_RECEIPT_S3_REGION?.trim() || process.env.AWS_REGION?.trim();
+    const prefix = process.env.KHORA_RECEIPT_S3_PREFIX?.trim();
+    return createS3ObjectStore({
+      bucket,
+      ...(prefix !== undefined && prefix.length > 0 ? { prefix } : {}),
+      ...(endpoint !== undefined && endpoint.length > 0
+        ? {
+            clientConfig: {
+              endpoint,
+              forcePathStyle: true,
+              ...(region !== undefined && region.length > 0 ? { region } : { region: "us-east-1" }),
+            },
+          }
+        : region !== undefined && region.length > 0
+          ? { clientConfig: { region } }
+          : {}),
+    });
+  }
+  const directory = process.env.KHORA_RECEIPT_DIR?.trim();
+  return directory !== undefined && directory.length > 0
+    ? createLocalFilesystemObjectStore(directory)
+    : undefined;
+}
+
+function envIntervalMs(name: string, fallback: number): number {
+  const raw = Number(process.env[name]);
+  return Number.isFinite(raw) && raw >= 0 ? raw : fallback;
+}
+
+function receiptGcRetentionMs(): number {
+  const raw = Number(process.env.KHORA_RECEIPT_GC_RETENTION_MS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 3_600_000;
+}
+
+const fanOutMetrics = otelFanOutRecorder();
+
+function observeFanOut(event: FanOutWorkerEvent): void {
+  recordFanOutWorkerEvent(fanOutMetrics, event);
+  if (event.type === "receipt" && !event.available) {
+    logger.warn({ fanOut: event }, "fan-out receipt unavailable");
+  } else {
+    logger.debug({ fanOut: event }, "fan-out worker");
+  }
+}
+
+function otelFanOutRecorder(): FanOutMetricRecorder {
+  const counters = new Map<string, ReturnType<typeof meter.createCounter>>();
+  const histograms = new Map<string, ReturnType<typeof meter.createHistogram>>();
+  const counter = (name: string) => {
+    const existing = counters.get(name);
+    if (existing !== undefined) return existing;
+    const created = meter.createCounter(name);
+    counters.set(name, created);
+    return created;
+  };
+  const histogram = (name: string) => {
+    const existing = histograms.get(name);
+    if (existing !== undefined) return existing;
+    const created = meter.createHistogram(name);
+    histograms.set(name, created);
+    return created;
+  };
+  return {
+    count(name, value, attrs) {
+      counter(name).add(value, attrs);
+    },
+    duration(name, ms, attrs) {
+      histogram(name).record(ms, attrs);
+    },
+    gauge(name, value, attrs) {
+      histogram(name).record(value, attrs);
+    },
+  };
 }

@@ -10,6 +10,7 @@ import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";
 import { handleInvitePreview, handleInviteTree, handleListInvites } from "./invites";
 import { handleAdminAgentsRoute } from "./ops-agents";
+import { handleOpsDeliveryReceipt } from "./ops-delivery-receipts";
 import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./ops-host-config";
 import {
   handleAdminInvitesList,
@@ -172,6 +173,19 @@ export function createHostRouter(opts: CreateHostRouterOptions = {}): HostRouter
 
     if (url.pathname.startsWith(KHORA_HTTP_PATH.opsAgentsPrefix)) {
       return handleAdminAgentsRoute(req, url, deps);
+    }
+
+    const receiptMatch = /^\/v1\/ops\/delivery-receipts\/([^/]+)(?:\/(contains|targets))?$/.exec(
+      url.pathname,
+    );
+    if (req.method === "GET" && receiptMatch?.[1] !== undefined) {
+      return handleOpsDeliveryReceipt(
+        req,
+        url,
+        deps,
+        decodeURIComponent(receiptMatch[1]),
+        receiptMatch[2] as "contains" | "targets" | undefined,
+      );
     }
 
     const ip = clientIpFromRequest(req);

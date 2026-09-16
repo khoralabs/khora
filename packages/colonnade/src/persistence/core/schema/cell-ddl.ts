@@ -21,6 +21,7 @@ export const CELL_INBOX_DDL = `
         recipient_principal_id TEXT NOT NULL,
         staging BLOB NOT NULL,
         enqueued_at_ms INTEGER NOT NULL,
+        delivery_id TEXT NOT NULL UNIQUE,
         correlation_id TEXT NOT NULL
       );
     `;

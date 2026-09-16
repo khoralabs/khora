@@ -21,6 +21,7 @@ export {
   type SqliteCellStrategyOptions,
   supportsSqliteCellBatch,
 } from "./sqlite-cell-persistence";
+export { SqliteCellRouteStore } from "./sqlite-cell-route-store";
 export {
   createDefaultSqliteCellWorker,
   LazyWorkerBackedCellPersistence,

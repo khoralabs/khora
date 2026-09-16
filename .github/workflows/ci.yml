@@ -32,6 +32,8 @@ jobs:
           bun run --cwd packages/client typecheck
           bun run --cwd packages/registry typecheck
           bun run --cwd packages/host typecheck
+          bun run --cwd packages/colonnade typecheck
+          bun run --cwd packages/percolator typecheck
 
       - name: test khora libs
         run: |
@@ -41,6 +43,8 @@ jobs:
             packages/client \
             packages/registry \
             packages/host \
+            packages/colonnade \
+            packages/percolator \
             scripts/release/libs/publish.test.ts \
             scripts/release/libs/build-publishable-lib.test.ts
 
@@ -51,6 +55,7 @@ jobs:
           bun run --cwd packages/registry build
           bun run --cwd packages/host build
           bun run scripts/release/libs/publish.ts --dry-run
+          bun run scripts/release/libs/host-sqlite-worker-smoke.ts
 
       # ── khora-cli ──────────────────────────────────────────────────────────
       - name: typecheck khora-cli
@@ -82,6 +87,10 @@ jobs:
           bun test \
             scripts/release/homebrew-formula.test.ts \
             scripts/release/server/stage.test.ts
+
+      - name: fan-out CI scale matrix
+        timeout-minutes: 20
+        run: bun run --cwd apps/server test:fanout-matrix
 
       - name: build khora-server linux-x64 smoke
         run: bun run apps/server/scripts/build.ts bun-linux-x64

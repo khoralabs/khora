@@ -164,23 +164,31 @@ export class TursoCellPersistence implements CellPersistence {
     input: EnqueueInboxDeliveryInput,
   ): Promise<EnqueueInboxDeliveryOutput> {
     this.assertCell(input.cell_id);
-    const inbox_entry_id = randomId("ib");
+    const inbox_entry_id = `ib_${sha256HexLower(new TextEncoder().encode(input.delivery_id))}`;
     const enqueued_at_ms = Date.now();
     const staging = inboxStagingToBlob(input.staging);
     await execSql(
       this.db.write,
-      `INSERT INTO inbox(inbox_entry_id, tenant_key, recipient_principal_id, staging, enqueued_at_ms, correlation_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO inbox(inbox_entry_id, tenant_key, recipient_principal_id, staging, enqueued_at_ms, delivery_id, correlation_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(delivery_id) DO NOTHING`,
       [
         inbox_entry_id,
         input.tenant_key,
         input.recipient_principal_id,
         staging,
         enqueued_at_ms,
+        input.delivery_id,
         input.correlation_id,
       ],
     );
-    return { inbox_entry_id };
+    const existing = await queryOne<{ inbox_entry_id: string }>(
+      this.db.write,
+      `SELECT inbox_entry_id FROM inbox WHERE delivery_id = ?`,
+      [input.delivery_id],
+    );
+    if (existing === undefined) throw new Error("Inbox delivery idempotency lookup failed");
+    return existing;
   }
 
   async listPendingInboxEntries(

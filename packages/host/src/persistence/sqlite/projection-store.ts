@@ -14,6 +14,7 @@ export class ProjectionStore {
   private readonly upsertStmt;
   private readonly lookupStmt;
   private readonly listByPrefixStmt;
+  private readonly listKeysAfterStmt;
   private readonly deleteStmt;
 
   constructor(db: Database) {
@@ -32,6 +33,13 @@ export class ProjectionStore {
        FROM khora_host_projections
        WHERE tenant_key = ? AND namespace = ? AND entry_key LIKE ? ESCAPE '\\'
        ORDER BY rowid ASC`,
+    );
+    this.listKeysAfterStmt = db.query(
+      `SELECT entry_key
+       FROM khora_host_projections
+       WHERE tenant_key = ? AND namespace = ? AND (? IS NULL OR entry_key > ?)
+       ORDER BY entry_key ASC
+       LIMIT ?`,
     );
     this.deleteStmt = db.prepare(
       `DELETE FROM khora_host_projections WHERE tenant_key = ? AND namespace = ? AND entry_key = ?`,
@@ -94,6 +102,22 @@ export class ProjectionStore {
       out.push({ entry_key: r.entry_key, projection });
     }
     return out;
+  }
+
+  listKeysAfter(
+    tenant_key: string,
+    namespace: string,
+    afterKey: string | undefined,
+    limit: number,
+  ): string[] {
+    const rows = this.listKeysAfterStmt.all(
+      tenant_key,
+      namespace,
+      afterKey ?? null,
+      afterKey ?? "",
+      limit,
+    ) as { entry_key: string }[];
+    return rows.map((row) => row.entry_key);
   }
 
   deleteRow(tenant_key: string, namespace: string, entry_key: string): void {

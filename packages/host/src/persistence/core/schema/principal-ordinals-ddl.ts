@@ -1,0 +1,6 @@
+export const PRINCIPAL_ORDINALS_DDL = `
+CREATE TABLE IF NOT EXISTS principal_ordinals (
+  ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+  did TEXT UNIQUE NOT NULL
+);
+`.trim();

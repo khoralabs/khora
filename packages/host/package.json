@@ -84,25 +84,38 @@
       "types": "./src/invites/index.ts",
       "import": "./src/invites/index.ts",
       "default": "./src/invites/index.ts"
+    },
+    "./receipts": {
+      "types": "./src/receipts/index.ts",
+      "import": "./src/receipts/index.ts",
+      "default": "./src/receipts/index.ts"
     }
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "bench:fanout": "bun run src/fanout/fanout.bench.ts --profile=ci",
+    "bench:fanout:ci": "bun run src/fanout/fanout.bench.ts --profile=ci",
+    "bench:fanout:stress": "bun run src/fanout/fanout.bench.ts --profile=stress",
+    "bench:fanout:million": "bun run src/fanout/fanout.bench.ts --profile=million",
+    "test:scale": "KHORA_SCALE_TEST=1 bun test src/fanout/fanout-scalability.integration.test.ts",
+    "test:fanout-matrix": "KHORA_FANOUT_CI_MATRIX=1 bun test src/fanout/fanout-scalability.integration.test.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1132.0",
     "@khoralabs/colonnade": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
+    "@khoralabs/khora-registry": "workspace:*",
     "@khoralabs/memories-node": "catalog:",
     "@khoralabs/memories-service": "catalog:",
     "@khoralabs/observability": "workspace:*",
     "@khoralabs/percolator": "workspace:*",
-    "@khoralabs/khora-registry": "workspace:*",
     "@khoralabs/sourcemaps": "catalog:",
     "@khoralabs/sqlite-crypto": "catalog:",
     "@khoralabs/sqlite-migrate": "catalog:",
+    "roaring-wasm": "^1.1.0",
     "sqlite-vec": "catalog:",
     "zod": "catalog:"
   },
@@ -112,6 +125,8 @@
   "devDependencies": {
     "@khoralabs/khora-client": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/s3rver": "^3.7.4",
+    "s3rver": "^3.7.1",
     "typescript": "catalog:"
   },
   "publishConfig": {

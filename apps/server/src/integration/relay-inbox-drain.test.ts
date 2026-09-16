@@ -2,6 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createResolveCellInboxDelivery } from "@khoralabs/colonnade";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade/crypto";
 import { assignPostAddress, encodePostId, popInboxDrainItemsForDid } from "@khoralabs/khora-host";
 import { createTestKhoraHost } from "./test-host";
@@ -56,7 +57,7 @@ test("popInboxDrainItemsForDid drops cell inbox row when author unregistered (ph
     topics: ["x"],
   };
 
-  await ctx.publicationClient.postOperation({
+  const published = await ctx.publicationClient.postOperation({
     author_principal_id: "did:author",
     author_cell_id: ctx.cluster.assignPrincipalToCell("did:author"),
     tenant_key: ctx.tenantKey,
@@ -79,6 +80,28 @@ test("popInboxDrainItemsForDid drops cell inbox row when author unregistered (ph
         },
       ],
     },
+  });
+  await createResolveCellInboxDelivery(ctx.cluster.resolveCell).deliver({
+    tenant_key: ctx.tenantKey,
+    pointer: {
+      source_cell_id: ctx.cluster.assignPrincipalToCell("did:author"),
+      source_record_key: published.outbox_record_key,
+      content_hash: published.content_hash,
+      cell_pool_count: cellPoolCount,
+    },
+    targets: [
+      {
+        recipient_cell_id: ctx.cluster.assignPrincipalToCell("did:sub"),
+        recipient_principal_id: "did:sub",
+        inbox_metadata: {
+          postId,
+          authorPrincipalId: "did:author",
+          subscriptionMatches: [{ subscriptionId: "sub-x", score: 1 }],
+          postKind: "post",
+          createdAtMs: Date.now(),
+        },
+      },
+    ],
   });
 
   expect(await popInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(1);

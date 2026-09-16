@@ -12,8 +12,10 @@ export {
 } from "../core/id-conventions";
 export { createKhoraAdminStatsPort } from "./admin-stats-port";
 export { createAgentAccountStatusPort } from "./agent-account-status";
+export { backfillPercolatorOwnerOrdinals } from "./backfill-percolator-owner-ordinals";
 export { countRegisteredPrincipals } from "./count-registered-principals";
 export { createEntityAdapter, parseEntityRow } from "./entity-adapter";
+export { createSqliteFanOutQueue, ensureFanOutQueueSchema } from "./fan-out-queue";
 export { createKhoraHostHealthPort } from "./health-port";
 export {
   type CreateSqliteKhoraHostFoundationOpts,
@@ -33,6 +35,11 @@ export {
   createPendingEmbeddingQueue,
   ensurePendingEmbeddingsSchema,
 } from "./pending-embeddings-queue";
+export {
+  backfillPrincipalOrdinals,
+  createPrincipalOrdinalPort,
+  ensurePrincipalOrdinalsSchema,
+} from "./principal-ordinals";
 export {
   escapeSqlLikeLiteral,
   type ProjectionListedRow,

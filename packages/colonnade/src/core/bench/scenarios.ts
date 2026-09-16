@@ -298,6 +298,7 @@ export async function benchDrainCycle(params: BenchRunParams): Promise<BenchResu
         tenant_key: TENANT,
         recipient_principal_id: "bench-recipient",
         staging: { kind: "pointer", pointer: { pointer: ptr } },
+        delivery_id: `delivery-dr-${seed}`,
         correlation_id: `dr-${seed}`,
       });
 

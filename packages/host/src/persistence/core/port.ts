@@ -1,4 +1,5 @@
-import type { PrincipalId } from "@khoralabs/khora-contracts";
+import type { KhoraFanOutPolicy, PrincipalId } from "@khoralabs/khora-contracts";
+import type { FanOutWorkloadRecord } from "../../receipts/workload-codec";
 
 /** Insert/update payload for host entity storage (`body_json` is canonical JSON). */
 export type HostEntityUpsert = {
@@ -91,6 +92,112 @@ export type AgentAccountStatusPort = {
   clearStatus(did: string): void;
 };
 
+/** Stable dense identifier used by fan-out receipts and workload chunks. */
+export type PrincipalOrdinalPort = {
+  getOrCreate(did: string): number;
+  getByDid(did: string): number | undefined;
+  resolveMany(ordinals: readonly number[]): Map<number, string>;
+  getManyByDid(dids: readonly string[]): Map<string, number>;
+};
+
+export type FanOutJobStatus =
+  | "planning_pending"
+  | "planning"
+  | "routing_pending"
+  | "completed"
+  | "failed";
+
+export type FanOutPolicy = KhoraFanOutPolicy;
+export type FanOutDeliveryMode = "push" | "pull";
+
+export type FanOutPlanningJobInput = {
+  tenantKey: string;
+  postId: string;
+  sourceCellId: string;
+  sourceRecordKey: string;
+  sourceContentHash: string;
+  cellPoolCount: number;
+  authorPrincipalId: string;
+  postKind: string;
+  postMetadata: unknown;
+  visibility: string;
+  fanOutPolicy: FanOutPolicy;
+};
+
+export type FanOutJob = FanOutPlanningJobInput & {
+  id: string;
+  status: FanOutJobStatus;
+  deliveryMode: FanOutDeliveryMode;
+  plannedTargetCount: number;
+  routedTargetCount: number;
+  attemptCount: number;
+  availableAtMs: number;
+  leaseExpiresAtMs: number | null;
+  lastError: string | null;
+  createdAtMs: number;
+  updatedAtMs: number;
+};
+
+export type FanOutWorkloadChunk = {
+  jobId: string;
+  chunkIndex: number;
+  records: readonly FanOutWorkloadRecord[];
+  status: "pending" | "delivering" | "completed" | "failed";
+  attemptCount: number;
+  availableAtMs: number;
+  leaseExpiresAtMs: number | null;
+  deliveredOrdinals: readonly number[];
+  failedOrdinals: readonly number[];
+  lastError: string | null;
+  createdAtMs: number;
+};
+
+/** Durable queue boundary shared by fan-out planning and later delivery workers. */
+export type FanOutQueuePort = {
+  enqueuePlanning(input: FanOutPlanningJobInput, nowMs: number): string;
+  getJob(id: string): FanOutJob | undefined;
+  tryClaimPlanning(nowMs: number, leaseMs: number): FanOutJob | undefined;
+  appendWorkloadChunk(
+    jobId: string,
+    records: readonly FanOutWorkloadRecord[],
+    nowMs: number,
+  ): number;
+  getWorkloadChunk(jobId: string, chunkIndex: number): FanOutWorkloadChunk | undefined;
+  listWorkloadChunks(jobId: string): FanOutWorkloadChunk[];
+  completePlanning(
+    jobId: string,
+    plannedTargetCount: number,
+    nowMs: number,
+    deliveryMode?: FanOutDeliveryMode,
+  ): void;
+  failPlanning(jobId: string, nowMs: number, error: string, retryAtMs?: number): void;
+  tryClaimDelivery(nowMs: number, leaseMs: number): FanOutWorkloadChunk | undefined;
+  completeDelivery(
+    jobId: string,
+    chunkIndex: number,
+    deliveredOrdinals: readonly number[],
+    failedOrdinals: readonly number[],
+    nowMs: number,
+  ): void;
+  failDelivery(
+    jobId: string,
+    chunkIndex: number,
+    nowMs: number,
+    error: string,
+    retryAtMs?: number,
+  ): void;
+  getReconcileAfterPrincipalId(): string | undefined;
+  setReconcileAfterPrincipalId(afterPrincipalId: string | undefined): void;
+  stats(): FanOutQueueStats;
+};
+
+export type FanOutQueueStats = {
+  pendingPlanning: number;
+  pendingDelivery: number;
+  openPlanningLeases: number;
+  openDeliveryLeases: number;
+};
+
 /**
  * Host persistence facade: profile entities, principal registrations,
  * social graph, and account status.
@@ -122,6 +229,8 @@ export type UsernameIndexPort = {
    * and restore the prior username entry if one existed.
    */
   rollbackForPrincipal(principalId: PrincipalId, priorNormalizedUsername: string | undefined): void;
+  /** Lexicographic page of registered principal ids. */
+  listPrincipals(opts: { afterPrincipalId?: string; limit: number }): string[];
 };
 
 export type ClaimedTeardownJob = { principalId: PrincipalId; profileId: string };
@@ -197,6 +306,8 @@ export type PendingEmbeddingQueuePort = {
  */
 export type KhoraHostPersistence = HostPersistence & {
   usernameIndex: UsernameIndexPort;
+  principalOrdinals: PrincipalOrdinalPort;
+  fanOutQueue: FanOutQueuePort;
   teardownQueue: PrincipalTeardownQueuePort;
   pendingEmbeddings: PendingEmbeddingQueuePort;
   /**

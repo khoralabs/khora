@@ -8,6 +8,33 @@ describe("zKhoraPostCreate", () => {
     const v = zKhoraPostCreate.parse({ body: "hello", authorSignature: SIG });
     expect(v.kind).toBe("post");
     expect(v.body).toBe("hello");
+    expect(v.fanOutPolicy).toBeUndefined();
+  });
+
+  test("catalog-pull and hybrid objects are public-only", () => {
+    expect(
+      zKhoraPostCreate.parse({
+        body: "large broadcast",
+        fanOutPolicy: { mode: "catalog-pull" },
+        authorSignature: SIG,
+      }).fanOutPolicy,
+    ).toEqual({ mode: "catalog-pull" });
+    expect(() =>
+      zKhoraPostCreate.parse({
+        body: "private",
+        visibility: "private",
+        fanOutPolicy: { mode: "catalog-pull" },
+        authorSignature: SIG,
+      }),
+    ).toThrow(/require public catalog visibility/);
+    expect(() =>
+      zKhoraPostCreate.parse({
+        body: "network",
+        visibility: "network",
+        fanOutPolicy: { mode: "hybrid", publicPushTargetLimit: 10 },
+        authorSignature: SIG,
+      }),
+    ).toThrow(/require public catalog visibility/);
   });
 
   test("status shape without author allowed at create schema", () => {

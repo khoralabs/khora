@@ -1,17 +1,31 @@
 import type { ResolveCell } from "../persistence/core/cell-persistence";
 import { supportsCellBatch } from "../persistence/core/cell-persistence";
-import type { FanOutTarget, GeneratedInboxRef, InboxStagingPayload } from "./colonnade-types";
-import { randomId } from "./hash";
+import type { FanOutTarget, InboxStagingPayload } from "./colonnade-types";
+import { deterministicInboxDeliveryId } from "./hash";
 import type { InboxDelivery, InboxDeliveryInput, InboxDeliveryResult } from "./inbox-delivery";
+
+export type ResolveCellInboxDeliveryOptions = {
+  readonly observeBatch?: (event: {
+    batchIndex: number;
+    targets: number;
+    active: number;
+    durationMs: number;
+    outcome: "success" | "failure";
+    partitions: number;
+  }) => void;
+};
 
 /**
  * Compatibility adapter: fan-out via {@link ResolveCell} (current single-host open path).
  * Prefer {@link LocalPlacementInboxDelivery} for placement-backed clusters.
  */
-export function createResolveCellInboxDelivery(resolveCell: ResolveCell): InboxDelivery {
+export function createResolveCellInboxDelivery(
+  resolveCell: ResolveCell,
+  opts: ResolveCellInboxDeliveryOptions = {},
+): InboxDelivery {
   return {
     async deliver(input: InboxDeliveryInput): Promise<InboxDeliveryResult> {
-      return deliverViaResolveCell(resolveCell, input);
+      return deliverViaResolveCell(resolveCell, input, opts);
     },
   };
 }
@@ -19,8 +33,9 @@ export function createResolveCellInboxDelivery(resolveCell: ResolveCell): InboxD
 export async function deliverViaResolveCell(
   resolveCell: ResolveCell,
   input: InboxDeliveryInput,
+  opts: ResolveCellInboxDeliveryOptions = {},
 ): Promise<InboxDeliveryResult> {
-  const { pointer, targets, tenant_key: tenantKey } = input;
+  const { targets } = input;
   const byCell = new Map<string, FanOutTarget[]>();
   for (const target of targets) {
     const list = byCell.get(target.recipient_cell_id);
@@ -31,57 +46,64 @@ export async function deliverViaResolveCell(
     }
   }
 
-  const inboxIdsByCell = new Map<string, string[]>();
-
-  await Promise.all(
-    [...byCell.entries()].map(async ([recipientCellId, cellTargets]) => {
-      const cell = resolveCell(recipientCellId);
-      const deliveries = cellTargets.map((target) => ({
-        cell_id: target.recipient_cell_id,
-        tenant_key: tenantKey,
-        recipient_principal_id: target.recipient_principal_id,
-        staging: stagingForTarget(target, pointer),
-        correlation_id: randomId("fan"),
-      }));
-
-      if (supportsCellBatch(cell) && deliveries.length > 1) {
-        const outs = await cell.enqueueInboxDeliveriesBatch(deliveries);
-        inboxIdsByCell.set(
-          recipientCellId,
-          outs.map((o) => o.inbox_entry_id),
-        );
-        return;
-      }
-
-      const ids: string[] = [];
-      for (const target of cellTargets) {
-        const out = await cell.enqueueInboxDelivery({
-          cell_id: target.recipient_cell_id,
-          tenant_key: tenantKey,
-          recipient_principal_id: target.recipient_principal_id,
-          staging: stagingForTarget(target, pointer),
-          correlation_id: randomId("fan"),
-        });
-        ids.push(out.inbox_entry_id);
-      }
-      inboxIdsByCell.set(recipientCellId, ids);
-    }),
-  );
-
-  const refs: GeneratedInboxRef[] = [];
-  for (const target of targets) {
-    const ids = inboxIdsByCell.get(target.recipient_cell_id);
-    const inbox_entry_id = ids?.shift();
-    if (inbox_entry_id === undefined) {
-      throw new Error("InboxDelivery: missing inbox enqueue result for fan-out target");
+  const success_bitmap = new Uint8Array(Math.ceil(targets.length / 8));
+  const started = performance.now();
+  const emit = (outcome: "success" | "failure") => {
+    try {
+      opts.observeBatch?.({
+        batchIndex: 0,
+        targets: targets.length,
+        active: 1,
+        durationMs: performance.now() - started,
+        outcome,
+        partitions: byCell.size,
+      });
+    } catch {
+      /* observability must not change delivery */
     }
-    refs.push({
-      inbox_entry_id,
-      recipient_cell_id: target.recipient_cell_id,
-      recipient_principal_id: target.recipient_principal_id,
-    });
+  };
+  try {
+    await Promise.all(
+      [...byCell.values()].map(async (cellTargets) => {
+        const recipientCellId = cellTargets[0]?.recipient_cell_id;
+        if (recipientCellId === undefined) return;
+        const cell = resolveCell(recipientCellId);
+        const deliveries = cellTargets.map((target) => deliveryFor(input, target));
+
+        if (supportsCellBatch(cell) && deliveries.length > 1) {
+          await cell.enqueueInboxDeliveriesBatch(deliveries);
+          return;
+        }
+
+        for (const delivery of deliveries) await cell.enqueueInboxDelivery(delivery);
+      }),
+    );
+  } catch (error) {
+    emit("failure");
+    throw error;
   }
-  return { generated_inbox_refs: refs };
+
+  success_bitmap.fill(0xff);
+  const remainder = targets.length & 7;
+  if (remainder > 0) success_bitmap[success_bitmap.length - 1] = (1 << remainder) - 1;
+  emit("success");
+  return { target_count: targets.length, delivered_count: targets.length, success_bitmap };
+}
+
+function deliveryFor(input: InboxDeliveryInput, target: FanOutTarget) {
+  const delivery_id = deterministicInboxDeliveryId({
+    tenant_key: input.tenant_key,
+    pointer: input.pointer,
+    target,
+  });
+  return {
+    cell_id: target.recipient_cell_id,
+    tenant_key: input.tenant_key,
+    recipient_principal_id: target.recipient_principal_id,
+    staging: stagingForTarget(target, input.pointer),
+    delivery_id,
+    correlation_id: delivery_id,
+  };
 }
 
 function stagingForTarget(

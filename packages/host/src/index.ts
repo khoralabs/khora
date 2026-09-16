@@ -45,10 +45,12 @@ export {
 } from "./discovery/search";
 export {
   bootstrapHostSubscriptions,
+  buildPercolatorCandidateFromPost,
   type HostSubscriptions,
   topicSlugsToLabelKinds,
   topicSlugToLabelKind,
 } from "./discovery/subscriptions";
+export * from "./fanout";
 export {
   createKhoraHost,
   HOST_AGGREGATE_DOMAIN,
@@ -118,6 +120,7 @@ export {
   listAuthorOutboxRecords,
   resolvePostById,
 } from "./posts";
+export * from "./receipts";
 export {
   createKhoraRegistrationApi,
   createPrincipalLifecycle,

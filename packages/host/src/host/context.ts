@@ -17,6 +17,7 @@ import type {
   KhoraHostHealthPort,
   KhoraHostSpecPort,
 } from "../ports";
+import type { DeliveryReceiptReader } from "../receipts";
 import type { KhoraRegistrationApi } from "../registration/api";
 import type { PrincipalLifecycle } from "../registration/lifecycle";
 import type { PrincipalTeardownWorkerHandle } from "../registration/teardown-worker";
@@ -44,4 +45,6 @@ export type KhoraHostContext = {
   agentAccountStatus: AgentAccountStatusPort;
   hostSpec: KhoraHostSpecPort;
   outboxPayloadCodec: OutboxPayloadCodec;
+  deliveryReceipts: DeliveryReceiptReader;
+  drainWorkers?: () => Promise<void>;
 } & KhoraRegistrationApi;

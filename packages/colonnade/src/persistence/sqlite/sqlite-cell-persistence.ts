@@ -53,6 +53,7 @@ export class SqliteCellPersistence implements CellPersistence {
   private readonly cellId: string;
   private readonly stmtAppendOutbox: Statement;
   private readonly stmtEnqueueInbox: Statement;
+  private readonly stmtSelectInboxByDelivery: Statement;
   private readonly stmtListInbox: Statement;
   private readonly stmtCountInbox: Statement;
   private readonly stmtFetchOutbox: Statement;
@@ -77,8 +78,12 @@ export class SqliteCellPersistence implements CellPersistence {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
     this.stmtEnqueueInbox = this.db.prepare(
-      `INSERT INTO inbox(inbox_entry_id, tenant_key, recipient_principal_id, staging, enqueued_at_ms, correlation_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO inbox(inbox_entry_id, tenant_key, recipient_principal_id, staging, enqueued_at_ms, delivery_id, correlation_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(delivery_id) DO NOTHING`,
+    );
+    this.stmtSelectInboxByDelivery = this.db.prepare(
+      `SELECT inbox_entry_id FROM inbox WHERE delivery_id = ?`,
     );
     this.stmtListInbox = this.db.prepare(
       `SELECT inbox_entry_id, recipient_principal_id, staging, enqueued_at_ms FROM inbox
@@ -174,7 +179,7 @@ export class SqliteCellPersistence implements CellPersistence {
 
   private enqueueInboxDeliverySync(input: EnqueueInboxDeliveryInput): EnqueueInboxDeliveryOutput {
     this.assertCell(input.cell_id);
-    const inbox_entry_id = randomId("ib");
+    const inbox_entry_id = `ib_${sha256HexLower(new TextEncoder().encode(input.delivery_id))}`;
     const enqueued_at_ms = Date.now();
     const staging = inboxStagingToBlob(input.staging);
     this.stmtEnqueueInbox.run(
@@ -183,9 +188,14 @@ export class SqliteCellPersistence implements CellPersistence {
       input.recipient_principal_id,
       staging,
       enqueued_at_ms,
+      input.delivery_id,
       input.correlation_id,
     );
-    return { inbox_entry_id };
+    const existing = this.stmtSelectInboxByDelivery.get(input.delivery_id) as
+      | { inbox_entry_id: string }
+      | undefined;
+    if (existing === undefined) throw new Error("Inbox delivery idempotency lookup failed");
+    return existing;
   }
 
   listPendingInboxEntries(

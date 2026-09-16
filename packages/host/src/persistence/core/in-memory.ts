@@ -1,4 +1,5 @@
 import { normalizeUsername, type PrincipalId } from "@khoralabs/khora-contracts";
+import { createInMemoryFanOutQueue } from "./in-memory-fan-out-queue";
 import { createInMemoryPendingEmbeddingQueue } from "./in-memory-pending-embeddings";
 import type {
   AgentAccountStatus,
@@ -30,6 +31,8 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
   const channelsByPrincipal = new Map<PrincipalId, Set<string>>();
   const accountStatus = new Map<string, AgentAccountStatus>();
   const teardownJobs = new Map<PrincipalId, TeardownJob>();
+  const ordinalsByDid = new Map<string, number>();
+  const didsByOrdinal = new Map<number, string>();
 
   function addChannelIndex(principalId: PrincipalId, channelId: string): void {
     let set = channelsByPrincipal.get(principalId);
@@ -210,6 +213,12 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
           usernameToPrincipal.delete(username);
         }
       },
+      listPrincipals(opts) {
+        const ids = [...principalToUsername.keys()].sort();
+        const after = opts.afterPrincipalId;
+        const filtered = after === undefined ? ids : ids.filter((id) => id > after);
+        return filtered.slice(0, opts.limit);
+      },
       rollbackForPrincipal(
         principalId: PrincipalId,
         priorNormalizedUsername: string | undefined,
@@ -226,6 +235,39 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
         }
       },
     },
+
+    principalOrdinals: {
+      getOrCreate(did: string): number {
+        const existing = ordinalsByDid.get(did);
+        if (existing !== undefined) return existing;
+        const ordinal = ordinalsByDid.size + 1;
+        if (ordinal > 0xffffffff) throw new Error("principal ordinal space exhausted");
+        ordinalsByDid.set(did, ordinal);
+        didsByOrdinal.set(ordinal, did);
+        return ordinal;
+      },
+      getByDid(did: string): number | undefined {
+        return ordinalsByDid.get(did);
+      },
+      resolveMany(ordinals: readonly number[]): Map<number, string> {
+        return new Map(
+          ordinals.flatMap((ordinal) => {
+            const did = didsByOrdinal.get(ordinal);
+            return did === undefined ? [] : [[ordinal, did] as const];
+          }),
+        );
+      },
+      getManyByDid(dids: readonly string[]): Map<string, number> {
+        return new Map(
+          dids.flatMap((did) => {
+            const ordinal = ordinalsByDid.get(did);
+            return ordinal === undefined ? [] : [[did, ordinal] as const];
+          }),
+        );
+      },
+    },
+
+    fanOutQueue: createInMemoryFanOutQueue(),
 
     teardownQueue: {
       enqueue(principalId: PrincipalId, profileId: string, nowMs: number): void {
@@ -277,6 +319,7 @@ export function createInMemoryKhoraHostPersistence(): KhoraHostPersistence {
       persistence.profiles.upsert(input.profileUpsert);
       persistence.registrations.upsert(input.principalId, profileId);
       persistence.usernameIndex.setForPrincipal(input.principalId, username);
+      persistence.principalOrdinals.getOrCreate(input.principalId);
       return { principalId: input.principalId, profileId, username };
     },
 

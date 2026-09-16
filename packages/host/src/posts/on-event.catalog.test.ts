@@ -6,6 +6,7 @@ import { InMemoryCatalogPersistence } from "@khoralabs/colonnade/persistence";
 import { KHORA_EVENT_KIND, type KhoraPost, type KhoraProfile } from "@khoralabs/khora-contracts";
 import type { HostRuntimeEventHandlerCtx } from "../host/runtime";
 import { createHostPersistenceClient } from "../persistence/core/client";
+import { fanOutJobId } from "../persistence/core/fan-out-job-id";
 import { createInMemoryKhoraHostPersistence } from "../persistence/core/in-memory";
 import type { KhoraColonnadeCluster } from "../ports";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
@@ -49,7 +50,10 @@ describe("catalog publication lifecycle", () => {
           outbox_record_key: "rk",
           content_hash: "0".repeat(64),
           catalog_pointer_id: "",
-          generated_inbox_refs: [],
+          target_count: 0,
+          delivered_count: 0,
+          success_bitmap: new Uint8Array(),
+          fan_out_job_id: op.fan_out_job_id ?? "",
         };
       }),
     } as unknown as ColonnadePublicationClient;
@@ -59,6 +63,7 @@ describe("catalog publication lifecycle", () => {
       tenantKey: "relay",
       cluster,
       publicationClient,
+      fanOutQueue: persistence.fanOutQueue,
     });
     const ctx = { persistence, persistenceClient } as HostRuntimeEventHandlerCtx;
 
@@ -87,6 +92,11 @@ describe("catalog publication lifecycle", () => {
       tags: ["climate"],
       public_projection: { kind: "post", title: "Hello" },
     });
+    const queued = persistence.fanOutQueue.getJob(fanOutJobId("relay", publicPost.id));
+    expect(queued?.status).toBe("planning_pending");
+    expect(queued?.sourceRecordKey).toBe("rk");
+    expect(queued?.visibility).toBe("public");
+    expect(queued?.fanOutPolicy).toEqual({ mode: "push" });
 
     const privateAddr = assignPostAddress({ cluster, authorPrincipalId });
     const privatePost: KhoraPost = {
@@ -161,13 +171,17 @@ describe("catalog publication lifecycle", () => {
       tenantKey: "relay",
       cluster,
       publicationClient: {
-        postOperation: mock(async () => ({
+        postOperation: mock(async (op) => ({
           outbox_record_key: "rk",
           content_hash: "0".repeat(64),
           catalog_pointer_id: "",
-          generated_inbox_refs: [],
+          target_count: 0,
+          delivered_count: 0,
+          success_bitmap: new Uint8Array(),
+          fan_out_job_id: op.fan_out_job_id ?? "",
         })),
       } as unknown as ColonnadePublicationClient,
+      fanOutQueue: persistence.fanOutQueue,
     });
 
     await onEvent(
@@ -285,10 +299,14 @@ describe("catalog publication lifecycle", () => {
             outbox_record_key: nextAddr.recordKey,
             content_hash: "0".repeat(64),
             catalog_pointer_id: "",
-            generated_inbox_refs: [],
+            target_count: 0,
+            delivered_count: 0,
+            success_bitmap: new Uint8Array(),
+            fan_out_job_id: op.fan_out_job_id ?? "",
           };
         }),
       } as unknown as ColonnadePublicationClient,
+      fanOutQueue: persistence.fanOutQueue,
     });
 
     await onEvent(

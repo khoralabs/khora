@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { openMaybeEncryptedDatabaseSync } from "@khoralabs/colonnade/crypto";
 import { KHORA_HOST_PROJECTIONS_DDL } from "../core/schema/host-projections-ddl";
+import { ensureFanOutQueueSchema } from "./fan-out-queue";
 import { ensurePendingEmbeddingsSchema } from "./pending-embeddings-queue";
 import { ensurePrincipalTeardownJobsSchema } from "./teardown-queue";
 
@@ -26,5 +27,6 @@ export async function openKhoraHostDb(path: string, sqlCipherKey?: string): Prom
   ensureKhoraHostProjectionsSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
   ensurePendingEmbeddingsSchema(db);
+  ensureFanOutQueueSchema(db);
   return db;
 }

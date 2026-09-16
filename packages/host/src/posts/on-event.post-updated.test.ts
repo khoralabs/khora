@@ -13,7 +13,11 @@ import { createPercolator } from "@khoralabs/percolator";
 import { createInMemoryPercolatorPersistence } from "@khoralabs/percolator/persistence";
 import { DEFAULT_HOST_SEARCH_NAMESPACE_ROOT } from "../discovery/search/config";
 import type { HostRuntimeEventHandlerCtx } from "../host/runtime";
-import { createHostPersistenceClient, type HostPersistence } from "../persistence/core";
+import {
+  createHostPersistenceClient,
+  createInMemoryFanOutQueue,
+  type HostPersistence,
+} from "../persistence/core";
 import type { KhoraColonnadeCluster } from "../ports";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 
@@ -120,6 +124,7 @@ describe("POST_UPDATED cleanup", () => {
     await subscriptions.percolator.registerQuery({
       id: previousId,
       ownerId: authorPrincipalId,
+      ownerOrdinal: 1,
       search: { content: {}, options: { labels: { some: ["khora_topic:old"] } } },
     });
     expect((await subscriptions.percolator.getQuery(previousId))?.active).toBe(true);
@@ -129,14 +134,12 @@ describe("POST_UPDATED cleanup", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
       subscriptions,
-      social: {
-        listRelationshipsForPrincipal: () => [],
-      } as never,
+      fanOutQueue: createInMemoryFanOutQueue(),
     });
 
     const ctx = { persistence, persistenceClient } as HostRuntimeEventHandlerCtx;
@@ -214,13 +217,11 @@ describe("POST_UPDATED cleanup", () => {
     } as unknown as ColonnadePublicationClient;
 
     const onEvent = createKhoraRelayOnEvent({
-      registration: {} as never,
+      registration: { ordinalForPrincipal: () => 1 } as never,
       tenantKey: "relay",
       cluster,
       publicationClient,
-      social: {
-        listRelationshipsForPrincipal: () => [],
-      } as never,
+      fanOutQueue: createInMemoryFanOutQueue(),
     });
 
     const ctx = { persistence, persistenceClient } as HostRuntimeEventHandlerCtx;

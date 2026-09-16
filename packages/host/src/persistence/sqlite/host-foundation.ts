@@ -34,6 +34,7 @@ import {
   type KhoraHostPersistence,
 } from "../core";
 import { createKhoraAdminStatsPort } from "./admin-stats-port";
+import { backfillPercolatorOwnerOrdinals } from "./backfill-percolator-owner-ordinals";
 import { createKhoraHostHealthPort } from "./health-port";
 import { createKhoraHostSpecPort } from "./host-spec-port";
 import { openKhoraHostSqlitePersistence } from "./khora-persistence";
@@ -118,6 +119,7 @@ export async function createSqliteKhoraHostFoundation(
   const authNoncesDb = openSideDb(opts.authNoncesDbPath, encryption.sqlCipherKey);
   const percolatorDb = openSideDb(opts.percolatorDbPath, encryption.sqlCipherKey);
   ensurePercolatorSchema(percolatorDb);
+  backfillPercolatorOwnerOrdinals(percolatorDb, persistence.principalOrdinals);
   const tenantKey = opts.tenantKey ?? "khora";
   const baseCluster = createSqliteColonnadeCluster({
     catalog,
@@ -139,11 +141,7 @@ export async function createSqliteKhoraHostFoundation(
     },
   };
   const cellPoolCount = cluster.cellPoolCount;
-  const publicationClient = new ColonnadePublicationClient(
-    cluster.catalog,
-    cluster.resolveCell,
-    cluster.inboxDelivery,
-  );
+  const publicationClient = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
   const subscriptions = bootstrapHostSubscriptions({
     persistence: createPercolatorSqlitePersistence(percolatorDb),

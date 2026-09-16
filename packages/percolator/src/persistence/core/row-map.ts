@@ -3,6 +3,7 @@ import { parseStandingSearchRequest, type StandingQuery } from "../../core";
 export type QueryRow = {
   id: string;
   owner_id: string;
+  owner_ordinal: number;
   search_json: string;
   min_score: number;
   active: number;
@@ -35,6 +36,7 @@ export function rowToFilterQuery(row: QueryRow): StandingQuery {
   return {
     id: row.id,
     ownerId: row.owner_id,
+    ownerOrdinal: row.owner_ordinal,
     search,
     minScore: row.min_score,
     active: row.active !== 0,
@@ -52,6 +54,7 @@ export function rowToSemanticQuery(row: SemanticQueryRow): StandingQuery {
   return {
     id: row.id,
     ownerId: row.owner_id,
+    ownerOrdinal: row.owner_ordinal,
     search,
     minScore: row.min_score,
     active: row.active !== 0,
@@ -62,6 +65,6 @@ export function rowToSemanticQuery(row: SemanticQueryRow): StandingQuery {
 }
 
 export const FILTER_COLS =
-  "id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
+  "id, owner_id, owner_ordinal, search_json, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
 export const SEMANTIC_COLS =
-  "id, owner_id, search_json, vector, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";
+  "id, owner_id, owner_ordinal, search_json, vector, min_score, active, created_at_ms, updated_at_ms, expires_at_ms";

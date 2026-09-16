@@ -1,4 +1,4 @@
-import type { FanOutTarget, GeneratedInboxRef, PointerRef, TenantKey } from "./colonnade-types";
+import type { FanOutTarget, PointerRef, TenantKey } from "./colonnade-types";
 
 /**
  * Delivers inbox pointers to fan-out targets.
@@ -19,7 +19,10 @@ export type InboxDeliveryInput = {
 };
 
 export type InboxDeliveryResult = {
-  readonly generated_inbox_refs: readonly GeneratedInboxRef[];
+  readonly target_count: number;
+  readonly delivered_count: number;
+  /** One bit per input target, in input order; least-significant bit first. */
+  readonly success_bitmap: Uint8Array;
   /** Targets that failed with a retryable error (adapter-defined). */
   readonly failures?: readonly InboxDeliveryFailure[];
 };

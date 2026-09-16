@@ -40,6 +40,79 @@ export function runHostPersistenceContractTests(
       expect(p.usernameIndex.lookupByUsername("alice")).toBe(principalId);
       expect(p.usernameIndex.lookupByPrincipal(principalId)).toBe("alice");
       expect(p.profiles.getById("profile-alice")?.bodyJson).toBe('{"n":"alice"}');
+      const ordinal = p.principalOrdinals.getByDid(principalId);
+      expect(ordinal).toBeGreaterThan(0);
+      expect(p.principalOrdinals.resolveMany([ordinal ?? 0]).get(ordinal ?? 0)).toBe(principalId);
+    });
+
+    test("principal ordinals are stable, unique, and batch resolvable", async () => {
+      const { persistence: p } = await create();
+      const alice = p.principalOrdinals.getOrCreate("did:test:ordinal-alice");
+      const bob = p.principalOrdinals.getOrCreate("did:test:ordinal-bob");
+      expect(p.principalOrdinals.getOrCreate("did:test:ordinal-alice")).toBe(alice);
+      expect(bob).not.toBe(alice);
+      expect(
+        p.principalOrdinals.getManyByDid(["did:test:ordinal-bob"]).get("did:test:ordinal-bob"),
+      ).toBe(bob);
+      expect(p.principalOrdinals.resolveMany([alice, bob])).toEqual(
+        new Map([
+          [alice, "did:test:ordinal-alice"],
+          [bob, "did:test:ordinal-bob"],
+        ]),
+      );
+    });
+
+    test("fan-out planning jobs are deterministic, leased, chunked, and retryable", async () => {
+      const { persistence: p } = await create();
+      const input = {
+        tenantKey: "tenant",
+        postId: "post-1",
+        sourceCellId: "cell-a",
+        sourceRecordKey: "record-a",
+        sourceContentHash: "a".repeat(64),
+        cellPoolCount: 4,
+        authorPrincipalId: "did:test:author",
+        postKind: "post",
+        postMetadata: { topics: ["x"] },
+        visibility: "public",
+        fanOutPolicy: { mode: "push" } as const,
+      };
+      const id = p.fanOutQueue.enqueuePlanning(input, 100);
+      expect(p.fanOutQueue.stats()).toEqual({
+        pendingPlanning: 1,
+        pendingDelivery: 0,
+        openPlanningLeases: 0,
+        openDeliveryLeases: 0,
+      });
+      expect(p.fanOutQueue.enqueuePlanning(input, 101)).toBe(id);
+      const claimed = p.fanOutQueue.tryClaimPlanning(100, 50);
+      expect(claimed?.id).toBe(id);
+      expect(claimed?.attemptCount).toBe(1);
+      expect(p.fanOutQueue.tryClaimPlanning(149, 50)).toBeUndefined();
+      expect(p.fanOutQueue.tryClaimPlanning(150, 50)?.attemptCount).toBe(2);
+      const records = [
+        { ordinal: 2, subscriptionMatches: ["author"] },
+        { ordinal: 7, subscriptionMatches: ["topic:x"] },
+      ];
+      expect(p.fanOutQueue.appendWorkloadChunk(id, records, 151)).toBe(0);
+      expect(p.fanOutQueue.stats()).toEqual({
+        pendingPlanning: 0,
+        pendingDelivery: 1,
+        openPlanningLeases: 1,
+        openDeliveryLeases: 0,
+      });
+      expect(p.fanOutQueue.listWorkloadChunks(id)[0]?.records).toEqual(records);
+      p.fanOutQueue.failPlanning(id, 152, "retry", 200);
+      expect(p.fanOutQueue.tryClaimPlanning(199, 50)).toBeUndefined();
+      expect(p.fanOutQueue.tryClaimPlanning(200, 50)?.attemptCount).toBe(3);
+      expect(p.fanOutQueue.listWorkloadChunks(id)).toEqual([]);
+      p.fanOutQueue.completePlanning(id, 2, 201);
+      expect(p.fanOutQueue.getJob(id)?.status).toBe("routing_pending");
+      expect(p.fanOutQueue.getJob(id)?.plannedTargetCount).toBe(2);
+      p.fanOutQueue.setReconcileAfterPrincipalId("did:cursor");
+      expect(p.fanOutQueue.getReconcileAfterPrincipalId()).toBe("did:cursor");
+      p.fanOutQueue.setReconcileAfterPrincipalId(undefined);
+      expect(p.fanOutQueue.getReconcileAfterPrincipalId()).toBeUndefined();
     });
 
     test("registerAgent rejects username taken by another principal", async () => {
@@ -56,6 +129,37 @@ export function runHostPersistenceContractTests(
           profileUpsert: { id: "p-b", bodyJson: "{}" },
         }),
       ).toThrow(/unavailable/);
+    });
+
+    test("usernameIndex listPrincipals pages principals in order", async () => {
+      const { persistence: p } = await create();
+      p.registerAgent({
+        principalId: "did:test:alice" as PrincipalId,
+        username: "alice",
+        profileUpsert: { id: "p-alice", bodyJson: "{}" },
+      });
+      p.registerAgent({
+        principalId: "did:test:bob" as PrincipalId,
+        username: "bob",
+        profileUpsert: { id: "p-bob", bodyJson: "{}" },
+      });
+      p.registerAgent({
+        principalId: "did:test:cara" as PrincipalId,
+        username: "cara",
+        profileUpsert: { id: "p-cara", bodyJson: "{}" },
+      });
+      expect(p.usernameIndex.listPrincipals({ limit: 100 })).toEqual([
+        "did:test:alice",
+        "did:test:bob",
+        "did:test:cara",
+      ]);
+      expect(p.usernameIndex.listPrincipals({ limit: 1 })).toEqual(["did:test:alice"]);
+      expect(
+        p.usernameIndex.listPrincipals({ afterPrincipalId: "did:test:alice", limit: 1 }),
+      ).toEqual(["did:test:bob"]);
+      expect(
+        p.usernameIndex.listPrincipals({ afterPrincipalId: "did:test:cara", limit: 10 }),
+      ).toEqual([]);
     });
 
     test("usernameIndex rollback restores prior handle", async () => {

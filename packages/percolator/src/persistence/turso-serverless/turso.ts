@@ -25,9 +25,10 @@ export async function createPercolatorTursoPersistence(
         await execSql(
           db.write,
           `INSERT INTO percolator_filter_queries (${FILTER_COLS})
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              owner_id = excluded.owner_id,
+             owner_ordinal = excluded.owner_ordinal,
              search_json = excluded.search_json,
              min_score = excluded.min_score,
              active = excluded.active,
@@ -36,6 +37,7 @@ export async function createPercolatorTursoPersistence(
           [
             query.id,
             query.ownerId,
+            query.ownerOrdinal,
             searchToJson(query),
             query.minScore,
             query.active ? 1 : 0,
@@ -50,9 +52,10 @@ export async function createPercolatorTursoPersistence(
         await execSql(
           db.write,
           `INSERT INTO percolator_semantic_queries (${SEMANTIC_COLS})
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              owner_id = excluded.owner_id,
+             owner_ordinal = excluded.owner_ordinal,
              search_json = excluded.search_json,
              vector = excluded.vector,
              min_score = excluded.min_score,
@@ -62,6 +65,7 @@ export async function createPercolatorTursoPersistence(
           [
             query.id,
             query.ownerId,
+            query.ownerOrdinal,
             searchToJson(query),
             vec !== undefined && vec.length > 0 ? encodeVector(vec) : null,
             query.minScore,
@@ -146,6 +150,24 @@ export async function createPercolatorTursoPersistence(
         [now],
       );
       return rows.map(rowToSemanticQuery);
+    },
+
+    async scanActiveQueries(opts): Promise<StandingQuery[]> {
+      const filter = opts.mode === "filter-only";
+      const columns = filter ? FILTER_COLS : SEMANTIC_COLS;
+      const table = filter ? "percolator_filter_queries" : "percolator_semantic_queries";
+      const afterOrdinal = opts.afterOwnerOrdinal ?? null;
+      const rows = await queryAll<QueryRow | SemanticQueryRow>(
+        db.read,
+        `SELECT ${columns} FROM ${table}
+         WHERE active = 1 AND (expires_at_ms IS NULL OR expires_at_ms > ?)
+           AND (? IS NULL OR owner_ordinal > ? OR (owner_ordinal = ? AND id > ?))
+         ORDER BY owner_ordinal, id LIMIT ?`,
+        [opts.now, afterOrdinal, afterOrdinal, afterOrdinal, opts.afterId ?? "", opts.limit],
+      );
+      return filter
+        ? (rows as QueryRow[]).map(rowToFilterQuery)
+        : (rows as SemanticQueryRow[]).map(rowToSemanticQuery);
     },
   };
 }

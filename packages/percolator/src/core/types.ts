@@ -3,6 +3,7 @@ import type { StandingSearchRequest } from "./search-request";
 export type StandingQueryCreate = {
   id: string;
   ownerId: string;
+  ownerOrdinal: number;
   search: StandingSearchRequest;
   /** Poster-published threshold; falls back to search.options.minScore, then package default. */
   minScore?: number;
@@ -31,4 +32,10 @@ export type PercolatorMatch = {
   candidateId: string;
   score: number;
   matchMode: "filter-only" | "semantic";
+};
+
+export type PercolatorOwnerMatch = {
+  ownerId: string;
+  ownerOrdinal: number;
+  matches: PercolatorMatch[];
 };

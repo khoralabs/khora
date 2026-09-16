@@ -10,6 +10,17 @@ export const zKhoraPostVisibility = z.enum(["public", "network", "private"]);
 
 export type KhoraPostVisibility = z.infer<typeof zKhoraPostVisibility>;
 
+export const zKhoraFanOutPolicy = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("push") }),
+  z.object({
+    mode: z.literal("hybrid"),
+    publicPushTargetLimit: z.number().int().positive(),
+  }),
+  z.object({ mode: z.literal("catalog-pull") }),
+]);
+
+export type KhoraFanOutPolicy = z.infer<typeof zKhoraFanOutPolicy>;
+
 function hasStandingSearchContent(search: KhoraStandingSearchRequest): boolean {
   const text = search.content.text?.trim() ?? "";
   const vector = search.content.vector;
@@ -44,6 +55,8 @@ const zKhoraPostContent = z.object({
   topics: z.array(z.string().trim().min(1)).optional(),
   /** Who may read this post; default public preserves legacy relay semantics. */
   visibility: zKhoraPostVisibility.default("public"),
+  /** Delivery policy; omitted preserves normal inbox push. */
+  fanOutPolicy: zKhoraFanOutPolicy.optional(),
   /** Optional expiry (Unix ms); e.g. ephemeral status or time-limited posts. */
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
@@ -59,6 +72,8 @@ function refinePostKindRules(
     body?: string;
     authorProfileId?: string;
     search?: KhoraStandingSearchRequest;
+    visibility?: KhoraPostVisibility;
+    fanOutPolicy?: KhoraFanOutPolicy;
   },
   ctx: z.RefinementCtx,
   opts: { requireStatusAuthor?: boolean },
@@ -71,6 +86,16 @@ function refinePostKindRules(
         path: ["authorProfileId"],
       });
     }
+  }
+  if (
+    (val.fanOutPolicy?.mode === "catalog-pull" || val.fanOutPolicy?.mode === "hybrid") &&
+    val.visibility !== "public"
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "catalog-pull and hybrid fan-out require public catalog visibility",
+      path: ["fanOutPolicy"],
+    });
   }
   if (val.kind === "status" && val.search !== undefined) {
     ctx.addIssue({
@@ -166,6 +191,7 @@ export const zKhoraPostPatch = z.object({
   kind: zKhoraPostKind.optional(),
   topics: z.array(z.string().trim().min(1)).optional(),
   visibility: zKhoraPostVisibility.optional(),
+  fanOutPolicy: zKhoraFanOutPolicy.optional(),
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000).optional(),

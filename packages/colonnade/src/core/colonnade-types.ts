@@ -15,6 +15,7 @@ export type TenantKey = string;
 export type PrincipalId = string;
 export type DrainCursor = string;
 export type WriteCorrelationId = string;
+export type InboxDeliveryId = string;
 export type InboxEntryId = string;
 export type OutboxRecordKey = string;
 export type CatalogPointerId = string;
@@ -175,6 +176,8 @@ export type EnqueueInboxDeliveryInput = {
   readonly tenant_key: TenantKey;
   readonly recipient_principal_id: PrincipalId;
   readonly staging: InboxStagingPayload;
+  /** Stable idempotency key for this post/recipient delivery. */
+  readonly delivery_id: InboxDeliveryId;
   readonly correlation_id: WriteCorrelationId;
 };
 
@@ -411,7 +414,8 @@ export type CatalogPublication = {
 
 export type PublicationRouting = {
   readonly catalog_publication?: CatalogPublication;
-  readonly fan_out_targets: readonly FanOutTarget[];
+  /** @deprecated Fan-out is host-owned; accepted only while callers migrate. */
+  readonly fan_out_targets?: readonly FanOutTarget[];
 };
 
 export type PostOperationInput = {
@@ -424,8 +428,11 @@ export type PostOperationInput = {
   readonly routing: PublicationRouting;
   /** When non-empty, used as the outbox record key instead of generating one. */
   readonly outbox_record_key?: OutboxRecordKey;
+  /** Host-computed durable planning id, echoed after the commit succeeds. */
+  readonly fan_out_job_id?: string;
 };
 
+/** Inbox delivery result type; publication commits no longer produce these directly. */
 export type GeneratedInboxRef = {
   readonly inbox_entry_id: InboxEntryId;
   readonly recipient_cell_id: CellId;
@@ -437,5 +444,6 @@ export type PostOperationOutput = {
   readonly content_hash: ContentHash;
   /** Empty string when catalog replication was skipped or produced no pointer row. */
   readonly catalog_pointer_id: CatalogPointerId;
-  readonly generated_inbox_refs: readonly GeneratedInboxRef[];
+  /** Empty for commit-only operations such as post updates. */
+  readonly fan_out_job_id: string;
 };
